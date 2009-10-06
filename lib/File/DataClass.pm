@@ -1,20 +1,20 @@
 # @(#)$Id$
 
-package CatalystX::Usul::File;
+package File::DataClass;
 
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul);
+use parent qw(File::DataClass::Base);
 
-use CatalystX::Usul::File::ResultSource;
+use File::DataClass::ResultSource;
 use MRO::Compat;
 use Scalar::Util qw(blessed);
 use TryCatch;
 
 __PACKAGE__->config
    ( path                => undef,
-     result_source_class => q(CatalystX::Usul::File::ResultSource),
+     result_source_class => q(File::DataClass::ResultSource),
      schema_attributes   => {} );
 
 __PACKAGE__->mk_accessors( qw(path result_source result_source_class
@@ -224,7 +224,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File - Read and write configuration files
+File::DataClass - Read and write configuration files
 
 =head1 Version
 
@@ -232,7 +232,7 @@ CatalystX::Usul::File - Read and write configuration files
 
 =head1 Synopsis
 
-   use CatalystX::Usul::File;
+   use File::DataClass;
 
 =head1 Description
 
@@ -253,7 +253,7 @@ Creates a new element. The args hash requires these keys; I<path>
 of the file to edit, I<name> of the element to edit and I<fields> is a hash
 containing the attributes of the new element. Missing attributes are
 defaulted from the I<defaults> attribute of the
-L<CatalystX::Usul::File::Schema> object
+L<File::DataClass::Schema> object
 
 =head2 delete
 
@@ -331,9 +331,9 @@ None
 
 =over 3
 
-=item L<CatalystX::Usul::Usul>
+=item L<File::DataClass::Base>
 
-=item L<CatalystX::Usul::File::ResultSource>
+=item L<File::DataClass::ResultSource>
 
 =back
 
@@ -353,7 +353,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2009 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

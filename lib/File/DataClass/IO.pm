@@ -1,6 +1,6 @@
 # @(#)$Id: IO.pm 705 2009-10-04 23:36:49Z pjf $
 
-package CatalystX::Usul::File::IO;
+package File::DataClass::IO;
 
 use strict;
 use warnings;
@@ -636,7 +636,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File::IO - Better IO syntax
+File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
@@ -644,14 +644,16 @@ CatalystX::Usul::File::IO - Better IO syntax
 
 =head1 Synopsis
 
-   use MyExceptionClass;
-   use CatalystX::Usul::File::IO;
+   use YourExceptionClass;
+   use File::DataClass::IO;
 
    sub io {
       my ($self, @rest) = @_;
-      my $io = CatalystX::Usul::File::IO->new( @rest );
 
-      $io->exception_class( q(MyExceptionClass) );
+      my $io = File::DataClass::IO->new( @rest );
+
+      $io->exception_class( q(YourExceptionClass) );
+
       return $io;
    }
 
@@ -678,7 +680,7 @@ be called from outside this package
 
 =head2 new
 
-   my $io = CatalystX::Usul::File::IO->new( $pathname, [ $mode, $perms ] );
+   my $io = File::DataClass::IO->new( $pathname, [ $mode, $perms ] );
 
 Called with either a single hash ref containing a list of key value
 pairs which are the object's attributes (where I<name> is the
@@ -1099,7 +1101,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2009 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

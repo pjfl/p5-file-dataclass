@@ -1,13 +1,13 @@
 # @(#)$Id: Schema.pm 685 2009-08-17 22:01:00Z pjf $
 
-package CatalystX::Usul::File::Schema;
+package File::DataClass::Schema;
 
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 685 $ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul);
+use parent qw(File::DataClass::Base);
 
-use CatalystX::Usul::File::Combinator;
+use File::DataClass::Combinator;
 use MRO::Compat;
 use Scalar::Util qw(weaken);
 
@@ -15,7 +15,7 @@ __PACKAGE__->config
    ( attributes    => [],
      defaults      => {},
      element       => q(unknown),
-     storage_base  => q(CatalystX::Usul::File::Storage) );
+     storage_base  => q(File::DataClass::Storage) );
 
 __PACKAGE__->mk_accessors( qw(attributes defaults element
                               label_attr lang_dep source storage
@@ -39,7 +39,7 @@ sub new {
 
    if ($new->lang_dep) {
       $attrs = { storage => $new->storage };
-      $new->storage( CatalystX::Usul::File::Combinator->new( $app, $attrs ) );
+      $new->storage( File::DataClass::Combinator->new( $app, $attrs ) );
    }
 
    return $new;
@@ -53,7 +53,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File::Schema - Base class for schema definitions
+File::DataClass::Schema - Base class for schema definitions
 
 =head1 Version
 
@@ -61,14 +61,14 @@ CatalystX::Usul::File::Schema - Base class for schema definitions
 
 =head1 Synopsis
 
-   package CatalystX::Usul::File::ResultSource;
+   package File::DataClass::ResultSource;
 
-   use parent qw(CatalystX::Usul);
-   use CatalystX::Usul::File::Schema;
+   use parent qw(File::DataClass::Base);
+   use File::DataClass::Schema;
    use MRO::Compat;
    use Scalar::Util qw(weaken);
 
-   __PACKAGE__->config( schema_class => q(CatalystX::Usul::File::Schema) );
+   __PACKAGE__->config( schema_class => q(File::DataClass::Schema) );
 
    __PACKAGE__->mk_accessors( qw(schema schema_class) );
 
@@ -96,10 +96,10 @@ inherit from this
 =head2 new
 
 Creates a new instance of the storage class which defaults to
-L<CatalystX::Usul::File::Storage::XML::Simple>
+L<File::DataClass::Storage::XML::Simple>
 
 If the schema is language dependent then an instance of
-L<CatalystX::Usul::File::Combinator> is created as a proxy for the
+L<File::DataClass::Combinator> is created as a proxy for the
 storage class
 
 =head1 Diagnostics
@@ -114,11 +114,11 @@ None
 
 =over 3
 
-=item L<CatalystX::Usul>
+=item L<File::DataClass::Base>
 
-=item L<CatalystX::Usul::File::Combinator>
+=item L<File::DataClass::Combinator>
 
-=item L<CatalystX::Usul::File::Storage>
+=item L<File::DataClass::Storage>
 
 =item L<Scalar::Util>
 
@@ -140,7 +140,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2009 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

@@ -1,6 +1,6 @@
 # @(#)$Id: HashMerge.pm 660 2009-07-30 10:42:46Z pjf $
 
-package CatalystX::Usul::File::HashMerge;
+package File::DataClass::HashMerge;
 
 use strict;
 use warnings;
@@ -120,7 +120,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File::HashMerge - Merge hashes with update flag
+File::DataClass::HashMerge - Merge hashes with update flag
 
 =head1 Version
 
@@ -128,9 +128,9 @@ CatalystX::Usul::File::HashMerge - Merge hashes with update flag
 
 =head1 Synopsis
 
-   use CatalystX::Usul::File::HashMerge;
+   use File::DataClass::HashMerge;
 
-   $class   = q(CatalystX::Usul::File::HashMerge);
+   $class   = q(File::DataClass::HashMerge);
    $updated = $class->merge( $src, $dest_ref, $condition );
 
 =head1 Description
@@ -141,7 +141,7 @@ Merge the attributes from the source hash ref into destination ref
 
 =head2 merge
 
-   $class = q(CatalystX::Usul::File::HashMerge);
+   $class = q(File::DataClass::HashMerge);
    $bool  = $class->merge( $src, $dest_ref, $condition );
 
 Only merge the attributes from C<$src> to C<$dest_ref> if the

@@ -1,11 +1,11 @@
 # @(#)$Id: Combinator.pm 685 2009-08-17 22:01:00Z pjf $
 
-package CatalystX::Usul::File::Combinator;
+package File::DataClass::Combinator;
 
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 685 $ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul);
+use parent qw(File::DataClass::Base);
 
 __PACKAGE__->config( lang => q() );
 
@@ -107,7 +107,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File::Combinator - Split/merge language dependent data
+File::DataClass::Combinator - Split/merge language dependent data
 
 =head1 Version
 
@@ -144,7 +144,7 @@ an error otherwise
    $hash_ref = $self->load( @paths );
 
 Loads each of the specified files merging the resultant hash ref which
-it returns. Paths are instances of L<CatalystX::Usul::File::IO>
+it returns. Paths are instances of L<File::DataClass::IO>
 
 =head2 path
 
@@ -172,7 +172,7 @@ None
 
 =over 3
 
-=item L<CatalystX::Usul>
+=item L<File::DataClass::Base>
 
 =back
 

@@ -1,20 +1,20 @@
 # @(#)$Id: ResultSource.pm 683 2009-08-13 20:58:18Z pjf $
 
-package CatalystX::Usul::File::ResultSource;
+package File::DataClass::ResultSource;
 
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 683 $ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul);
+use parent qw(File::DataClass::Base);
 
-use CatalystX::Usul::File::ResultSet;
-use CatalystX::Usul::File::Schema;
+use File::DataClass::ResultSet;
+use File::DataClass::Schema;
 use MRO::Compat;
 
 __PACKAGE__->config
    ( resultset_attributes => {},
-     resultset_class      => q(CatalystX::Usul::File::ResultSet),
-     schema_class         => q(CatalystX::Usul::File::Schema) );
+     resultset_class      => q(File::DataClass::ResultSet),
+     schema_class         => q(File::DataClass::Schema) );
 
 __PACKAGE__->mk_accessors( qw(resultset_attributes resultset_class
                               schema schema_class) );
@@ -51,7 +51,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File::ResultSource - A source of result sets for a given schema
+File::DataClass::ResultSource - A source of result sets for a given schema
 
 =head1 Version
 
@@ -59,11 +59,11 @@ CatalystX::Usul::File::ResultSource - A source of result sets for a given schema
 
 =head1 Synopsis
 
-   use CatalystX::Usul::File;
+   use File:DataClass;
 
    $attrs = { schema_attributes => { ... } };
 
-   $result_source = CatalystX::Usul::File->new( $app, $attrs );
+   $result_source = File::DataClass->new( $app, $attrs );
 
    $result_source->resultset( $file, $lang );
 
@@ -78,13 +78,13 @@ L<DBIx::Class>
 
 Constructor's arguments are the application object and a hash ref of
 schema attributes. Creates a new instance of the schema class
-which defaults to L<CatalystX::Usul::File::Schema>
+which defaults to L<File::DataClass::Schema>
 
 =head2 resultset
 
 Sets the schema's I<file> and I<lang> attributes from the optional
 parameters. Creates and returns a new
-L<CatalystX::Usul::File::Resultset> object
+L<File::DataClass::Resultset> object
 
 =head2 storage
 
@@ -102,9 +102,9 @@ None
 
 =over 3
 
-=item L<CatalystX::Usul>
+=item L<File::DataClass>
 
-=item L<CatalystX::Usul::File::Schema>
+=item L<File::DataClass::Schema>
 
 =back
 
@@ -124,7 +124,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2009 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

@@ -1,20 +1,10 @@
-# @(#)$Id: List.pm 672 2009-08-06 22:44:02Z pjf $
+# @(#)$Id$
 
-package File::DataClass::List;
+package File::DataClass::Base;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 672 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Base);
-
-__PACKAGE__->mk_accessors( qw(element found labels list) );
-
-sub new {
-   my $class = shift;
-
-   return bless { element => undef, found => 0,
-                  labels  => {},    list  => [] }, $class;
-}
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 1;
 
@@ -24,41 +14,29 @@ __END__
 
 =head1 Name
 
-File::DataClass::List - List response class
+File::DataClass::Base - <One-line description of module's purpose>
 
 =head1 Version
 
-0.4.$Revision: 672 $
+0.1.$Revision$
 
 =head1 Synopsis
 
-   use File::DataClass::List;
-
-   $list_object = $self->list_class->new;
+   use parent qw(File::DataClass::Base);
 
 =head1 Description
 
-List object returned by L<File::DataClass::ResultSet/list>
+=head1 Configuration and Environment
 
 =head1 Subroutines/Methods
 
-=head2 new
-
-Defines four attributes; I<element>, I<found>, I<labels>, and I<list>
-
 =head1 Diagnostics
-
-None
-
-=head1 Configuration and Environment
-
-None
 
 =head1 Dependencies
 
 =over 3
 
-=item L<File::DataClass::Base>
+=item L<Class::Accessor::Fast>
 
 =back
 

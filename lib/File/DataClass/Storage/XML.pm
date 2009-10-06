@@ -1,11 +1,11 @@
 # @(#)$Id: XML.pm 685 2009-08-17 22:01:00Z pjf $
 
-package CatalystX::Usul::File::Storage::XML;
+package File::DataClass::Storage::XML;
 
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 685 $ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul::File::Storage);
+use parent qw(File::DataClass::Storage);
 
 use MRO::Compat;
 
@@ -103,7 +103,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File::Storage::XML - Read/write XML data storage model
+File::DataClass::Storage::XML - Read/write XML data storage model
 
 =head1 Version
 
@@ -134,7 +134,7 @@ None
 
 =over 3
 
-=item L<CatalystX::Usul>
+=item L<File::DataClass::Storage>
 
 =item L<Hash::Merge>
 
@@ -158,7 +158,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2009 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

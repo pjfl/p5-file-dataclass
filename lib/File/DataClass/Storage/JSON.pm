@@ -1,11 +1,11 @@
 # @(#)$Id: JSON.pm 685 2009-08-17 22:01:00Z pjf $
 
-package CatalystX::Usul::File::Storage::JSON;
+package File::DataClass::Storage::JSON;
 
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 685 $ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul::File::Storage);
+use parent qw(File::DataClass::Storage);
 
 use JSON qw();
 
@@ -41,7 +41,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File::Storage::JSON - Read/write JSON data storage model
+File::DataClass::Storage::JSON - Read/write JSON data storage model
 
 =head1 Version
 
@@ -67,7 +67,7 @@ None
 
 =over 3
 
-=item L<CatalystX::Usul::File::Storage>
+=item L<File::DataClass::Storage>
 
 =item L<JSON>
 

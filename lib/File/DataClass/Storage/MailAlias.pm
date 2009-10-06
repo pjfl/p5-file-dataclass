@@ -1,16 +1,15 @@
 # @(#)$Id: MailAlias.pm 688 2009-08-19 02:17:20Z pjf $
 
-package CatalystX::Usul::File::Storage::MailAlias;
+package File::DataClass::Storage::MailAlias;
 
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 688 $ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul::File::Storage);
+use parent qw(File::DataClass::Storage);
 
-use CatalystX::Usul::Constants;
 use Text::Wrap;
 
-__PACKAGE__->config( extn => NUL );
+__PACKAGE__->config( extn => q() );
 
 # Private methods
 
@@ -41,7 +40,7 @@ sub _read_filter {
 
    my $res = {}; my $ord = 0; my $recipients;
 
-   my ($alias, $comment, $created, $owner) = (NUL, NUL, NUL, NUL);
+   my ($alias, $comment, $created, $owner) = (q(), q(), q(), q());
 
    for my $line (@{ $buf }) {
       if ($line and $line =~ m{ \A \# }mx) {
@@ -71,7 +70,7 @@ sub _read_filter {
          $line =~ s{ \s+ }{ }gmx; $line =~ s{ , \z }{}mx;
          push @{ $res->{ $alias }->recipients }, split m{ , }mx, $line;
       }
-      else { ($alias, $comment, $created, $owner) = (NUL, NUL, NUL, NUL) }
+      else { ($alias, $comment, $created, $owner) = (q(), q(), q(), q()) }
    }
 
    return { aliases => $res };
@@ -100,10 +99,10 @@ sub _write_filter {
          }
       }
 
-      my $pad  = SPC x (2 + length $name);
+      my $pad  = q( ) x (2 + length $name);
       my $line = $name.q(: ).(join q(,), @{ $alias->{recipients} || [] });
 
-      push @{ $buf }, wrap( NUL, $pad, $line ), NUL;
+      push @{ $buf }, wrap( q(), $pad, $line ), q();
    }
 
    return $buf;
@@ -129,7 +128,7 @@ __END__
 
 =head1 Name
 
-<Module::Name> - <One-line description of module's purpose>
+File::DataClass::Storage::MailAlias - <One-line description of module's purpose>
 
 =head1 Version
 
@@ -137,8 +136,7 @@ __END__
 
 =head1 Synopsis
 
-   use <Module::Name>;
-   # Brief but working code examples
+   use File::DataClass::Storage::MailAlias;
 
 =head1 Description
 

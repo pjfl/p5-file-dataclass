@@ -1,13 +1,13 @@
 # @(#)$Id: Storage.pm 699 2009-10-02 17:57:19Z pjf $
 
-package CatalystX::Usul::File::Storage;
+package File::DataClass::Storage;
 
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 699 $ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul);
+use parent qw(File::DataClass::Base);
 
-use CatalystX::Usul::File::HashMerge;
+use File::DataClass::HashMerge;
 use Hash::Merge  qw(merge);
 use Scalar::Util qw(weaken);
 use TryCatch;
@@ -213,7 +213,7 @@ sub _update {
                     args  => [ $path->pathname, $name ] );
    }
 
-   my $updated = CatalystX::Usul::File::HashMerge->merge
+   my $updated = File::DataClass::HashMerge->merge
       ( $element_obj, \$data->{ $element }->{ $name }, $condition );
 
    if ($updated) { $self->_write_file( $path, $data ) }
@@ -267,7 +267,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File::Storage - Factory subclass loader
+File::DataClass::Storage - Factory subclass loader
 
 =head1 Version
 
@@ -275,14 +275,14 @@ CatalystX::Usul::File::Storage - Factory subclass loader
 
 =head1 Synopsis
 
-   package CatalystX::Usul::File::Schema;
+   package File::DataClass::Schema;
 
-   use parent qw(CatalystX::Usul);
-   use CatalystX::Usul::File::Storage;
+   use parent qw(File::DataClass::Base);
+   use File::DataClass::Storage;
    use MRO::Compat;
    use Scalar::Util qw(weaken);
 
-   __PACKAGE__->config( storage_class => q(CatalystX::Usul::File::Storage) );
+   __PACKAGE__->config( storage_class => q(File::DataClass::Storage) );
 
    __PACKAGE__->mk_accessors( qw(storage storage_class) );
 
@@ -327,7 +327,7 @@ an error otherwise
    $hash_ref = $self->load( @paths );
 
 Loads each of the specified files merging the resultant hash ref which
-it returns. Paths are instances of L<CatalystX::Usul::File::IO>
+it returns. Paths are instances of L<File::DataClass::IO>
 
 =head2 select
 
@@ -355,9 +355,9 @@ None
 
 =over 3
 
-=item L<CatalystX::Usul>
+=item L<File::DataClass::Base>
 
-=item L<CatalystX::Usul::File::HashMerge>
+=item L<File::DataClass::HashMerge>
 
 =item L<Hash::Merge>
 
@@ -381,7 +381,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2009 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

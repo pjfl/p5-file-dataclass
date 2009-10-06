@@ -1,11 +1,11 @@
 # @(#)$Id: Element.pm 664 2009-08-03 15:35:23Z pjf $
 
-package CatalystX::Usul::File::Element;
+package File::DataClass::Element;
 
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 664 $ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul);
+use parent qw(File::DataClass::Base);
 
 __PACKAGE__->mk_accessors( qw(name _storage) );
 
@@ -57,7 +57,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File::Element - Element object definition
+File::DataClass::Element - Element object definition
 
 =head1 Version
 
@@ -65,9 +65,9 @@ CatalystX::Usul::File::Element - Element object definition
 
 =head1 Synopsis
 
-   use CatalystX::Usul::File::Element;
+   use File::DataClass::Element;
 
-   __PACKAGE__->config( element_class => q(CatalystX::Usul::File::Element) );
+   __PACKAGE__->config( element_class => q(File::DataClass::Element) );
 
    __PACKAGE__->mk_accessors( qw(element_class) );
 
@@ -116,7 +116,7 @@ None
 
 =over 3
 
-=item L<CatalystX::Usul>
+=item L<File::DataClass::Base>
 
 =back
 
@@ -136,7 +136,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2009 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

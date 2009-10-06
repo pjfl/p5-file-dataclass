@@ -1,18 +1,18 @@
 # @(#)$Id: ResultSet.pm 674 2009-08-09 00:49:16Z pjf $
 
-package CatalystX::Usul::File::ResultSet;
+package File::DataClass::ResultSet;
 
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 674 $ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul);
+use parent qw(File::DataClass::Base);
 
-use CatalystX::Usul::File::Element;
-use CatalystX::Usul::File::List;
+use File::DataClass::Element;
+use File::DataClass::List;
 use Scalar::Util qw(weaken);
 
-__PACKAGE__->config( element_class => q(CatalystX::Usul::File::Element),
-                     list_class    => q(CatalystX::Usul::File::List), );
+__PACKAGE__->config( element_class => q(File::DataClass::Element),
+                     list_class    => q(File::DataClass::List), );
 
 __PACKAGE__->mk_accessors( qw(element_class list_class source
                               _elements _iterator) );
@@ -239,7 +239,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::File::ResultSet - Core element methods
+File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
@@ -249,7 +249,7 @@ CatalystX::Usul::File::ResultSet - Core element methods
 
    my $app;     # The Catalyst application object
    my $attrs  = { schema_attributes => $schema_attributes };
-   my $source = CatalystX::Usul::File::ResultSource->new( $app, $attrs ) );
+   my $source = File::DataClass::ResultSource->new( $app, $attrs ) );
    my $rs     = $source->resultset( $path, $lang );
    my $result = $rs->search( $criterion );
 
@@ -277,7 +277,7 @@ Returns all the elements that are returned by the L</search> call
 
    $element_obj = $rs->create( $attrs );
 
-Creates and returns a new L<element|CatalystX::Usul::File::Element>
+Creates and returns a new L<element|File::DataClass::Element>
 object from the attributes provided
 
 =head2 find
@@ -285,7 +285,7 @@ object from the attributes provided
    $element_obj = $rs->find( $name );
 
 Finds the named element and returns an
-L<element|CatalystX::Usul::File::Element> object for it
+L<element|File::DataClass::Element> object for it
 
 =head2 find_and_update
 
@@ -303,7 +303,7 @@ Returns the first element object that is the result of the search call
 
    $list = $rs->list( $name );
 
-Returns a L<list|CatalystX::Usul::File::List> object
+Returns a L<list|File::DataClass::List> object
 
 =head2 last
 
@@ -364,11 +364,11 @@ None
 
 =over 3
 
-=item L<CatalystX::Usul>
+=item L<File::DataClass::Base>
 
-=item L<CatalystX::Usul::File::Element>
+=item L<File::DataClass::Element>
 
-=item L<CatalystX::Usul::File::List>
+=item L<File::DataClass::List>
 
 =back
 
@@ -388,7 +388,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2009 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
