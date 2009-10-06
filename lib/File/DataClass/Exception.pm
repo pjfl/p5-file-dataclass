@@ -25,7 +25,7 @@ sub new {
                                ignore_package => $IGNORE,
                                out            => NUL,
                                rv             => 1,
-                               show_trace     => 0,
+                               show_trace     => FALSE,
                                error          => 'Error unknown',
                                @rest );
 }
