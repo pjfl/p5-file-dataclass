@@ -7,7 +7,9 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 685 $ =~ /\d+/gmx );
 use parent qw(File::DataClass::Base);
 
-__PACKAGE__->config( lang => q() );
+use File::Data::Constants;
+
+__PACKAGE__->config( lang => NUL );
 
 __PACKAGE__->mk_accessors( qw(lang storage) );
 
@@ -31,7 +33,7 @@ sub dump {
 }
 
 sub insert {
-   my ($self, $element_obj) = @_; return $self->_update( $element_obj, 0 );
+   my ($self, $element_obj) = @_; return $self->_update( $element_obj, FALSE );
 }
 
 sub load {
@@ -59,7 +61,7 @@ sub select {
 }
 
 sub update {
-   my ($self, $element_obj) = @_; return $self->_update( $element_obj, 1 );
+   my ($self, $element_obj) = @_; return $self->_update( $element_obj, TRUE );
 }
 
 # Private methods

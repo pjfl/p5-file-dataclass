@@ -7,6 +7,7 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 use parent qw(File::DataClass::Storage::XML);
 
+use File::DataClass::Constants;
 use XML::Bare;
 
 my $PADDING = q(  );
@@ -35,7 +36,7 @@ sub _write_file {
    my $method = sub {
       my $wtr = shift;
 
-      $wtr->println( @{ $self->_dtd } ) if ($self->_dtd->[ 0 ]);
+      $wtr->println( @{ $self->_dtd } ) if ($self->_dtd->[0]);
       $wtr->print  ( $self->_write_filter( 0, $self->root_name, $data ) );
       return $data;
    };
@@ -49,11 +50,11 @@ sub _read_filter {
    # Turn the structure returned by XML::Bare into one returned by XML::Simple
    my ($self, $arrays, $data) = @_; my ($hash, $value);
 
-   if (ref $data eq q(ARRAY)) {
+   if (ref $data eq ARRAY) {
       for my $key (0 .. $#{ $data }) {
-         if (ref $data->[ $key ] eq q(HASH)
-             && defined ($value = $data->[ $key ]->{value})
-             && $value !~ m{ \A [\n\s]+ \z }mx) {
+         if (    ref $data->[ $key ] eq HASH
+             and defined ($value = $data->[ $key ]->{value})
+             and $value !~ m{ \A [\n\s]+ \z }mx) {
             # Coerce arrays from single scalars. Array list given by the DTD
             if ($arrays->{ $key }) { $data->[ $key ] = [ $value ] }
             else { $data->[ $key ] = $value }
@@ -64,11 +65,11 @@ sub _read_filter {
          $self->_read_filter( $arrays, $data->[ $key ] ); # Recurse
       }
    }
-   elsif (ref $data eq q(HASH)) {
+   elsif (ref $data eq HASH) {
       for my $key (keys %{ $data }) {
-         if (ref $data->{ $key } eq q(HASH)
-             && defined ($value = $data->{ $key }->{value})
-             && $value !~ m{ \A [\n\s]+ \z }mx) {
+         if (    ref $data->{ $key } eq HASH
+             and defined ($value = $data->{ $key }->{value})
+             and $value !~ m{ \A [\n\s]+ \z }mx) {
             # Coerce arrays from single scalars. Array list given by the DTD
             if ($arrays->{ $key }) { $data->{ $key } = [ $value ] }
             else { $data->{ $key } = $value }
@@ -79,10 +80,10 @@ sub _read_filter {
          $self->_read_filter( $arrays, $data->{ $key } ); # Recurse
 
          # Turn arrays of hashes with a name attribute into hash keyed by name
-         if (ref $data->{ $key } eq q(ARRAY)
-             && ($value = $data->{ $key }->[ 0 ])
-             && ref $value eq q(HASH)
-             && exists $value->{name}) {
+         if (    ref $data->{ $key } eq ARRAY
+             and $value = $data->{ $key }->[0]
+             and ref $value eq HASH
+             and exists $value->{name}) {
             $hash = {};
 
             for my $ref (@{ $data->{ $key } }) {
@@ -104,22 +105,22 @@ sub _read_filter {
 }
 
 sub _write_filter {
-   my ($self, $level, $element, $data) = @_; my $xml = q();
+   my ($self, $level, $element, $data) = @_; my $xml = NUL;
 
    my $padding = $PADDING x $level;
 
-   if (ref $data eq q(ARRAY)) {
+   if (ref $data eq ARRAY) {
       for (sort @{ $data }) {
          $xml .= $padding.q(<).$element.q(>).$_.q(</).$element.q(>)."\n";
       }
    }
-   elsif (ref $data eq q(HASH)) {
+   elsif (ref $data eq HASH) {
       $padding = $PADDING x ($level + 1);
 
       for my $key (sort keys %{ $data }) {
          my $value = $data->{ $key };
 
-         if (ref $value eq q(HASH)) {
+         if (ref $value eq HASH) {
             for (sort keys %{ $value }) {
                $xml .= $padding.q(<).$key.q(>)."\n";
                $xml .= $padding.$PADDING.q(<name>).$_.q(</name>)."\n";
@@ -238,7 +239,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2009 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

@@ -6,14 +6,15 @@ use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 660 $ =~ /\d+/gmx );
 
+use File::DataClass::Constants;
 use Carp;
 
 sub merge {
-   my ($self, $src, $dest_ref, $condition) = @_; my $updated = 0;
+   my ($self, $src, $dest_ref, $condition) = @_; my $updated = FALSE;
 
    croak 'No destination reference specified' unless ($dest_ref);
 
-   $src ||= {}; ${ $dest_ref } ||= {}; $condition ||= sub { return 1 };
+   $src ||= {}; ${ $dest_ref } ||= {}; $condition ||= sub { return TRUE };
 
    for my $attr (__get_src_attributes( $condition, $src )) {
       if (defined $src->{ $attr }) {
@@ -24,7 +25,7 @@ sub merge {
       }
       elsif (exists ${ $dest_ref }->{ $attr }) {
          delete ${ $dest_ref }->{ $attr };
-         $updated = 1;
+         $updated = TRUE;
       }
    }
 
@@ -36,23 +37,23 @@ sub merge {
 # Private methods
 
 sub _merge_attr {
-   my ($self, $from, $to_ref) = @_; my $updated = 0; my $to = ${ $to_ref };
+   my ($self, $from, $to_ref) = @_; my $updated = FALSE; my $to = ${ $to_ref };
 
-   if ($to and ref $to eq q(ARRAY)) {
+   if ($to and ref $to eq ARRAY) {
       $updated = $self->_merge_attr_arrays( $from, $to );
    }
-   elsif ($to and ref $to eq q(HASH)) {
+   elsif ($to and ref $to eq HASH) {
       $updated = $self->_merge_attr_hashes( $from, $to );
    }
    elsif ((not $to and defined $from) or ($to and $to ne $from)) {
-      $updated = 1; ${ $to_ref } = $from;
+      $updated = TRUE; ${ $to_ref } = $from;
    }
 
    return $updated;
 }
 
 sub _merge_attr_arrays {
-   my ($self, $from, $to) = @_; my $updated = 0;
+   my ($self, $from, $to) = @_; my $updated = FALSE;
 
    for (0 .. $#{ $to }) {
       if ($from->[ $_ ]) {
@@ -62,21 +63,21 @@ sub _merge_attr_arrays {
       }
       elsif ($to->[ $_ ]) {
          splice @{ $to }, $_;
-         $updated = 1;
+         $updated = TRUE;
          last;
       }
    }
 
    if (@{ $from } > @{ $to }) {
       push @{ $to }, (splice @{ $from }, $#{ $to } + 1);
-      $updated = 1;
+      $updated = TRUE;
    }
 
    return $updated;
 }
 
 sub _merge_attr_hashes {
-   my ($self, $from, $to) = @_; my $updated = 0;
+   my ($self, $from, $to) = @_; my $updated = FALSE;
 
    for (keys %{ $to }) {
       if ($from->{ $_ }) {
@@ -86,7 +87,7 @@ sub _merge_attr_hashes {
       }
       elsif ($to->{ $_ }) {
          delete $to->{ $_ };
-         $updated = 1;
+         $updated = TRUE;
       }
    }
 
@@ -94,7 +95,7 @@ sub _merge_attr_hashes {
       for (keys %{ $from }) {
          if ($from->{ $_ } and not exists $to->{ $_ }) {
             $to->{ $_ } = $from->{ $_ };
-            $updated = 1;
+            $updated = TRUE;
          }
       }
    }

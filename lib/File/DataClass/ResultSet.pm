@@ -7,6 +7,7 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 674 $ =~ /\d+/gmx );
 use parent qw(File::DataClass::Base);
 
+use File::DataClass::Constants;
 use File::DataClass::Element;
 use File::DataClass::List;
 use Scalar::Util qw(weaken);
@@ -84,7 +85,7 @@ sub list {
    if ($name && exists $elements->{ $name }) {
       $attrs = $elements->{ $name };
       $attrs->{name} = $name;
-      $new->found( 1 );
+      $new->found( TRUE );
       $new->element( $self->element_class->new( $self, $attrs ) );
    }
    else { $new->element( $self->create( $attrs ) ) }
@@ -135,19 +136,19 @@ sub search {
 
    my $elements = $self->_elements;
 
-   if (!defined $elements->[ 0 ]) {
+   if (not defined $elements->[0]) {
       $elements = $self->storage->select;
 
       for my $name (keys %{ $elements }) {
          my $attrs = $elements->{ $name }; $attrs->{name} = $name;
 
-         if (!$criterion || $self->_eval_criterion( $criterion, $attrs )) {
+         if (not $criterion or $self->_eval_criterion( $criterion, $attrs )) {
             push @{ $self->_elements },
                $self->element_class->new( $self, $attrs );
          }
       }
    }
-   elsif ($criterion and defined $elements->[ 0 ]) {
+   elsif ($criterion and defined $elements->[0]) {
       for my $attrs (@{ $elements }) {
          push @tmp, $attrs if ($self->_eval_criterion( $criterion, $attrs ));
       }
@@ -191,25 +192,25 @@ sub _eval_criterion {
    my ($self, $criterion, $attrs) = @_; my $lhs;
 
    for my $attr (keys %{ $criterion }) {
-      return 0 unless (exists  $attrs->{ $attr });
-      return 0 unless (defined ($lhs = $attrs->{ $attr }));
+      return FALSE unless (exists  $attrs->{ $attr });
+      return FALSE unless (defined ($lhs = $attrs->{ $attr }));
 
-      if (ref $criterion->{ $attr } eq q(HASH)) {
+      if (ref $criterion->{ $attr } eq HASH) {
          while (my ($op, $rhs) = each %{ $criterion->{ $attr } }) {
-            return 0 unless ($self->_eval_op( $lhs, $op, $rhs ));
+            return FALSE unless ($self->_eval_op( $lhs, $op, $rhs ));
          }
       }
       else {
-         if (ref $lhs eq q(ARRAY)) {
+         if (ref $lhs eq ARRAY) {
             unless ($self->is_member( $criterion->{ $attr }, @{ $lhs })) {
-               return 0;
+               return FALSE;
             }
          }
-         else { return 0 unless ($lhs eq $criterion->{ $attr }) }
+         else { return FALSE unless ($lhs eq $criterion->{ $attr }) }
       }
    }
 
-   return 1;
+   return TRUE;
 }
 
 sub _eval_op {

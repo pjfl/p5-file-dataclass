@@ -7,6 +7,7 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 699 $ =~ /\d+/gmx );
 use parent qw(File::DataClass::Base);
 
+use File::DataClass::Constants;
 use File::DataClass::HashMerge;
 use Hash::Merge  qw(merge);
 use Scalar::Util qw(weaken);
@@ -45,7 +46,8 @@ sub dump {
 sub insert {
    my ($self, $element_obj) = @_;
 
-   return $self->_update( $element_obj, $self->_validate_params, 0, sub { 1 });
+   return $self->_update
+      ( $element_obj, $self->_validate_params, FALSE, sub { TRUE } );
 }
 
 sub load {
@@ -58,7 +60,7 @@ sub load {
    return $data unless (not $data or $stale); $data = {};
 
    for my $path (@paths) {
-      next unless ($ref = $self->_read_file( $path, 0 ));
+      next unless ($ref = $self->_read_file( $path, FALSE ));
 
       for (keys %{ $ref }) {
          $data->{ $_ } = exists $data->{ $_ }
@@ -75,7 +77,7 @@ sub load {
 sub select {
    my $self          = shift;
    my ($path, $elem) = $self->_validate_params;
-   my $data          = $self->_read_file( $path, 0 );
+   my $data          = $self->_read_file( $path, FALSE );
 
    return exists $data->{ $elem } ? $data->{ $elem } : {};
 }
@@ -83,7 +85,8 @@ sub select {
 sub update {
    my ($self, $element_obj) = @_;
 
-   return $self->_update( $element_obj, $self->_validate_params, 1, sub { 1 });
+   return $self->_update
+      ( $element_obj, $self->_validate_params, TRUE, sub { TRUE } );
 }
 
 # Private methods
@@ -152,18 +155,18 @@ sub _cache_set_by_paths {
 sub _delete {
    my ($self, $element_obj, $path, $element) = @_;
 
-   my $updated = 0;
+   my $updated = FALSE;
    my $name    = $element_obj->{name};
-   my $data    = $self->_read_file( $path, 1 );
+   my $data    = $self->_read_file( $path, TRUE );
 
    if (exists $data->{ $element } and exists $data->{ $element }->{ $name }) {
       delete $data->{ $element }->{ $name };
       $self->_write_file( $path, $data );
-      return 1;
+      return TRUE;
    }
 
    $self->lock->reset( k => $path->pathname );
-   return 0;
+   return FALSE;
 }
 
 sub _read_file {
@@ -190,10 +193,10 @@ sub _read_file_with_locking {
 
       $self->_cache_set( $pathname, $data, $path_mtime );
 
-      $self->log_debug( "Reread config $pathname" ) if ($self->debug);
+      $self->log->debug( "Reread config $pathname" ) if ($self->debug);
    }
    else {
-      $self->log_debug( "Cached config $pathname" ) if ($self->debug);
+      $self->log->debug( "Cached config $pathname" ) if ($self->debug);
    }
 
    $self->lock->reset( k => $pathname ) unless ($for_update);
@@ -205,7 +208,7 @@ sub _update {
    my ($self, $element_obj, $path, $element, $overwrite, $condition) = @_;
 
    my $name = $element_obj->{name};
-   my $data = $self->_read_file( $path, 1 );
+   my $data = $self->_read_file( $path, TRUE );
 
    if (not $overwrite and exists $data->{ $element }->{ $name }) {
       $self->lock->reset( k => $path->pathname );

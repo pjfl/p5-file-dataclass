@@ -7,9 +7,10 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 688 $ =~ /\d+/gmx );
 use parent qw(File::DataClass::Storage);
 
+use File::Data::Constants;
 use Text::Wrap;
 
-__PACKAGE__->config( extn => q() );
+__PACKAGE__->config( extn => NUL );
 
 # Private methods
 
@@ -40,7 +41,7 @@ sub _read_filter {
 
    my $res = {}; my $ord = 0; my $recipients;
 
-   my ($alias, $comment, $created, $owner) = (q(), q(), q(), q());
+   my ($alias, $comment, $created, $owner) = (NUL, NUL, NUL, NUL);
 
    for my $line (@{ $buf }) {
       if ($line and $line =~ m{ \A \# }mx) {
@@ -70,7 +71,7 @@ sub _read_filter {
          $line =~ s{ \s+ }{ }gmx; $line =~ s{ , \z }{}mx;
          push @{ $res->{ $alias }->recipients }, split m{ , }mx, $line;
       }
-      else { ($alias, $comment, $created, $owner) = (q(), q(), q(), q()) }
+      else { ($alias, $comment, $created, $owner) = (NUL, NUL, NUL, NUL) }
    }
 
    return { aliases => $res };
@@ -99,10 +100,10 @@ sub _write_filter {
          }
       }
 
-      my $pad  = q( ) x (2 + length $name);
+      my $pad  = SPC x (2 + length $name);
       my $line = $name.q(: ).(join q(,), @{ $alias->{recipients} || [] });
 
-      push @{ $buf }, wrap( q(), $pad, $line ), q();
+      push @{ $buf }, wrap( NUL, $pad, $line ), NUL;
    }
 
    return $buf;

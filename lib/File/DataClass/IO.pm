@@ -7,17 +7,17 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 705 $ =~ /\d+/gmx );
 use parent qw(Class::Accessor::Fast);
 
-use English qw(-no_match_vars);
+use File::DataClass::Constants;
 use Exception::Class ( 'IO::Exception' => { fields => [ qw(args) ] } );
-use Fcntl qw(:flock);
-use File::Basename ();
-use File::Path ();
-use File::Spec ();
-use File::Temp ();
+use English        qw(-no_match_vars);
+use Fcntl          qw(:flock);
+use File::Basename   ();
+use File::Path       ();
+use File::Spec       ();
+use File::Temp       ();
 use IO::Dir;
 use IO::File;
 
-my $NUL         = q();
 my @STAT_FIELDS = (
    qw(dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks) );
 
@@ -47,13 +47,14 @@ sub new {
 sub _init {
    my ($self, $type, $name) = @_;
 
-   $self->atomic_pref( q(B_)         );
-   $self->autoclose  ( 1             );
-   $self->block_size ( 1024          );
-   $self->io_handle  ( undef         );
-   $self->is_open    ( 0             );
-   $self->name       ( $name         ) if (defined $name);
-   $self->type       ( $type || $NUL );
+   $self->atomic_pref    ( q(B_)            );
+   $self->autoclose      ( TRUE             );
+   $self->exception_class( q(IO::Exception) );
+   $self->block_size     ( 1024             );
+   $self->io_handle      ( undef            );
+   $self->is_open        ( FALSE            );
+   $self->name           ( $name            ) if (defined $name);
+   $self->type           ( $type || NUL     );
 
    return $self;
 }
@@ -95,7 +96,7 @@ sub appendln {
 }
 
 sub assert {
-   my $self = shift; $self->_assert( 1 ); return $self;
+   my $self = shift; $self->_assert( TRUE ); return $self;
 }
 
 sub assert_dirpath {
@@ -148,7 +149,7 @@ sub binary {
    my $self = shift;
 
    $self->is_open && CORE::binmode( $self->io_handle );
-   $self->_binary( 1 );
+   $self->_binary( TRUE );
    return $self;
 }
 
@@ -169,24 +170,24 @@ sub buffer {
 
    if (not @rest) {
       unless (exists *$self->{buffer}) {
-         *$self->{buffer} = do { my $x = $NUL; \$x };
+         *$self->{buffer} = do { my $x = NUL; \$x };
       }
 
       return *$self->{buffer};
    }
 
-   my $buffer_ref   = ref $rest[ 0 ] ? $rest[ 0 ] : \$rest[ 0 ];
-   ${ $buffer_ref } = $NUL unless defined ${ $buffer_ref };
+   my $buffer_ref   = ref $rest[0] ? $rest[0] : \$rest[0];
+   ${ $buffer_ref } = NUL unless defined ${ $buffer_ref };
    *$self->{buffer} = $buffer_ref;
    return $self;
 }
 
 sub chomp {
-   my $self = shift; $self->_chomp( 1 ); return $self;
+   my $self = shift; $self->_chomp( TRUE ); return $self;
 }
 
 sub clear {
-   my $self = shift; ${ $self->buffer } = $NUL; return $self;
+   my $self = shift; ${ $self->buffer } = NUL; return $self;
 }
 
 sub close {
@@ -203,7 +204,7 @@ sub _close {
    $self->io_handle && $self->io_handle->close;
    $self->io_handle( undef );
    $self->mode( undef );
-   $self->is_open( 0 );
+   $self->is_open( FALSE );
    return $self;
 }
 
@@ -323,7 +324,7 @@ sub filepath {
    my $self = shift;
    my ($volume, $path) = File::Spec->splitpath( $self->pathname );
 
-   return File::Spec->catpath( $volume, $path, $NUL );
+   return File::Spec->catpath( $volume, $path, NUL );
 }
 
 sub getline {
@@ -370,15 +371,15 @@ sub is_absolute {
 sub is_dir {
    my $self = shift;
 
-   $self->type && return $self->type eq q(dir) ? 1 : 0;
-   return $self->pathname and -d $self->pathname ? 1 : 0;
+   $self->type && return $self->type eq q(dir) ? TRUE : FALSE;
+   return $self->pathname and -d $self->pathname ? TRUE : FALSE;
 }
 
 sub is_file {
    my $self = shift;
 
-   $self->type && return $self->type eq q(file) ? 1 : 0;
-   return $self->pathname and -f $self->pathname ? 1 : 0;
+   $self->type && return $self->type eq q(file) ? TRUE : FALSE;
+   return $self->pathname and -f $self->pathname ? TRUE : FALSE;
 }
 
 sub length {
@@ -386,7 +387,7 @@ sub length {
 }
 
 sub lock {
-   my $self = shift; $self->_lock( 1 ); return $self;
+   my $self = shift; $self->_lock( TRUE ); return $self;
 }
 
 sub next {
@@ -419,7 +420,7 @@ sub _open_dir {
    }
 
    $self->io_handle( $io );
-   $self->is_open( 1 );
+   $self->is_open( TRUE );
    return $self;
 }
 
@@ -441,7 +442,7 @@ sub _open_file {
       }
 
       $self->io_handle( $io );
-      $self->is_open( 1 );
+      $self->is_open( TRUE );
    }
 
    $self->_lock && $self->set_lock;
@@ -571,7 +572,7 @@ sub tempfile {
                                TEMPLATE => (sprintf $tmplt, $PID) );
    $self->_init( q(file), $tmpfh->filename );
    $self->io_handle( $tmpfh );
-   $self->is_open( 1 );
+   $self->is_open( TRUE );
    return $self;
 }
 
@@ -580,10 +581,8 @@ sub throw {
 
    eval { $self->unlock; };
 
-   $self->exception_class->throw( @rest ) if ($self->exception_class);
-
-   IO::Exception->throw( @rest );
-   return;
+   $self->exception_class->throw( @rest );
+   return; # Never reached
 }
 
 sub touch {
@@ -612,7 +611,7 @@ sub utf8 {
    my $self = shift;
 
    $self->encoding( q(utf8) );
-   $self->_utf8( 1 );
+   $self->_utf8( TRUE );
    return $self;
 }
 
