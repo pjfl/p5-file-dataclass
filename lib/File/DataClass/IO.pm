@@ -9,8 +9,8 @@ use parent qw(Class::Accessor::Fast);
 
 use File::DataClass::Constants;
 use Exception::Class ( 'IO::Exception' => { fields => [ qw(args) ] } );
-use English        qw(-no_match_vars);
-use Fcntl          qw(:flock);
+use English        qw( -no_match_vars );
+use Fcntl          qw( :flock );
 use File::Basename   ();
 use File::Path       ();
 use File::Spec       ();
@@ -31,7 +31,7 @@ sub new {
    my ($self, @rest) = @_; my $attrs = {};
 
    if ($rest[0]) {
-      if (ref $rest[0] ne q(HASH)) {
+      if (ref $rest[0] ne HASH) {
          $attrs = { name   => $rest[0],
                     mode   => $rest[1],
                     _perms => $rest[2] };
@@ -41,20 +41,21 @@ sub new {
 
    my $new = bless $attrs, ref $self || $self;
 
+   $new->exception_class( q(IO::Exception) );
+
    return $new->_init;
 }
 
 sub _init {
    my ($self, $type, $name) = @_;
 
-   $self->atomic_pref    ( q(B_)            );
-   $self->autoclose      ( TRUE             );
-   $self->exception_class( q(IO::Exception) );
-   $self->block_size     ( 1024             );
-   $self->io_handle      ( undef            );
-   $self->is_open        ( FALSE            );
-   $self->name           ( $name            ) if (defined $name);
-   $self->type           ( $type || NUL     );
+   $self->atomic_pref( q(B_)        );
+   $self->autoclose  ( TRUE         );
+   $self->block_size ( 1024         );
+   $self->io_handle  ( undef        );
+   $self->is_open    ( FALSE        );
+   $self->name       ( $name        ) if (defined $name);
+   $self->type       ( $type || NUL );
 
    return $self;
 }

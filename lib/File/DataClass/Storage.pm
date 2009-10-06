@@ -10,10 +10,11 @@ use parent qw(File::DataClass::Base);
 use File::DataClass::Constants;
 use File::DataClass::HashMerge;
 use Hash::Merge  qw(merge);
+use MRO::Compat;
 use Scalar::Util qw(weaken);
 use TryCatch;
 
-__PACKAGE__->config( path => q() );
+__PACKAGE__->config( path => NUL );
 
 __PACKAGE__->mk_accessors( qw(extn path schema) );
 
