@@ -22,10 +22,11 @@ has 'source' =>
    ( is => q(ro), isa => q(Object), weak_ref => TRUE );
 
 has '_elements' =>
-   ( is => q(rw), isa => q(ArrayRef), default => sub { return [] } );
+   ( is => q(rw), isa => q(ArrayRef),
+     default => sub { return [] }, init_arg => undef );
 
 has '_iterator' =>
-   ( is => q(rw), isa => q(Int), default => 0 );
+   ( is => q(rw), isa => q(Int), default => 0, init_arg => undef );
 
 sub all {
    my $self = shift; return @{ $self->_elements };
