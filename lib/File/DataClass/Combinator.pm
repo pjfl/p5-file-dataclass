@@ -3,15 +3,16 @@
 package File::DataClass::Combinator;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 685 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Base);
 
 use File::Data::Constants;
+use Moose;
 
-__PACKAGE__->config( lang => NUL );
+extends qw(File::DataClass::Base);
 
-__PACKAGE__->mk_accessors( qw(lang storage) );
+has 'lang'    => ( is => q(rw), isa => q(Str), default => NUL );
+has 'storage' => ( is => q(ro), isa => q(Object) );
 
 sub delete {
    my ($self, $element_obj) = @_;
@@ -100,6 +101,10 @@ sub _update {
 
    return $updated;
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 

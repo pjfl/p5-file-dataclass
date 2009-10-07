@@ -3,11 +3,13 @@
 package File::DataClass::Storage::XML::Simple;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
-use parent qw(File::DataClass::Storage::XML);
 
+use Moose;
 use XML::Simple;
+
+extends qw(File::DataClass::Storage::XML);
 
 # Private methods
 
@@ -40,6 +42,10 @@ sub _write_file {
 
    return $self->_write_file_with_locking( $method, $path, $create );
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 

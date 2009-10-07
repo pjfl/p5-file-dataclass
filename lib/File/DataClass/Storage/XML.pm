@@ -3,15 +3,20 @@
 package File::DataClass::Storage::XML;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 685 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Storage);
 
+use Moose;
 use MRO::Compat;
 
-__PACKAGE__->config( extn => q(.xml), root_name => q(config), _dtd => [] );
+extends qw(File::DataClass::Storage);
 
-__PACKAGE__->mk_accessors( qw(root_name _arrays _dtd) );
+has '+extn'     => ( is => q(ro), isa => q(Str), default => q(.xml) );
+has 'root_name' => ( is => q(ro), isa => q(Str), default => q(config) );
+has '_arrays'   => ( is => q(rw), isa => q(HashRef),
+                     default => sub { return {} } );
+has '_dtd'      => ( is => q(rw), isa => q(ArrayRef),
+                     default => sub { return [] } );
 
 # Private methods
 
@@ -94,6 +99,10 @@ sub _update {
    return $self->next::method( $overwrite, $element_obj,
                                $path, $element, $condition );
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 

@@ -3,47 +3,70 @@
 package File::DataClass::Schema;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 685 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Base);
 
-use File::DataClass::Combinator;
-use MRO::Compat;
-use Scalar::Util qw(weaken);
+use Moose;
 
-__PACKAGE__->config
-   ( attributes    => [],
-     defaults      => {},
-     element       => q(unknown),
-     storage_base  => q(File::DataClass::Storage) );
+extends qw(File::DataClass::Base);
 
-__PACKAGE__->mk_accessors( qw(attributes defaults element
-                              label_attr lang_dep source storage
-                              storage_base storage_class) );
+has 'attributes' =>
+   ( is => q(ro), isa => q(ArrayRef), default => sub { return [] } );
 
-sub new {
-   my ($self, $app, $attrs) = @_;
+has 'defaults' =>
+   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 
-   my $new = $self->next::method( $app, $attrs );
+has 'element' =>
+   ( is => q(ro), isa => q(Str), default => q(unknown) );
 
-   weaken( $new->{source} );
+has 'label_attr' =>
+   ( is => q(ro), isa => q(Str) );
 
-   my $class = $new->storage_class || q(XML::Simple);
+has 'lang_dep' =>
+   ( is => q(ro), isa => q(Str) );
+
+has 'source' =>
+   ( is => q(ro), isa => q(Object), weak_ref => 1 );
+
+has 'storage' =>
+   ( is => q(rw), isa => q(Object), lazy_build => 1 );
+
+has 'storage_attributes' =>
+   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
+
+has 'storage_base' =>
+   ( is => q(ro), isa => q(Str), default => q(File::DataClass::Storage) );
+
+has 'storage_class' =>
+   ( is => q(ro), isa => q(Str), default => q(XML::Simple) );
+
+sub _build_storage {
+   my $self = shift; my $class = $self->storage_class;
 
    if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
-   else { $class = $new->storage_base.q(::).$class }
+   else { $class = $self->storage_base.q(::).$class }
 
    $self->ensure_class_loaded( $class );
-   $attrs = { %{ $attrs->{storage_attributes} || {} }, schema => $new };
-   $new->storage( $class->new( $app, $attrs ) );
 
-   if ($new->lang_dep) {
-      $attrs = { storage => $new->storage };
-      $new->storage( File::DataClass::Combinator->new( $app, $attrs ) );
+   return $class->new( { %{ $self->storage_attributes  }, schema => $new } );
+}
+
+sub BUILD {
+   my $self = shift;
+
+   if ($self->lang_dep) {
+      my $attrs = { storage => $self->storage };
+
+      $self->ensure_class_loaded( q(File::DataClass::Combinator) );
+      $self->storage( File::DataClass::Combinator->new( $attrs ) );
    }
 
-   return $new;
+   return $self;
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 

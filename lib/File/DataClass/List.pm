@@ -3,18 +3,21 @@
 package File::DataClass::List;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 672 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Base);
 
-__PACKAGE__->mk_accessors( qw(element found labels list) );
+use Moose;
 
-sub new {
-   my $class = shift;
+has 'element' => ( is => q(rw), isa => q(Object) );
+has 'found'   => ( is => q(rw), isa => q(Bool), default => 0 );
+has 'labels'  => ( is => q(rw), isa => q(HashRef) ,
+                   default => sub { return {} } );
+has 'list'    => ( is => q(rw), isa => q(ArrayRef) ,
+                   default => sub { return [] });
 
-   return bless { element => undef, found => 0,
-                  labels  => {},    list  => [] }, $class;
-}
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 

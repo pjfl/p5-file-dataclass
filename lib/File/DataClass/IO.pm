@@ -3,9 +3,8 @@
 package File::DataClass::IO;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 705 $ =~ /\d+/gmx );
-use parent qw(Class::Accessor::Fast);
 
 use File::DataClass::Constants;
 use Exception::Class ( 'IO::Exception' => { fields => [ qw(args) ] } );
@@ -17,47 +16,49 @@ use File::Spec       ();
 use File::Temp       ();
 use IO::Dir;
 use IO::File;
+use Moose;
+use Moose::Util::TypeConstraints;
 
 my @STAT_FIELDS = (
    qw(dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks) );
 
-__PACKAGE__->mk_accessors( qw(atomic_pref autoclose block_size
-                              exception_class io_handle is_open
-                              lock_obj name mode type _assert _atomic
-                              _binary _binmode _chomp _dir_pattern
-                              _encoding _lock _perms _utf8) );
+subtype 'Exception' =>
+   as 'ClassName' => where { $_->can( q(throw) ) };
 
-sub new {
-   my ($self, @rest) = @_; my $attrs = {};
+has 'atomic_pref' => ( is => q(rw), isa => q(Str),       default    => q(B_) );
+has 'autoclose'   => ( is => q(rw), isa => q(Bool),      default    => TRUE  );
+has 'block_size'  => ( is => q(rw), isa => q(Int),       default    => 1024  );
+has 'dir_pattern' => ( is => q(ro), isa => q(RegexpRef), lazy_build => TRUE  );
 
-   if ($rest[0]) {
-      if (ref $rest[0] ne HASH) {
-         $attrs = { name   => $rest[0],
-                    mode   => $rest[1],
-                    _perms => $rest[2] };
-      }
-      else { $attrs = { %{ $rest[0] } } }
+has 'exception_class' =>
+   ( is => q(rw), isa => q(Exception), default => q(IO::Exception) );
+
+has 'io_handle'   => ( is => q(rw), isa => q(Object)                       );
+has 'is_open'     => ( is => q(rw), isa => q(Bool), default => FALSE       );
+has 'lock_obj'    => ( is => q(rw), isa => q(Object)                       );
+has 'mode'        => ( is => q(rw), isa => q(Str),  default => q(r)        );
+has 'name'        => ( is => q(rw), isa => q(Str),  default => NUL         );
+has 'type'        => ( is => q(rw), isa => q(Str),  default => NUL         );
+has '_assert'     => ( is => q(rw), isa => q(Bool), default => FALSE       );
+has '_atomic'     => ( is => q(rw), isa => q(Str),  default => NUL         );
+has '_binary'     => ( is => q(rw), isa => q(Bool), default => FALSE       );
+has '_binmode'    => ( is => q(rw), isa => q(Str),  default => NUL         );
+has '_chomp'      => ( is => q(rw), isa => q(Bool), default => FALSE       );
+has '_encoding'   => ( is => q(rw), isa => q(Str),  default => NUL         );
+has '_lock'       => ( is => q(rw), isa => q(Bool), default => FALSE       );
+has '_perms'      => ( is => q(rw), isa => q(Num),  default => oct q(0644) );
+has '_utf8'       => ( is => q(rw), isa => q(Bool), default => FALSE       );
+
+around BUILDARGS => sub {
+   my ($orig, $class, @rest) = @_; my $attrs;
+
+   return $class->$orig( @rest ) unless ($attrs = $rest[0]);
+
+   unless (ref $attrs eq HASH) {
+      $attrs = { name => $rest[0], mode => $rest[1], _perms => $rest[2] };
    }
 
-   my $new = bless $attrs, ref $self || $self;
-
-   $new->exception_class( q(IO::Exception) );
-
-   return $new->_init;
-}
-
-sub _init {
-   my ($self, $type, $name) = @_;
-
-   $self->atomic_pref( q(B_)        );
-   $self->autoclose  ( TRUE         );
-   $self->block_size ( 1024         );
-   $self->io_handle  ( undef        );
-   $self->is_open    ( FALSE        );
-   $self->name       ( $name        ) if (defined $name);
-   $self->type       ( $type || NUL );
-
-   return $self;
+   return $class->$orig( $attrs );
 }
 
 sub absolute {
@@ -183,6 +184,16 @@ sub buffer {
    return $self;
 }
 
+sub _build_dir_pattern {
+   my $self = shift; my ($curdir, $pat, $updir);
+
+   $pat  = "\Q$curdir\E" if ($curdir = File::Spec->curdir);
+   $pat .= q(|)          if ($updir  = File::Spec->updir and $pat);
+   $pat .= "\Q$updir\E"  if ($updir);
+
+   return qr{ \A $pat \z }mx;
+}
+
 sub chomp {
    my $self = shift; $self->_chomp( TRUE ); return $self;
 }
@@ -258,19 +269,6 @@ sub DESTROY {
 
 sub dir {
    my ($self, @rest) = @_; return $self->_init( q(dir), @rest );
-}
-
-sub dir_pattern {
-   my $self = shift; my ($curdir, $pat, $updir);
-
-   return $pat if ($pat = $self->_dir_pattern);
-
-   $updir  = File::Spec->updir;
-   $curdir = File::Spec->curdir;
-   $pat    = "\Q$curdir\E" if ($curdir);
-   $pat   .= q(|)          if ($updir and $pat);
-   $pat   .= "\Q$updir\E"  if ($updir);
-   return $self->_dir_pattern( qr{ \A $pat \z }mx );
 }
 
 sub dirname {
@@ -363,6 +361,20 @@ sub getlines {
    return ();
 }
 
+sub _init {
+   my ($self, $type, $name) = @_;
+
+   $self->atomic_pref( q(B_)        );
+   $self->autoclose  ( TRUE         );
+   $self->block_size ( 1024         );
+   $self->io_handle  ( undef        );
+   $self->is_open    ( FALSE        );
+   $self->name       ( $name || NUL );
+   $self->type       ( $type || NUL );
+
+   return $self;
+}
+
 sub is_absolute {
    my $self = shift;
 
@@ -431,7 +443,7 @@ sub _open_file {
    return $self if ($self->is_open);
 
    $self->_assert && $self->assert_filepath;
-   @args = ( $self->mode( $mode || $self->mode || q(r) ) );
+   @args = ( $self->mode( $mode || $self->mode ) );
    $self->_perms( $perms )   if defined $perms;
    push @args, $self->_perms if defined $self->_perms;
 
@@ -627,6 +639,10 @@ sub write {
    $self->clear unless (@rest);
    return $length;
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose; no Moose::Util::TypeConstraints;
 
 1;
 

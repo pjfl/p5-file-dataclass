@@ -3,13 +3,15 @@
 package File::DataClass::Storage::JSON;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 685 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Storage);
 
 use JSON qw();
+use Moose;
 
-__PACKAGE__->config( extn => q(.json) );
+extends qw(File::DataClass::Storage);
+
+has '+extn' => ( is => q(ro), isa => q(Str), default => q(.json) );
 
 # Private methods
 
@@ -32,6 +34,10 @@ sub _write_file {
 
    return $self->_write_file_with_locking( $method, $path, $create );
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 

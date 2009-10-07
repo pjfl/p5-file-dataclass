@@ -3,45 +3,55 @@
 package File::DataClass::ResultSource;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 683 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Base);
 
-use File::DataClass::ResultSet;
-use File::DataClass::Schema;
-use MRO::Compat;
+use Moose;
 
-__PACKAGE__->config
-   ( resultset_attributes => {},
-     resultset_class      => q(File::DataClass::ResultSet),
-     schema_class         => q(File::DataClass::Schema) );
+extends qw(File::DataClass::Base);
 
-__PACKAGE__->mk_accessors( qw(resultset_attributes resultset_class
-                              schema schema_class) );
+has 'resultset_attributes' =>
+   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 
-sub new {
-   my ($self, $app, $attrs) = @_;
+has 'resultset_class' =>
+   ( is => q(ro), isa => q(ClassName),
+     default => q(File::DataClass::ResultSet) );
 
-   my $new = $self->next::method( $app, $attrs );
+has 'schema' =>
+   ( is => q(ro), isa => q(Object), lazy_build => 1 );
 
-   $attrs  = { %{ $attrs->{schema_attributes} || {} }, source => $new };
-   $new->schema( $new->schema_class->new( $app, $attrs ) );
+has 'schema_attributes' =>
+   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 
-   return $new;
+has 'schema_class' =>
+   ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::Schema) );
+
+sub _build_schema {
+   my $self = shift; my $class = $self->schema_class;
+
+   $self->ensure_class_loaded( $class );
+
+   return $class->new( { %{ $self->schema_attributes }, source => $self } );
 }
 
 sub resultset {
-   my ($self, $path, $lang) = @_;
+   my ($self, $path, $lang) = @_; my $class = $self->resultset_class;
 
    $self->storage->path( $path ) if ($path);
    $self->storage->lang( $lang ) if ($lang and $self->storage->can( q(lang) ));
 
-   return $self->resultset_class->new( $self, $self->resultset_attributes );
+   $self->ensure_class_loaded( $class );
+
+   return $class->new( { %{ $self->resultset_attributes }, source => $self } );
 }
 
 sub storage {
    return shift->schema->storage;
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 

@@ -3,14 +3,14 @@
 package File::DataClass::Storage::MailAlias;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 688 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Storage);
 
 use File::Data::Constants;
+use Moose;
 use Text::Wrap;
 
-__PACKAGE__->config( extn => NUL );
+extends qw(File::DataClass::Storage);
 
 # Private methods
 
@@ -120,6 +120,10 @@ sub __original_order {
 
    return $aliases->{ $lhs }->{_order_by} <=> $aliases->{ $rhs }->{_order_by};
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 

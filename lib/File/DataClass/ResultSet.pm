@@ -3,41 +3,43 @@
 package File::DataClass::ResultSet;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 674 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Base);
 
 use File::DataClass::Constants;
-use File::DataClass::Element;
-use File::DataClass::List;
-use Scalar::Util qw(weaken);
+use Moose;
 
-__PACKAGE__->config( element_class => q(File::DataClass::Element),
-                     list_class    => q(File::DataClass::List), );
+extends qw(File::DataClass::Base);
 
-__PACKAGE__->mk_accessors( qw(element_class list_class source
-                              _elements _iterator) );
+has 'element_class' =>
+   ( is => q(ro), isa => q(ClassName),
+     default => q(File::DataClass::Element) );
 
-sub new {
-   my ($self, $source, $attrs) = @_; my $class = ref $self || $self;
+has 'list_class' =>
+   ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::List) );
 
-   my $new = bless $self->merge_config_hashes( $self->config, $attrs ), $class;
+has 'source' =>
+   ( is => q(ro), isa => q(Object), weak_ref => TRUE );
 
-   $new->source( $source ); weaken( $new->{source} );
+has '_elements' =>
+   ( is => q(rw), isa => q(ArrayRef), default => sub { return [] } );
 
-   return $new;
-}
+has '_iterator' =>
+   ( is => q(rw), isa => q(Int), default => 0 );
 
 sub all {
-   my $self = shift; return @{ $self->_elements || [] };
+   my $self = shift; return @{ $self->_elements };
 }
 
 sub create {
-   my ($self, $attrs) = @_; $attrs ||= {};
+   my ($self, $attrs) = @_;
 
-   $attrs = $self->merge_config_hashes( $self->schema->defaults, $attrs );
+   my $class = $self->element_class; $self->ensure_class_loaded( $class );
 
-   return $self->element_class->new( $self, $attrs );
+   $attrs = { %{ $self->schema->defaults },
+              %{ $attrs || {} }, resultset => $self };
+
+   return $class->new( $attrs );
 }
 
 sub find {
@@ -45,9 +47,12 @@ sub find {
 
    return unless ($name && exists $elements->{ $name });
 
-   my $attrs = $elements->{ $name }; $attrs->{name} = $name;
+   my $class = $self->element_class; $self->ensure_class_loaded( $class );
+   my $attrs = $elements->{ $name };
 
-   return $self->element_class->new( $self, $attrs );
+   $attrs->{name} = $name; $attrs->{resultset} = $self;
+
+   return $class->new( $attrs );
 }
 
 sub find_and_update {
@@ -71,9 +76,10 @@ sub first {
 sub list {
    my ($self, $name) = @_; my $attr;
 
+   my $class    = $self->list_class; $self->ensure_class_loaded( $class );
+   my $new      = $class->new;
    my $attrs    = { name => $name };
    my $elements = $self->storage->select;
-   my $new      = $self->list_class->new;
 
    $new->list( [ sort keys %{ $elements } ] );
 
@@ -84,9 +90,10 @@ sub list {
 
    if ($name && exists $elements->{ $name }) {
       $attrs = $elements->{ $name };
-      $attrs->{name} = $name;
+      $attrs->{name} = $name; $attrs->{resultset} = $self;
+      $class = $self->element_class; $self->ensure_class_loaded( $class );
+      $new->element( $class->new( $attrs ) );
       $new->found( TRUE );
-      $new->element( $self->element_class->new( $self, $attrs ) );
    }
    else { $new->element( $self->create( $attrs ) ) }
 
@@ -137,14 +144,17 @@ sub search {
    my $elements = $self->_elements;
 
    if (not defined $elements->[0]) {
+      my $class = $self->element_class; $self->ensure_class_loaded( $class );
+
       $elements = $self->storage->select;
 
       for my $name (keys %{ $elements }) {
-         my $attrs = $elements->{ $name }; $attrs->{name} = $name;
+         my $attrs = $elements->{ $name };
+
+         $attrs->{name} = $name; $attrs->{resultset} = $self;
 
          if (not $criterion or $self->_eval_criterion( $criterion, $attrs )) {
-            push @{ $self->_elements },
-               $self->element_class->new( $self, $attrs );
+            push @{ $self->_elements }, $class->new( $attrs );
          }
       }
    }
@@ -231,6 +241,10 @@ sub _operators {
             q(<)  => sub { return $_[0] <  $_[1] },
             q(<=) => sub { return $_[0] <= $_[1] }, };
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 

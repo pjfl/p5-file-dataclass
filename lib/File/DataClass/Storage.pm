@@ -3,32 +3,28 @@
 package File::DataClass::Storage;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 699 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Base);
 
 use File::DataClass::Constants;
 use File::DataClass::HashMerge;
-use Hash::Merge  qw(merge);
-use MRO::Compat;
-use Scalar::Util qw(weaken);
+use Hash::Merge qw(merge);
+use Moose;
+use Moose::Util::TypeConstraints;
 use TryCatch;
 
-__PACKAGE__->config( path => NUL );
+extends qw(File::DataClass::Base);
 
-__PACKAGE__->mk_accessors( qw(extn path schema) );
+subtype 'DataClassPath' =>
+   as 'Object' => where { $_->isa( q(File::DataClass::IO) ) };
+
+has 'extn'   => ( is => q(ro), isa => q(Str), default => NUL );
+
+has 'path'   => ( is => q(rw), isa => q(DataClassPath) );
+
+has 'schema' => ( is => q(ro), isa => q(Object), weak_ref => 1 );
 
 my $cache = {};
-
-sub new {
-   my ($self, $app, $attrs) = @_;
-
-   my $new = $self->next::method( $app, $attrs );
-
-   weaken( $new->{schema} );
-
-   return $new;
-}
 
 sub delete {
    my ($self, $element_obj) = @_;
@@ -262,6 +258,10 @@ sub _write_file_with_locking {
    $self->lock->reset( k => $pathname );
    return $data;
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose; no Moose::Util::TypeConstraints;
 
 1;
 

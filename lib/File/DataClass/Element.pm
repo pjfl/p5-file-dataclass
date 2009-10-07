@@ -3,21 +3,27 @@
 package File::DataClass::Element;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 664 $ =~ /\d+/gmx );
-use parent qw(File::DataClass::Base);
 
-__PACKAGE__->mk_accessors( qw(name _storage) );
+use Moose;
+use Scalar::Util qw(blessed);
 
-sub new {
-   my ($self, $rs, $attrs) = @_; my $class = ref $self || $self;
+extends qw(File::DataClass::Base);
 
-   my $new = bless { %{ $attrs || {} } }, $class;
+has 'name'      => ( is => q(rw), isa => q(Str) );
+has 'resultset' => ( is => q(ro), isa => q(Object) );
+has '_storage'  => ( is => q(ro), isa => q(Object), lazy_build => 1 );
 
-   $new->_storage( $rs->schema->storage );
-   $class->mk_accessors( @{ $rs->schema->attributes } );
+sub BUILD {
+   my ($self, %p) = @_; my $class = blessed $self;
 
-   return $new;
+   $class->mk_accessors( @{ $self->resultset->schema->attributes } );
+   return;
+}
+
+sub _build__storage {
+   my $self = shift; return $self->resultset->schema->storage;
 }
 
 sub delete {
@@ -43,11 +49,15 @@ sub _assert_has_name {
 
    unless ($self->name) {
       $self->throw( error => 'No element name specified [_1]',
-                    args  => [ $self->_storage->path->pathname ] );
+                    args  => [ $self->storage->path->pathname ] );
    }
 
    return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 

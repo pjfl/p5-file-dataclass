@@ -3,32 +3,42 @@
 package File::DataClass;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
-use parent qw(File::DataClass::Base);
 
-use File::DataClass::ResultSource;
-use MRO::Compat;
+use Moose;
+use Moose::Util::TypeConstraints;
 use Scalar::Util qw(blessed);
 use TryCatch;
 
-__PACKAGE__->config
-   ( path                => undef,
-     result_source_class => q(File::DataClass::ResultSource),
-     schema_attributes   => {} );
+extends qw(File::DataClass::Base);
 
-__PACKAGE__->mk_accessors( qw(path result_source result_source_class
-                              schema_attributes ) );
+subtype 'DataClassPath' =>
+   as 'Object' => where { $_->isa( q(File::DataClass::IO) ) };
 
-sub new {
-   my ($self, $app, @rest) = @_;
+has 'path' =>
+   ( is => q(rw), isa => q(DataClassPath) );
 
-   my $new   = $self->next::method( $app, @rest );
-   my $attrs = { schema_attributes => $new->schema_attributes };
+has 'result_source' =>
+   ( is => q(ro), isa => q(Object), lazy_build => 1 );
 
-   $new->result_source( $new->result_source_class->new( $app, $attrs ) );
+has 'result_source_attributes' =>
+   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 
-   return $new;
+has 'result_source_class' =>
+   ( is => q(ro), isa => q(ClassName),
+     default => q(File::DataClass::ResultSource) );
+
+sub BUILD {
+   my ($self, %p) = @_; $self->lock( $p{lock} || {} ); return;
+}
+
+sub _build_result_source {
+   my $self = shift;
+
+   $self->ensure_class_loaded( $self->result_source_class );
+
+   return $self->result_source_class->new( $self->result_source_attributes );
 }
 
 sub create {
@@ -215,6 +225,10 @@ sub _validate_params {
 
    return ($self->_resultset( $args ), $name);
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose; no Moose::Util::TypeConstraints;
 
 1;
 

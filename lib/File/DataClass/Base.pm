@@ -3,9 +3,8 @@
 package File::DataClass::Base;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
-use parent qw(Class::Accessor::Fast Class::Accessor::Grouped);
 
 use Class::MOP;
 use Class::Null;
@@ -15,14 +14,27 @@ use File::DataClass::IO;
 use File::Spec;
 use IPC::SRLock;
 use List::Util qw(first);
+use Moose;
+use Moose::Util::TypeConstraints;
 use TryCatch;
 
-__PACKAGE__->config( debug           => 0,
-                     exception_class => q(File::DataClass::Exception),
-                     log             => Class::Null->new,
-                     tempdir         => File::Spec->tempdir );
+extends qw(Class::Accessor::Grouped);
 
-__PACKAGE__->mk_accessors( qw(debug log tempdir exception_class) );
+subtype 'Exception' =>
+   as 'ClassName' => where { $_->can( q(throw) ) };
+
+has 'debug' =>
+   ( is => q(rw), isa => q(Bool), default => FALSE );
+
+has 'exception_class' =>
+   ( is => q(ro), isa => q(Exception),
+     default => q(File::DataClass::Exception) );
+
+has 'log' =>
+   ( is => q(rw), isa => q(Object), default => sub { Class::Null->new } );
+
+has 'tempdir' =>
+   ( is => q(rw), isa => q(Str), default => sub { File::Spec->tempdir } );
 
 sub basename {
    my ($self, $path, @suffixes) = @_;
@@ -96,6 +108,10 @@ sub lock {
 sub throw {
    my ($self, @rest) = @_; return $self->exception_class->throw( @rest );
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose; no Moose::Util::TypeConstraints;
 
 1;
 

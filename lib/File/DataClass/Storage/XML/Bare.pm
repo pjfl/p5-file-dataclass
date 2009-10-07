@@ -3,12 +3,14 @@
 package File::DataClass::Storage::XML::Bare;
 
 use strict;
-use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
-use parent qw(File::DataClass::Storage::XML);
 
 use File::DataClass::Constants;
+use Moose;
 use XML::Bare;
+
+extends qw(File::DataClass::Storage::XML);
 
 my $PADDING = q(  );
 
@@ -141,6 +143,10 @@ sub _write_filter {
 
    return $xml;
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 
