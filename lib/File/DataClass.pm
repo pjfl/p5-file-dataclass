@@ -34,11 +34,11 @@ sub BUILD {
 }
 
 sub _build_result_source {
-   my $self = shift;
+   my $self = shift; my $class = $self->result_source_class;
 
-   $self->ensure_class_loaded( $self->result_source_class );
+   $self->ensure_class_loaded( $class );
 
-   return $self->result_source_class->new( $self->result_source_attributes );
+   return $class->new( $self->result_source_attributes );
 }
 
 sub create {
@@ -159,15 +159,20 @@ sub translate {
    my ($self, $args) = @_;
 
    my $attrs  = {
-      schema_attributes => {
-         %{ $self->schema_attributes },
-         storage_class => $args->{from_class} } };
-   my $source = $self->new( $self, $attrs );
+      result_source_attributes => {
+         schema_attributes => {
+            %{ $self->result_source->schema_attributes },
+            storage_class => $args->{from_class}
+         }
+      }
+   };
+   my $source = $self->new( $attrs );
    my $data   = $source->load( $args->{from} ) || {};
 
-   $attrs->{schema_attributes}->{storage_class} = $args->{to_class};
+   $attrs->{result_source_attributes}->{schema_attributes}->{storage_class}
+      = $args->{to_class};
 
-   my $dest   = $self->new( $self, $attrs );
+   my $dest   = $self->new( $attrs );
 
    $dest->dump( { path => $args->{to}, data => $data } );
 
@@ -228,7 +233,8 @@ sub _validate_params {
 
 __PACKAGE__->meta->make_immutable;
 
-no Moose; no Moose::Util::TypeConstraints;
+no Moose;
+no Moose::Util::TypeConstraints;
 
 1;
 

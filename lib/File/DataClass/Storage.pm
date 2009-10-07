@@ -37,7 +37,7 @@ sub dump {
 
    $self->lock->set( k => $path->pathname );
 
-   return $self->_write_file( $path, $data, 1 );
+   return $self->_write_file( $path, $data, TRUE );
 }
 
 sub insert {
@@ -278,29 +278,6 @@ File::DataClass::Storage - Factory subclass loader
 0.4.$Revision: 699 $
 
 =head1 Synopsis
-
-   package File::DataClass::Schema;
-
-   use parent qw(File::DataClass::Base);
-   use File::DataClass::Storage;
-   use MRO::Compat;
-   use Scalar::Util qw(weaken);
-
-   __PACKAGE__->config( storage_class => q(File::DataClass::Storage) );
-
-   __PACKAGE__->mk_accessors( qw(storage storage_class) );
-
-   sub new {
-      my ($self, $app, $attrs) = @_;
-
-      my $new = $self->next::method( $app, $attrs );
-
-      $attrs  = { %{ $attrs->{storage_attributes} || {} }, schema => $new };
-      $new->storage( $new->storage_class->new( $app, $attrs ) );
-
-      weaken( $new->storage->{schema} );
-      return $new;
-   }
 
 =head1 Description
 

@@ -18,7 +18,7 @@ has 'resultset_class' =>
      default => q(File::DataClass::ResultSet) );
 
 has 'schema' =>
-   ( is => q(ro), isa => q(Object), lazy_build => 1 );
+   ( is => q(ro), isa => q(Object), lazy_build => 1, init_arg => undef );
 
 has 'schema_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
@@ -71,9 +71,9 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
    use File:DataClass;
 
-   $attrs = { schema_attributes => { ... } };
+   $attrs = { result_source_attributes => { schema_attributes => { ... } } };
 
-   $result_source = File::DataClass->new( $app, $attrs );
+   $result_source = File::DataClass->new( $attrs );
 
    $result_source->resultset( $file, $lang );
 

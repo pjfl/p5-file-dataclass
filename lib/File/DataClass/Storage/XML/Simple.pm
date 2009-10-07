@@ -63,24 +63,6 @@ File::DataClass::Storage::XML::Simple - Read/write XML data storage model
 
 =head1 Synopsis
 
-   package File::DataClass::Storage;
-
-   use parent qw(File::DataClass::Base);
-
-   __PACKAGE__->config( class => q(XML::Simple) );
-
-   sub new {
-      my ($self, $app, $attrs) = @_; $attrs ||= {};
-
-      my $class = $attrs->{class} || $self->config->{class};
-
-      if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
-      else { $class = __PACKAGE__.q(::).$class }
-
-      $self->ensure_class_loaded( $class );
-
-      return $class->new( $app, $attrs );
-   }
 
 =head1 Description
 

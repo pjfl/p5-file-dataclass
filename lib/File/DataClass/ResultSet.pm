@@ -263,9 +263,8 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Synopsis
 
-   my $app;     # The Catalyst application object
    my $attrs  = { schema_attributes => $schema_attributes };
-   my $source = File::DataClass::ResultSource->new( $app, $attrs ) );
+   my $source = File::DataClass::ResultSource->new( $attrs ) );
    my $rs     = $source->resultset( $path, $lang );
    my $result = $rs->search( $criterion );
 

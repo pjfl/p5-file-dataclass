@@ -84,30 +84,6 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Synopsis
 
-   package File::DataClass::ResultSource;
-
-   use parent qw(File::DataClass::Base);
-   use File::DataClass::Schema;
-   use MRO::Compat;
-   use Scalar::Util qw(weaken);
-
-   __PACKAGE__->config( schema_class => q(File::DataClass::Schema) );
-
-   __PACKAGE__->mk_accessors( qw(schema schema_class) );
-
-   sub new {
-      my ($self, $app, $attrs)  = @_;
-
-      my $new = $self->next::method( $app, $attrs );
-
-      $attrs  = { %{ $attrs->{schema_attributes} || {} }, source => $new };
-
-      $new->schema( $new->schema_class->new( $app, $attrs ) );
-
-      weaken( $new->schema->{source} );
-      return $new;
-   }
-
 =head1 Description
 
 This is the base class for schema definitions. Each element in a data file

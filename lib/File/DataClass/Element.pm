@@ -75,22 +75,6 @@ File::DataClass::Element - Element object definition
 
 =head1 Synopsis
 
-   use File::DataClass::Element;
-
-   __PACKAGE__->config( element_class => q(File::DataClass::Element) );
-
-   __PACKAGE__->mk_accessors( qw(element_class) );
-
-   sub find {
-      my ($self, $name) = @_; my $elements = $self->storage->select;
-
-      return unless ($name && exists $elements->{ $name });
-
-      my $attrs = $elements->{ $name }; $attrs->{name} = $name;
-
-      return $self->element_class->new( $self, $attrs );
-   }
-
 =head1 Description
 
 This is analogous to the row object in L<DBIx::Class>
