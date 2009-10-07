@@ -7,7 +7,8 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 use overload '""' => sub { shift->as_string }, fallback => 1;
 use Exception::Class
-   ( 'File::DataClass::Exception::Base' => { fields => [ qw(args) ] } );
+   ( 'File::DataClass::Exception::Base' => {
+      fields => [ qw(args messages) ] } );
 use base qw(File::DataClass::Exception::Base);
 
 use Carp;
@@ -22,22 +23,21 @@ sub new {
    my ($self, @rest) = @_;
 
    return $self->next::method( args           => [],
-                               ignore_package => $IGNORE,
-                               out            => NUL,
-                               rv             => 1,
-                               show_trace     => FALSE,
                                error          => 'Error unknown',
+                               ignore_package => $IGNORE,
+                               messages       => {},
+                               show_trace     => FALSE,
                                @rest );
 }
 
 sub as_string {
    my ($self, $verbosity, $offset) = @_; $verbosity ||= 1; $offset ||= 1;
 
-   my ($l_no, %seen); my $text = NUL.$self->error; # Stringify
+   my $text = $self->_localize;
 
    return $text if ($verbosity < 2 and not $self->show_trace);
 
-   my $i = $verbosity > 2 ? 0 : $offset; my $frame = undef;
+   my $i = $verbosity > 2 ? 0 : $offset; my ($frame, $l_no, %seen);
 
    while (defined ($frame = $self->trace->frame( $i++ ))) {
       my $line = "\n".$frame->package.' line '.$frame->line;
@@ -65,7 +65,7 @@ sub catch {
 sub throw {
    my ($self, @rest) = @_; my $e = $rest[0];
 
-   croak $e && blessed $e && $e->isa( __PACKAGE__ )
+   croak $e && blessed $e
        ? $e : $self->new( @rest == 1 ? ( error => $e ) : @rest );
 }
 
@@ -73,6 +73,29 @@ sub throw_on_error {
    my $self = shift; my $e;
 
    return $e = $self->catch ? $self->throw( $e ) : undef;
+}
+
+# Private methods
+
+sub _localize {
+   my $self = shift; my $key = $self->error;
+
+   return unless $key; $key = NUL.$key; # Stringify
+
+   # Lookup the message using the supplied key
+   my $messages = $self->{messages}   || {};
+   my $msg      = $messages->{ $key } || {};
+   my $text     = ($msg && ref $msg eq HASH ? $msg->{text} : $msg) || $key;
+
+   # Expand positional parameters of the form [_<n>]
+   unless (0 > index $text, LSB) {
+      my @args = @{ $self->args };
+
+      push @args, map { NUL } 0 .. 10;
+      $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
+   }
+
+   return $text;
 }
 
 1;

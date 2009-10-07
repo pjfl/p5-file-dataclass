@@ -7,13 +7,14 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 705 $ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
-use Exception::Class ( 'IO::Exception' => { fields => [ qw(args) ] } );
-use English        qw( -no_match_vars );
-use Fcntl          qw( :flock );
-use File::Basename   ();
-use File::Path       ();
-use File::Spec       ();
-use File::Temp       ();
+use Exception::Class
+   ( 'IO::Exception' => { fields => [ qw(args messages) ] } );
+use English      qw( -no_match_vars );
+use Fcntl        qw( :flock );
+use File::Basename ();
+use File::Path     ();
+use File::Spec     ();
+use File::Temp     ();
 use IO::Dir;
 use IO::File;
 use Moose;
