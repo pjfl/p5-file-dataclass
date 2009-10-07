@@ -10,18 +10,13 @@ use File::DataClass::Constants;
 use File::DataClass::HashMerge;
 use Hash::Merge qw(merge);
 use Moose;
-use Moose::Util::TypeConstraints;
 use TryCatch;
 
 extends qw(File::DataClass::Base);
+with    qw(File::DataClass::Util);
 
-subtype 'DataClassPath' =>
-   as 'Object' => where { $_->isa( q(File::DataClass::IO) ) };
-
-has 'extn'   => ( is => q(ro), isa => q(Str), default => NUL );
-
+has 'extn'   => ( is => q(rw), isa => q(Str), default => NUL );
 has 'path'   => ( is => q(rw), isa => q(DataClassPath) );
-
 has 'schema' => ( is => q(ro), isa => q(Object), weak_ref => 1 );
 
 my $cache = {};
@@ -261,7 +256,7 @@ sub _write_file_with_locking {
 
 __PACKAGE__->meta->make_immutable;
 
-no Moose; no Moose::Util::TypeConstraints;
+no Moose;
 
 1;
 

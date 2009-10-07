@@ -10,6 +10,7 @@ use Moose;
 use Scalar::Util qw(blessed);
 
 extends qw(File::DataClass::Base);
+with    qw(File::DataClass::Util);
 
 has 'name'      => ( is => q(rw), isa => q(Str) );
 has 'resultset' => ( is => q(ro), isa => q(Object) );

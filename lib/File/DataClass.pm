@@ -8,30 +8,24 @@ use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::ResultSource;
 use Moose;
-use Moose::Util::TypeConstraints;
 use Scalar::Util qw(blessed);
 use TryCatch;
 
 extends qw(File::DataClass::Base);
-
-subtype 'DataClassPath' =>
-   as 'Object' => where { $_->isa( q(File::DataClass::IO) ) };
+with    qw(File::DataClass::Util);
 
 has 'path' =>
    ( is => q(rw), isa => q(DataClassPath) );
-
 has 'result_source' =>
    ( is => q(ro), isa => q(Object), lazy_build => 1 );
-
 has 'result_source_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
-
 has 'result_source_class' =>
    ( is => q(ro), isa => q(ClassName),
      default => q(File::DataClass::ResultSource) );
 
 sub BUILD {
-   my ($self, %p) = @_; $self->lock( $p{lock} || {} ); return;
+   my ($self, $args) = @_; $self->lock( $args->{lock} || {} ); return;
 }
 
 sub _build_result_source {
@@ -233,7 +227,6 @@ sub _validate_params {
 __PACKAGE__->meta->make_immutable;
 
 no Moose;
-no Moose::Util::TypeConstraints;
 
 1;
 

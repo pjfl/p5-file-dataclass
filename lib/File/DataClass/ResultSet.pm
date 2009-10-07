@@ -12,21 +12,18 @@ use File::DataClass::Constants;
 use Moose;
 
 extends qw(File::DataClass::Base);
+with    qw(File::DataClass::Util);
 
 has 'element_class' =>
    ( is => q(ro), isa => q(ClassName),
      default => q(File::DataClass::Element) );
-
 has 'list_class' =>
    ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::List) );
-
 has 'source' =>
    ( is => q(ro), isa => q(Object), weak_ref => TRUE );
-
 has '_elements' =>
    ( is => q(rw), isa => q(ArrayRef),
      default => sub { return [] }, init_arg => undef );
-
 has '_iterator' =>
    ( is => q(rw), isa => q(Int), default => 0, init_arg => undef );
 

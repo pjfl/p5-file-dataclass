@@ -16,16 +16,20 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 1;
+   plan tests => 2;
 }
 
 use File::DataClass;
 
-my $file = File::DataClass->new;
+my $file = File::DataClass->new( tempdir => q(t) );
 
 isa_ok( $file, 'File::DataClass' );
 
-#my $cfg = $model->load( qw(t/default.xml t/default_en.xml) );
+my $cfg = eval { $file->load( qw(nonexistant_file) ) }; my $e = $EVAL_ERROR;
+
+is( $e, 'Cannot open nonexistant_file', 'Cannot open nonexistant_file' );
+
+#$cfg = $file->load( qw(t/default.xml t/default_en.xml) );
 
 #ok( $cfg->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
 #    'Has reference element 1' );

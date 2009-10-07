@@ -10,6 +10,7 @@ use File::Data::Constants;
 use Moose;
 
 extends qw(File::DataClass::Base);
+with    qw(File::DataClass::Util);
 
 has 'lang'    => ( is => q(rw), isa => q(Str), default => NUL );
 has 'storage' => ( is => q(ro), isa => q(Object) );

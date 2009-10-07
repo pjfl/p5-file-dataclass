@@ -11,7 +11,7 @@ use MRO::Compat;
 
 extends qw(File::DataClass::Storage);
 
-has '+extn'     => ( is => q(ro), isa => q(Str), default => q(.xml) );
+has '+extn'     => ( default => q(.xml) );
 has 'root_name' => ( is => q(ro), isa => q(Str), default => q(config) );
 has '_arrays'   => ( is => q(rw), isa => q(HashRef),
                      default => sub { return {} } );

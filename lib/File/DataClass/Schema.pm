@@ -9,34 +9,26 @@ use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 685 $ =~ /\d+/gmx );
 use Moose;
 
 extends qw(File::DataClass::Base);
+with    qw(File::DataClass::Util);
 
 has 'attributes' =>
    ( is => q(ro), isa => q(ArrayRef), default => sub { return [] } );
-
 has 'defaults' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
-
 has 'element' =>
    ( is => q(ro), isa => q(Str), default => q(unknown) );
-
 has 'label_attr' =>
    ( is => q(ro), isa => q(Str) );
-
 has 'lang_dep' =>
    ( is => q(ro), isa => q(Str) );
-
 has 'source' =>
    ( is => q(ro), isa => q(Object), weak_ref => 1 );
-
 has 'storage' =>
    ( is => q(rw), isa => q(Object), lazy_build => 1 );
-
 has 'storage_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
-
 has 'storage_base' =>
    ( is => q(ro), isa => q(Str), default => q(File::DataClass::Storage) );
-
 has 'storage_class' =>
    ( is => q(ro), isa => q(Str), default => q(XML::Simple) );
 
