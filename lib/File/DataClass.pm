@@ -6,6 +6,7 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
+use File::DataClass::ResultSource;
 use Moose;
 use Moose::Util::TypeConstraints;
 use Scalar::Util qw(blessed);
@@ -35,8 +36,6 @@ sub BUILD {
 
 sub _build_result_source {
    my $self = shift; my $class = $self->result_source_class;
-
-   $self->ensure_class_loaded( $class );
 
    return $class->new( $self->result_source_attributes );
 }

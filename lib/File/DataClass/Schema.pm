@@ -48,7 +48,7 @@ sub _build_storage {
 
    $self->ensure_class_loaded( $class );
 
-   return $class->new( { %{ $self->storage_attributes  }, schema => $new } );
+   return $class->new( { %{ $self->storage_attributes  }, schema => $self } );
 }
 
 sub BUILD {

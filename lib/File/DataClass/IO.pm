@@ -23,9 +23,6 @@ use Moose::Util::TypeConstraints;
 my @STAT_FIELDS = (
    qw(dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks) );
 
-subtype 'Exception' =>
-   as 'ClassName' => where { $_->can( q(throw) ) };
-
 has 'atomic_pref' => ( is => q(rw), isa => q(Str),       default    => q(B_) );
 has 'autoclose'   => ( is => q(rw), isa => q(Bool),      default    => TRUE  );
 has 'block_size'  => ( is => q(rw), isa => q(Int),       default    => 1024  );
@@ -60,7 +57,7 @@ around BUILDARGS => sub {
    }
 
    return $class->$orig( $attrs );
-}
+};
 
 sub absolute {
    my $self = shift;

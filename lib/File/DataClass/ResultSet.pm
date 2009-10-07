@@ -6,6 +6,8 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 674 $ =~ /\d+/gmx );
 
+use File::DataClass::Element;
+use File::DataClass::List;
 use File::DataClass::Constants;
 use Moose;
 
@@ -33,9 +35,7 @@ sub all {
 }
 
 sub create {
-   my ($self, $attrs) = @_;
-
-   my $class = $self->element_class; $self->ensure_class_loaded( $class );
+   my ($self, $attrs) = @_; my $class = $self->element_class;
 
    $attrs = { %{ $self->schema->defaults },
               %{ $attrs || {} }, resultset => $self };
@@ -48,8 +48,7 @@ sub find {
 
    return unless ($name && exists $elements->{ $name });
 
-   my $class = $self->element_class; $self->ensure_class_loaded( $class );
-   my $attrs = $elements->{ $name };
+   my $class = $self->element_class; my $attrs = $elements->{ $name };
 
    $attrs->{name} = $name; $attrs->{resultset} = $self;
 
@@ -77,7 +76,7 @@ sub first {
 sub list {
    my ($self, $name) = @_; my $attr;
 
-   my $class    = $self->list_class; $self->ensure_class_loaded( $class );
+   my $class    = $self->list_class;
    my $new      = $class->new;
    my $attrs    = { name => $name };
    my $elements = $self->storage->select;
@@ -92,7 +91,7 @@ sub list {
    if ($name && exists $elements->{ $name }) {
       $attrs = $elements->{ $name };
       $attrs->{name} = $name; $attrs->{resultset} = $self;
-      $class = $self->element_class; $self->ensure_class_loaded( $class );
+      $class = $self->element_class;
       $new->element( $class->new( $attrs ) );
       $new->found( TRUE );
    }
@@ -145,9 +144,7 @@ sub search {
    my $elements = $self->_elements;
 
    if (not defined $elements->[0]) {
-      my $class = $self->element_class; $self->ensure_class_loaded( $class );
-
-      $elements = $self->storage->select;
+      my $class = $self->element_class; $elements = $self->storage->select;
 
       for my $name (keys %{ $elements }) {
          my $attrs = $elements->{ $name };

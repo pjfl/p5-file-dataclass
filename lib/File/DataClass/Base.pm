@@ -18,7 +18,7 @@ use Moose;
 use Moose::Util::TypeConstraints;
 use TryCatch;
 
-extends qw(Class::Accessor::Grouped);
+extends qw(Moose::Object Class::Accessor::Grouped);
 
 subtype 'Exception' =>
    as 'ClassName' => where { $_->can( q(throw) ) };
@@ -34,7 +34,7 @@ has 'log' =>
    ( is => q(rw), isa => q(Object), default => sub { Class::Null->new } );
 
 has 'tempdir' =>
-   ( is => q(rw), isa => q(Str), default => sub { File::Spec->tempdir } );
+   ( is => q(rw), isa => q(Str), default => sub { File::Spec->tmpdir } );
 
 sub basename {
    my ($self, $path, @suffixes) = @_;

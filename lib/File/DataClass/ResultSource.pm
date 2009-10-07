@@ -6,6 +6,8 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 683 $ =~ /\d+/gmx );
 
+use File::DataClass::ResultSet;
+use File::DataClass::Schema;
 use Moose;
 
 extends qw(File::DataClass::Base);
@@ -29,8 +31,6 @@ has 'schema_class' =>
 sub _build_schema {
    my $self = shift; my $class = $self->schema_class;
 
-   $self->ensure_class_loaded( $class );
-
    return $class->new( { %{ $self->schema_attributes }, source => $self } );
 }
 
@@ -39,8 +39,6 @@ sub resultset {
 
    $self->storage->path( $path ) if ($path);
    $self->storage->lang( $lang ) if ($lang and $self->storage->can( q(lang) ));
-
-   $self->ensure_class_loaded( $class );
 
    return $class->new( { %{ $self->resultset_attributes }, source => $self } );
 }
