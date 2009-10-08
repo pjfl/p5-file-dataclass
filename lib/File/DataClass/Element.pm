@@ -10,14 +10,15 @@ use Moose;
 extends qw(Moose::Object Class::Accessor::Grouped);
 with    qw(File::DataClass::Util);
 
-has 'name'      => ( is => q(rw), isa => q(Str) );
-has 'resultset' => ( is => q(ro), isa => q(Object), weak_ref => 1 );
+has 'name'       => ( is => q(rw), isa => q(Str) );
+has '_resultset' => ( is => q(ro), isa => q(Object), weak_ref => 1 );
 
 sub BUILD {
    my $self = shift; my $class = blessed $self;
 
-   $class->mk_group_accessors( q(simple),
-                               @{ $self->resultset->schema->attributes } );
+   $class->mk_group_accessors
+      ( q(simple), @{ $self->_resultset->schema->attributes } );
+
    return;
 }
 
@@ -51,7 +52,7 @@ sub _assert_has_name {
 }
 
 sub _storage {
-   return shift->resultset->schema->storage;
+   return shift->_resultset->schema->storage;
 }
 
 __PACKAGE__->meta->make_immutable;

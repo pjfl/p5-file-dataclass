@@ -21,9 +21,9 @@ subtype 'Exception'     => as 'ClassName' => where { $_->can( q(throw) ) };
 subtype 'DataClassPath' => as 'Object'    =>
    where { $_->isa( q(File::DataClass::IO) ) };
 
-has 'exception_class' =>
+has '_exception_class' =>
    ( is => q(rw), isa => q(Exception),
-     default => q(File::DataClass::Exception) );
+     default => q(File::DataClass::Exception), writer => q(exception_class) );
 
 sub basename {
    my ($self, $path, @suffixes) = @_;
@@ -66,7 +66,7 @@ sub io {
 
    my $io = File::DataClass::IO->new( @rest );
 
-   $io->exception_class( $self->exception_class );
+   $io->exception_class( $self->_exception_class );
 
    return $io;
 }
@@ -80,7 +80,7 @@ sub is_member {
 }
 
 sub throw {
-   my ($self, @rest) = @_; return $self->exception_class->throw( @rest );
+   my ($self, @rest) = @_; return $self->_exception_class->throw( @rest );
 }
 
 no Moose::Util::TypeConstraints;

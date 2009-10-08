@@ -34,7 +34,7 @@ sub create {
    my ($self, $attrs) = @_;
 
    $attrs = { %{ $self->schema->defaults },
-              %{ $attrs || {} }, resultset => $self };
+              %{ $attrs || {} }, _resultset => $self };
 
    return $self->element_class->new( $attrs );
 }
@@ -46,7 +46,7 @@ sub find {
 
    my $attrs = $elements->{ $name };
 
-   $attrs->{name} = $name; $attrs->{resultset} = $self;
+   $attrs->{name} = $name; $attrs->{_resultset} = $self;
 
    return $self->element_class->new( $attrs );
 }
@@ -85,7 +85,7 @@ sub list {
 
    if ($name && exists $elements->{ $name }) {
       $attrs = $elements->{ $name };
-      $attrs->{name} = $name; $attrs->{resultset} = $self;
+      $attrs->{name} = $name; $attrs->{_resultset} = $self;
       $new->element( $self->element_class->new( $attrs ) );
       $new->found( TRUE );
    }

@@ -72,9 +72,11 @@ sub create {
 
    $args->{fields} ||= {}; $args->{fields}->{name} = $name;
 
-   $self->_txn_do( $path, sub { $rs->create( $args->{fields} )->insert } );
+   my $updated = $self->_txn_do( $path, sub {
+      $rs->create( $args->{fields} )->insert;
+   } );
 
-   return $name;
+   return $updated ? $name : FALSE;
 }
 
 sub delete {
