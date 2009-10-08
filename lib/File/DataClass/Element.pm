@@ -8,16 +8,18 @@ use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 664 $ =~ /\d+/gmx );
 use Moose;
 use Scalar::Util qw(blessed);
 
-with qw(File::DataClass::Util);
+extends qw(Moose::Object Class::Accessor::Grouped);
+with    qw(File::DataClass::Util);
 
 has 'name'      => ( is => q(rw), isa => q(Str) );
 has 'resultset' => ( is => q(ro), isa => q(Object) );
 has '_storage'  => ( is => q(ro), isa => q(Object), lazy_build => 1 );
 
 sub BUILD {
-   my ($self, %p) = @_; my $class = blessed $self;
+   my ($self, $p) = @_; my $class = blessed $self;
 
-   $class->mk_accessors( @{ $self->resultset->schema->attributes } );
+   $class->mk_group_accessors( q(simple),
+                               @{ $self->resultset->schema->attributes } );
    return;
 }
 
