@@ -3,14 +3,12 @@
 package File::DataClass::Element;
 
 use strict;
-use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 664 $ =~ /\d+/gmx );
 
 use Moose;
 use Scalar::Util qw(blessed);
 
-extends qw(File::DataClass::Base);
-with    qw(File::DataClass::Util);
+with qw(File::DataClass::Util);
 
 has 'name'      => ( is => q(rw), isa => q(Str) );
 has 'resultset' => ( is => q(ro), isa => q(Object) );

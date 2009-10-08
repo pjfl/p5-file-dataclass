@@ -32,11 +32,11 @@ has 'exception_class' =>
 has 'io_handle'   => ( is => q(rw), isa => q(Maybe[Object])                 );
 has 'is_open'     => ( is => q(rw), isa => q(Bool), default  => FALSE       );
 has 'lock_obj'    => ( is => q(rw), isa => q(Object)                        );
-has 'mode'        => ( is => q(rw), isa => q(Str),  default  => q(r)        );
+has 'mode'        => ( is => q(rw), isa => q(Maybe[Str])                    );
 has 'name'        => ( is => q(rw), isa => q(Str),  required => TRUE        );
-has 'type'        => ( is => q(rw), isa => q(Str),  default  => NUL         );
+has 'type'        => ( is => q(rw), isa => q(Maybe[Str])                    );
 has '_assert'     => ( is => q(rw), isa => q(Bool), default  => FALSE       );
-has '_atomic'     => ( is => q(rw), isa => q(Str),  default  => NUL         );
+has '_atomic'     => ( is => q(rw), isa => q(Maybe[Str])                    );
 has '_binary'     => ( is => q(rw), isa => q(Bool), default  => FALSE       );
 has '_binmode'    => ( is => q(rw), isa => q(Str),  default  => NUL         );
 has '_chomp'      => ( is => q(rw), isa => q(Bool), default  => FALSE       );

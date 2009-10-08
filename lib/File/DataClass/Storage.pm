@@ -6,18 +6,22 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 699 $ =~ /\d+/gmx );
 
+use Class::Null;
 use File::DataClass::Constants;
 use File::DataClass::HashMerge;
 use Hash::Merge qw(merge);
 use Moose;
 use TryCatch;
 
-extends qw(File::DataClass::Base);
-with    qw(File::DataClass::Util);
+with qw(File::DataClass::Util);
 
-has 'extn'   => ( is => q(rw), isa => q(Str), default => NUL );
+has 'debug'  => ( is => q(ro), isa => q(Bool),   default => FALSE );
+has 'extn'   => ( is => q(rw), isa => q(Str),    default => NUL );
+has 'lock'   => ( is => q(ro), isa => q(Object), weak_ref => TRUE );
+has 'log'    => ( is => q(ro), isa => q(Object),
+                  default => sub { Class::Null->new } );
 has 'path'   => ( is => q(rw), isa => q(DataClassPath) );
-has 'schema' => ( is => q(ro), isa => q(Object), weak_ref => 1 );
+has 'schema' => ( is => q(ro), isa => q(Object), weak_ref => TRUE );
 
 my $cache = {};
 

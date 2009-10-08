@@ -10,8 +10,7 @@ use File::DataClass::ResultSet;
 use File::DataClass::Schema;
 use Moose;
 
-extends qw(File::DataClass::Base);
-with    qw(File::DataClass::Util);
+with qw(File::DataClass::Util);
 
 has 'resultset_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );

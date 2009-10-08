@@ -6,32 +6,60 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
+use Class::Null;
+use File::DataClass::Constants;
 use File::DataClass::ResultSource;
+use File::Spec;
+use IPC::SRLock;
 use Moose;
 use Scalar::Util qw(blessed);
 use TryCatch;
 
-extends qw(File::DataClass::Base);
+extends qw(Moose::Object Class::Accessor::Grouped);
 with    qw(File::DataClass::Util);
 
+has 'debug' =>
+   ( is => q(rw), isa => q(Bool),    default    => FALSE );
+has 'lock' =>
+   ( is => q(ro), isa => q(Object),  lazy_build => TRUE );
+has 'log' =>
+   ( is => q(rw), isa => q(Object),  default    => sub { Class::Null->new } );
 has 'path' =>
    ( is => q(rw), isa => q(DataClassPath) );
 has 'result_source' =>
-   ( is => q(ro), isa => q(Object), lazy_build => 1 );
+   ( is => q(ro), isa => q(Object),  lazy_build => TRUE );
 has 'result_source_attributes' =>
-   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
+   ( is => q(ro), isa => q(HashRef), default    => sub { return {} } );
 has 'result_source_class' =>
    ( is => q(ro), isa => q(ClassName),
      default => q(File::DataClass::ResultSource) );
+has 'tempdir' =>
+   ( is => q(rw), isa => q(Str),     default   => sub { File::Spec->tmpdir } );
 
-sub BUILD {
-   my ($self, $args) = @_; $self->lock( $args->{lock} || {} ); return;
+sub _build_lock {
+   my $self = shift; my $args = {}; my $lock;
+
+   # There is only one lock object
+   return $lock if ($lock = __PACKAGE__->get_inherited( q(lock) ));
+
+   $args->{debug  } ||= $self->debug;
+   $args->{log    } ||= $self->log;
+   $args->{tempdir} ||= $self->tempdir;
+
+   return __PACKAGE__->set_inherited( q(lock), IPC::SRLock->new( $args ) );
 }
 
 sub _build_result_source {
-   my $self = shift; my $class = $self->result_source_class;
+   my $self    = shift;
+   my $class   = $self->result_source_class;
+   my $attrs   = $self->result_source_attributes || {};
+   my $storage = $attrs->{schema_attributes}->{storage_attributes} ||= {};
 
-   return $class->new( $self->result_source_attributes );
+   $storage->{debug} = $self->debug;
+   $storage->{lock } = $self->lock;
+   $storage->{log  } = $self->log;
+
+   return $class->new( $attrs );
 }
 
 sub create {

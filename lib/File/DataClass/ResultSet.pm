@@ -11,8 +11,7 @@ use File::DataClass::List;
 use File::DataClass::Constants;
 use Moose;
 
-extends qw(File::DataClass::Base);
-with    qw(File::DataClass::Util);
+with qw(File::DataClass::Util);
 
 has 'element_class' =>
    ( is => q(ro), isa => q(ClassName),

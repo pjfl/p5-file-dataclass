@@ -8,8 +8,7 @@ use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 685 $ =~ /\d+/gmx );
 
 use Moose;
 
-extends qw(File::DataClass::Base);
-with    qw(File::DataClass::Util);
+with qw(File::DataClass::Util);
 
 has 'attributes' =>
    ( is => q(ro), isa => q(ArrayRef), default => sub { return [] } );

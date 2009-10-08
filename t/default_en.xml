@@ -1,0 +1,533 @@
+<!ELEMENT acl         (ARRAY)*>
+<!ELEMENT buttons     (ARRAY)*>
+<!ELEMENT credentials (ARRAY)*>
+<!ELEMENT fields      (ARRAY)*>
+<!ELEMENT globals     (ARRAY)*>
+<!ELEMENT keys        (ARRAY)*>
+<!ELEMENT levels      (ARRAY)*>
+<!ELEMENT messages    (ARRAY)*>
+<!ELEMENT pages       (ARRAY)*>
+<!ELEMENT rooms       (ARRAY)*>
+<!ELEMENT vals        (ARRAY)*>
+<config>
+  <_cvs_lang_default>@(#)$Id: default_en.xml 572 2008-12-15 21:51:26Z pjf $</_cvs_lang_default>
+  <buttons>
+    <name>app_closed.login</name>
+    <error>Failed to login to the application because</error>
+    <help>Reopen the application</help>
+  </buttons>
+  <buttons>
+    <name>feedback.send</name>
+    <error>Failed to send the message because</error>
+    <help>Send this email to the site administrators</help>
+  </buttons>
+  <fields>
+    <name>app_closed.passwd</name>
+    <prompt>Password</prompt>
+  </fields>
+  <fields>
+    <name>app_closed.user</name>
+    <prompt>Login id</prompt>
+  </fields>
+  <fields>
+    <name>feedback.body</name>
+    <prompt>Subject:&amp;nbsp;&lt;b&gt;[% subject %]&lt;/b&gt;</prompt>
+  </fields>
+  <levels>
+    <name>admin</name>
+    <text>Admin</text>
+    <tip>Command and control centre</tip>
+  </levels>
+  <levels>
+    <name>entrance</name>
+    <text>Home</text>
+    <tip>Start here if you are new to this site</tip>
+  </levels>
+  <levels>
+    <name>library</name>
+    <text>Library</text>
+    <tip>Documentation and Content Management</tip>
+  </levels>
+  <messages>
+    <name>aboutCompanyTip</name>
+    <text>About this company</text>
+  </messages>
+  <messages>
+    <name>aboutOptionText</name>
+    <text>About</text>
+  </messages>
+  <messages>
+    <name>aboutOptionTip</name>
+    <text>Copyright and author information</text>
+  </messages>
+  <messages>
+    <name>accountActivated</name>
+    <text>Account activated for [% arg1 %]</text>
+  </messages>
+  <messages>
+    <name>accountCreated</name>
+    <text>Account created for [% arg1 %]</text>
+  </messages>
+  <messages>
+    <name>accountDeleted</name>
+    <text>Account for [% arg1 %] deleted</text>
+  </messages>
+  <messages>
+    <name>accountPopulated</name>
+    <text>Home directory for [% arg1 %] populated</text>
+  </messages>
+  <messages>
+    <name>accountVerification</name>
+    <text>[% arg1 %] account verification required</text>
+  </messages>
+  <messages>
+    <name>buttonTitle</name>
+    <text>Action</text>
+  </messages>
+  <messages>
+    <name>changeSkinAltText</name>
+    <text> Skin</text>
+  </messages>
+  <messages>
+    <name>changeSkinAltTip</name>
+    <text>Change the current skin to this alternative</text>
+  </messages>
+  <messages>
+    <name>changeSkinDefaultText</name>
+    <text>Default Skin</text>
+  </messages>
+  <messages>
+    <name>changeSkinDefaultTip</name>
+    <text>Change the current skin back to the system default</text>
+  </messages>
+  <messages>
+    <name>contextHelpText</name>
+    <text>Context Help</text>
+  </messages>
+  <messages>
+    <name>contextHelpTip</name>
+    <text>Provides help text on this page</text>
+  </messages>
+  <messages>
+    <name>dateWidgetTip</name>
+    <text>Click the calendar icon to open a date selection window</text>
+  </messages>
+  <messages>
+    <name>debugOffText</name>
+    <text>Debug Off</text>
+  </messages>
+  <messages>
+    <name>debugOnText</name>
+    <text>Debug On</text>
+  </messages>
+  <messages>
+    <name>debugToggleTip</name>
+    <text>Debug mode generates more output in the log files</text>
+  </messages>
+  <messages>
+    <name>defTextPrompt</name>
+    <text>Enter value for </text>
+  </messages>
+  <messages>
+    <name>displayOptionsTip</name>
+    <text>Display options</text>
+  </messages>
+  <messages>
+    <name>eBadSecurityCode</name>
+    <text>the security code did not match the one displayed on the form</text>
+  </messages>
+  <messages>
+    <name>eBadToken</name>
+    <text>the CSRF form token does not match the one that was expected</text>
+  </messages>
+  <messages>
+    <name>eCannotRead</name>
+    <text>cannot read [% arg1 %]</text>
+  </messages>
+  <messages>
+    <name>eCannotWrite</name>
+    <text>cannot write [% arg1 %]</text>
+  </messages>
+  <messages>
+    <name>eContentNotFound</name>
+    <text>cannot find a Content-Type supported by your client</text>
+  </messages>
+  <messages>
+    <name>eLoginFailure</name>
+    <text>the login id ([% arg1 %]) and password were not recognised</text>
+  </messages>
+  <messages>
+    <name>eMandatory</name>
+    <text>the [% arg1 %] field must have a value</text>
+  </messages>
+  <messages>
+    <name>eNameToShort</name>
+    <text>failed to generate a new user id. The user name [% arg1 %] is too short. Minimum [% arg2 %] characters</text>
+  </messages>
+  <messages>
+    <name>eNoACL</name>
+    <text>no list of allowed users/groups for [% arg1 %]</text>
+  </messages>
+  <messages>
+    <name>eNoActions</name>
+    <text>no actions have been associated with the [% arg1 %] button</text>
+  </messages>
+  <messages>
+    <name>eNoCheckfield</name>
+    <text>the field [% arg1 %] does not define a validation subroutine</text>
+  </messages>
+  <messages>
+    <name>eNoFile</name>
+    <text>no file name was provided</text>
+  </messages>
+  <messages>
+    <name>eNoFileSelected</name>
+    <text>no file was selected</text>
+  </messages>
+  <messages>
+    <name>eNoHelpPage</name>
+    <text>no help page selected</text>
+  </messages>
+  <messages>
+    <name>eNoPage</name>
+    <text>There is no [% arg1 %] page definition</text>
+  </messages>
+  <messages>
+    <name>eNoPath</name>
+    <text>path not specified</text>
+  </messages>
+  <messages>
+    <name>eNoSourcePage</name>
+    <text>no source page selected</text>
+  </messages>
+  <messages>
+    <name>eNotFound</name>
+    <text>not found [% arg1 %]</text>
+  </messages>
+  <messages>
+    <name>eNotImplemented</name>
+    <text>method for [% arg2 %] not implemented by [% arg1 %]</text>
+  </messages>
+  <messages>
+    <name>eNotSupported</name>
+    <text>Content-Type [% arg1 %] is not supported</text>
+  </messages>
+  <messages>
+    <name>eNothingUpdated</name>
+    <text>no fields on this form changed</text>
+  </messages>
+  <messages>
+    <name>eSerializeFailed</name>
+    <text>Content-Type [% arg1 %] had a problem with your request</text>
+  </messages>
+  <messages>
+    <name>eUnknownForward</name>
+    <text>an unknown error occured whilst forwarding to [% arg1 %]</text>
+  </messages>
+  <messages>
+    <name>eValidIdentifier</name>
+    <text>field [% arg1 %] value [% arg2 %] is not a vaild identifier</text>
+  </messages>
+  <messages>
+    <name>eValidInteger</name>
+    <text>field [% arg1 %] value [% arg2 %] is not a vaild integer</text>
+  </messages>
+  <messages>
+    <name>eValidPassword</name>
+    <text>field [% arg1 %] value [% arg2 %] is not a valid password</text>
+  </messages>
+  <messages>
+    <name>elapsedTime</name>
+    <text>Elapsed time since previous update</text>
+  </messages>
+  <messages>
+    <name>exitTip</name>
+    <text>Exit the application and reset your identity to unknown</text>
+  </messages>
+  <messages>
+    <name>feedback.subject</name>
+    <text>[% arg1 %]&amp;nbsp;feedback&amp;nbsp;for&amp;nbsp;[% arg2 %]</text>
+  </messages>
+  <messages>
+    <name>feedback.title</name>
+    <text>Email Feedback</text>
+  </messages>
+  <messages>
+    <name>feedbackOptionText</name>
+    <text>Feedback</text>
+  </messages>
+  <messages>
+    <name>feedbackOptionTip</name>
+    <text>Share your experiences of this site with its administrators</text>
+  </messages>
+  <messages>
+    <name>feedbackTip</name>
+    <text>Share your surfing experience of this web site with its developers and administrators</text>
+  </messages>
+  <messages>
+    <name>fieldPromptWidthTip</name>
+    <text>Decrease/Increase the size of the field prompts on forms</text>
+  </messages>
+  <messages>
+    <name>first_page_anchor</name>
+    <text>First</text>
+  </messages>
+  <messages>
+    <name>footerOffText</name>
+    <text>Footer Off</text>
+  </messages>
+  <messages>
+    <name>footerOnText</name>
+    <text>Footer On</text>
+  </messages>
+  <messages>
+    <name>footerToggleTip</name>
+    <text>Toggle the display state of the footer bar</text>
+  </messages>
+  <messages>
+    <name>helpOptionTip</name>
+    <text>Help options</text>
+  </messages>
+  <messages>
+    <name>helpTitle</name>
+    <text>Help for </text>
+  </messages>
+  <messages>
+    <name>isMandatory</name>
+    <text>Mandatory field is null</text>
+  </messages>
+  <messages>
+    <name>isValidEmail</name>
+    <text>Not a valid email address</text>
+  </messages>
+  <messages>
+    <name>isValidIdentifier</name>
+    <text>Field value contains illegal characters or is null</text>
+  </messages>
+  <messages>
+    <name>isValidInteger</name>
+    <text>Field value is not a valid integer or is not in the required
+  range</text>
+  </messages>
+  <messages>
+    <name>isValidPassword</name>
+    <text>Field value is not a valid password</text>
+  </messages>
+  <messages>
+    <name>last_page_anchor</name>
+    <text>Last</text>
+  </messages>
+  <messages>
+    <name>levelVersion</name>
+    <text>The version number of the [% level %] controller</text>
+  </messages>
+  <messages>
+    <name>logoTip</name>
+    <text>Go to this servers home page</text>
+  </messages>
+  <messages>
+    <name>moduleVersion</name>
+    <text>The version number of the [% application %] application</text>
+  </messages>
+  <messages>
+    <name>navigationTitle</name>
+    <text>Navigation</text>
+  </messages>
+  <messages>
+    <name>next_page_anchor</name>
+    <text>Next</text>
+  </messages>
+  <messages>
+    <name>overview</name>
+    <text>&lt;span class=&quot;info&quot;&gt;This side bar uses an accordion widget and Ajax to manage
+  it's content. Click on each title bar to expand the panel and load
+  the content.&lt;br /&gt;&lt;br /&gt;&lt;img alt=&quot;Valid XHTML&quot; src=&quot;/static/images/catalyst.png&quot; /&gt;&lt;br /&gt;&lt;img src=&quot;/static/images/valid-xhtml11.png&quot; /&gt;&lt;br /&gt;
+&lt;a href=&quot;http://validator.w3.org/check/referer&quot;&gt;Validate&lt;/a&gt;
+&lt;/span&gt;
+    </text>
+  </messages>
+  <messages>
+    <name>pageGenerated</name>
+    <text>Date and time this page was generated</text>
+  </messages>
+  <messages>
+    <name>page_prompt</name>
+    <text>Page</text>
+  </messages>
+  <messages>
+    <name>passwordChanged</name>
+    <text>Password for user [% user %] changed</text>
+  </messages>
+  <messages>
+    <name>passwordSet</name>
+    <text>Password for user [% user %] set</text>
+  </messages>
+  <messages>
+    <name>previous_page_anchor</name>
+    <text>Previous</text>
+  </messages>
+  <messages>
+    <name>search_expression</name>
+    <text>Search results for &quot;[% expression %]&quot;.[% nbsp %]</text>
+  </messages>
+  <messages>
+    <name>search_results</name>
+    <text>Displaying page [% current_page %] of [% total_pages %] containing [% entries_this_page %] of [% total_entries %] total hits. </text>
+  </messages>
+  <messages>
+    <name>sideBarBlankContent</name>
+    <text>This panel intentionally left blank</text>
+  </messages>
+  <messages>
+    <name>sideBarBlankHeader</name>
+    <text>Empty</text>
+  </messages>
+  <messages>
+    <name>sideBarTip</name>
+    <text>Menu Bar ~ Navigate around the rooms on this level using the links on this menu bar. Clicking this bullet expands/collapses the side bar display panel</text>
+  </messages>
+  <messages>
+    <name>vPasswordPrompt</name>
+    <text> and again </text>
+  </messages>
+  <messages>
+    <name>yourIdentity</name>
+    <text>Your current identity</text>
+  </messages>
+  <pages>
+    <name>about</name>
+    <heading>[% application %]&amp;nbsp;[% platform %]</heading>
+    <title>About</title>
+    <vals>
+      <name>para0</name>
+      <text>The [% application %] modules are Copyright (c) 2008 Peter Flanigan. All rights reserved</text>
+    </vals>
+    <vals>
+      <name>para1</name>
+      <text>This is free
+software; you can redistribute it and/or modify it under the same
+terms as Perl itself.</text>
+    </vals>
+    <vals>
+      <name>para2</name>
+      <text>Address bug reports and comments to Support at RoxSoft co uk</text>
+    </vals>
+    <vals>
+      <name>para3</name>
+      <markdown>1</markdown>
+      <text>Peter Flanigan  
+Authored the these modules</text>
+    </vals>
+  </pages>
+  <pages>
+    <name>app_closed</name>
+    <heading>I'm sorry [% firstName %], I can't do that!</heading>
+    <vals>
+      <name>para0</name>
+      <markdown>1</markdown>
+      <text>&lt;img src=&quot;[% assets %]construct.gif&quot; /&gt;</text>
+    </vals>
+    <vals>
+      <name>para1</name>
+      <text>Authenticate as an administration user to reopen the application</text>
+    </vals>
+    <vals>
+      <name>para2</name>
+      <text>&amp;nbsp;</text>
+    </vals>
+    <vals>
+      <name>subHeading0</name>
+      <text>The [% application %] application is closed for redecorating</text>
+    </vals>
+  </pages>
+  <pages>
+    <name>closed</name>
+    <heading>I'm sorry [% firstName %], I won't do that!</heading>
+    <vals>
+      <name>para0</name>
+      <markdown>1</markdown>
+      <text>&lt;img src=&quot;[% assets %]construct.gif&quot; /&gt;</text>
+    </vals>
+    <vals>
+      <name>para1</name>
+      <text>You've been awarded error number ??? - Room Closed</text>
+    </vals>
+    <vals>
+      <name>para2</name>
+      <text>Use the Feedback option on the help menu to report any problems your are having to the support team</text>
+    </vals>
+    <vals>
+      <name>subHeading0</name>
+      <text>The [% closed_room %] room on the [% closed_level %] level is closed for redecorating</text>
+    </vals>
+  </pages>
+  <pages>
+    <name>company</name>
+    <heading>[% company %]</heading>
+    <vals>
+      <name>name</name>
+    </vals>
+    <vals>
+      <name>text</name>
+    </vals>
+  </pages>
+  <pages>
+    <name>cracker</name>
+    <heading>I'm sorry [% firstName %], I won't do that!</heading>
+    <vals>
+      <name>para0</name>
+      <markdown>1</markdown>
+      <text>&amp;lt;img src=&amp;quot;[% assets %]pc.gif&amp;quot; /&amp;gt;</text>
+    </vals>
+    <vals>
+      <name>para1</name>
+      <text>You've been awarded error number 403 - Access Denied</text>
+    </vals>
+    <vals>
+      <name>para2</name>
+      <text>Use the Feedback option on the help menu to report any problems your are having to the support team</text>
+    </vals>
+    <vals>
+      <name>subHeading0</name>
+      <text>You do not have access to the [% denied_room %] room on the [% denied_level %] level</text>
+    </vals>
+  </pages>
+  <pages>
+    <name>default</name>
+    <heading>I'm sorry [% firstName %], I can't do that!</heading>
+    <vals>
+      <name>para0</name>
+      <markdown>1</markdown>
+      <text>&amp;lt;img src=&amp;quot;[% assets %]pc.gif&amp;quot; /&amp;gt;</text>
+    </vals>
+    <vals>
+      <name>para1</name>
+      <text>You've been awarded error number 404 - Page not found</text>
+    </vals>
+    <vals>
+      <name>para2</name>
+      <text>Use the Feedback option on the help menu to report any problems your are having to the support team</text>
+    </vals>
+    <vals>
+      <name>subHeading0</name>
+      <text>I cannot find the [% room %] room on the [% level %] level</text>
+    </vals>
+  </pages>
+  <pages>
+    <name>err</name>
+    <heading>I'm sorry [% firstName %], I can't do that!</heading>
+    <vals>
+      <name>para0</name>
+      <markdown>1</markdown>
+      <text>&amp;lt;img src=&amp;quot;[% assets %]pc.gif&amp;quot; /&amp;gt;</text>
+    </vals>
+    <vals>
+      <name>para1</name>
+      <text>Use the Feedback option on the help menu to report any problems your are having to the support team</text>
+    </vals>
+    <vals>
+      <name>subHeading0</name>
+      <text>[% subHeading %]</text>
+    </vals>
+  </pages>
+</config>
