@@ -21,7 +21,9 @@ with    qw(File::DataClass::Util);
 has 'debug' =>
    ( is => q(rw), isa => q(Bool),    default    => FALSE );
 has 'lock' =>
-   ( is => q(ro), isa => q(Object),  lazy_build => TRUE );
+   ( is => q(rw), isa => q(Object),  lazy_build => TRUE );
+has 'lock_attributes' =>
+   ( is => q(ro), isa => q(HashRef), default    => sub { return {} } );
 has 'log' =>
    ( is => q(rw), isa => q(Object),  default    => sub { Class::Null->new } );
 has 'path' =>
@@ -37,10 +39,12 @@ has 'tempdir' =>
    ( is => q(rw), isa => q(Str),     default   => sub { File::Spec->tmpdir } );
 
 sub _build_lock {
-   my $self = shift; my $args = {}; my $lock;
+   my $self = shift; my $lock;
 
    # There is only one lock object
    return $lock if ($lock = __PACKAGE__->get_inherited( q(lock) ));
+
+   my $args = $self->lock_attributes;
 
    $args->{debug  } ||= $self->debug;
    $args->{log    } ||= $self->log;
@@ -51,15 +55,14 @@ sub _build_lock {
 
 sub _build_result_source {
    my $self    = shift;
-   my $class   = $self->result_source_class;
    my $attrs   = $self->result_source_attributes || {};
    my $storage = $attrs->{schema_attributes}->{storage_attributes} ||= {};
 
    $storage->{debug} = $self->debug;
-   $storage->{lock } = $self->lock;
    $storage->{log  } = $self->log;
+   $storage->{lock } = $self->lock;
 
-   return $class->new( $attrs );
+   return $self->result_source_class->new( $attrs );
 }
 
 sub create {
