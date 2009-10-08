@@ -23,8 +23,6 @@ has 'log'    => ( is => q(ro), isa => q(Object),
 has 'path'   => ( is => q(rw), isa => q(DataClassPath) );
 has 'schema' => ( is => q(ro), isa => q(Object), weak_ref => TRUE );
 
-my $cache = {};
-
 sub delete {
    my ($self, $element_obj) = @_;
 
@@ -86,6 +84,8 @@ sub update {
 }
 
 # Private methods
+
+my $cache = {};
 
 sub _cache {
    my ($self, $key, $value) = @_;

@@ -143,7 +143,7 @@ sub search {
       for my $name (keys %{ $elements }) {
          my $attrs = $elements->{ $name };
 
-         $attrs->{name} = $name; $attrs->{resultset} = $self;
+         $attrs->{name} = $name; $attrs->{_resultset} = $self;
 
          if (not $criterion or $self->_eval_criterion( $criterion, $attrs )) {
             push @{ $self->_elements }, $self->element_class->new( $attrs );

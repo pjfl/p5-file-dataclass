@@ -12,58 +12,33 @@ use File::DataClass::ResultSource;
 use File::Spec;
 use IPC::SRLock;
 use Moose;
+use MooseX::ClassAttribute;
 use Scalar::Util qw(blessed);
 use TryCatch;
 
-extends qw(Moose::Object Class::Accessor::Grouped);
-with    qw(File::DataClass::Util);
+with qw(File::DataClass::Util);
 
+class_has 'Lock' =>
+   ( is => q(rw), isa => q(Object) );
 has 'debug' =>
-   ( is => q(rw), isa => q(Bool),    default    => FALSE );
+   ( is => q(rw), isa => q(Bool),    default => FALSE );
 has 'lock' =>
    ( is => q(rw), isa => q(Object),  lazy_build => TRUE );
 has 'lock_attributes' =>
-   ( is => q(ro), isa => q(HashRef), default    => sub { return {} } );
+   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'log' =>
-   ( is => q(rw), isa => q(Object),  default    => sub { Class::Null->new } );
+   ( is => q(rw), isa => q(Object),  default => sub { Class::Null->new } );
 has 'path' =>
    ( is => q(rw), isa => q(DataClassPath) );
 has 'result_source' =>
    ( is => q(ro), isa => q(Object),  lazy_build => TRUE );
 has 'result_source_attributes' =>
-   ( is => q(ro), isa => q(HashRef), default    => sub { return {} } );
+   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'result_source_class' =>
    ( is => q(ro), isa => q(ClassName),
      default => q(File::DataClass::ResultSource) );
 has 'tempdir' =>
-   ( is => q(rw), isa => q(Str),     default   => sub { File::Spec->tmpdir } );
-
-sub _build_lock {
-   my $self = shift; my $lock;
-
-   # There is only one lock object
-   return $lock if ($lock = __PACKAGE__->get_inherited( q(lock) ));
-
-   my $args = $self->lock_attributes;
-
-   $args->{debug  } ||= $self->debug;
-   $args->{log    } ||= $self->log;
-   $args->{tempdir} ||= $self->tempdir;
-
-   return __PACKAGE__->set_inherited( q(lock), IPC::SRLock->new( $args ) );
-}
-
-sub _build_result_source {
-   my $self    = shift;
-   my $attrs   = $self->result_source_attributes || {};
-   my $storage = $attrs->{schema_attributes}->{storage_attributes} ||= {};
-
-   $storage->{debug} = $self->debug;
-   $storage->{log  } = $self->log;
-   $storage->{lock } = $self->lock;
-
-   return $self->result_source_class->new( $attrs );
-}
+   ( is => q(rw), isa => q(Str),     default => sub { File::Spec->tmpdir } );
 
 sub create {
    my ($self, $args) = @_;
@@ -219,6 +194,44 @@ sub update {
 
 # Private methods
 
+sub _build_lock {
+   my $self = shift; my $lock;
+
+   return $lock if ($lock = __PACKAGE__->Lock());
+
+   my $args = $self->lock_attributes;
+
+   $args->{debug  } ||= $self->debug;
+   $args->{log    } ||= $self->log;
+   $args->{tempdir} ||= $self->tempdir;
+
+   return __PACKAGE__->Lock( IPC::SRLock->new( $args ) );
+}
+
+sub _build_result_source {
+   my $self    = shift;
+   my $attrs   = $self->result_source_attributes || {};
+   my $storage = $attrs->{schema_attributes}->{storage_attributes} ||= {};
+
+   $storage->{debug} = $self->debug;
+   $storage->{log  } = $self->log;
+   $storage->{lock } = $self->lock;
+
+   return $self->result_source_class->new( $attrs );
+}
+
+sub _resultset {
+   my ($self, $args) = @_;
+
+   my $path = $args->{path} || $self->path;
+
+   $self->throw( 'No file path specified' ) unless ($path);
+
+   $path = $self->io( $path ) unless (blessed $path);
+
+   return ($self->result_source->resultset( $path, $args->{lang} ), $path);
+}
+
 sub _txn_do {
    my ($self, $path, $code_ref) = @_;
 
@@ -237,18 +250,6 @@ sub _txn_do {
    return wantarray ? @{ $res } : $res;
 }
 
-sub _resultset {
-   my ($self, $args) = @_;
-
-   my $path = $args->{path} || $self->path;
-
-   $self->throw( 'No file path specified' ) unless ($path);
-
-   $path = $self->io( $path ) unless (blessed $path);
-
-   return ($self->result_source->resultset( $path, $args->{lang} ), $path);
-}
-
 sub _validate_params {
    my ($self, $args) = @_; my $name;
 
@@ -259,6 +260,7 @@ sub _validate_params {
 
 __PACKAGE__->meta->make_immutable;
 
+no MooseX::ClassAttribute;
 no Moose;
 
 1;
