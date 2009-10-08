@@ -31,12 +31,12 @@ sub all {
 }
 
 sub create {
-   my ($self, $attrs) = @_; my $class = $self->element_class;
+   my ($self, $attrs) = @_;
 
    $attrs = { %{ $self->schema->defaults },
               %{ $attrs || {} }, resultset => $self };
 
-   return $class->new( $attrs );
+   return $self->element_class->new( $attrs );
 }
 
 sub find {
@@ -44,11 +44,11 @@ sub find {
 
    return unless ($name && exists $elements->{ $name });
 
-   my $class = $self->element_class; my $attrs = $elements->{ $name };
+   my $attrs = $elements->{ $name };
 
    $attrs->{name} = $name; $attrs->{resultset} = $self;
 
-   return $class->new( $attrs );
+   return $self->element_class->new( $attrs );
 }
 
 sub find_and_update {
@@ -72,8 +72,7 @@ sub first {
 sub list {
    my ($self, $name) = @_; my $attr;
 
-   my $class    = $self->list_class;
-   my $new      = $class->new;
+   my $new      = $self->list_class->new;
    my $attrs    = { name => $name };
    my $elements = $self->storage->select;
 
@@ -87,8 +86,7 @@ sub list {
    if ($name && exists $elements->{ $name }) {
       $attrs = $elements->{ $name };
       $attrs->{name} = $name; $attrs->{resultset} = $self;
-      $class = $self->element_class;
-      $new->element( $class->new( $attrs ) );
+      $new->element( $self->element_class->new( $attrs ) );
       $new->found( TRUE );
    }
    else { $new->element( $self->create( $attrs ) ) }
@@ -140,7 +138,7 @@ sub search {
    my $elements = $self->_elements;
 
    if (not defined $elements->[0]) {
-      my $class = $self->element_class; $elements = $self->storage->select;
+      $elements = $self->storage->select;
 
       for my $name (keys %{ $elements }) {
          my $attrs = $elements->{ $name };
@@ -148,7 +146,7 @@ sub search {
          $attrs->{name} = $name; $attrs->{resultset} = $self;
 
          if (not $criterion or $self->_eval_criterion( $criterion, $attrs )) {
-            push @{ $self->_elements }, $class->new( $attrs );
+            push @{ $self->_elements }, $self->element_class->new( $attrs );
          }
       }
    }

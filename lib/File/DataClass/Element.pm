@@ -6,25 +6,19 @@ use strict;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 664 $ =~ /\d+/gmx );
 
 use Moose;
-use Scalar::Util qw(blessed);
 
 extends qw(Moose::Object Class::Accessor::Grouped);
 with    qw(File::DataClass::Util);
 
 has 'name'      => ( is => q(rw), isa => q(Str) );
-has 'resultset' => ( is => q(ro), isa => q(Object) );
-has '_storage'  => ( is => q(ro), isa => q(Object), lazy_build => 1 );
+has 'resultset' => ( is => q(ro), isa => q(Object), weak_ref => 1 );
 
 sub BUILD {
-   my ($self, $p) = @_; my $class = blessed $self;
+   my $self = shift; my $class = blessed $self;
 
    $class->mk_group_accessors( q(simple),
                                @{ $self->resultset->schema->attributes } );
    return;
-}
-
-sub _build__storage {
-   my $self = shift; return $self->resultset->schema->storage;
 }
 
 sub delete {
@@ -50,10 +44,14 @@ sub _assert_has_name {
 
    unless ($self->name) {
       $self->throw( error => 'No element name specified [_1]',
-                    args  => [ $self->storage->path->pathname ] );
+                    args  => [ $self->_storage->path->pathname ] );
    }
 
    return 1;
+}
+
+sub _storage {
+   return shift->resultset->schema->storage;
 }
 
 __PACKAGE__->meta->make_immutable;
