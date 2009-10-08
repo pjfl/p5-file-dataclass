@@ -15,8 +15,8 @@ use TryCatch;
 
 with qw(File::DataClass::Util);
 
-has 'debug'  => ( is => q(ro), isa => q(Bool),   default => FALSE );
-has 'extn'   => ( is => q(rw), isa => q(Str),    default => NUL );
+has 'debug'  => ( is => q(ro), isa => q(Bool),   default  => FALSE );
+has 'extn'   => ( is => q(rw), isa => q(Str),    default  => NUL );
 has 'lock'   => ( is => q(ro), isa => q(Object), weak_ref => TRUE );
 has 'log'    => ( is => q(ro), isa => q(Object),
                   default => sub { Class::Null->new } );
@@ -47,7 +47,7 @@ sub insert {
 }
 
 sub load {
-   my ($self, @paths) = @_; my $ref;
+   my ($self, @paths) = @_; my $red;
 
    return {} unless ($paths[0]);
 
@@ -56,12 +56,12 @@ sub load {
    return $data unless (not $data or $stale); $data = {};
 
    for my $path (@paths) {
-      next unless ($ref = $self->_read_file( $path, FALSE ));
+      next unless ($red = $self->_read_file( $path, FALSE ));
 
-      for (keys %{ $ref }) {
+      for (keys %{ $red }) {
          $data->{ $_ } = exists $data->{ $_ }
-                       ? merge( $data->{ $_ }, $ref->{ $_ } )
-                       : $ref->{ $_ };
+                       ? merge( $data->{ $_ }, $red->{ $_ } )
+                       : $red->{ $_ };
       }
    }
 
@@ -90,15 +90,13 @@ sub update {
 sub _cache {
    my ($self, $key, $value) = @_;
 
-   return unless ($key);
+   $cache->{ $key } = $value if ($key and defined $value);
 
-   $cache->{ $key } = $value if (defined $value);
-
-   return $cache->{ $key };
+   return $key ? $cache->{ $key } : undef;
 }
 
 sub _cache_delete {
-   my ($self, $key) = @_; delete $cache->{ $key }; return;
+   my ($self, $key) = @_; return delete $cache->{ $key };
 }
 
 sub _cache_get {
@@ -109,13 +107,13 @@ sub _cache_get {
 
 sub _cache_get_by_paths {
    my ($self, $paths) = @_;
-   my ($key, $newest) = $self->_cache_key_and_mtime( $paths );
+   my ($key, $newest) = $self->_cache_key_and_newest( $paths );
    my ($data, $mtime) = $self->_cache_get( $key );
 
    return ($data, $mtime < $newest);
 }
 
-sub _cache_key_and_mtime {
+sub _cache_key_and_newest {
    my ($self, $paths) = @_; my ($key, $pathname); my $newest = 0;
 
    for my $path (@{ $paths }) {
@@ -143,17 +141,16 @@ sub _cache_set {
 sub _cache_set_by_paths {
    my ($self, $paths, $data) = @_;
 
-   my ($key, $mtime) = $self->_cache_key_and_mtime( $paths );
+   my ($key, $newest) = $self->_cache_key_and_newest( $paths );
 
-   return $self->_cache_set( $key, $data, $mtime );
+   return $self->_cache_set( $key, $data, $newest );
 }
 
 sub _delete {
    my ($self, $element_obj, $path, $element) = @_;
 
-   my $updated = FALSE;
-   my $name    = $element_obj->{name};
-   my $data    = $self->_read_file( $path, TRUE );
+   my $name = $element_obj->{name};
+   my $data = $self->_read_file( $path, TRUE );
 
    if (exists $data->{ $element } and exists $data->{ $element }->{ $name }) {
       delete $data->{ $element }->{ $name };
