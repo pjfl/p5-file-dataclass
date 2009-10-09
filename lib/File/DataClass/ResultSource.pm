@@ -14,17 +14,13 @@ with qw(File::DataClass::Util);
 
 has 'resultset_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
-
 has 'resultset_class' =>
    ( is => q(ro), isa => q(ClassName),
      default => q(File::DataClass::ResultSet) );
-
 has 'schema' =>
    ( is => q(ro), isa => q(Object), lazy_build => 1, init_arg => undef );
-
 has 'schema_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
-
 has 'schema_class' =>
    ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::Schema) );
 
@@ -35,12 +31,16 @@ sub _build_schema {
 }
 
 sub resultset {
-   my ($self, $path, $lang) = @_; my $class = $self->resultset_class;
+   my ($self, $path, $lang) = @_;
 
-   $self->storage->path( $path ) if ($path);
+   $path = $self->io( $path ) if ($path and not blessed $path);
+
    $self->storage->lang( $lang ) if ($lang and $self->storage->can( q(lang) ));
 
-   return $class->new( { %{ $self->resultset_attributes }, source => $self } );
+   my $attrs = { %{ $self->resultset_attributes },
+                 path => $path, source => $self };
+
+   return $self->resultset_class->new( $attrs );
 }
 
 sub storage {

@@ -22,32 +22,30 @@ class_has 'Lock' =>
    ( is => q(rw), isa => q(Object) );
 has 'debug' =>
    ( is => q(rw), isa => q(Bool),    default => FALSE );
-has 'lock' =>
-   ( is => q(rw), isa => q(Object),  lazy_build => TRUE );
-has 'lock_attributes' =>
-   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'log' =>
    ( is => q(rw), isa => q(Object),  default => sub { Class::Null->new } );
-has 'path' =>
-   ( is => q(rw), isa => q(DataClassPath) );
-has 'result_source' =>
-   ( is => q(ro), isa => q(Object),  lazy_build => TRUE );
-has 'result_source_attributes' =>
+has 'tempdir' =>
+   ( is => q(rw), isa => q(Str),     default => sub { File::Spec->tmpdir } );
+has 'lock_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
+has 'lock' =>
+   ( is => q(rw), isa => q(Object),  lazy_build => TRUE );
 has 'result_source_class' =>
    ( is => q(ro), isa => q(ClassName),
      default => q(File::DataClass::ResultSource) );
-has 'tempdir' =>
-   ( is => q(rw), isa => q(Str),     default => sub { File::Spec->tmpdir } );
+has 'result_source_attributes' =>
+   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
+has 'result_source' =>
+   ( is => q(ro), isa => q(Object),  lazy_build => TRUE );
 
 sub create {
    my ($self, $args) = @_;
 
-   my ($rs, $path, $name) = $self->_validate_params( $args );
+   my ($rs, $name) = $self->_validate_params( $args );
 
    $args->{fields} ||= {}; $args->{fields}->{name} = $name;
 
-   my $updated = $self->_txn_do( $path, sub {
+   my $updated = $self->_txn_do( $rs->path, sub {
       $rs->create( $args->{fields} )->insert;
    } );
 
@@ -57,19 +55,19 @@ sub create {
 sub delete {
    my ($self, $args) = @_;
 
-   my ($rs, $path, $name) = $self->_validate_params( $args );
+   my ($rs, $name) = $self->_validate_params( $args );
 
-   $self->_txn_do( $path, sub {
+   $self->_txn_do( $rs->path, sub {
       my ($element, $error);
 
       unless ($element = $rs->find( $name )) {
          $error = 'File [_1] element [_2] does not exist';
-         $self->throw( error => $error, args => [ $path, $name ] );
+         $self->throw( error => $error, args => [ $rs->path, $name ] );
       }
 
       unless ($element->delete) {
          $error = 'File [_1] element [_2] not deleted';
-         $self->throw( error => $error, args => [ $path, $name ] );
+         $self->throw( error => $error, args => [ $rs->path, $name ] );
       }
    } );
 
@@ -77,33 +75,27 @@ sub delete {
 }
 
 sub dump {
-   my ($self, $args) = @_;
+   my ($self, $args) = @_; my $rs = $self->_resultset( $args );
 
-   my ($rs, $path) = $self->_resultset( $args );
-
-   return $rs->storage->dump( $path, $args->{data} || {} );
+   return $rs->storage->dump( $rs->path, $args->{data} || {} );
 }
 
 sub find {
    my ($self, $args) = @_;
 
-   my ($rs, $path, $name) = $self->_validate_params( $args );
+   my ($rs, $name) = $self->_validate_params( $args );
 
-   return $self->_txn_do( $path, sub { $rs->find( $name ) } );
+   return $self->_txn_do( $rs->path, sub { $rs->find( $name ) } );
 }
 
 sub list {
-   my ($self, $args) = @_;
+   my ($self, $args) = @_; my $rs = $self->_resultset( $args );
 
-   my ($rs, $path) = $self->_resultset( $args );
-
-   return $self->_txn_do( $path, sub { $rs->list( $args->{name} ) } );
+   return $self->_txn_do( $rs->path, sub { $rs->list( $args->{name} ) } );
 }
 
 sub load {
-   my ($self, @paths) = @_;
-
-   my $rs = $self->result_source->resultset;
+   my ($self, @paths) = @_; my $rs = $self->_resultset;
 
    @paths = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
 
@@ -113,7 +105,7 @@ sub load {
 sub push_attribute {
    my ($self, $args) = @_; my ($added, $attrs, $list);
 
-   my ($rs, $path, $name) = $self->_validate_params( $args );
+   my ($rs, $name) = $self->_validate_params( $args );
 
    $self->throw( 'No list name specified' ) unless ($list = $args->{list});
 
@@ -121,7 +113,7 @@ sub push_attribute {
 
    $self->throw( 'List contains no items' ) unless ($items->[0]);
 
-   $self->_txn_do( $path, sub {
+   $self->_txn_do( $rs->path, sub {
       ($attrs, $added) = $rs->push_attribute( $name, $list, $items );
       $rs->find_and_update( $name, $attrs );
    } );
@@ -130,17 +122,17 @@ sub push_attribute {
 }
 
 sub search {
-   my ($self, $args) = @_;
+   my ($self, $args) = @_; my $rs = $self->_resultset( $args );
 
-   my ($rs, $path) = $self->_resultset( $args );
-
-   return $self->_txn_do( $path, sub { $rs->search( $args->{criterion} ) } );
+   return $self->_txn_do( $rs->path, sub {
+      $rs->search( $args->{criterion} );
+   } );
 }
 
 sub splice_attribute {
    my ($self, $args) = @_; my ($attrs, $list, $removed);
 
-   my ($rs, $path, $name) = $self->_validate_params( $args );
+   my ($rs, $name) = $self->_validate_params( $args );
 
    $self->throw( 'No list name specified' ) unless ($list = $args->{list});
 
@@ -148,7 +140,7 @@ sub splice_attribute {
 
    $self->throw( 'List contains no items' ) unless ($items->[0]);
 
-   $self->_txn_do( $path, sub {
+   $self->_txn_do( $rs->path, sub {
       ($attrs, $removed) = $rs->splice_attribute( $name, $list, $items );
       $rs->find_and_update( $name, $attrs );
    } );
@@ -183,9 +175,9 @@ sub translate {
 sub update {
    my ($self, $args) = @_;
 
-   my ($rs, $path, $name) = $self->_validate_params( $args );
+   my ($rs, $name) = $self->_validate_params( $args );
 
-   $self->_txn_do( $path, sub {
+   $self->_txn_do( $rs->path, sub {
       $rs->find_and_update( $name, $args->{fields} || {} );
    } );
 
@@ -221,19 +213,15 @@ sub _build_result_source {
 }
 
 sub _resultset {
-   my ($self, $args) = @_;
+   my ($self, $args) = @_; $args ||= {};
 
-   my $path = $args->{path} || $self->path;
-
-   $self->throw( 'No file path specified' ) unless ($path);
-
-   $path = $self->io( $path ) unless (blessed $path);
-
-   return ($self->result_source->resultset( $path, $args->{lang} ), $path);
+   return $self->result_source->resultset( $args->{path}, $args->{lang} );
 }
 
 sub _txn_do {
    my ($self, $path, $code_ref) = @_;
+
+   $self->throw( 'No file path specified' ) unless ($path);
 
    my $key = q(txn:).$path->pathname; my $res;
 

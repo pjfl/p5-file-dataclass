@@ -18,6 +18,8 @@ has 'element_class' =>
      default => q(File::DataClass::Element) );
 has 'list_class' =>
    ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::List) );
+has 'path' =>
+   ( is => q(rw), isa => q(Maybe[DataClassPath]) );
 has 'source' =>
    ( is => q(ro), isa => q(Object), weak_ref => TRUE );
 has '_elements' =>
@@ -40,7 +42,9 @@ sub create {
 }
 
 sub find {
-   my ($self, $name) = @_; my $elements = $self->storage->select;
+   my ($self, $name) = @_;
+
+   my $elements = $self->storage->select( $self->path );
 
    return unless ($name && exists $elements->{ $name });
 
@@ -74,7 +78,7 @@ sub list {
 
    my $new      = $self->list_class->new;
    my $attrs    = { name => $name };
-   my $elements = $self->storage->select;
+   my $elements = $self->storage->select( $self->path );
 
    $new->list( [ sort keys %{ $elements } ] );
 
@@ -109,7 +113,7 @@ sub next {
 sub push_attribute {
    my ($self, $name, $attr, $items) = @_;
 
-   my $elements = $self->storage->select;
+   my $elements = $self->storage->select( $self->path );
    my $attrs    = { %{ $elements->{ $name } } };
    my $list     = [ @{ $attrs->{ $attr } || [] } ];
    my $in       = [];
@@ -138,7 +142,7 @@ sub search {
    my $elements = $self->_elements;
 
    if (not defined $elements->[0]) {
-      $elements = $self->storage->select;
+      $elements = $self->storage->select( $self->path );
 
       for my $name (keys %{ $elements }) {
          my $attrs = $elements->{ $name };
@@ -164,7 +168,7 @@ sub search {
 sub splice_attribute {
    my ($self, $name, $attr, $items) = @_;
 
-   my $elements = $self->storage->select || {};
+   my $elements = $self->storage->select( $self->path ) || {};
    my $attrs    = { %{ $elements->{ $name } } };
    my $list     = [ @{ $attrs->{ $attr } || [] } ];
    my $out      = [];

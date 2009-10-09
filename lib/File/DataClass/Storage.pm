@@ -20,13 +20,14 @@ has 'extn'   => ( is => q(rw), isa => q(Str),    default  => NUL );
 has 'lock'   => ( is => q(ro), isa => q(Object), weak_ref => TRUE );
 has 'log'    => ( is => q(ro), isa => q(Object),
                   default => sub { Class::Null->new } );
-has 'path'   => ( is => q(rw), isa => q(DataClassPath) );
 has 'schema' => ( is => q(ro), isa => q(Object), weak_ref => TRUE );
 
 sub delete {
-   my ($self, $element_obj) = @_;
+   my ($self, $path, $element_obj) = @_;
 
-   return $self->_delete( $element_obj, $self->_validate_params );
+   my $elem = $self->_validate_params( $path );
+
+   return $self->_delete( $element_obj, $path, $elem );
 }
 
 sub dump {
@@ -38,10 +39,11 @@ sub dump {
 }
 
 sub insert {
-   my ($self, $element_obj) = @_;
+   my ($self, $path, $element_obj) = @_;
 
-   return $self->_update
-      ( $element_obj, $self->_validate_params, FALSE, sub { TRUE } );
+   my $elem = $self->_validate_params( $path );
+
+   return $self->_update( $element_obj, $path, $elem, FALSE, sub { TRUE } );
 }
 
 sub load {
@@ -69,18 +71,19 @@ sub load {
 }
 
 sub select {
-   my $self          = shift;
-   my ($path, $elem) = $self->_validate_params;
+   my ($self, $path) = @_;
+   my $elem          = $self->_validate_params( $path );
    my $data          = $self->_read_file( $path, FALSE );
 
    return exists $data->{ $elem } ? $data->{ $elem } : {};
 }
 
 sub update {
-   my ($self, $element_obj) = @_;
+   my ($self, $path, $element_obj) = @_;
 
-   return $self->_update
-      ( $element_obj, $self->_validate_params, TRUE, sub { TRUE } );
+   my $elem = $self->_validate_params( $path );
+
+   return $self->_update( $element_obj, $path, $elem, TRUE, sub { TRUE } );
 }
 
 # Private methods
@@ -219,13 +222,13 @@ sub _update {
 }
 
 sub _validate_params {
-   my $self = shift; my ($elem, $path, $schema);
+   my ($self, $path) = @_; my ($elem, $schema);
 
-   $self->throw( 'No file path specified' ) unless ($path = $self->path);
+   $self->throw( 'No file path specified' ) unless ($path);
    $self->throw( 'No schema specified'    ) unless ($schema = $self->schema);
    $self->throw( 'No element specified'   ) unless ($elem = $schema->element);
 
-   return ($path, $elem);
+   return $elem;
 }
 
 sub _write_file {

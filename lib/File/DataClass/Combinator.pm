@@ -15,10 +15,10 @@ has 'lang'    => ( is => q(rw), isa => q(Str), default => NUL );
 has 'storage' => ( is => q(ro), isa => q(Object) );
 
 sub delete {
-   my ($self, $element_obj) = @_;
+   my ($self, $path, $element_obj) = @_;
 
-   my ($path, $elem) = $self->storage->_validate_params;
-   my $deleted       = $self->storage->_delete( $element_obj, $path, $elem );
+   my $elem    = $self->storage->_validate_params;
+   my $deleted = $self->storage->_delete( $element_obj, $path, $elem );
 
    if (my $lang_path = $self->_make_lang_path( $path )) {
       my $updated = $self->storage->_delete( $element_obj, $lang_path, $elem );
@@ -34,25 +34,19 @@ sub dump {
 }
 
 sub insert {
-   my ($self, $element_obj) = @_; return $self->_update( $element_obj, FALSE );
+   my ($self, $path, $element_obj) = @_;
+
+   return $self->_update( $path, $element_obj, FALSE );
 }
 
 sub load {
    my ($self, @paths) = @_; return $self->storage->load( @paths );
 }
 
-sub path {
+sub select {
    my ($self, $path) = @_;
 
-   $self->storage->path( $path ) if (defined $path);
-
-   return $self->storage->path;
-}
-
-sub select {
-   my $self          = shift;
-   my ($path, $elem) = $self->storage->_validate_params;
-   my @paths         = ($path);
+   my $elem = $self->storage->_validate_params; my @paths = ($path);
 
    push @paths, $self->_make_lang_path( $path ) if ($self->lang);
 
@@ -62,7 +56,9 @@ sub select {
 }
 
 sub update {
-   my ($self, $element_obj) = @_; return $self->_update( $element_obj, TRUE );
+   my ($self, $path, $element_obj) = @_;
+
+   return $self->_update( $path, $element_obj, TRUE );
 }
 
 # Private methods
@@ -82,9 +78,9 @@ sub _make_lang_path {
 }
 
 sub _update {
-   my ($self, $element_obj, $overwrite) = @_;
+   my ($self, $path, $element_obj, $overwrite) = @_;
 
-   my ($path, $elem) = $self->storage->_validate_params;
+   my $elem      = $self->storage->_validate_params;
    my $schema    = $self->storage->schema;
    my $condition = sub { !$schema->lang_dep || !$schema->lang_dep->{ $_[0] } };
    my $updated   = $self->storage->_update( $element_obj, $path, $elem,

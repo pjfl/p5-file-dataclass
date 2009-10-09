@@ -25,19 +25,19 @@ sub BUILD {
 sub delete {
    my $self = shift; $self->_assert_has_name;
 
-   return $self->_storage->delete( $self );
+   return $self->_storage->delete( $self->_path, $self );
 }
 
 sub insert {
    my $self = shift; $self->_assert_has_name;
 
-   return $self->_storage->insert( $self );
+   return $self->_storage->insert( $self->_path, $self );
 }
 
 sub update {
    my $self = shift; $self->_assert_has_name;
 
-   return $self->_storage->update( $self );
+   return $self->_storage->update( $self->_path, $self );
 }
 
 sub _assert_has_name {
@@ -45,10 +45,14 @@ sub _assert_has_name {
 
    unless ($self->name) {
       $self->throw( error => 'No element name specified [_1]',
-                    args  => [ $self->_storage->path->pathname ] );
+                    args  => [ $self->_path->pathname ] );
    }
 
    return 1;
+}
+
+sub _path {
+   my $self = shift; return $self->_resultset->path;
 }
 
 sub _storage {
