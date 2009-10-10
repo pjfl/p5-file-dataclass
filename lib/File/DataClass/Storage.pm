@@ -25,9 +25,7 @@ has 'schema' => ( is => q(ro), isa => q(Object), weak_ref => TRUE );
 sub delete {
    my ($self, $path, $element_obj) = @_;
 
-   my $elem = $self->_validate_params( $path );
-
-   return $self->_delete( $element_obj, $path, $elem );
+   return $self->_delete( $element_obj, $path );
 }
 
 sub dump {
@@ -41,9 +39,7 @@ sub dump {
 sub insert {
    my ($self, $path, $element_obj) = @_;
 
-   my $elem = $self->_validate_params( $path );
-
-   return $self->_update( $element_obj, $path, $elem, FALSE, sub { TRUE } );
+   return $self->_update( $element_obj, $path, FALSE, sub { TRUE } );
 }
 
 sub load {
@@ -53,7 +49,7 @@ sub load {
 
    my ($data, $stale) = $self->_cache_get_by_paths( \@paths );
 
-   return $data unless (not $data or $stale); $data = {};
+   return $data if ($data and not $stale); $data = {};
 
    for my $path (@paths) {
       next unless ($red = $self->_read_file( $path, FALSE ));
@@ -81,9 +77,7 @@ sub select {
 sub update {
    my ($self, $path, $element_obj) = @_;
 
-   my $elem = $self->_validate_params( $path );
-
-   return $self->_update( $element_obj, $path, $elem, TRUE, sub { TRUE } );
+   return $self->_update( $element_obj, $path, TRUE, sub { TRUE } );
 }
 
 # Private methods
@@ -150,13 +144,14 @@ sub _cache_set_by_paths {
 }
 
 sub _delete {
-   my ($self, $element_obj, $path, $element) = @_;
+   my ($self, $element_obj, $path) = @_;
 
    my $name = $element_obj->{name};
+   my $elem = $self->_validate_params( $path );
    my $data = $self->_read_file( $path, TRUE );
 
-   if (exists $data->{ $element } and exists $data->{ $element }->{ $name }) {
-      delete $data->{ $element }->{ $name };
+   if (exists $data->{ $elem } and exists $data->{ $elem }->{ $name }) {
+      delete $data->{ $elem }->{ $name };
       $self->_write_file( $path, $data );
       return TRUE;
    }
@@ -201,19 +196,20 @@ sub _read_file_with_locking {
 }
 
 sub _update {
-   my ($self, $element_obj, $path, $element, $overwrite, $condition) = @_;
+   my ($self, $element_obj, $path, $overwrite, $condition) = @_;
 
    my $name = $element_obj->{name};
+   my $elem = $self->_validate_params( $path );
    my $data = $self->_read_file( $path, TRUE );
 
-   if (not $overwrite and exists $data->{ $element }->{ $name }) {
+   if (not $overwrite and exists $data->{ $elem }->{ $name }) {
       $self->lock->reset( k => $path->pathname );
       $self->throw( error => 'File [_1] element [_2] already exists',
                     args  => [ $path->pathname, $name ] );
    }
 
    my $updated = File::DataClass::HashMerge->merge
-      ( $element_obj, \$data->{ $element }->{ $name }, $condition );
+      ( $element_obj, \$data->{ $elem }->{ $name }, $condition );
 
    if ($updated) { $self->_write_file( $path, $data ) }
    else { $self->lock->reset( k => $path->pathname ) }

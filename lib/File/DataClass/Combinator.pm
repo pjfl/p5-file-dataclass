@@ -16,11 +16,10 @@ has 'storage' => ( is => q(ro), isa => q(Object), required => TRUE );
 sub delete {
    my ($self, $path, $element_obj) = @_;
 
-   my $elem    = $self->storage->_validate_params;
-   my $deleted = $self->storage->_delete( $element_obj, $path, $elem );
+   my $deleted = $self->storage->_delete( $element_obj, $path );
 
    if (my $lang_path = $self->_make_lang_path( $path )) {
-      my $updated = $self->storage->_delete( $element_obj, $lang_path, $elem );
+      my $updated = $self->storage->_delete( $element_obj, $lang_path );
 
       $deleted ||= $updated;
    }
@@ -84,14 +83,13 @@ sub _update {
    my ($self, $path, $element_obj, $overwrite) = @_;
 
    my $schema    = $self->storage->schema;
-   my $elem      = $self->storage->_validate_params;
    my $condition = sub { !$schema->lang_dep || !$schema->lang_dep->{ $_[0] } };
-   my $updated   = $self->storage->_update( $element_obj, $path, $elem,
+   my $updated   = $self->storage->_update( $element_obj, $path,
                                             $overwrite, $condition );
 
    if (my $lpath = $self->_make_lang_path( $path )) {
       $condition  = sub { $schema->lang_dep && $schema->lang_dep->{ $_[0] } };
-      my $written = $self->storage->_update( $element_obj, $lpath, $elem,
+      my $written = $self->storage->_update( $element_obj, $lpath,
                                              $overwrite, $condition );
       $updated ||= $written;
    }
