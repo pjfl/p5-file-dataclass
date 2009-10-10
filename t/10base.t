@@ -53,7 +53,7 @@ $args->{path} = q(t/default.xml);
 
 my $res = $file->create( $args );
 
-ok( defined $res && !$res, 'Creates dummy element but does not insert' );
+ok( !defined $res, 'Creates dummy element but does not insert' );
 
 #$model = $context->model( q(Config::Levels) );
 
