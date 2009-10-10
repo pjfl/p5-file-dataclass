@@ -49,7 +49,7 @@ sub create {
       $rs->create( $args->{fields} )->insert;
    } );
 
-   return $updated ? $name : FALSE;
+   return $updated ? $name : undef;
 }
 
 sub delete {
