@@ -1,9 +1,9 @@
-# @(#)$Id: Element.pm 664 2009-08-03 15:35:23Z pjf $
+# @(#)$Id$
 
 package File::DataClass::Element;
 
 use strict;
-use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 664 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 
@@ -75,7 +75,7 @@ File::DataClass::Element - Element object definition
 
 =head1 Version
 
-0.4.$Revision: 664 $
+0.4.$Revision$
 
 =head1 Synopsis
 

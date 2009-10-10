@@ -1,10 +1,10 @@
-# @(#)$Id: Storage.pm 699 2009-10-02 17:57:19Z pjf $
+# @(#)$Id$
 
 package File::DataClass::Storage;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 699 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::Null;
 use File::DataClass::Constants;
@@ -274,7 +274,7 @@ File::DataClass::Storage - Factory subclass loader
 
 =head1 Version
 
-0.4.$Revision: 699 $
+0.4.$Revision$
 
 =head1 Synopsis
 

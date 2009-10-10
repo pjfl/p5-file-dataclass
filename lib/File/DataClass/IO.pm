@@ -1,10 +1,10 @@
-# @(#)$Id: IO.pm 705 2009-10-04 23:36:49Z pjf $
+# @(#)$Id$
 
 package File::DataClass::IO;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 705 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use English      qw( -no_match_vars );
@@ -654,7 +654,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-0.4.$Revision: 705 $
+0.4.$Revision$
 
 =head1 Synopsis
 

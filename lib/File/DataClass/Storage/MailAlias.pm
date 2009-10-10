@@ -1,10 +1,10 @@
-# @(#)$Id: MailAlias.pm 688 2009-08-19 02:17:20Z pjf $
+# @(#)$Id$
 
 package File::DataClass::Storage::MailAlias;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 688 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::Data::Constants;
 use Moose;
@@ -137,7 +137,7 @@ File::DataClass::Storage::MailAlias - <One-line description of module's purpose>
 
 =head1 Version
 
-0.1.$Revision: 688 $
+0.1.$Revision$
 
 =head1 Synopsis
 

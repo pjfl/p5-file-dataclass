@@ -1,10 +1,10 @@
-# @(#)$Id: Schema.pm 685 2009-08-17 22:01:00Z pjf $
+# @(#)$Id$
 
 package File::DataClass::Schema;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 685 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use Moose;
@@ -74,7 +74,7 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Version
 
-0.4.$Revision: 685 $
+0.4.$Revision$
 
 =head1 Synopsis
 
