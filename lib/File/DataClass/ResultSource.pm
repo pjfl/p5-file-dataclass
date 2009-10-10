@@ -17,12 +17,12 @@ has 'resultset_attributes' =>
 has 'resultset_class' =>
    ( is => q(ro), isa => q(ClassName),
      default => q(File::DataClass::ResultSet) );
-has 'schema' =>
-   ( is => q(ro), isa => q(Object), lazy_build => 1, init_arg => undef );
 has 'schema_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'schema_class' =>
    ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::Schema) );
+has 'schema' =>
+   ( is => q(ro), isa => q(Object), lazy_build => 1, init_arg => undef );
 
 sub _build_schema {
    my $self = shift;

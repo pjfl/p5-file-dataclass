@@ -10,6 +10,8 @@ use File::DataClass::Element;
 use File::DataClass::List;
 use File::DataClass::Constants;
 use Moose;
+use Scalar::Util qw(blessed);
+use TryCatch;
 
 with qw(File::DataClass::Util);
 
@@ -33,73 +35,88 @@ sub all {
 }
 
 sub create {
-   my ($self, $attrs) = @_;
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   $attrs = { %{ $self->schema->defaults },
-              %{ $attrs || {} }, _resultset => $self };
+   my $updated = $self->_txn_do( $self->path, sub {
+      my $attrs = { %{ $self->schema->defaults }, %{ $args->{fields} || {} } };
 
-   return $self->element_class->new( $attrs );
+      $self->_create( $name, $attrs )->insert;
+   } );
+
+   return $updated ? $name : undef;
+}
+
+sub delete {
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+
+   $self->_txn_do( $self->path, sub {
+      my ($element, $error);
+
+      unless ($element = $self->_find( $name )) {
+         $error = 'File [_1] element [_2] does not exist';
+         $self->throw( error => $error, args => [ $self->path, $name ] );
+      }
+
+      unless ($element->delete) {
+         $error = 'File [_1] element [_2] not deleted';
+         $self->throw( error => $error, args => [ $self->path, $name ] );
+      }
+   } );
+
+   return $name;
+}
+
+sub dump {
+   my ($self, $args) = @_;
+
+   return $self->storage->dump( $self->path, $args->{data} || {} );
 }
 
 sub find {
-   my ($self, $name) = @_;
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $elements = $self->storage->select( $self->path );
-
-   return unless ($name && exists $elements->{ $name });
-
-   my $attrs = $elements->{ $name };
-
-   $attrs->{name} = $name; $attrs->{_resultset} = $self;
-
-   return $self->element_class->new( $attrs );
-}
-
-sub find_and_update {
-   my ($self, $name, $attrs) = @_; my $schema = $self->schema; my $element;
-
-   if ($element = $self->find( $name )) {
-      for my $attr (grep { exists $attrs->{ $_ } } @{ $schema->attributes }) {
-         $element->$attr( $attrs->{ $attr } );
-      }
-
-      return $element->update;
-   }
-
-   return;
+   return $self->_txn_do( $self->path, sub { $self->_find( $name ) } );
 }
 
 sub first {
    my $self = shift; return $self->_elements ? $self->_elements->[0] : undef;
 }
 
-sub list {
-   my ($self, $name) = @_; my $attr;
-
-   my $new      = $self->list_class->new;
-   my $attrs    = { name => $name };
-   my $elements = $self->storage->select( $self->path );
-
-   $new->list( [ sort keys %{ $elements } ] );
-
-   if ($attr = $self->schema->label_attr) {
-      $new->labels( { map { $_ => $elements->{ $_ }->{ $attr } }
-                      @{ $new->list } } );
-   }
-
-   if ($name && exists $elements->{ $name }) {
-      $attrs = $elements->{ $name };
-      $attrs->{name} = $name; $attrs->{_resultset} = $self;
-      $new->element( $self->element_class->new( $attrs ) );
-      $new->found( TRUE );
-   }
-   else { $new->element( $self->create( $attrs ) ) }
-
-   return $new;
-}
-
 sub last {
    my $self = shift; return $self->_elements ? $self->_elements->[-1] : undef;
+}
+
+sub list {
+   my ($self, $args) = @_; my $name = $args->{name}; my ($attr, $attrs);
+
+   return $self->_txn_do( $self->path, sub {
+      my $elements = $self->storage->select( $self->path );
+      my $new      = $self->list_class->new;
+
+      $new->list( [ sort keys %{ $elements } ] );
+
+      if ($attr = $self->schema->label_attr) {
+         $new->labels( { map { $_ => $elements->{ $_ }->{ $attr } }
+                         @{ $new->list } } );
+      }
+
+      if ($name && exists $elements->{ $name }) {
+         $attrs = $elements->{ $name };
+         $new->found( TRUE );
+      }
+      else { $attrs = [ %{ $self->schema->defaults } ] }
+
+      $new->element( $self->_create( $name, $attrs ) );
+      return $new;
+   } );
+}
+
+sub load {
+   my ($self, @paths) = @_;
+
+   @paths = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
+
+   return $self->storage->load( @paths ) || {};
 }
 
 sub next {
@@ -111,21 +128,22 @@ sub next {
 }
 
 sub push_attribute {
-   my ($self, $name, $attr, $items) = @_;
+   my ($self, $args) = @_; my ($added, $attrs, $list);
 
-   my $elements = $self->storage->select( $self->path );
-   my $attrs    = { %{ $elements->{ $name } } };
-   my $list     = [ @{ $attrs->{ $attr } || [] } ];
-   my $in       = [];
+   my $name = $self->_validate_params( $args );
 
-   for my $item (@{ $items }) {
-      unless ($self->is_member( $item, @{ $list } )) {
-         push @{ $list }, $item; push @{ $in }, $item;
-      }
-   }
+   $self->throw( 'No list name specified' ) unless ($list = $args->{list});
 
-   $attrs->{ $attr } = $list;
-   return ($attrs, $in);
+   my $items = $args->{items} || [];
+
+   $self->throw( 'List contains no items' ) unless ($items->[0]);
+
+   $self->_txn_do( $self->path, sub {
+      ($attrs, $added) = $self->_push_attribute( $name, $list, $items );
+      $self->_find_and_update( $name, $attrs );
+   } );
+
+   return $added;
 }
 
 sub schema {
@@ -133,66 +151,85 @@ sub schema {
 }
 
 sub search {
-   my ($self, $criterion) = @_; my @tmp;
+   my ($self, $args) = @_; $args ||= {}; my @tmp;
 
-   unless ($self->_elements) {
-      $self->_elements( [] ); $self->_iterator( 0 );
-   }
+   return $self->_txn_do( $self->path, sub {
+      unless ($self->_elements) {
+         $self->_elements( [] ); $self->_iterator( 0 );
+      }
 
-   my $elements = $self->_elements;
+      my $criterion = $args->{criterion};
+      my $elements  = $self->_elements;
 
-   if (not defined $elements->[0]) {
-      $elements = $self->storage->select( $self->path );
+      if (not defined $elements->[0]) {
+         $elements = $self->storage->select( $self->path );
 
-      for my $name (keys %{ $elements }) {
-         my $attrs = $elements->{ $name };
+         for my $name (keys %{ $elements }) {
+            my $attrs = $elements->{ $name };
 
-         $attrs->{name} = $name; $attrs->{_resultset} = $self;
+            $attrs->{name} = $name; $attrs->{_resultset} = $self;
 
-         if (not $criterion or $self->_eval_criterion( $criterion, $attrs )) {
-            push @{ $self->_elements }, $self->element_class->new( $attrs );
+            if (not $criterion
+                 or $self->_eval_criterion( $criterion, $attrs )) {
+               push @{ $self->_elements }, $self->element_class->new( $attrs );
+            }
          }
       }
-   }
-   elsif ($criterion and defined $elements->[0]) {
-      for my $attrs (@{ $elements }) {
-         push @tmp, $attrs if ($self->_eval_criterion( $criterion, $attrs ));
+      elsif ($criterion and defined $elements->[0]) {
+         for my $attrs (@{ $elements }) {
+            push @tmp, $attrs
+               if ($self->_eval_criterion( $criterion, $attrs ));
+         }
+
+         $self->_elements( \@tmp );
       }
 
-      $self->_elements( \@tmp );
-   }
-
-   return wantarray ? $self->all : $self;
+      return wantarray ? $self->all : $self;
+   } );
 }
 
 sub splice_attribute {
-   my ($self, $name, $attr, $items) = @_;
+   my ($self, $args) = @_; my ($attrs, $list, $removed);
 
-   my $elements = $self->storage->select( $self->path ) || {};
-   my $attrs    = { %{ $elements->{ $name } } };
-   my $list     = [ @{ $attrs->{ $attr } || [] } ];
-   my $out      = [];
+   my $name = $self->_validate_params( $args );
 
-   for my $item (@{ $items }) {
-      last unless (defined $list->[0]);
+   $self->throw( 'No list name specified' ) unless ($list = $args->{list});
 
-      for (0 .. $#{ $list }) {
-         if ($list->[ $_ ] eq $item) {
-            splice @{ $list }, $_, 1; push @{ $out }, $item;
-            last;
-         }
-      }
-   }
+   my $items = $args->{items} || [];
 
-   $attrs->{ $attr } = $list;
-   return ($attrs, $out);
+   $self->throw( 'List contains no items' ) unless ($items->[0]);
+
+   $self->_txn_do( $self->path, sub {
+      ($attrs, $removed) = $self->_splice_attribute( $name, $list, $items );
+      $self->_find_and_update( $name, $attrs );
+   } );
+
+   return $removed;
 }
 
 sub storage {
    return shift->schema->storage;
 }
 
+sub update {
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+
+   $self->_txn_do( $self->path, sub {
+      $self->_find_and_update( $name, $args->{fields} || {} );
+   } );
+
+   return $name;
+}
+
 # Private methods
+
+sub _create {
+   my ($self, $name, $attrs) = @_; $attrs ||= {};
+
+   $attrs->{name} = $name; $attrs->{_resultset} = $self;
+
+   return $self->element_class->new( $attrs );
+}
 
 sub _eval_criterion {
    my ($self, $criterion, $attrs) = @_; my $lhs;
@@ -227,6 +264,32 @@ sub _eval_op {
    return $subr ? $subr->( $lhs, $rhs ) : undef;
 }
 
+sub _find {
+   my ($self, $name) = @_;
+
+   my $elements = $self->storage->select( $self->path );
+
+   return unless ($name && exists $elements->{ $name });
+
+   my $attrs = $elements->{ $name };
+
+   return $self->_create( $name, $attrs );
+}
+
+sub _find_and_update {
+   my ($self, $name, $attrs) = @_; my $schema = $self->schema; my $element;
+
+   if ($element = $self->_find( $name )) {
+      for my $attr (grep { exists $attrs->{ $_ } } @{ $schema->attributes }) {
+         $element->$attr( $attrs->{ $attr } );
+      }
+
+      return $element->update;
+   }
+
+   return;
+}
+
 sub _operators {
    return { q(eq) => sub { return $_[0] eq $_[1] },
             q(==) => sub { return $_[0] == $_[1] },
@@ -236,6 +299,75 @@ sub _operators {
             q(>=) => sub { return $_[0] >= $_[1] },
             q(<)  => sub { return $_[0] <  $_[1] },
             q(<=) => sub { return $_[0] <= $_[1] }, };
+}
+
+sub _push_attribute {
+   my ($self, $name, $attr, $items) = @_;
+
+   my $elements = $self->storage->select( $self->path );
+   my $attrs    = { %{ $elements->{ $name } } };
+   my $list     = [ @{ $attrs->{ $attr } || [] } ];
+   my $in       = [];
+
+   for my $item (@{ $items }) {
+      unless ($self->is_member( $item, @{ $list } )) {
+         push @{ $list }, $item; push @{ $in }, $item;
+      }
+   }
+
+   $attrs->{ $attr } = $list;
+   return ($attrs, $in);
+}
+
+sub _splice_attribute {
+   my ($self, $name, $attr, $items) = @_;
+
+   my $elements = $self->storage->select( $self->path ) || {};
+   my $attrs    = { %{ $elements->{ $name } } };
+   my $list     = [ @{ $attrs->{ $attr } || [] } ];
+   my $out      = [];
+
+   for my $item (@{ $items }) {
+      last unless (defined $list->[0]);
+
+      for (0 .. $#{ $list }) {
+         if ($list->[ $_ ] eq $item) {
+            splice @{ $list }, $_, 1; push @{ $out }, $item;
+            last;
+         }
+      }
+   }
+
+   $attrs->{ $attr } = $list;
+   return ($attrs, $out);
+}
+
+sub _txn_do {
+   my ($self, $path, $code_ref) = @_;
+
+   $self->throw( 'No file path specified' ) unless ($path);
+
+   my $key = q(txn:).$path->pathname; my $res;
+
+   try {
+      $self->storage->lock->set( k => $key );
+
+      if (wantarray) { @{ $res } = $code_ref->() }
+      else { $res = $code_ref->() }
+
+      $self->storage->lock->reset( k => $key );
+   }
+   catch ($e) { $self->storage->lock->reset( k => $key ); $self->throw( $e ) }
+
+   return wantarray ? @{ $res } : $res;
+}
+
+sub _validate_params {
+   my ($self, $args) = @_; $args ||= {}; my $name;
+
+   $self->throw( 'No element name specified' ) unless ($name = $args->{name});
+
+   return $name;
 }
 
 __PACKAGE__->meta->make_immutable;

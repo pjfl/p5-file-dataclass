@@ -13,8 +13,6 @@ use File::Spec;
 use IPC::SRLock;
 use Moose;
 use MooseX::ClassAttribute;
-use Scalar::Util qw(blessed);
-use TryCatch;
 
 with qw(File::DataClass::Util);
 
@@ -30,122 +28,52 @@ has 'lock_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'lock' =>
    ( is => q(rw), isa => q(Object),  lazy_build => TRUE );
+has 'result_source_attributes' =>
+   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'result_source_class' =>
    ( is => q(ro), isa => q(ClassName),
      default => q(File::DataClass::ResultSource) );
-has 'result_source_attributes' =>
-   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'result_source' =>
    ( is => q(ro), isa => q(Object),  lazy_build => TRUE );
 
 sub create {
-   my ($self, $args) = @_;
-
-   my ($rs, $name) = $self->_validate_params( $args );
-
-   $args->{fields} ||= {}; $args->{fields}->{name} = $name;
-
-   my $updated = $self->_txn_do( $rs->path, sub {
-      $rs->create( $args->{fields} )->insert;
-   } );
-
-   return $updated ? $name : undef;
+   my ($self, $args) = @_; return $self->_resultset( $args )->create( $args );
 }
 
 sub delete {
-   my ($self, $args) = @_;
-
-   my ($rs, $name) = $self->_validate_params( $args );
-
-   $self->_txn_do( $rs->path, sub {
-      my ($element, $error);
-
-      unless ($element = $rs->find( $name )) {
-         $error = 'File [_1] element [_2] does not exist';
-         $self->throw( error => $error, args => [ $rs->path, $name ] );
-      }
-
-      unless ($element->delete) {
-         $error = 'File [_1] element [_2] not deleted';
-         $self->throw( error => $error, args => [ $rs->path, $name ] );
-      }
-   } );
-
-   return $name;
+   my ($self, $args) = @_; return $self->_resultset( $args )->delete( $args );
 }
 
 sub dump {
-   my ($self, $args) = @_; my $rs = $self->_resultset( $args );
-
-   return $rs->storage->dump( $rs->path, $args->{data} || {} );
+   my ($self, $args) = @_; return $self->_resultset( $args )->dump( $args );
 }
 
 sub find {
-   my ($self, $args) = @_;
-
-   my ($rs, $name) = $self->_validate_params( $args );
-
-   return $self->_txn_do( $rs->path, sub { $rs->find( $name ) } );
+   my ($self, $args) = @_; return $self->_resultset( $args )->find( $args );
 }
 
 sub list {
-   my ($self, $args) = @_; my $rs = $self->_resultset( $args );
-
-   return $self->_txn_do( $rs->path, sub { $rs->list( $args->{name} ) } );
+   my ($self, $args) = @_; return $self->_resultset( $args )->list( $args );
 }
 
 sub load {
-   my ($self, @paths) = @_; my $rs = $self->_resultset;
-
-   @paths = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
-
-   return $rs->storage->load( @paths ) || {};
+   my ($self, @paths) = @_; return $self->_resultset->load( @paths );
 }
 
 sub push_attribute {
-   my ($self, $args) = @_; my ($added, $attrs, $list);
+   my ($self, $args) = @_;
 
-   my ($rs, $name) = $self->_validate_params( $args );
-
-   $self->throw( 'No list name specified' ) unless ($list = $args->{list});
-
-   my $items = $args->{items} || [];
-
-   $self->throw( 'List contains no items' ) unless ($items->[0]);
-
-   $self->_txn_do( $rs->path, sub {
-      ($attrs, $added) = $rs->push_attribute( $name, $list, $items );
-      $rs->find_and_update( $name, $attrs );
-   } );
-
-   return $added;
+   return $self->_resultset( $args )->push_attribute( $args );
 }
 
 sub search {
-   my ($self, $args) = @_; my $rs = $self->_resultset( $args );
-
-   return $self->_txn_do( $rs->path, sub {
-      $rs->search( $args->{criterion} );
-   } );
+   my ($self, $args) = @_; return $self->_resultset( $args )->search( $args );
 }
 
 sub splice_attribute {
-   my ($self, $args) = @_; my ($attrs, $list, $removed);
+   my ($self, $args) = @_;
 
-   my ($rs, $name) = $self->_validate_params( $args );
-
-   $self->throw( 'No list name specified' ) unless ($list = $args->{list});
-
-   my $items = $args->{items} || [];
-
-   $self->throw( 'List contains no items' ) unless ($items->[0]);
-
-   $self->_txn_do( $rs->path, sub {
-      ($attrs, $removed) = $rs->splice_attribute( $name, $list, $items );
-      $rs->find_and_update( $name, $attrs );
-   } );
-
-   return $removed;
+   return $self->_resultset( $args )->splice_attribute( $args );
 }
 
 sub translate {
@@ -155,7 +83,7 @@ sub translate {
       result_source_attributes => {
          schema_attributes => {
             %{ $self->result_source->schema_attributes },
-            storage_class => $args->{from_class}
+            storage_class => $args->{from_class},
          }
       }
    };
@@ -173,15 +101,7 @@ sub translate {
 }
 
 sub update {
-   my ($self, $args) = @_;
-
-   my ($rs, $name) = $self->_validate_params( $args );
-
-   $self->_txn_do( $rs->path, sub {
-      $rs->find_and_update( $name, $args->{fields} || {} );
-   } );
-
-   return $name;
+   my ($self, $args) = @_; return $self->_resultset( $args )->update( $args );
 }
 
 # Private methods
@@ -216,34 +136,6 @@ sub _resultset {
    my ($self, $args) = @_; $args ||= {};
 
    return $self->result_source->resultset( $args->{path} );
-}
-
-sub _txn_do {
-   my ($self, $path, $code_ref) = @_;
-
-   $self->throw( 'No file path specified' ) unless ($path);
-
-   my $key = q(txn:).$path->pathname; my $res;
-
-   try {
-      $self->lock->set( k => $key );
-
-      if (wantarray) { @{ $res } = $code_ref->() }
-      else { $res = $code_ref->() }
-
-      $self->lock->reset( k => $key );
-   }
-   catch ($e) { $self->lock->reset( k => $key ); $self->throw( $e ) }
-
-   return wantarray ? @{ $res } : $res;
-}
-
-sub _validate_params {
-   my ($self, $args) = @_; $args ||= {}; my $name;
-
-   $self->throw( 'No element name specified' ) unless ($name = $args->{name});
-
-   return ($self->_resultset( $args ), $name);
 }
 
 __PACKAGE__->meta->make_immutable;
