@@ -7,7 +7,6 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 685 $ =~ /\d+/gmx );
 
 use Moose;
-use MRO::Compat;
 
 extends qw(File::DataClass::Storage);
 

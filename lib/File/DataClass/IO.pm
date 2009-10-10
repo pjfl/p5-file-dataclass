@@ -362,13 +362,13 @@ sub getlines {
 sub _init {
    my ($self, $type, $name) = @_;
 
-   $self->atomic_pref( q(B_)        );
-   $self->autoclose  ( TRUE         );
-   $self->block_size ( 1024         );
-   $self->io_handle  ( undef        );
-   $self->is_open    ( FALSE        );
-   $self->name       ( $name        ) if ($name);
-   $self->type       ( $type || NUL );
+   $self->atomic_pref( q(B_) );
+   $self->autoclose  ( TRUE  );
+   $self->block_size ( 1024  );
+   $self->io_handle  ( undef );
+   $self->is_open    ( FALSE );
+   $self->name       ( $name ) if ($name);
+   $self->type       ( $type );
 
    return $self;
 }

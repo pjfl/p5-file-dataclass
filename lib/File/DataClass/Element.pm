@@ -52,7 +52,7 @@ sub _assert_has_name {
 }
 
 sub _path {
-   my $self = shift; return $self->_resultset->path;
+   return shift->_resultset->path;
 }
 
 sub _storage {

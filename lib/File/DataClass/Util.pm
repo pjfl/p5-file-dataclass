@@ -7,7 +7,6 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::MOP;
-use Class::Null;
 use File::DataClass::Constants;
 use File::DataClass::Exception;
 use File::DataClass::IO;
