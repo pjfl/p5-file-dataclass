@@ -25,17 +25,17 @@ has 'schema_class' =>
    ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::Schema) );
 
 sub _build_schema {
-   my $self = shift; my $class = $self->schema_class;
+   my $self = shift;
 
-   return $class->new( { %{ $self->schema_attributes }, source => $self } );
+   my $attrs = { %{ $self->schema_attributes }, source => $self };
+
+   return $self->schema_class->new( $attrs );
 }
 
 sub resultset {
-   my ($self, $path, $lang) = @_;
+   my ($self, $path) = @_;
 
    $path = $self->io( $path ) if ($path and not blessed $path);
-
-   $self->storage->lang( $lang ) if ($lang and $self->storage->can( q(lang) ));
 
    my $attrs = { %{ $self->resultset_attributes },
                  path => $path, source => $self };
@@ -73,7 +73,7 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
    $result_source = File::DataClass->new( $attrs );
 
-   $result_source->resultset( $file, $lang );
+   $result_source->resultset( $file );
 
 =head1 Description
 
@@ -90,7 +90,7 @@ which defaults to L<File::DataClass::Schema>
 
 =head2 resultset
 
-Sets the schema's I<file> and I<lang> attributes from the optional
+Sets the resultset's I<path> attribute from the optional
 parameters. Creates and returns a new
 L<File::DataClass::Resultset> object
 

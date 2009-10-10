@@ -6,6 +6,7 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev: 685 $ =~ /\d+/gmx );
 
+use File::DataClass::Constants;
 use Moose;
 
 with qw(File::DataClass::Util);
@@ -13,23 +14,25 @@ with qw(File::DataClass::Util);
 has 'attributes' =>
    ( is => q(ro), isa => q(ArrayRef), default => sub { return [] } );
 has 'defaults' =>
-   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
+   ( is => q(ro), isa => q(HashRef),  default => sub { return {} } );
 has 'element' =>
-   ( is => q(ro), isa => q(Str), default => q(unknown) );
+   ( is => q(ro), isa => q(Str),      default => q(unknown) );
 has 'label_attr' =>
    ( is => q(ro), isa => q(Str) );
+has 'lang' =>
+   ( is => q(ro), isa => q(Str),      default => NUL );
 has 'lang_dep' =>
-   ( is => q(ro), isa => q(Str) );
+   ( is => q(ro), isa => q(ArrayRef) );
 has 'source' =>
-   ( is => q(ro), isa => q(Object), weak_ref => 1 );
+   ( is => q(ro), isa => q(Object),   weak_ref => TRUE );
 has 'storage' =>
-   ( is => q(rw), isa => q(Object), lazy_build => 1 );
+   ( is => q(rw), isa => q(Object),   lazy_build => TRUE );
 has 'storage_attributes' =>
-   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
+   ( is => q(ro), isa => q(HashRef),  default => sub { return {} } );
 has 'storage_base' =>
-   ( is => q(ro), isa => q(Str), default => q(File::DataClass::Storage) );
+   ( is => q(ro), isa => q(Str),      default => q(File::DataClass::Storage) );
 has 'storage_class' =>
-   ( is => q(ro), isa => q(Str), default => q(XML::Simple) );
+   ( is => q(ro), isa => q(Str),      default => q(XML::Simple) );
 
 sub _build_storage {
    my $self = shift; my $class = $self->storage_class;
@@ -45,7 +48,7 @@ sub _build_storage {
 sub BUILD {
    my $self = shift;
 
-   if ($self->lang_dep) {
+   if ($self->lang_dep and $self->lang) {
       my $attrs = { storage => $self->storage };
 
       $self->ensure_class_loaded( q(File::DataClass::Combinator) );

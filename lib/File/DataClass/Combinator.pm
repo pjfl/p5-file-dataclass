@@ -11,8 +11,7 @@ use Moose;
 
 with qw(File::DataClass::Util);
 
-has 'lang'    => ( is => q(rw), isa => q(Str), default => NUL );
-has 'storage' => ( is => q(ro), isa => q(Object) );
+has 'storage' => ( is => q(ro), isa => q(Object), required => TRUE );
 
 sub delete {
    my ($self, $path, $element_obj) = @_;
@@ -48,7 +47,7 @@ sub select {
 
    my $elem = $self->storage->_validate_params; my @paths = ($path);
 
-   push @paths, $self->_make_lang_path( $path ) if ($self->lang);
+   push @paths, $self->_make_lang_path( $path ) if ($self->_lang);
 
    my $data = $self->storage->load( @paths );
 
@@ -63,16 +62,20 @@ sub update {
 
 # Private methods
 
+sub _lang {
+   return shift->storage->schema->lang;
+}
+
 sub _make_lang_path {
    my ($self, $path) = @_;
 
-   return unless ($self->lang);
+   return unless ($self->_lang);
 
    my $pathname = $path->pathname; my $extn = $self->storage->extn;
 
-   return $pathname.q(_).$self->lang unless ($pathname =~ m{ $extn \z }mx);
+   return $pathname.q(_).$self->_lang unless ($pathname =~ m{ $extn \z }mx);
 
-   my $file = $self->basename( $pathname, $extn ).q(_).$self->lang.$extn;
+   my $file = $self->basename( $pathname, $extn ).q(_).$self->_lang.$extn;
 
    return $self->io( $self->catfile( $self->dirname( $pathname ), $file ) );
 }
@@ -80,8 +83,8 @@ sub _make_lang_path {
 sub _update {
    my ($self, $path, $element_obj, $overwrite) = @_;
 
-   my $elem      = $self->storage->_validate_params;
    my $schema    = $self->storage->schema;
+   my $elem      = $self->storage->_validate_params;
    my $condition = sub { !$schema->lang_dep || !$schema->lang_dep->{ $_[0] } };
    my $updated   = $self->storage->_update( $element_obj, $path, $elem,
                                             $overwrite, $condition );

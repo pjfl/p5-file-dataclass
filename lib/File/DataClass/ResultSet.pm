@@ -260,7 +260,7 @@ File::DataClass::ResultSet - Core element methods
 
    my $attrs  = { schema_attributes => $schema_attributes };
    my $source = File::DataClass::ResultSource->new( $attrs ) );
-   my $rs     = $source->resultset( $path, $lang );
+   my $rs     = $source->resultset( $path );
    my $result = $rs->search( $criterion );
 
    for $element_obj ($result->next) {

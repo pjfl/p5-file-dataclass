@@ -215,7 +215,7 @@ sub _build_result_source {
 sub _resultset {
    my ($self, $args) = @_; $args ||= {};
 
-   return $self->result_source->resultset( $args->{path}, $args->{lang} );
+   return $self->result_source->resultset( $args->{path} );
 }
 
 sub _txn_do {
@@ -239,7 +239,7 @@ sub _txn_do {
 }
 
 sub _validate_params {
-   my ($self, $args) = @_; my $name;
+   my ($self, $args) = @_; $args ||= {}; my $name;
 
    $self->throw( 'No element name specified' ) unless ($name = $args->{name});
 
