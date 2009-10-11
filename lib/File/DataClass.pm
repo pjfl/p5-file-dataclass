@@ -12,12 +12,9 @@ use File::DataClass::ResultSource;
 use File::Spec;
 use IPC::SRLock;
 use Moose;
-use MooseX::ClassAttribute;
 
 with qw(File::DataClass::Util);
 
-class_has 'Lock' =>
-   ( is => q(rw), isa => q(Object) );
 has 'debug' =>
    ( is => q(rw), isa => q(Bool),    default => FALSE );
 has 'log' =>
@@ -106,10 +103,12 @@ sub update {
 
 # Private methods
 
-sub _build_lock {
-   my $self = shift; my $lock;
+my $lock;
 
-   return $lock if ($lock = __PACKAGE__->Lock());
+sub _build_lock {
+   my $self = shift;
+
+   return $lock if ($lock);
 
    my $args = $self->lock_attributes;
 
@@ -117,7 +116,7 @@ sub _build_lock {
    $args->{log    } ||= $self->log;
    $args->{tempdir} ||= $self->tempdir;
 
-   return __PACKAGE__->Lock( IPC::SRLock->new( $args ) );
+   return $lock = IPC::SRLock->new( $args );
 }
 
 sub _build_result_source {
@@ -140,7 +139,6 @@ sub _resultset {
 
 __PACKAGE__->meta->make_immutable;
 
-no MooseX::ClassAttribute;
 no Moose;
 
 1;
