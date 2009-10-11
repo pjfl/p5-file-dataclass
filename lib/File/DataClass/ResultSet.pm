@@ -87,28 +87,9 @@ sub last {
 }
 
 sub list {
-   my ($self, $args) = @_; my $name = $args->{name}; my ($attr, $attrs);
+   my ($self, $args) = @_; my $name = $args->{name};
 
-   return $self->_txn_do( $self->path, sub {
-      my $elements = $self->storage->select( $self->path );
-      my $new      = $self->list_class->new;
-
-      $new->list( [ sort keys %{ $elements } ] );
-
-      if ($attr = $self->schema->label_attr) {
-         $new->labels( { map { $_ => $elements->{ $_ }->{ $attr } }
-                         @{ $new->list } } );
-      }
-
-      if ($name && exists $elements->{ $name }) {
-         $attrs = $elements->{ $name };
-         $new->found( TRUE );
-      }
-      else { $attrs = [ %{ $self->schema->defaults } ] }
-
-      $new->element( $self->_create( $name, $attrs ) );
-      return $new;
-   } );
+   return $self->_txn_do( $self->path, sub { $self->_list( $name ) } );
 }
 
 sub load {
@@ -151,40 +132,10 @@ sub schema {
 }
 
 sub search {
-   my ($self, $args) = @_; $args ||= {}; my @tmp;
+   my ($self, $args) = @_; $args ||= {};
 
    return $self->_txn_do( $self->path, sub {
-      unless ($self->_elements) {
-         $self->_elements( [] ); $self->_iterator( 0 );
-      }
-
-      my $criterion = $args->{criterion};
-      my $elements  = $self->_elements;
-
-      if (not defined $elements->[0]) {
-         $elements = $self->storage->select( $self->path );
-
-         for my $name (keys %{ $elements }) {
-            my $attrs = $elements->{ $name };
-
-            $attrs->{name} = $name; $attrs->{_resultset} = $self;
-
-            if (not $criterion
-                 or $self->_eval_criterion( $criterion, $attrs )) {
-               push @{ $self->_elements }, $self->element_class->new( $attrs );
-            }
-         }
-      }
-      elsif ($criterion and defined $elements->[0]) {
-         for my $attrs (@{ $elements }) {
-            push @tmp, $attrs
-               if ($self->_eval_criterion( $criterion, $attrs ));
-         }
-
-         $self->_elements( \@tmp );
-      }
-
-      return wantarray ? $self->all : $self;
+      $self->_search( $args->{criterion} );
    } );
 }
 
@@ -257,9 +208,7 @@ sub _eval_criterion {
 }
 
 sub _eval_op {
-   my ($self, $lhs, $op, $rhs) = @_;
-
-   my $subr = $self->_operators->{ $op };
+   my ($self, $lhs, $op, $rhs) = @_; my $subr = $self->_operators->{ $op };
 
    return $subr ? $subr->( $lhs, $rhs ) : undef;
 }
@@ -290,6 +239,30 @@ sub _find_and_update {
    return;
 }
 
+sub _list {
+   my ($self, $name) = @_; my ($attr, $attrs);
+
+   my $elements = $self->storage->select( $self->path );
+   my $new      = $self->list_class->new;
+
+   $new->list( [ sort keys %{ $elements } ] );
+
+   if ($attr = $self->schema->label_attr) {
+      $new->labels( { map { $_ => $elements->{ $_ }->{ $attr } }
+                      @{ $new->list } } );
+   }
+
+   if ($name && exists $elements->{ $name }) {
+      $attrs = $elements->{ $name };
+      $new->found( TRUE );
+   }
+   else { $attrs = [ %{ $self->schema->defaults } ] }
+
+   $new->element( $self->_create( $name, $attrs ) );
+
+   return $new;
+}
+
 sub _operators {
    return { q(eq) => sub { return $_[0] eq $_[1] },
             q(==) => sub { return $_[0] == $_[1] },
@@ -317,6 +290,36 @@ sub _push_attribute {
 
    $attrs->{ $attr } = $list;
    return ($attrs, $in);
+}
+
+sub _search {
+   my ($self, $criterion) = @_; my $elements = $self->_elements; my @tmp;
+
+   unless ($self->_elements) {
+      $self->_elements( [] ); $self->_iterator( 0 );
+   }
+
+   if (not defined $elements->[0]) {
+      $elements = $self->storage->select( $self->path );
+
+      for my $name (keys %{ $elements }) {
+         my $attrs = $elements->{ $name }; $attrs->{name} = $name;
+
+         if (not $criterion
+              or $self->_eval_criterion( $criterion, $attrs )) {
+            push @{ $self->_elements }, $self->_create( $name, $attrs );
+         }
+      }
+   }
+   elsif ($criterion and defined $elements->[0]) {
+      for my $attrs (@{ $elements }) {
+         push @tmp, $attrs if ($self->_eval_criterion( $criterion, $attrs ));
+      }
+
+      $self->_elements( \@tmp );
+   }
+
+   return wantarray ? $self->all : $self;
 }
 
 sub _splice_attribute {

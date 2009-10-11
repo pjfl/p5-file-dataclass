@@ -18,7 +18,7 @@ has 'defaults' =>
 has 'element' =>
    ( is => q(ro), isa => q(Str),      default => q(unknown) );
 has 'label_attr' =>
-   ( is => q(ro), isa => q(Str) );
+   ( is => q(ro), isa => q(Str),      default => NUL );
 has 'lang' =>
    ( is => q(ro), isa => q(Str),      default => NUL );
 has 'lang_dep' =>

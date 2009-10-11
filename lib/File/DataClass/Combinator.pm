@@ -42,12 +42,11 @@ sub load {
 }
 
 sub select {
-   my ($self, $path) = @_;
-
-   my $elem = $self->storage->_validate_params; my @paths = ($path);
+   my ($self, $path) = @_; my @paths = ($path);
 
    push @paths, $self->_make_lang_path( $path ) if ($self->_lang);
 
+   my $elem = $self->storage->_validate_params;
    my $data = $self->storage->load( @paths );
 
    return exists $data->{ $elem } ? $data->{ $elem } : {};
