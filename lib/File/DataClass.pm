@@ -103,12 +103,13 @@ sub update {
 
 # Private methods
 
-my $lock;
+my $_cache = {};
+my $_lock;
 
 sub _build_lock {
    my $self = shift;
 
-   return $lock if ($lock);
+   return $_lock if ($_lock);
 
    my $args = $self->lock_attributes;
 
@@ -116,7 +117,7 @@ sub _build_lock {
    $args->{log    } ||= $self->log;
    $args->{tempdir} ||= $self->tempdir;
 
-   return $lock = IPC::SRLock->new( $args );
+   return $_lock = IPC::SRLock->new( $args );
 }
 
 sub _build_result_source {
@@ -124,6 +125,7 @@ sub _build_result_source {
    my $attrs   = $self->result_source_attributes || {};
    my $storage = $attrs->{schema_attributes}->{storage_attributes} ||= {};
 
+   $storage->{cache} = $_cache;
    $storage->{debug} = $self->debug;
    $storage->{log  } = $self->log;
    $storage->{lock } = $self->lock;

@@ -15,12 +15,13 @@ use TryCatch;
 
 with qw(File::DataClass::Util);
 
-has 'debug'  => ( is => q(ro), isa => q(Bool),   default  => FALSE );
-has 'extn'   => ( is => q(rw), isa => q(Str),    default  => NUL );
-has 'lock'   => ( is => q(ro), isa => q(Object), weak_ref => TRUE );
+has 'cache'  => ( is => q(ro), isa => q(HashRef), required => 1 );
+has 'debug'  => ( is => q(ro), isa => q(Bool),    default  => FALSE );
+has 'extn'   => ( is => q(rw), isa => q(Str),     default  => NUL );
+has 'lock'   => ( is => q(ro), isa => q(Object),  weak_ref => TRUE );
 has 'log'    => ( is => q(ro), isa => q(Object),
                   default => sub { Class::Null->new } );
-has 'schema' => ( is => q(ro), isa => q(Object), weak_ref => TRUE );
+has 'schema' => ( is => q(ro), isa => q(Object),  weak_ref => TRUE );
 
 sub delete {
    my ($self, $path, $element_obj) = @_;
@@ -82,18 +83,16 @@ sub update {
 
 # Private methods
 
-my $cache = {};
-
 sub _cache {
    my ($self, $key, $value) = @_;
 
-   $cache->{ $key } = $value if ($key and defined $value);
+   $self->cache->{ $key } = $value if ($key and defined $value);
 
-   return $key ? $cache->{ $key } : undef;
+   return $key ? $self->cache->{ $key } : undef;
 }
 
 sub _cache_delete {
-   my ($self, $key) = @_; return delete $cache->{ $key };
+   my ($self, $key) = @_; return delete $self->cache->{ $key };
 }
 
 sub _cache_get {
