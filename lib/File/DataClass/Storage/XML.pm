@@ -20,7 +20,7 @@ has '_dtd'      => ( is => q(rw), isa => q(ArrayRef),
 # Private methods
 
 sub _cache_get {
-   my ($self, $key) = @_; my $cached = $self->_cache( $key );
+   my ($self, $key) = @_; my $cached = $self->cache->get( $key );
 
    $self->_dtd( $cached && exists $cached->{_dtd} ? $cached->{_dtd} : [] );
 
@@ -34,7 +34,7 @@ sub _cache_set {
 
    $ref->{_dtd} = $self->_dtd if ($self->_dtd);
 
-   $self->_cache( $key, $ref );
+   $self->cache->set( $key, $ref );
    return ($data, $mtime);
 }
 

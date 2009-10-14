@@ -1,44 +1,30 @@
 # @(#)$Id$
 
-package File::DataClass::Schema;
+package File::DataClass::Schema::WithLanguage;
 
 use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
+use File::DataClass::Combinator;
 use File::DataClass::Constants;
 use Moose;
 
-with qw(File::DataClass::Util);
+with qw(File::DataClass::Schema);
 
-has 'attributes' =>
-   ( is => q(rw), isa => q(ArrayRef), default => sub { return [] } );
-has 'defaults' =>
-   ( is => q(rw), isa => q(HashRef),  default => sub { return {} } );
-has 'element' =>
-   ( is => q(rw), isa => q(Str),      default => NUL );
-has 'label_attr' =>
-   ( is => q(rw), isa => q(Str),      default => NUL );
-has 'source' =>
-   ( is => q(ro), isa => q(Object),   weak_ref => TRUE );
-has 'storage_attributes' =>
-   ( is => q(ro), isa => q(HashRef),  default => sub { return {} } );
-has 'storage_base' =>
-   ( is => q(ro), isa => q(Str),      default => q(File::DataClass::Storage) );
-has 'storage_class' =>
-   ( is => q(ro), isa => q(Str),      default => q(XML::Simple) );
-has 'storage' =>
-   ( is => q(rw), isa => q(Object),   lazy_build => TRUE );
+has 'lang'     => ( is => q(rw), isa => q(Str), default => NUL );
+has 'lang_dep' => ( is => q(rw), isa => q(ArrayRef) );
 
-sub _build_storage {
-   my $self = shift; my $class = $self->storage_class;
+sub BUILD {
+   my $self = shift;
 
-   if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
-   else { $class = $self->storage_base.q(::).$class }
+   if ($self->lang and $self->lang_dep) {
+      my $attrs = { storage => $self->storage };
 
-   $self->ensure_class_loaded( $class );
+      $self->storage( File::DataClass::Combinator->new( $attrs ) );
+   }
 
-   return $class->new( { %{ $self->storage_attributes  }, schema => $self } );
+   return $self;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -53,7 +39,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Schema - Base class for schema definitions
+File::DataClass::Schema::WithLanguage - Schema localization
 
 =head1 Version
 

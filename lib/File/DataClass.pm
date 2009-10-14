@@ -6,34 +6,44 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
+use Cache::FileCache;
 use Class::Null;
 use File::DataClass::Constants;
 use File::DataClass::ResultSource;
 use File::Spec;
 use IPC::SRLock;
 use Moose;
+use Scalar::Util qw(blessed);
 
 with qw(File::DataClass::Util);
 
-has 'debug' =>
-   ( is => q(rw), isa => q(Bool),    default => FALSE );
-has 'log' =>
-   ( is => q(rw), isa => q(Object),  default => sub { Class::Null->new } );
-has 'tempdir' =>
-   ( is => q(rw), isa => q(Str),     default => sub { File::Spec->tmpdir } );
-has 'lock_attributes' =>
-   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
-has 'lock' =>
-   ( is => q(rw), isa => q(Object),  lazy_build => TRUE );
 has 'path' =>
    ( is => q(ro), isa => q(Maybe[DataClassPath]) );
+has 'debug' =>
+   ( is => q(ro), isa => q(Bool),      default => FALSE );
+has 'log' =>
+   ( is => q(ro), isa => q(Object),    default => sub { Class::Null->new } );
+has 'tempdir' =>
+   ( is => q(ro), isa => q(Str),       default => sub { File::Spec->tmpdir } );
+has 'cache_attributes' =>
+   ( is => q(ro), isa => q(HashRef),   default => sub { return {} } );
+has 'cache_class' =>
+   ( is => q(ro), isa => q(ClassName), default => q(Cache::FileCache) );
+has 'cache' =>
+   ( is => q(rw), isa => q(Object),    lazy_build => TRUE );
+has 'lock_attributes' =>
+   ( is => q(ro), isa => q(HashRef),   default => sub { return {} } );
+has 'lock_class' =>
+   ( is => q(ro), isa => q(ClassName), default => q(IPC::SRLock) );
+has 'lock' =>
+   ( is => q(rw), isa => q(Object),    lazy_build => TRUE );
 has 'result_source_attributes' =>
-   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
+   ( is => q(ro), isa => q(HashRef),   default => sub { return {} } );
 has 'result_source_class' =>
    ( is => q(ro), isa => q(ClassName),
      default => q(File::DataClass::ResultSource) );
 has 'result_source' =>
-   ( is => q(ro), isa => q(Object),  lazy_build => TRUE );
+   ( is => q(ro), isa => q(Object),    lazy_build => TRUE );
 
 sub create {
    my ($self, $args) = @_; return $self->_resultset( $args )->create( $args );
@@ -86,13 +96,14 @@ sub translate {
          }
       }
    };
-   my $source = $self->new( $attrs );
+   my $class  = blessed $self;
+   my $source = $class->new( $attrs );
    my $data   = $source->load( $args->{from} ) || {};
 
    $attrs->{result_source_attributes}->{schema_attributes}->{storage_class}
       = $args->{to_class};
 
-   my $dest   = $self->new( $attrs );
+   my $dest   = $class->new( $attrs );
 
    $dest->dump( { path => $args->{to}, data => $data } );
 
@@ -105,21 +116,33 @@ sub update {
 
 # Private methods
 
-my $_cache = {};
-my $_lock;
+my ($_Cache, $_Lock);
+
+sub _build_cache {
+   my $self = shift;
+
+   return $_Cache if ($_Cache);
+
+   my $attrs = $self->cache_attributes;
+
+   $attrs->{cache_root} ||= $self->tempdir;
+   $attrs->{namespace } ||= q(file-dataclass);
+
+   return $_Cache = $self->cache_class->new( $attrs );
+}
 
 sub _build_lock {
    my $self = shift;
 
-   return $_lock if ($_lock);
+   return $_Lock if ($_Lock);
 
-   my $args = $self->lock_attributes;
+   my $attrs = $self->lock_attributes;
 
-   $args->{debug  } ||= $self->debug;
-   $args->{log    } ||= $self->log;
-   $args->{tempdir} ||= $self->tempdir;
+   $attrs->{debug  } ||= $self->debug;
+   $attrs->{log    } ||= $self->log;
+   $attrs->{tempdir} ||= $self->tempdir;
 
-   return $_lock = IPC::SRLock->new( $args );
+   return $_Lock = $self->lock_class->new( $attrs );
 }
 
 sub _build_result_source {
@@ -127,10 +150,10 @@ sub _build_result_source {
    my $attrs   = $self->result_source_attributes || {};
    my $storage = $attrs->{schema_attributes}->{storage_attributes} ||= {};
 
-   $storage->{cache} = $_cache;
-   $storage->{debug} = $self->debug;
-   $storage->{log  } = $self->log;
-   $storage->{lock } = $self->lock;
+   $storage->{cache} ||= $self->cache;
+   $storage->{debug} ||= $self->debug;
+   $storage->{log  } ||= $self->log;
+   $storage->{lock } ||= $self->lock;
 
    return $self->result_source_class->new( $attrs );
 }

@@ -15,10 +15,10 @@ use TryCatch;
 
 with qw(File::DataClass::Util);
 
-has 'cache'  => ( is => q(ro), isa => q(HashRef), required => 1 );
+has 'cache'  => ( is => q(ro), isa => q(Object),  required => 1 );
 has 'debug'  => ( is => q(ro), isa => q(Bool),    default  => FALSE );
 has 'extn'   => ( is => q(rw), isa => q(Str),     default  => NUL );
-has 'lock'   => ( is => q(ro), isa => q(Object),  weak_ref => TRUE );
+has 'lock'   => ( is => q(ro), isa => q(Object),  required => 1 );
 has 'log'    => ( is => q(ro), isa => q(Object),
                   default => sub { Class::Null->new } );
 has 'schema' => ( is => q(ro), isa => q(Object),  weak_ref => TRUE );
@@ -83,20 +83,10 @@ sub update {
 
 # Private methods
 
-sub _cache {
-   my ($self, $key, $value) = @_;
-
-   $self->cache->{ $key } = $value if ($key and defined $value);
-
-   return $key ? $self->cache->{ $key } : undef;
-}
-
-sub _cache_delete {
-   my ($self, $key) = @_; return delete $self->cache->{ $key };
-}
-
 sub _cache_get {
-   my ($self, $key) = @_; my $cached = $self->_cache( $key );
+   my ($self, $key) = @_;
+
+   my $cached = $key ? $self->cache->get( $key ) : undef;
 
    return $cached ? ($cached->{data}, $cached->{mtime} || 0) : (undef, 0);
 }
@@ -126,10 +116,14 @@ sub _cache_key_and_newest {
    return ($key, $newest);
 }
 
+sub _cache_remove {
+   my ($self, $key) = @_; return $self->cache->remove( $key );
+}
+
 sub _cache_set {
    my ($self, $key, $data, $mtime) = @_;
 
-   $self->_cache( $key, { data => $data, mtime => $mtime } );
+   $self->cache->set( $key, { data => $data, mtime => $mtime } ) if ($key);
 
    return ($data, $mtime);
 }
@@ -184,10 +178,10 @@ sub _read_file_with_locking {
 
       $self->_cache_set( $pathname, $data, $path_mtime );
 
-      $self->log->debug( "Reread config $pathname" ) if ($self->debug);
+      $self->log->debug( "Read file  $pathname" ) if ($self->debug);
    }
    else {
-      $self->log->debug( "Cached config $pathname" ) if ($self->debug);
+      $self->log->debug( "Read cache $pathname" ) if ($self->debug);
    }
 
    $self->lock->reset( k => $pathname ) unless ($for_update);
@@ -249,7 +243,7 @@ sub _write_file_with_locking {
                 $self->throw( $e ) }
 
    $wtr->close;
-   $self->_cache_delete( $pathname );
+   $self->_cache_remove( $pathname );
    $self->lock->reset( k => $pathname );
    return $data;
 }

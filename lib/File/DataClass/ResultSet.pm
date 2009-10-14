@@ -179,6 +179,7 @@ sub update {
 sub _create {
    my ($self, $name, $attrs) = @_; $attrs ||= {};
 
+   # TODO: Should this be underscored?
    $attrs->{name       } = $name;
    $attrs->{_attributes} = $self->schema->attributes;
    $attrs->{_path      } = $self->path;
@@ -256,7 +257,7 @@ sub _list {
 
    if ($attr = $self->schema->label_attr) {
       $new->labels( { map { $_ => $elements->{ $_ }->{ $attr } }
-                      @{ $new->list } } );
+                         @{ $new->list } } );
    }
 
    if ($name && exists $elements->{ $name }) {
@@ -271,14 +272,18 @@ sub _list {
 }
 
 sub _operators {
-   return { q(eq) => sub { return $_[0] eq $_[1] },
-            q(==) => sub { return $_[0] == $_[1] },
-            q(ne) => sub { return $_[0] ne $_[1] },
-            q(!=) => sub { return $_[0] != $_[1] },
-            q(>)  => sub { return $_[0] >  $_[1] },
-            q(>=) => sub { return $_[0] >= $_[1] },
-            q(<)  => sub { return $_[0] <  $_[1] },
-            q(<=) => sub { return $_[0] <= $_[1] }, };
+   return {
+      q(eq) => sub { return $_[0] eq $_[1] },
+      q(==) => sub { return $_[0] == $_[1] },
+      q(ne) => sub { return $_[0] ne $_[1] },
+      q(!=) => sub { return $_[0] != $_[1] },
+      q(>)  => sub { return $_[0] >  $_[1] },
+      q(>=) => sub { return $_[0] >= $_[1] },
+      q(<)  => sub { return $_[0] <  $_[1] },
+      q(<=) => sub { return $_[0] <= $_[1] },
+      q(=~) => sub { return $_[0] =~ $_[1] },
+      q(!~) => sub { return $_[0] !~ $_[1] },
+   };
 }
 
 sub _push {
@@ -290,10 +295,10 @@ sub _push {
    my $in       = [];
 
    for my $item (@{ $items }) {
-      unless ($self->is_member( $item, @{ $list } )) {
-         CORE::push @{ $list }, $item;
-         CORE::push @{ $in   }, $item;
-      }
+      next if ($self->is_member( $item, @{ $list } ));
+
+      CORE::push @{ $list }, $item;
+      CORE::push @{ $in   }, $item;
    }
 
    $attrs->{ $attr } = $list;

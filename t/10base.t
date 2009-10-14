@@ -35,8 +35,10 @@ $cfg = eval { $file->load( qw(t/default.xml t/default_en.xml) ) };
 
 ok( $cfg->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 1' );
+
 ok( $cfg->{ '_cvs_lang_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 2' );
+
 ok( ref $cfg->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays' );
 
 my $res = eval { $file->create }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
@@ -61,12 +63,7 @@ $res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
 ok( !defined $res, 'Creates dummy element but does not insert' );
 
-$res = eval { $file->delete( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
-
-is( $res, q(dummy), 'Deletes in memory element' );
-
 $file->result_source->schema->attributes( [ qw(text) ] );
-
 $args->{fields}->{text} = q(value1);
 
 $res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
@@ -81,33 +78,10 @@ $res = eval { $file->delete( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
 is( $res, q(dummy), 'Deletes dummy element' );
 
-#$model = $context->model( q(Config::Levels) );
+$res = eval { $file->delete( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
-#isa_ok( $model, 'MyApp::Model::Config::Levels' );
+ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
 
-#$args->{name} = q(dummy);
-
-#eval { $model->create( $args ) }; $e = $model->catch; $EVAL_ERROR = undef;
-
-#ok ( !$e, 'Creates dummy level' );
-
-#$cfg = $model->load( qw(t/default.xml t/default_en.xml) );
-
-#ok( $cfg->{levels}->{dummy}->{acl}->[0] eq q(any), 'Dummy level defaults' );
-
-#eval { $model->create( $args ) }; $e = $model->catch; $EVAL_ERROR = undef;
-
-#ok( $e->as_string eq 'File [_1] element [_2] already exists',
-#    'Detects existing record' );
-
-#eval { $model->delete( $args ) }; $e = $model->catch; $EVAL_ERROR = undef;
-
-#ok ( !$e, 'Deletes dummy level' );
-
-#eval { $model->delete( $args ) }; $e = $model->catch; $EVAL_ERROR = undef;
-
-#ok( $e->as_string eq 'File [_1] element [_2] not deleted',
-#    'Detects non existance on delete' );
 
 #my @res = $model->search( q(t/default.xml), { acl => q(@support) } );
 
