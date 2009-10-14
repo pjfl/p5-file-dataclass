@@ -16,7 +16,7 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 12;
+   plan tests => 13;
 }
 
 use File::DataClass;
@@ -53,15 +53,21 @@ $args->{path} = q(t/default.xml);
 
 $res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
+is( $e, 'No element specified', 'No element specified' );
+
+$file->result_source->schema->element( q(globals) );
+
+$res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+
 ok( !defined $res, 'Creates dummy element but does not insert' );
 
 $res = eval { $file->delete( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
 is( $res, q(dummy), 'Deletes in memory element' );
 
-$file->result_source->schema->attributes( [ qw(field1) ] );
+$file->result_source->schema->attributes( [ qw(text) ] );
 
-$args->{fields}->{field1} = q(value1);
+$args->{fields}->{text} = q(value1);
 
 $res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
