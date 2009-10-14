@@ -137,8 +137,4 @@
     <class>centre narrow</class>
     <columns>1</columns>
   </pages>
-  <unknown>
-    <name>dummy</name>
-    <field1>value1</field1>
-  </unknown>
 </config>
