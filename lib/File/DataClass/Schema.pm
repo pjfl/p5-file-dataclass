@@ -16,7 +16,7 @@ has 'attributes' =>
 has 'defaults' =>
    ( is => q(rw), isa => q(HashRef),  default => sub { return {} } );
 has 'element' =>
-   ( is => q(rw), isa => q(Str),      default => q(unknown) );
+   ( is => q(rw), isa => q(Str),      default => NUL );
 has 'label_attr' =>
    ( is => q(rw), isa => q(Str),      default => NUL );
 has 'lang' =>
