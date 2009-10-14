@@ -25,6 +25,8 @@ has 'lock_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'lock' =>
    ( is => q(rw), isa => q(Object),  lazy_build => TRUE );
+has 'path' =>
+   ( is => q(ro), isa => q(Maybe[DataClassPath]) );
 has 'result_source_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'result_source_class' =>
@@ -54,23 +56,23 @@ sub list {
 }
 
 sub load {
-   my ($self, @paths) = @_; return $self->_resultset->load( @paths );
+   my ($self, @paths) = @_;
+
+   push @paths, $self->path unless ($paths[0]);
+
+   return $self->result_source->resultset->load( @paths );
 }
 
-sub push_attribute {
-   my ($self, $args) = @_;
-
-   return $self->_resultset( $args )->push_attribute( $args );
+sub push {
+   my ($self, $args) = @_; return $self->_resultset( $args )->push( $args );
 }
 
 sub search {
    my ($self, $args) = @_; return $self->_resultset( $args )->search( $args );
 }
 
-sub splice_attribute {
-   my ($self, $args) = @_;
-
-   return $self->_resultset( $args )->splice_attribute( $args );
+sub splice {
+   my ($self, $args) = @_; return $self->_resultset( $args )->splice( $args );
 }
 
 sub translate {
@@ -136,7 +138,9 @@ sub _build_result_source {
 sub _resultset {
    my ($self, $args) = @_; $args ||= {};
 
-   return $self->result_source->resultset( $args->{path} );
+   my $path = $args->{path} || $self->path;
+
+   return $self->result_source->resultset( $path );
 }
 
 __PACKAGE__->meta->make_immutable;

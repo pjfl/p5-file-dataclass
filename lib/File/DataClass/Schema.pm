@@ -12,17 +12,17 @@ use Moose;
 with qw(File::DataClass::Util);
 
 has 'attributes' =>
-   ( is => q(ro), isa => q(ArrayRef), default => sub { return [] } );
+   ( is => q(rw), isa => q(ArrayRef), default => sub { return [] } );
 has 'defaults' =>
-   ( is => q(ro), isa => q(HashRef),  default => sub { return {} } );
+   ( is => q(rw), isa => q(HashRef),  default => sub { return {} } );
 has 'element' =>
-   ( is => q(ro), isa => q(Str),      default => q(unknown) );
+   ( is => q(rw), isa => q(Str),      default => q(unknown) );
 has 'label_attr' =>
-   ( is => q(ro), isa => q(Str),      default => NUL );
+   ( is => q(rw), isa => q(Str),      default => NUL );
 has 'lang' =>
-   ( is => q(ro), isa => q(Str),      default => NUL );
+   ( is => q(rw), isa => q(Str),      default => NUL );
 has 'lang_dep' =>
-   ( is => q(ro), isa => q(ArrayRef) );
+   ( is => q(rw), isa => q(ArrayRef) );
 has 'source' =>
    ( is => q(ro), isa => q(Object),   weak_ref => TRUE );
 has 'storage' =>

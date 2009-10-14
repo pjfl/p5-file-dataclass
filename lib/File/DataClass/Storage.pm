@@ -151,6 +151,7 @@ sub _delete {
 
    if (exists $data->{ $elem } and exists $data->{ $elem }->{ $name }) {
       delete $data->{ $elem }->{ $name };
+      delete $data->{ $elem } unless (scalar keys %{ $data->{ $elem } } > 0);
       $self->_write_file( $path, $data );
       return TRUE;
    }

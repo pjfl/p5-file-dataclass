@@ -16,7 +16,7 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 8;
+   plan tests => 12;
 }
 
 use File::DataClass;
@@ -31,7 +31,7 @@ my $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
 is( $e, 'Cannot open nonexistant_file', 'Cannot open nonexistant_file' );
 
-$cfg = $file->load( qw(t/default.xml t/default_en.xml) );
+$cfg = eval { $file->load( qw(t/default.xml t/default_en.xml) ) };
 
 ok( $cfg->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 1' );
@@ -39,21 +39,41 @@ ok( $cfg->{ '_cvs_lang_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 2' );
 ok( ref $cfg->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays' );
 
-eval { $file->create }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+my $res = eval { $file->create }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
 is( $e, 'No element name specified', 'No element name specified' );
 
 my $args = {}; $args->{name} = q(dummy);
 
-eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+$res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
 is( $e, 'No file path specified', 'No file path specified' );
 
 $args->{path} = q(t/default.xml);
 
-my $res = $file->create( $args );
+$res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
 ok( !defined $res, 'Creates dummy element but does not insert' );
+
+$res = eval { $file->delete( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+
+is( $res, q(dummy), 'Deletes in memory element' );
+
+$file->result_source->schema->attributes( [ qw(field1) ] );
+
+$args->{fields}->{field1} = q(value1);
+
+$res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+
+is( $res, q(dummy), 'Creates dummy element and inserts' );
+
+$res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+
+ok( $e =~ m{ already \s+ exists }mx, 'Detects already existing element' );
+
+$res = eval { $file->delete( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+
+is( $res, q(dummy), 'Deletes dummy element' );
 
 #$model = $context->model( q(Config::Levels) );
 

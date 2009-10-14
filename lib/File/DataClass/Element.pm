@@ -10,53 +10,37 @@ use Moose;
 extends qw(Moose::Object Class::Accessor::Grouped);
 with    qw(File::DataClass::Util);
 
-has 'name'       => ( is => q(rw), isa => q(Str) );
-has '_resultset' => ( is => q(ro), isa => q(Object), weak_ref => 1 );
+has 'name' =>
+   ( is => q(rw), isa => q(Str), required => 1 );
+has '_attributes' =>
+   ( is => q(ro), isa => q(ArrayRef), required => 1 );
+has '_path' =>
+   ( is => q(ro), isa => q(DataClassPath), required => 1 );
+has '_storage' =>
+   ( is => q(ro), isa => q(Object), required => 1, weak_ref => 1 );
 
 sub BUILD {
-   my $self = shift; my $class = blessed $self;
+   my ($self, $args) = @_; my $class = blessed $self;
 
-   $class->mk_group_accessors
-      ( q(simple), @{ $self->_resultset->schema->attributes } );
+   $class->mk_group_accessors( q(simple), @{ $self->_attributes } );
+
+   for my $attr (grep { exists $args->{ $_ } } @{ $self->_attributes }) {
+      $self->$attr( $args->{ $attr } );
+   }
 
    return;
 }
 
 sub delete {
-   my $self = shift; $self->_assert_has_name;
-
-   return $self->_storage->delete( $self->_path, $self );
+   my $self = shift; return $self->_storage->delete( $self->_path, $self );
 }
 
 sub insert {
-   my $self = shift; $self->_assert_has_name;
-
-   return $self->_storage->insert( $self->_path, $self );
+   my $self = shift; return $self->_storage->insert( $self->_path, $self );
 }
 
 sub update {
-   my $self = shift; $self->_assert_has_name;
-
-   return $self->_storage->update( $self->_path, $self );
-}
-
-sub _assert_has_name {
-   my $self = shift;
-
-   unless ($self->name) {
-      $self->throw( error => 'No element name specified [_1]',
-                    args  => [ $self->_path->pathname ] );
-   }
-
-   return 1;
-}
-
-sub _path {
-   return shift->_resultset->path;
-}
-
-sub _storage {
-   return shift->_resultset->schema->storage;
+   my $self = shift; return $self->_storage->update( $self->_path, $self );
 }
 
 __PACKAGE__->meta->make_immutable;

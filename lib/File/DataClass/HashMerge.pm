@@ -14,7 +14,7 @@ sub merge {
 
    croak 'No destination reference specified' unless ($dest_ref);
 
-   $src ||= {}; ${ $dest_ref } ||= {}; $condition ||= sub { return TRUE };
+   $src ||= {}; $condition ||= sub { return TRUE };
 
    for my $attr (__get_src_attributes( $condition, $src )) {
       if (defined $src->{ $attr }) {

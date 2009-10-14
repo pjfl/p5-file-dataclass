@@ -54,12 +54,14 @@ sub delete {
 
       unless ($element = $self->_find( $name )) {
          $error = 'File [_1] element [_2] does not exist';
-         $self->throw( error => $error, args => [ $self->path, $name ] );
+         $self->throw( error => $error,
+                       args  => [ $self->path->pathname, $name ] );
       }
 
       unless ($element->delete) {
          $error = 'File [_1] element [_2] not deleted';
-         $self->throw( error => $error, args => [ $self->path, $name ] );
+         $self->throw( error => $error,
+                       args  => [ $self->path->pathname, $name ] );
       }
    } );
 
@@ -87,9 +89,9 @@ sub last {
 }
 
 sub list {
-   my ($self, $args) = @_; my $name = $args->{name};
+   my ($self, $args) = @_;
 
-   return $self->_txn_do( $self->path, sub { $self->_list( $name ) } );
+   return $self->_txn_do( $self->path, sub { $self->_list( $args->{name} ) } );
 }
 
 sub load {
@@ -108,7 +110,7 @@ sub next {
    return $self->_elements ? $self->_elements->[ $index ] : undef;
 }
 
-sub push_attribute {
+sub push {
    my ($self, $args) = @_; my ($added, $attrs, $list);
 
    my $name = $self->_validate_params( $args );
@@ -120,7 +122,7 @@ sub push_attribute {
    $self->throw( 'List contains no items' ) unless ($items->[0]);
 
    $self->_txn_do( $self->path, sub {
-      ($attrs, $added) = $self->_push_attribute( $name, $list, $items );
+      ($attrs, $added) = $self->_push( $name, $list, $items );
       $self->_find_and_update( $name, $attrs );
    } );
 
@@ -132,14 +134,14 @@ sub schema {
 }
 
 sub search {
-   my ($self, $args) = @_; $args ||= {};
+   my ($self, $args) = @_;
 
    return $self->_txn_do( $self->path, sub {
       $self->_search( $args->{criterion} );
    } );
 }
 
-sub splice_attribute {
+sub splice {
    my ($self, $args) = @_; my ($attrs, $list, $removed);
 
    my $name = $self->_validate_params( $args );
@@ -151,7 +153,7 @@ sub splice_attribute {
    $self->throw( 'List contains no items' ) unless ($items->[0]);
 
    $self->_txn_do( $self->path, sub {
-      ($attrs, $removed) = $self->_splice_attribute( $name, $list, $items );
+      ($attrs, $removed) = $self->_splice( $name, $list, $items );
       $self->_find_and_update( $name, $attrs );
    } );
 
@@ -177,7 +179,10 @@ sub update {
 sub _create {
    my ($self, $name, $attrs) = @_; $attrs ||= {};
 
-   $attrs->{name} = $name; $attrs->{_resultset} = $self;
+   $attrs->{name       } = $name;
+   $attrs->{_attributes} = $self->schema->attributes;
+   $attrs->{_path      } = $self->path;
+   $attrs->{_storage   } = $self->schema->storage;
 
    return $self->element_class->new( $attrs );
 }
@@ -208,7 +213,9 @@ sub _eval_criterion {
 }
 
 sub _eval_op {
-   my ($self, $lhs, $op, $rhs) = @_; my $subr = $self->_operators->{ $op };
+   my ($self, $lhs, $op, $rhs) = @_;
+
+   my $subr = $self->_operators->{ $op };
 
    return $subr ? $subr->( $lhs, $rhs ) : undef;
 }
@@ -274,7 +281,7 @@ sub _operators {
             q(<=) => sub { return $_[0] <= $_[1] }, };
 }
 
-sub _push_attribute {
+sub _push {
    my ($self, $name, $attr, $items) = @_;
 
    my $elements = $self->storage->select( $self->path );
@@ -284,7 +291,8 @@ sub _push_attribute {
 
    for my $item (@{ $items }) {
       unless ($self->is_member( $item, @{ $list } )) {
-         push @{ $list }, $item; push @{ $in }, $item;
+         CORE::push @{ $list }, $item;
+         CORE::push @{ $in   }, $item;
       }
    }
 
@@ -307,13 +315,15 @@ sub _search {
 
          if (not $criterion
               or $self->_eval_criterion( $criterion, $attrs )) {
-            push @{ $self->_elements }, $self->_create( $name, $attrs );
+            CORE::push @{ $self->_elements }, $self->_create( $name, $attrs );
          }
       }
    }
    elsif ($criterion and defined $elements->[0]) {
       for my $attrs (@{ $elements }) {
-         push @tmp, $attrs if ($self->_eval_criterion( $criterion, $attrs ));
+         if ($self->_eval_criterion( $criterion, $attrs )) {
+            CORE::push @tmp, $attrs;
+         }
       }
 
       $self->_elements( \@tmp );
@@ -322,7 +332,7 @@ sub _search {
    return wantarray ? $self->all : $self;
 }
 
-sub _splice_attribute {
+sub _splice {
    my ($self, $name, $attr, $items) = @_;
 
    my $elements = $self->storage->select( $self->path ) || {};
@@ -335,7 +345,8 @@ sub _splice_attribute {
 
       for (0 .. $#{ $list }) {
          if ($list->[ $_ ] eq $item) {
-            splice @{ $list }, $_, 1; push @{ $out }, $item;
+            CORE::splice @{ $list }, $_, 1;
+            CORE::push   @{ $out  }, $item;
             last;
          }
       }
@@ -462,9 +473,8 @@ Returns the last element object that is the result of the search call
 
 Iterate over the elements returned by the search call
 
-=head2 push_attribute
-
-   ($attrs, $added) = $rs->push_attribute( $name, $list, $items );
+=head2 push
+   ($attrs, $added) = $rs->push( $name, $list, $items );
 
 Adds items to the attribute list
 
@@ -487,9 +497,9 @@ attribute values, e.g.
 
    $criterion = { quick_links => { '>=' => 0 } };
 
-=head2 splice_attribute
+=head2 splice
 
-   ($attrs, $removed) = $rs->splice_attribute( $name, $list, $items );
+   ($attrs, $removed) = $rs->splice( $name, $list, $items );
 
 Removes items from the attribute list
 
