@@ -40,7 +40,7 @@ sub create {
    my $updated = $self->_txn_do( $self->path, sub {
       my $attrs = { %{ $self->schema->defaults }, %{ $args->{fields} || {} } };
 
-      $self->_create( $name, $attrs )->insert;
+      $self->_create_element( $name, $attrs )->insert;
    } );
 
    return $updated ? $name : undef;
@@ -176,13 +176,12 @@ sub update {
 
 # Private methods
 
-sub _create {
+sub _create_element {
    my ($self, $name, $attrs) = @_; $attrs ||= {};
 
-   # TODO: Should this be underscored?
-   $attrs->{name       } = $name;
-   $attrs->{_path      } = $self->path;
-   $attrs->{_storage   } = $self->schema->storage;
+   $attrs->{name    } = $name;
+   $attrs->{_path   } = $self->path;
+   $attrs->{_storage} = $self->schema->storage;
 
    return $self->element_class->new( $attrs );
 }
@@ -227,9 +226,7 @@ sub _find {
 
    return unless ($name && exists $elements->{ $name });
 
-   my $attrs = $elements->{ $name };
-
-   return $self->_create( $name, $attrs );
+   return $self->_create_element( $name, $elements->{ $name } );
 }
 
 sub _find_and_update {
@@ -256,12 +253,11 @@ sub _list {
    }
 
    if ($name && exists $elements->{ $name }) {
-      $attrs = $elements->{ $name };
-      $new->found( TRUE );
+      $attrs = $elements->{ $name }; $new->found( TRUE );
    }
    else { $attrs = [ %{ $self->schema->defaults } ] }
 
-   $new->element( $self->_create( $name, $attrs ) );
+   $new->element( $self->_create_element( $name, $attrs ) );
 
    return $new;
 }
@@ -315,7 +311,8 @@ sub _search {
 
          if (not $criterion
               or $self->_eval_criterion( $criterion, $attrs )) {
-            CORE::push @{ $self->_elements }, $self->_create( $name, $attrs );
+            CORE::push @{ $self->_elements },
+               $self->_create_element( $name, $attrs );
          }
       }
    }
