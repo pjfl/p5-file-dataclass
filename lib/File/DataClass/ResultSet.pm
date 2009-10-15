@@ -181,7 +181,6 @@ sub _create {
 
    # TODO: Should this be underscored?
    $attrs->{name       } = $name;
-   $attrs->{_attributes} = $self->schema->attributes;
    $attrs->{_path      } = $self->path;
    $attrs->{_storage   } = $self->schema->storage;
 
@@ -234,17 +233,13 @@ sub _find {
 }
 
 sub _find_and_update {
-   my ($self, $name, $attrs) = @_; my $schema = $self->schema; my $element;
+   my ($self, $name, $attrs) = @_; my $element;
 
-   if ($element = $self->_find( $name )) {
-      for my $attr (grep { exists $attrs->{ $_ } } @{ $schema->attributes }) {
-         $element->$attr( $attrs->{ $attr } );
-      }
+   return unless ($element = $self->_find( $name ));
 
-      return $element->update;
-   }
+   $self->schema->update_attributes( $element, $attrs );
 
-   return;
+   return $element->update;
 }
 
 sub _list {

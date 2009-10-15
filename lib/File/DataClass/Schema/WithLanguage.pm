@@ -24,7 +24,7 @@ sub BUILD {
       $self->storage( File::DataClass::Combinator->new( $attrs ) );
    }
 
-   return $self;
+   return;
 }
 
 __PACKAGE__->meta->make_immutable;

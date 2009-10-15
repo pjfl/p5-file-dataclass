@@ -41,6 +41,16 @@ sub _build_storage {
    return $class->new( { %{ $self->storage_attributes  }, schema => $self } );
 }
 
+sub update_attributes {
+   my ($self, $element, $attrs) = @_;
+
+   for my $attr (grep { exists $attrs->{ $_ } } @{ $self->attributes }) {
+      $element->$attr( $attrs->{ $attr } );
+   }
+
+   return;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 no Moose;
