@@ -81,7 +81,7 @@ sub _merge_attr_hashes {
 
    for (keys %{ $to }) {
       if ($from->{ $_ }) {
-         my $res = $self->_merge_attr( $from->{ $_ }, \$to->{ $_ } ) ;
+         my $res = $self->_merge_attr( $from->{ $_ }, \$to->{ $_ } );
 
          $updated ||= $res;
       }
