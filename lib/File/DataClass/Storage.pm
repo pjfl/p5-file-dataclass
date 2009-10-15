@@ -86,29 +86,32 @@ sub update {
 sub _cache_get {
    my ($self, $key) = @_;
 
-   my $cached = $key ? $self->cache->get( $key ) : undef;
+   my $cached = $key    ? $self->cache->get( $key ) : FALSE;
+   my $data   = $cached ? $cached->{data }          : undef;
+   my $mtime  = $cached ? $cached->{mtime} || 0     : 0;
 
-   return $cached ? ($cached->{data}, $cached->{mtime} || 0) : (undef, 0);
+   return ($data, $mtime);
 }
 
 sub _cache_get_by_paths {
    my ($self, $paths) = @_;
-   my ($key, $newest) = $self->_cache_key_and_newest( $paths );
+   my ($key, $newest) = $self->_cache_get_key_and_newest( $paths );
    my ($data, $mtime) = $self->_cache_get( $key );
 
    return ($data, $mtime < $newest);
 }
 
-sub _cache_key_and_newest {
+sub _cache_get_key_and_newest {
    my ($self, $paths) = @_; my ($key, $pathname); my $newest = 0;
+
+   my $mtimes = $self->cache->get( q(mtimes) ) || {};
 
    for my $path (@{ $paths }) {
       next unless ($pathname = $path->pathname);
 
-      my ($data, $mtime) = $self->_cache_get( $pathname );
+      $key .= $key ? q(~).$pathname : $pathname;
 
-      $key    .= $key ? q(~).$pathname : $pathname;
-      $mtime ||= $path->stat->{mtime} || 0;
+      my $mtime = $mtimes->{ $pathname } || 0;
 
       $newest = $mtime if ($mtime > $newest);
    }
@@ -117,13 +120,29 @@ sub _cache_key_and_newest {
 }
 
 sub _cache_remove {
-   my ($self, $key) = @_; return $self->cache->remove( $key );
+   my ($self, $key) = @_;
+
+   return unless ($key);
+
+   my $mtimes = $self->cache->get( q(mtimes) ) || {};
+
+   delete $mtimes->{ $key };
+   $self->cache->set( q(mtimes), $mtimes );
+   $self->cache->remove( $key );
+   return;
 }
 
 sub _cache_set {
    my ($self, $key, $data, $mtime) = @_;
 
-   $self->cache->set( $key, { data => $data, mtime => $mtime } ) if ($key);
+   if ($key) {
+      $self->cache->set( $key, { data => $data, mtime => $mtime || 0 } );
+
+      my $mtimes = $self->cache->get( q(mtimes) ) || {};
+
+      $mtimes->{ $key } = $mtime;
+      $self->cache->set( q(mtimes), $mtimes );
+   }
 
    return ($data, $mtime);
 }
@@ -131,7 +150,7 @@ sub _cache_set {
 sub _cache_set_by_paths {
    my ($self, $paths, $data) = @_;
 
-   my ($key, $newest) = $self->_cache_key_and_newest( $paths );
+   my ($key, $newest) = $self->_cache_get_key_and_newest( $paths );
 
    return $self->_cache_set( $key, $data, $newest );
 }

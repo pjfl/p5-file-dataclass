@@ -6,6 +6,7 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
+use File::DataClass::Constants;
 use Moose;
 
 extends qw(File::DataClass::Storage);
@@ -20,21 +21,33 @@ has '_dtd'      => ( is => q(rw), isa => q(ArrayRef),
 # Private methods
 
 sub _cache_get {
-   my ($self, $key) = @_; my $cached = $self->cache->get( $key );
+   my ($self, $key) = @_;
+
+   my $cached = $key    ? $self->cache->get( $key ) : FALSE;
+   my $data   = $cached ? $cached->{data }          : undef;
+   my $mtime  = $cached ? $cached->{mtime} || 0     : 0;
 
    $self->_dtd( $cached && exists $cached->{_dtd} ? $cached->{_dtd} : [] );
 
-   return $cached ? ($cached->{data}, $cached->{mtime} || 0) : (undef, 0);
+   return ($data, $mtime);
 }
 
 sub _cache_set {
    my ($self, $key, $data, $mtime) = @_;
 
-   my $ref = { data => $data, mtime => $mtime };
+   if ($key) {
+      my $ref = { data => $data, mtime => $mtime || 0 };
 
-   $ref->{_dtd} = $self->_dtd if ($self->_dtd);
+      $ref->{_dtd} = $self->_dtd if ($self->_dtd);
 
-   $self->cache->set( $key, $ref );
+      $self->cache->set( $key, $ref );
+
+      my $mtimes = $self->cache->get( q(mtimes) ) || {};
+
+      $mtimes->{ $key } = $mtime;
+      $self->cache->set( q(mtimes), $mtimes );
+   }
+
    return ($data, $mtime);
 }
 
@@ -57,7 +70,7 @@ sub _dtd_parse_line {
 
    if ($data =~ m{ \A <!ELEMENT \s+ (\w+) \s+ \(
                       \s* ARRAY \s* \) \*? \s* > \z }imsx) {
-      $self->_arrays->{ $1 } = 1;
+      $self->_arrays->{ $1 } = TRUE;
    }
 
    return;
@@ -70,7 +83,7 @@ sub _dtd_parse_reset {
 sub _is_array {
    my ($self, $element) = @_;
 
-   return 0;
+   return FALSE;
 }
 
 sub _is_in_dtd {
@@ -79,7 +92,7 @@ sub _is_in_dtd {
    my $pattern = '<!ELEMENT \s+ (\w+) \s+ \( \s* ARRAY \s* \) \*? \s* >';
 
    for (grep { m{ \A $pattern \z }msx } @{ $self->_dtd } ) {
-      $elements{ $_ } = 1;
+      $elements{ $_ } = TRUE;
    }
 
    return exists $elements{ $candidate };
