@@ -32,6 +32,8 @@ sub delete {
 sub dump {
    my ($self, $path, $data) = @_;
 
+   $self->throw( 'No file path specified' ) unless ($path);
+
    $self->lock->set( k => $path->pathname );
 
    return $self->_write_file( $path, $data, TRUE );
