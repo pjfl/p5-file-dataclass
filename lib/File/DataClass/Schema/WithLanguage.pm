@@ -13,7 +13,7 @@ use Moose;
 with qw(File::DataClass::Schema);
 
 has 'lang'     => ( is => q(rw), isa => q(Str), default => NUL );
-has 'lang_dep' => ( is => q(rw), isa => q(ArrayRef) );
+has 'lang_dep' => ( is => q(rw), isa => q(Maybe[ArrayRef]) );
 
 sub BUILD {
    my $self = shift;
