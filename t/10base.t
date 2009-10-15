@@ -16,7 +16,7 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 13;
+   plan tests => 14;
 }
 
 use File::DataClass;
@@ -57,13 +57,15 @@ $res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
 is( $e, 'No element specified', 'No element specified' );
 
-$file->result_source->schema->element( q(globals) );
+my $schema = $file->result_source->schema;
+
+$schema->element( q(globals) );
 
 $res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
 ok( !defined $res, 'Creates dummy element but does not insert' );
 
-$file->result_source->schema->attributes( [ qw(text) ] );
+$schema->attributes( [ qw(text) ] );
 $args->{fields}->{text} = q(value1);
 
 $res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
@@ -82,10 +84,14 @@ $res = eval { $file->delete( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
 ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
 
+$schema->element( q(levels) );
+$schema->attributes( [ qw(acl state) ] );
+$args = {}; $args->{path} = q(t/default.xml);
+$args->{criterion} = { acl => q(@support) }; my @res;
 
-#my @res = $model->search( q(t/default.xml), { acl => q(@support) } );
+@res = eval { $file->search( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
-#ok( $res[0] && $res[0]->{name} eq q(admin), 'Can search' );
+ok( $res[0] && $res[0]->name eq q(admin), 'Can search' );
 
 # Local Variables:
 # mode: perl

@@ -124,9 +124,10 @@ sub _build_cache {
    return $_Cache if ($_Cache);
 
    my $attrs = $self->cache_attributes;
+   (my $ns   = lc __PACKAGE__) =~ s{ :: }{-}gmx;
 
    $attrs->{cache_root} ||= $self->tempdir;
-   $attrs->{namespace } ||= q(file-dataclass);
+   $attrs->{namespace } ||= $ns;
 
    return $_Cache = $self->cache_class->new( $attrs );
 }
