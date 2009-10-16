@@ -9,6 +9,8 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 use File::DataClass::Constants;
 use Moose;
 
+use File::DataClass::Element;
+
 with qw(File::DataClass::Util);
 
 has 'attributes' =>
@@ -22,6 +24,10 @@ has 'label_attr' =>
 
 has 'source' =>
    ( is => q(ro), isa => q(Object),   weak_ref => TRUE );
+
+has 'element_class' =>
+   ( is => q(ro), isa => q(ClassName),
+     default => q(File::DataClass::Element) );
 
 has 'storage_attributes' =>
    ( is => q(ro), isa => q(HashRef),  default => sub { return {} } );
@@ -41,6 +47,17 @@ sub _build_storage {
    $self->ensure_class_loaded( $class );
 
    return $class->new( { %{ $self->storage_attributes  }, schema => $self } );
+}
+
+sub create_element {
+   my ($self, $path, $attrs) = @_;
+
+   $attrs = { %{ $self->defaults }, %{ $attrs } };
+
+   $attrs->{_path  } = $path;
+   $attrs->{_schema} = $self;
+
+   return $self->element_class->new( $attrs );
 }
 
 sub update_attributes {

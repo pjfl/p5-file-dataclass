@@ -11,19 +11,15 @@ use Moose;
 use Scalar::Util qw(blessed);
 use TryCatch;
 
-use File::DataClass::Element;
 use File::DataClass::List;
 
 with qw(File::DataClass::Util);
 
 has 'path' =>
    ( is => q(rw), isa => q(Maybe[DataClassPath]) );
+
 has 'source' =>
    ( is => q(ro), isa => q(Object), weak_ref => TRUE );
-
-has 'element_class' =>
-   ( is => q(ro), isa => q(ClassName),
-     default => q(File::DataClass::Element) );
 
 has 'list_class' =>
    ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::List) );
@@ -42,9 +38,9 @@ sub create {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
    my $updated = $self->_txn_do( $self->path, sub {
-      my $attrs = { %{ $self->schema->defaults }, %{ $args->{fields} || {} } };
+      my $attrs = { %{ $args->{fields} || {} }, name => $name };
 
-      $self->_create_element( $name, $attrs )->insert;
+      $self->schema->create_element( $self->path, $attrs )->insert;
    } );
 
    return $updated ? $name : undef;
@@ -180,16 +176,6 @@ sub update {
 
 # Private methods
 
-sub _create_element {
-   my ($self, $name, $attrs) = @_; $attrs ||= {};
-
-   $attrs->{name   } = $name;
-   $attrs->{_path  } = $self->path;
-   $attrs->{_schema} = $self->schema;
-
-   return $self->element_class->new( $attrs );
-}
-
 sub _eval_criterion {
    my ($self, $criterion, $attrs) = @_; my $lhs;
 
@@ -228,9 +214,11 @@ sub _find {
 
    my $elements = $self->storage->select( $self->path );
 
-   return unless ($name && exists $elements->{ $name });
+   return unless ($name and exists $elements->{ $name });
 
-   return $self->_create_element( $name, $elements->{ $name } );
+   my $attrs = { %{ $elements->{ $name } }, name => $name };
+
+   return $self->schema->create_element( $self->path, $attrs );
 }
 
 sub _find_and_update {
@@ -252,16 +240,17 @@ sub _list {
    $new->list( [ sort keys %{ $elements } ] );
 
    if ($attr = $self->schema->label_attr) {
-      $new->labels( { map { $_ => $elements->{ $_ }->{ $attr } }
-                         @{ $new->list } } );
+      $new->labels
+         ( { map { $_ => $elements->{ $_ }->{ $attr } } @{ $new->list } } );
    }
 
    if ($name && exists $elements->{ $name }) {
-      $attrs = $elements->{ $name }; $new->found( TRUE );
+      $attrs = { %{ $elements->{ $name } }, name => $name };
+      $new->found( TRUE );
    }
-   else { $attrs = [ %{ $self->schema->defaults } ] }
+   else { $attrs = { name => $name } }
 
-   $new->element( $self->_create_element( $name, $attrs ) );
+   $new->element( $self->schema->create_element( $self->path, $attrs ));
 
    return $new;
 }
@@ -311,12 +300,12 @@ sub _search {
       $elements = $self->storage->select( $self->path );
 
       for my $name (keys %{ $elements }) {
-         my $attrs = $elements->{ $name }; $attrs->{name} = $name;
+         my $attrs = { %{ $elements->{ $name } }, name => $name };
 
          if (not $criterion
               or $self->_eval_criterion( $criterion, $attrs )) {
             CORE::push @{ $self->_elements },
-               $self->_create_element( $name, $attrs );
+               $self->schema->create_element( $self->path, $attrs );
          }
       }
    }
