@@ -83,6 +83,7 @@ sub _dtd_parse_reset {
 sub _is_array {
    my ($self, $element) = @_;
 
+   # TODO: Add _arrays attributes from schema definition
    return FALSE;
 }
 
@@ -99,17 +100,18 @@ sub _is_in_dtd {
 }
 
 sub _update {
-   my ($self, $overwrite, $element_obj, $path, $element, $condition) = @_;
+   my ($self, $element_obj, $path, $overwrite, $condition) = @_;
 
    $path->touch unless ($overwrite);
 
-   # TODO: Add _arrays attributes from schema definition
-   if ($self->_is_array( $element ) and not $self->_is_in_dtd( $element )) {
-      push @{ $self->_dtd }, '<!ELEMENT '.$element.' (ARRAY)*>';
+   my $element_name = $self->_validate_params( $path );
+
+   if (        $self->_is_array ( $element_name )
+       and not $self->_is_in_dtd( $element_name )) {
+      push @{ $self->_dtd }, '<!ELEMENT '.$element_name.' (ARRAY)*>';
    }
 
-   return $self->next::method( $overwrite, $element_obj,
-                               $path, $element, $condition );
+   return $self->next::method( $element_obj, $path, $overwrite, $condition );
 }
 
 __PACKAGE__->meta->make_immutable;
