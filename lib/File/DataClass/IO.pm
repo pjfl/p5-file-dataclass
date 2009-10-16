@@ -27,7 +27,7 @@ has 'dir_pattern' => ( is => q(ro), isa => q(RegexpRef), lazy_build => TRUE  );
 
 has 'exception_class' =>
    ( is => q(rw), isa => q(Str),
-     default => q(File::DataClass::Exception) );
+     default => q(File::DataClass::Exception), );
 
 has 'io_handle'   => ( is => q(rw), isa => q(Maybe[Object])                 );
 has 'is_open'     => ( is => q(rw), isa => q(Bool), default  => FALSE       );

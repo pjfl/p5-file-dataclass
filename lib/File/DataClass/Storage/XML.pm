@@ -14,9 +14,9 @@ extends qw(File::DataClass::Storage);
 has '+extn'     => ( default => q(.xml) );
 has 'root_name' => ( is => q(ro), isa => q(Str), default => q(config) );
 has '_arrays'   => ( is => q(rw), isa => q(HashRef),
-                     default => sub { return {} } );
+                     default => sub { return {} }, );
 has '_dtd'      => ( is => q(rw), isa => q(ArrayRef),
-                     default => sub { return [] } );
+                     default => sub { return [] }, );
 
 # Private methods
 
@@ -104,7 +104,7 @@ sub _update {
 
    $path->touch unless ($overwrite);
 
-   my $element_name = $self->_validate_params( $path );
+   my $element_name = $self->validate_params( $path );
 
    if (        $self->_is_array ( $element_name )
        and not $self->_is_in_dtd( $element_name )) {

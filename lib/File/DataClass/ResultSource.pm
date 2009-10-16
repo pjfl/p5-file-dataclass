@@ -17,7 +17,7 @@ has 'resultset_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'resultset_class' =>
    ( is => q(ro), isa => q(ClassName),
-     default => q(File::DataClass::ResultSet) );
+     default => q(File::DataClass::ResultSet), );
 
 has 'schema_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );

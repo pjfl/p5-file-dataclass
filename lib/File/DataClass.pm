@@ -45,7 +45,7 @@ has 'result_source_attributes' =>
    ( is => q(ro), isa => q(HashRef),   default => sub { return {} } );
 has 'result_source_class' =>
    ( is => q(ro), isa => q(ClassName),
-     default => q(File::DataClass::ResultSource) );
+     default => q(File::DataClass::ResultSource), );
 has 'result_source' =>
    ( is => q(ro), isa => q(Object),    lazy_build => TRUE );
 

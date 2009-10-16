@@ -20,7 +20,7 @@ has 'debug'  => ( is => q(ro), isa => q(Bool),    default  => FALSE );
 has 'extn'   => ( is => q(rw), isa => q(Str),     default  => NUL   );
 has 'lock'   => ( is => q(ro), isa => q(Object),  required => 1     );
 has 'log'    => ( is => q(ro), isa => q(Object),
-                  default => sub { Class::Null->new }               );
+                  default => sub { Class::Null->new },              );
 has 'schema' => ( is => q(ro), isa => q(Object),  weak_ref => TRUE  );
 
 sub delete {
@@ -71,16 +71,28 @@ sub load {
 
 sub select {
    my ($self, $path) = @_;
-   my $elem          = $self->_validate_params( $path );
+   my $elem          = $self->validate_params( $path );
    my $data          = $self->_read_file( $path, FALSE );
 
    return exists $data->{ $elem } ? $data->{ $elem } : {};
 }
 
 sub update {
-   my ($self, $path, $element_obj) = @_;
+   my ($self, $path, $element_obj, $overwrite, $condition) = @_;
 
-   return $self->_update( $element_obj, $path, TRUE, sub { TRUE } );
+   $overwrite ||= TRUE; $condition ||= sub { TRUE };
+
+   return $self->_update( $element_obj, $path, $overwrite, $condition );
+}
+
+sub validate_params {
+   my ($self, $path) = @_; my ($elem, $schema);
+
+   $self->throw( 'No file path specified' ) unless ($path);
+   $self->throw( 'No schema specified'    ) unless ($schema = $self->schema);
+   $self->throw( 'No element specified'   ) unless ($elem = $schema->element);
+
+   return $elem;
 }
 
 # Private methods
@@ -161,12 +173,12 @@ sub _delete {
    my ($self, $element_obj, $path) = @_;
 
    my $name = $element_obj->{name};
-   my $elem = $self->_validate_params( $path );
+   my $elem = $self->validate_params( $path );
    my $data = $self->_read_file( $path, TRUE );
 
    if (exists $data->{ $elem } and exists $data->{ $elem }->{ $name }) {
       delete $data->{ $elem }->{ $name };
-      delete $data->{ $elem } unless (scalar keys %{ $data->{ $elem } } > 0);
+      delete $data->{ $elem } if (0 <= scalar keys %{ $data->{ $elem } });
       $self->_write_file( $path, $data );
       return TRUE;
    }
@@ -214,7 +226,7 @@ sub _update {
    my ($self, $element_obj, $path, $overwrite, $condition) = @_;
 
    my $name = $element_obj->{name};
-   my $elem = $self->_validate_params( $path );
+   my $elem = $self->validate_params( $path );
    my $data = $self->_read_file( $path, TRUE );
 
    if (not $overwrite and exists $data->{ $elem }->{ $name }) {
@@ -230,16 +242,6 @@ sub _update {
    else { $self->lock->reset( k => $path->pathname ) }
 
    return $updated;
-}
-
-sub _validate_params {
-   my ($self, $path) = @_; my ($elem, $schema);
-
-   $self->throw( 'No file path specified' ) unless ($path);
-   $self->throw( 'No schema specified'    ) unless ($schema = $self->schema);
-   $self->throw( 'No element specified'   ) unless ($elem = $schema->element);
-
-   return $elem;
 }
 
 sub _write_file {
@@ -333,6 +335,8 @@ schema
 
 Updates the specified element object returning true if successful. Throws
 an error otherwise
+
+=head2 validate_params
 
 =head1 Diagnostics
 

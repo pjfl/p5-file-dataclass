@@ -26,7 +26,7 @@ has 'list_class' =>
 
 has '_elements' =>
    ( is => q(rw), isa => q(ArrayRef),
-     default => sub { return [] }, init_arg => undef );
+     default => sub { return [] }, init_arg => undef, );
 has '_iterator' =>
    ( is => q(rw), isa => q(Int), default => 0, init_arg => undef );
 

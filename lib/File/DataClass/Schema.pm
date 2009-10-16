@@ -27,7 +27,7 @@ has 'source' =>
 
 has 'element_class' =>
    ( is => q(ro), isa => q(ClassName),
-     default => q(File::DataClass::Element) );
+     default => q(File::DataClass::Element), );
 
 has 'storage_attributes' =>
    ( is => q(ro), isa => q(HashRef),  default => sub { return {} } );

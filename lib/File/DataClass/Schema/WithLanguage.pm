@@ -39,7 +39,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Schema::WithLanguage - Schema localization
+File::DataClass::Schema::WithLanguage - Schema localisation
 
 =head1 Version
 

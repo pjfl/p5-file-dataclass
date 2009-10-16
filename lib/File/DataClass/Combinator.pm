@@ -16,10 +16,10 @@ has 'storage' => ( is => q(ro), isa => q(Object), required => TRUE );
 sub delete {
    my ($self, $path, $element_obj) = @_;
 
-   my $deleted = $self->storage->_delete( $element_obj, $path );
+   my $deleted = $self->storage->delete( $path, $element_obj );
 
    if (my $lang_path = $self->_make_lang_path( $path )) {
-      my $updated = $self->storage->_delete( $element_obj, $lang_path );
+      my $updated = $self->storage->delete( $lang_path, $element_obj );
 
       $deleted ||= $updated;
    }
@@ -46,7 +46,7 @@ sub select {
 
    push @paths, $self->_make_lang_path( $path ) if ($self->_lang);
 
-   my $elem = $self->storage->_validate_params;
+   my $elem = $self->storage->validate_params;
    my $data = $self->storage->load( @paths );
 
    return exists $data->{ $elem } ? $data->{ $elem } : {};
@@ -83,13 +83,13 @@ sub _update {
 
    my $schema    = $self->storage->schema;
    my $condition = sub { !$schema->lang_dep || !$schema->lang_dep->{ $_[0] } };
-   my $updated   = $self->storage->_update( $element_obj, $path,
-                                            $overwrite, $condition );
+   my $updated   = $self->storage->update( $element_obj, $path,
+                                           $overwrite, $condition );
 
    if (my $lpath = $self->_make_lang_path( $path )) {
       $condition  = sub { $schema->lang_dep && $schema->lang_dep->{ $_[0] } };
-      my $written = $self->storage->_update( $element_obj, $lpath,
-                                             $overwrite, $condition );
+      my $written = $self->storage->update( $element_obj, $lpath,
+                                            $overwrite, $condition );
       $updated ||= $written;
    }
 

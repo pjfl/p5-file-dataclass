@@ -22,7 +22,7 @@ subtype 'DataClassPath' => as 'Object'    =>
 
 has '_exception_class' =>
    ( is => q(rw), isa => q(Exception),
-     default => q(File::DataClass::Exception), writer => q(exception_class) );
+     default => q(File::DataClass::Exception), writer => q(exception_class), );
 
 sub basename {
    my ($self, $path, @suffixes) = @_;

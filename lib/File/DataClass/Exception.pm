@@ -88,7 +88,7 @@ sub _localize {
    my $text     = ($msg && ref $msg eq HASH ? $msg->{text} : $msg) || $key;
 
    # Expand positional parameters of the form [_<n>]
-   unless (0 > index $text, LSB) {
+   if (0 <= index $text, LSB) {
       my @args = @{ $self->args };
 
       push @args, map { NUL } 0 .. 10;

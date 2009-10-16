@@ -28,65 +28,6 @@
     <type>textarea</type>
     <width>72</width>
   </fields>
-  <globals>
-    <name>addtag</name>
-    <text>..Add..</text>
-  </globals>
-  <globals>
-    <name>app_closed</name>
-  </globals>
-  <globals>
-    <name>application</name>
-    <text>Munchies</text>
-  </globals>
-  <globals>
-    <name>company</name>
-    <text>RoxSoft Limited</text>
-  </globals>
-  <globals>
-    <name>copyright</name>
-    <text>Copyright 2008 RoxSoft Limited</text>
-  </globals>
-  <globals>
-    <name>feedback_email</name>
-    <text>support@roxsoft.co.uk</text>
-  </globals>
-  <globals>
-    <name>logo</name>
-    <text>logo.png</text>
-  </globals>
-  <globals>
-    <name>mailer</name>
-    <text>SMTP</text>
-  </globals>
-  <globals>
-    <name>mailer_host</name>
-    <text>rolling.roxsoft.group</text>
-  </globals>
-  <globals>
-    <name>max_sess_time</name>
-    <text>7200</text>
-  </globals>
-  <globals>
-    <name>newtag</name>
-    <text>..New..</text>
-  </globals>
-  <globals>
-    <name>pwidth</name>
-    <text>40</text>
-  </globals>
-  <globals>
-    <name>remote_id</name>
-    <text>pjf</text>
-  </globals>
-  <globals>
-    <name>ssh_id</name>
-    <text>/opt/app-munchies/.ssh/id_rsa</text>
-  </globals>
-  <globals>
-    <name>weblang</name>
-    <text>en-gb</text>
-  </globals>
   <levels>
     <name>admin</name>
     <acl>@support</acl>
