@@ -10,12 +10,9 @@ use Moose;
 extends qw(Moose::Object Class::Accessor::Grouped);
 with    qw(File::DataClass::Util);
 
-has 'name' =>
-   ( is => q(rw), isa => q(Str),           required => 1 );
-has '_path' =>
-   ( is => q(ro), isa => q(DataClassPath), required => 1 );
-has '_schema' =>
-   ( is => q(ro), isa => q(Object),        required => 1, weak_ref => 1 );
+has 'name'    => ( is => q(rw), isa => q(Str),           required => 1 );
+has '_path'   => ( is => q(ro), isa => q(DataClassPath), required => 1 );
+has '_schema' => ( is => q(ro), isa => q(Object),        required => 1 );
 
 sub BUILD {
    my ($self, $args) = @_; my $class = blessed $self;
