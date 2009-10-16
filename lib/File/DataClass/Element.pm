@@ -3,7 +3,7 @@
 package File::DataClass::Element;
 
 use strict;
-use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 
@@ -56,7 +56,7 @@ File::DataClass::Element - Element object definition
 
 =head1 Version
 
-0.4.$Revision$
+0.1.$Revision$
 
 =head1 Synopsis
 

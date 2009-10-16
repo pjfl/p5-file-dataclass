@@ -4,7 +4,7 @@ package File::DataClass::ResultSource;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::ResultSet;
 use File::DataClass::Schema;
@@ -63,7 +63,7 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
 =head1 Version
 
-0.4.$Revision$
+0.1.$Revision$
 
 =head1 Synopsis
 
