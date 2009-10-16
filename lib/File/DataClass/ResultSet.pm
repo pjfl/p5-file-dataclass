@@ -6,24 +6,28 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
-use File::DataClass::Element;
-use File::DataClass::List;
 use File::DataClass::Constants;
 use Moose;
 use Scalar::Util qw(blessed);
 use TryCatch;
 
+use File::DataClass::Element;
+use File::DataClass::List;
+
 with qw(File::DataClass::Util);
 
-has 'element_class' =>
-   ( is => q(ro), isa => q(ClassName),
-     default => q(File::DataClass::Element) );
-has 'list_class' =>
-   ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::List) );
 has 'path' =>
    ( is => q(rw), isa => q(Maybe[DataClassPath]) );
 has 'source' =>
    ( is => q(ro), isa => q(Object), weak_ref => TRUE );
+
+has 'element_class' =>
+   ( is => q(ro), isa => q(ClassName),
+     default => q(File::DataClass::Element) );
+
+has 'list_class' =>
+   ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::List) );
+
 has '_elements' =>
    ( is => q(rw), isa => q(ArrayRef),
      default => sub { return [] }, init_arg => undef );
@@ -179,9 +183,9 @@ sub update {
 sub _create_element {
    my ($self, $name, $attrs) = @_; $attrs ||= {};
 
-   $attrs->{name    } = $name;
-   $attrs->{_path   } = $self->path;
-   $attrs->{_storage} = $self->schema->storage;
+   $attrs->{name   } = $name;
+   $attrs->{_path  } = $self->path;
+   $attrs->{_schema} = $self->schema;
 
    return $self->element_class->new( $attrs );
 }

@@ -6,14 +6,15 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
-use Cache::FileCache;
 use Class::Null;
 use File::DataClass::Constants;
-use File::DataClass::ResultSource;
 use File::Spec;
-use IPC::SRLock;
 use Moose;
 use Scalar::Util qw(blessed);
+
+use Cache::FileCache;
+use File::DataClass::ResultSource;
+use IPC::SRLock;
 
 with qw(File::DataClass::Util);
 
@@ -25,18 +26,21 @@ has 'log' =>
    ( is => q(ro), isa => q(Object),    default => sub { Class::Null->new } );
 has 'tempdir' =>
    ( is => q(ro), isa => q(Str),       default => sub { File::Spec->tmpdir } );
+
 has 'cache_attributes' =>
    ( is => q(ro), isa => q(HashRef),   default => sub { return {} } );
 has 'cache_class' =>
    ( is => q(ro), isa => q(ClassName), default => q(Cache::FileCache) );
 has 'cache' =>
    ( is => q(rw), isa => q(Object),    lazy_build => TRUE );
+
 has 'lock_attributes' =>
    ( is => q(ro), isa => q(HashRef),   default => sub { return {} } );
 has 'lock_class' =>
    ( is => q(ro), isa => q(ClassName), default => q(IPC::SRLock) );
 has 'lock' =>
    ( is => q(rw), isa => q(Object),    lazy_build => TRUE );
+
 has 'result_source_attributes' =>
    ( is => q(ro), isa => q(HashRef),   default => sub { return {} } );
 has 'result_source_class' =>
@@ -148,7 +152,7 @@ sub _build_lock {
 
 sub _build_result_source {
    my $self    = shift;
-   my $attrs   = $self->result_source_attributes || {};
+   my $attrs   = $self->result_source_attributes;
    my $storage = $attrs->{schema_attributes}->{storage_attributes} ||= {};
 
    $storage->{cache} ||= $self->cache;
@@ -189,16 +193,49 @@ File::DataClass - Read and write configuration files
 
    use File::DataClass;
 
+   my $file_obj = File::DataClass->new( tempdir => q(/var/yourapp/tmp) );
+
 =head1 Description
 
-Provides CRUD methods for read and write configuration files. For each
-schema a subclass is defined that inherits from this class
+Provides CRUD methods reading and writing files in different
+formats. For each schema a subclass is defined that inherits from
+the L<File::DataClass::Schema>
+
+=head1 Configuration and Environment
+
+This class defines these attributes
+
+=over 3
+
+=item B<path>
+
+=item B<debug>
+
+=item B<log>
+
+=item B<tempdir>
+
+=item B<cache_attributes>
+
+=item B<cache_class>
+
+=item B<cache>
+
+=item B<lock_attributes>
+
+=item B<lock_class>
+
+=item B<lock>
+
+=item B<result_source_attributes>
+
+=item B<result_source_class>
+
+=item B<result_source>
+
+=back
 
 =head1 Subroutines/Methods
-
-=head2 new
-
-Creates a new result source
 
 =head2 create
 
@@ -240,9 +277,9 @@ Retrieves the named element and a list of elements
 
 Returns the merged data structure from the named files
 
-=head2 push_attribute
+=head2 push
 
-   $file_obj->push_attribute( $args );
+   $file_obj->push( $args );
 
 Add new items to an attribute list. The C<$args> hash requires these
 keys; I<path> the file to edit, I<name> the element to edit, I<list>
@@ -256,9 +293,9 @@ object containing the list of new items
 
 Search for elements that match the supplied criteria
 
-=head2 splice_attribute
+=head2 splice
 
-   $file_obj->splice_attribute( $args );
+   $file_obj->splice( $args );
 
 Removes items from an attribute list
 
@@ -276,19 +313,24 @@ Updates the named element
 
 =head1 Diagnostics
 
-None
-
-=head1 Configuration and Environment
-
-None
+Setting the B<debug> attribute to true will cause the log object's
+debug method to be called with useful information
 
 =head1 Dependencies
 
 =over 3
 
-=item L<File::DataClass::Base>
+=item L<Cache::FileCache>
+
+=item L<Class::Null>
+
+=item L<File::DataClass::Constants>
 
 =item L<File::DataClass::ResultSource>
+
+=item L<IPC::SRLock>
+
+=item L<Moose>
 
 =back
 

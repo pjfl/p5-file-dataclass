@@ -6,9 +6,10 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use Moose;
+
 use File::DataClass::ResultSet;
 use File::DataClass::Schema;
-use Moose;
 
 with qw(File::DataClass::Util);
 
@@ -17,6 +18,7 @@ has 'resultset_attributes' =>
 has 'resultset_class' =>
    ( is => q(ro), isa => q(ClassName),
      default => q(File::DataClass::ResultSet) );
+
 has 'schema_attributes' =>
    ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
 has 'schema_class' =>

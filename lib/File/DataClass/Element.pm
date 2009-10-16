@@ -14,17 +14,15 @@ has 'name' =>
    ( is => q(rw), isa => q(Str),           required => 1 );
 has '_path' =>
    ( is => q(ro), isa => q(DataClassPath), required => 1 );
-has '_storage' =>
+has '_schema' =>
    ( is => q(ro), isa => q(Object),        required => 1, weak_ref => 1 );
 
 sub BUILD {
-   my ($self, $args) = @_;
+   my ($self, $args) = @_; my $class = blessed $self;
 
-   my $class = blessed $self; my $schema = $self->_storage->schema;
+   $class->mk_group_accessors( q(simple), @{ $self->_schema->attributes } );
 
-   $class->mk_group_accessors( q(simple), @{ $schema->attributes } );
-
-   $schema->update_attributes( $self, $args );
+   $self->_schema->update_attributes( $self, $args );
    return;
 }
 
@@ -38,6 +36,12 @@ sub insert {
 
 sub update {
    my $self = shift; return $self->_storage->update( $self->_path, $self );
+}
+
+# Private methods
+
+sub _storage {
+   return shift->_schema->storage;
 }
 
 __PACKAGE__->meta->make_immutable;

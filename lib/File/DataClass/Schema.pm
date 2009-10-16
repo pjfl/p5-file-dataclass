@@ -19,8 +19,10 @@ has 'element' =>
    ( is => q(rw), isa => q(Str),      default => NUL );
 has 'label_attr' =>
    ( is => q(rw), isa => q(Str),      default => NUL );
+
 has 'source' =>
    ( is => q(ro), isa => q(Object),   weak_ref => TRUE );
+
 has 'storage_attributes' =>
    ( is => q(ro), isa => q(HashRef),  default => sub { return {} } );
 has 'storage_base' =>
