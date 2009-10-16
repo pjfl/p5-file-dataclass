@@ -44,3 +44,5 @@ TAGS
 Thumbs.db
 # Avoid archives of this distribution
 \bFile-DataClass-[\d\.\_]+
+\bt/ipc_srlock
+\bt/file-dataclass
