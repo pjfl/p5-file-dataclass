@@ -109,6 +109,22 @@ File::DataClass::Base - <One-line description of module's purpose>
 
 =head1 Subroutines/Methods
 
+=head2 basename
+
+=head2 catdir
+
+=head2 catfile
+
+=head2 dirname
+
+=head2 ensure_class_loaded
+
+=head2 io
+
+=head2 is_member
+
+=head2 throw
+
 =head1 Diagnostics
 
 =head1 Dependencies

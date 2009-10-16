@@ -67,7 +67,7 @@ This is analogous to the row object in L<DBIx::Class>
 
 =head1 Subroutines/Methods
 
-=head2 new
+=head2 BUILD
 
 Creates accessors and mutators for the attributes defined by the
 schema class

@@ -407,11 +407,11 @@ File::DataClass::ResultSet - Core element methods
 
 Find, search and update methods for element objects
 
-=head1 Subroutines/Methods
-
-=head2 new
+=head1 Configuration and Environment
 
 Constructor returns a result set object
+
+=head1 Subroutines/Methods
 
 =head2 all
 
@@ -425,6 +425,10 @@ Returns all the elements that are returned by the L</search> call
 
 Creates and returns a new L<element|File::DataClass::Element>
 object from the attributes provided
+
+=head2 delete
+
+=head2 dump
 
 =head2 find
 
@@ -456,6 +460,8 @@ Returns a L<list|File::DataClass::List> object
    $element_obj = $rs->search( $criterion )->last;
 
 Returns the last element object that is the result of the search call
+
+=head2 load
 
 =head2 next
 
@@ -497,11 +503,9 @@ Removes items from the attribute list
 
 Returns the schema storage object
 
+=head2 update
+
 =head1 Diagnostics
-
-None
-
-=head1 Configuration and Environment
 
 None
 

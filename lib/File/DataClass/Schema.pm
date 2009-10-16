@@ -98,7 +98,11 @@ inherit from this
 
 =head1 Subroutines/Methods
 
-=head2 new
+=head2 create_element
+
+=head2 update_attributes
+
+=head1 Configuration and Environment
 
 Creates a new instance of the storage class which defaults to
 L<File::DataClass::Storage::XML::Simple>
@@ -108,10 +112,6 @@ L<File::DataClass::Combinator> is created as a proxy for the
 storage class
 
 =head1 Diagnostics
-
-None
-
-=head1 Configuration and Environment
 
 None
 

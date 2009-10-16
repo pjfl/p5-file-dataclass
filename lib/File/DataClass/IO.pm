@@ -821,7 +821,7 @@ Delete temporary files for this process (temporary file names include
 the process id). Temporary files are stored in the C<$tempdir>. Can override
 the template filename pattern if required
 
-=head2 DESTROY
+=head2 DEMOLISH
 
 If this is an atomic file update calls the L</delete> method. If the
 object is still open it calls the L</close> method
