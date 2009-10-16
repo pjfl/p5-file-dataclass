@@ -183,7 +183,7 @@ __END__
 
 =head1 Name
 
-File::DataClass - Read and write configuration files
+File::DataClass - Read and write structured data files
 
 =head1 Version
 
