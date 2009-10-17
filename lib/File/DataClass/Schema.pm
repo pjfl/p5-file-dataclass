@@ -14,40 +14,29 @@ use File::DataClass::Element;
 with qw(File::DataClass::Util);
 
 has 'attributes' =>
-   ( is => q(rw), isa => q(ArrayRef), default => sub { return [] } );
+   is => q(rw), isa => q(ArrayRef), default => sub { return [] };
 has 'defaults' =>
-   ( is => q(rw), isa => q(HashRef),  default => sub { return {} } );
+   is => q(rw), isa => q(HashRef),  default => sub { return {} };
 has 'element' =>
-   ( is => q(rw), isa => q(Str),      default => NUL );
+   is => q(rw), isa => q(Str),      default => NUL;
 has 'label_attr' =>
-   ( is => q(rw), isa => q(Str),      default => NUL );
+   is => q(rw), isa => q(Str),      default => NUL;
 
 has 'source' =>
-   ( is => q(ro), isa => q(Object),   weak_ref => TRUE );
+   is => q(ro), isa => q(Object),   weak_ref => TRUE;
 
 has 'element_class' =>
-   ( is => q(ro), isa => q(ClassName),
-     default => q(File::DataClass::Element), );
+   is => q(ro), isa => q(ClassName),
+   default => q(File::DataClass::Element);
 
 has 'storage_attributes' =>
-   ( is => q(ro), isa => q(HashRef),  default => sub { return {} } );
+   is => q(ro), isa => q(HashRef),  default => sub { return {} };
 has 'storage_base' =>
-   ( is => q(ro), isa => q(Str),      default => q(File::DataClass::Storage) );
+   is => q(ro), isa => q(Str),      default => q(File::DataClass::Storage);
 has 'storage_class' =>
-   ( is => q(ro), isa => q(Str),      default => q(XML::Simple) );
+   is => q(ro), isa => q(Str),      default => q(XML::Simple);
 has 'storage' =>
-   ( is => q(rw), isa => q(Object),   lazy_build => TRUE );
-
-sub _build_storage {
-   my $self = shift; my $class = $self->storage_class;
-
-   if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
-   else { $class = $self->storage_base.q(::).$class }
-
-   $self->ensure_class_loaded( $class );
-
-   return $class->new( { %{ $self->storage_attributes  }, schema => $self } );
-}
+   is => q(rw), isa => q(Object),   lazy_build => TRUE;
 
 sub create_element {
    my ($self, $path, $attrs) = @_;
@@ -68,6 +57,19 @@ sub update_attributes {
    }
 
    return;
+}
+
+# Private methods
+
+sub _build_storage {
+   my $self = shift; my $class = $self->storage_class;
+
+   if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
+   else { $class = $self->storage_base.q(::).$class }
+
+   $self->ensure_class_loaded( $class );
+
+   return $class->new( { %{ $self->storage_attributes  }, schema => $self } );
 }
 
 __PACKAGE__->meta->make_immutable;

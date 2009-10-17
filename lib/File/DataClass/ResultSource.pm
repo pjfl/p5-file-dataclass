@@ -14,17 +14,16 @@ use File::DataClass::Schema;
 with qw(File::DataClass::Util);
 
 has 'resultset_attributes' =>
-   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
+   is => q(ro), isa => q(HashRef),   default => sub { return {} };
 has 'resultset_class' =>
-   ( is => q(ro), isa => q(ClassName),
-     default => q(File::DataClass::ResultSet), );
+   is => q(ro), isa => q(ClassName), default => q(File::DataClass::ResultSet);
 
 has 'schema_attributes' =>
-   ( is => q(ro), isa => q(HashRef), default => sub { return {} } );
+   is => q(ro), isa => q(HashRef),   default => sub { return {} };
 has 'schema_class' =>
-   ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::Schema) );
+   is => q(ro), isa => q(ClassName), default => q(File::DataClass::Schema);
 has 'schema' =>
-   ( is => q(ro), isa => q(Object), lazy_build => 1, init_arg => undef );
+   is => q(ro), isa => q(Object),    lazy_build => 1, init_arg => undef;
 
 sub _build_schema {
    my $self = shift;

@@ -11,12 +11,12 @@ use Moose;
 
 extends qw(File::DataClass::Storage);
 
-has '+extn'     => ( default => q(.xml) );
-has 'root_name' => ( is => q(ro), isa => q(Str), default => q(config) );
-has '_arrays'   => ( is => q(rw), isa => q(HashRef),
-                     default => sub { return {} }, );
-has '_dtd'      => ( is => q(rw), isa => q(ArrayRef),
-                     default => sub { return [] }, );
+has '+extn'     => default => q(.xml);
+has 'root_name' => is => q(ro), isa => q(Str), default => q(config);
+has '_arrays'   => is => q(rw), isa => q(HashRef),
+                   default => sub { return {} };
+has '_dtd'      => is => q(rw), isa => q(ArrayRef),
+                   default => sub { return [] };
 
 # Private methods
 

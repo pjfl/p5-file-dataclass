@@ -9,13 +9,13 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 use Moose;
 
 has 'element' =>
-   ( is => q(rw), isa => q(Object) );
+   is => q(rw), isa => q(Object);
 has 'found'   =>
-   ( is => q(rw), isa => q(Bool),      default  => 0 );
+   is => q(rw), isa => q(Bool),      default  => 0;
 has 'labels'  =>
-   ( is => q(rw), isa => q(HashRef) ,  default => sub { return {} } );
+   is => q(rw), isa => q(HashRef) ,  default => sub { return {} };
 has 'list'    =>
-   ( is => q(rw), isa => q(ArrayRef) , default => sub { return [] } );
+   is => q(rw), isa => q(ArrayRef) , default => sub { return [] };
 
 __PACKAGE__->meta->make_immutable;
 

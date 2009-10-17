@@ -15,13 +15,13 @@ use TryCatch;
 
 with qw(File::DataClass::Util);
 
-has 'cache'  => ( is => q(ro), isa => q(Object),  required => 1     );
-has 'debug'  => ( is => q(ro), isa => q(Bool),    default  => FALSE );
-has 'extn'   => ( is => q(rw), isa => q(Str),     default  => NUL   );
-has 'lock'   => ( is => q(ro), isa => q(Object),  required => 1     );
-has 'log'    => ( is => q(ro), isa => q(Object),
-                  default => sub { Class::Null->new },              );
-has 'schema' => ( is => q(ro), isa => q(Object),  weak_ref => TRUE  );
+has 'cache'  => is => q(ro), isa => q(Object),  required => 1    ;
+has 'debug'  => is => q(ro), isa => q(Bool),    default  => FALSE;
+has 'extn'   => is => q(rw), isa => q(Str),     default  => NUL  ;
+has 'lock'   => is => q(ro), isa => q(Object),  required => 1    ;
+has 'log'    => is => q(ro), isa => q(Object),
+                default => sub { Class::Null->new }              ;
+has 'schema' => is => q(ro), isa => q(Object),  weak_ref => TRUE ;
 
 sub delete {
    my ($self, $path, $element_obj) = @_;

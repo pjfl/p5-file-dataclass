@@ -16,19 +16,19 @@ use File::DataClass::List;
 with qw(File::DataClass::Util);
 
 has 'path' =>
-   ( is => q(rw), isa => q(Maybe[DataClassPath]) );
+   is => q(rw), isa => q(Maybe[DataClassPath]);
 
 has 'source' =>
-   ( is => q(ro), isa => q(Object), weak_ref => TRUE );
+   is => q(ro), isa => q(Object),    weak_ref => TRUE;
 
 has 'list_class' =>
-   ( is => q(ro), isa => q(ClassName), default => q(File::DataClass::List) );
+   is => q(ro), isa => q(ClassName), default => q(File::DataClass::List);
 
 has '_elements' =>
-   ( is => q(rw), isa => q(ArrayRef),
-     default => sub { return [] }, init_arg => undef, );
+   is => q(rw), isa => q(ArrayRef),  default => sub { return [] },
+   init_arg => undef;
 has '_iterator' =>
-   ( is => q(rw), isa => q(Int), default => 0, init_arg => undef );
+   is => q(rw), isa => q(Int),       default => 0, init_arg => undef;
 
 sub all {
    my $self = shift; return @{ $self->_elements };

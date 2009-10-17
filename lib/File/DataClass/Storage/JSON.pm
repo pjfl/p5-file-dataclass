@@ -11,7 +11,7 @@ use Moose;
 
 extends qw(File::DataClass::Storage);
 
-has '+extn' => ( default => q(.json) );
+has '+extn' => default => q(.json);
 
 # Private methods
 

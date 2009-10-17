@@ -19,35 +19,35 @@ use IPC::SRLock;
 with qw(File::DataClass::Util);
 
 has 'path' =>
-   ( is => q(ro), isa => q(Maybe[DataClassPath]) );
+   is => q(rw), isa => q(Maybe[DataClassPath]);
 has 'debug' =>
-   ( is => q(ro), isa => q(Bool),      default => FALSE );
+   is => q(ro), isa => q(Bool),      default => FALSE;
 has 'log' =>
-   ( is => q(ro), isa => q(Object),    default => sub { Class::Null->new } );
+   is => q(ro), isa => q(Object),    default => sub { Class::Null->new };
 has 'tempdir' =>
-   ( is => q(ro), isa => q(Str),       default => sub { File::Spec->tmpdir } );
+   is => q(ro), isa => q(Str),       default => sub { File::Spec->tmpdir };
 
 has 'cache_attributes' =>
-   ( is => q(ro), isa => q(HashRef),   default => sub { return {} } );
+   is => q(ro), isa => q(HashRef),   default => sub { return {} };
 has 'cache_class' =>
-   ( is => q(ro), isa => q(ClassName), default => q(Cache::FileCache) );
+   is => q(ro), isa => q(ClassName), default => q(Cache::FileCache);
 has 'cache' =>
-   ( is => q(rw), isa => q(Object),    lazy_build => TRUE );
+   is => q(rw), isa => q(Object),    lazy_build => TRUE;
 
 has 'lock_attributes' =>
-   ( is => q(ro), isa => q(HashRef),   default => sub { return {} } );
+   is => q(ro), isa => q(HashRef),   default => sub { return {} };
 has 'lock_class' =>
-   ( is => q(ro), isa => q(ClassName), default => q(IPC::SRLock) );
+   is => q(ro), isa => q(ClassName), default => q(IPC::SRLock);
 has 'lock' =>
-   ( is => q(rw), isa => q(Object),    lazy_build => TRUE );
+   is => q(rw), isa => q(Object),    lazy_build => TRUE;
 
 has 'result_source_attributes' =>
-   ( is => q(ro), isa => q(HashRef),   default => sub { return {} } );
+   is => q(ro), isa => q(HashRef),   default => sub { return {} };
 has 'result_source_class' =>
-   ( is => q(ro), isa => q(ClassName),
-     default => q(File::DataClass::ResultSource), );
+   is => q(ro), isa => q(ClassName),
+   default => q(File::DataClass::ResultSource);
 has 'result_source' =>
-   ( is => q(ro), isa => q(Object),    lazy_build => TRUE );
+   is => q(ro), isa => q(Object),    lazy_build => TRUE;
 
 sub create {
    my ($self, $args) = @_; return $self->_resultset( $args )->create( $args );

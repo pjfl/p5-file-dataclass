@@ -11,7 +11,7 @@ use Moose;
 
 with qw(File::DataClass::Util);
 
-has 'storage' => ( is => q(ro), isa => q(Object), required => TRUE );
+has 'storage' => is => q(ro), isa => q(Object), required => TRUE;
 
 sub delete {
    my ($self, $path, $element_obj) = @_;
