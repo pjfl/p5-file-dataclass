@@ -441,8 +441,8 @@ sub _open_file {
 
    $self->_assert && $self->assert_filepath;
    @args = ( $self->mode( $mode || $self->mode ) );
-   $self->_perms( $perms )   if defined $perms;
-   push @args, $self->_perms if defined $self->_perms;
+   $self->_perms( $perms )   if (defined $perms);
+   push @args, $self->_perms if (defined $self->_perms);
 
    if (defined $self->pathname) {
       my $pathname = $self->_atomic ? $self->_atomic : $self->pathname;
@@ -455,8 +455,8 @@ sub _open_file {
       $self->is_open( TRUE );
    }
 
-   $self->_lock && $self->set_lock;
-   $self->set_binmode;
+   $self->is_open && $self->set_lock;
+   $self->is_open && $self->set_binmode;
    return $self;
 }
 
@@ -539,6 +539,8 @@ sub set_binmode {
 
 sub set_lock {
    my $self = shift;
+
+   return unless ($self->_lock);
 
    return $self->lock_obj->set( k => $self->pathname ) if ($self->lock_obj);
 
