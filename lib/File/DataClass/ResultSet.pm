@@ -15,20 +15,14 @@ use File::DataClass::List;
 
 with qw(File::DataClass::Util);
 
-has 'path' =>
-   is => q(rw), isa => q(Maybe[DataClassPath]);
-
-has 'source' =>
-   is => q(ro), isa => q(Object),    weak_ref => TRUE;
-
-has 'list_class' =>
-   is => q(ro), isa => q(ClassName), default => q(File::DataClass::List);
-
-has '_elements' =>
-   is => q(rw), isa => q(ArrayRef),  default => sub { return [] },
-   init_arg => undef;
-has '_iterator' =>
-   is => q(rw), isa => q(Int),       default => 0, init_arg => undef;
+has 'path'       => is => 'rw', isa => 'Maybe[DataClassPath]';
+has 'source'     => is => 'ro', isa => 'Object',   weak_ref => TRUE;
+has 'list_class' => is => 'ro', isa => 'ClassName',
+   default       => q(File::DataClass::List);
+has '_elements'  => is => 'rw', isa => 'ArrayRef', init_arg => undef,
+   default       => sub { return [] };
+has '_iterator'  => is => 'rw', isa => 'Int',      init_arg => undef,
+   default       => 0;
 
 sub all {
    my $self = shift; return @{ $self->_elements };

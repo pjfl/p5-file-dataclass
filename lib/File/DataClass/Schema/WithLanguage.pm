@@ -12,8 +12,8 @@ use Moose;
 
 with qw(File::DataClass::Schema);
 
-has 'lang'     => ( is => q(rw), isa => q(Str), default => NUL );
-has 'lang_dep' => ( is => q(rw), isa => q(Maybe[ArrayRef]) );
+has 'lang'     => is => 'rw', isa => 'Str', default => NUL;
+has 'lang_dep' => is => 'rw', isa => 'Maybe[ArrayRef]';
 
 sub BUILD {
    my $self = shift;

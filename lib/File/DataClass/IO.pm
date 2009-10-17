@@ -20,29 +20,27 @@ use Moose;
 my @STAT_FIELDS = (
    qw(dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks) );
 
-has 'atomic_pref' => is => q(rw), isa => q(Str),       default    => q(B_);
-has 'autoclose'   => is => q(rw), isa => q(Bool),      default    => TRUE ;
-has 'block_size'  => is => q(rw), isa => q(Int),       default    => 1024 ;
-has 'dir_pattern' => is => q(ro), isa => q(RegexpRef), lazy_build => TRUE ;
-
-has 'exception_class' =>
-   is => q(rw), isa => q(Str), default => q(File::DataClass::Exception);
-
-has 'io_handle'   => is => q(rw), isa => q(Maybe[Object])                ;
-has 'is_open'     => is => q(rw), isa => q(Bool), default  => FALSE      ;
-has 'lock_obj'    => is => q(rw), isa => q(Object)                       ;
-has 'mode'        => is => q(rw), isa => q(Maybe[Str])                   ;
-has 'name'        => is => q(rw), isa => q(Str),  required => TRUE       ;
-has 'type'        => is => q(rw), isa => q(Maybe[Str])                   ;
-has '_assert'     => is => q(rw), isa => q(Bool), default  => FALSE      ;
-has '_atomic'     => is => q(rw), isa => q(Maybe[Str])                   ;
-has '_binary'     => is => q(rw), isa => q(Bool), default  => FALSE      ;
-has '_binmode'    => is => q(rw), isa => q(Str),  default  => NUL        ;
-has '_chomp'      => is => q(rw), isa => q(Bool), default  => FALSE      ;
-has '_encoding'   => is => q(rw), isa => q(Str),  default  => NUL        ;
-has '_lock'       => is => q(rw), isa => q(Bool), default  => FALSE      ;
-has '_perms'      => is => q(rw), isa => q(Num),  default  => oct q(0644);
-has '_utf8'       => is => q(rw), isa => q(Bool), default  => FALSE      ;
+has 'atomic_pref'     => is => 'rw', isa => 'Str',   default  => q(B_)      ;
+has 'autoclose'       => is => 'rw', isa => 'Bool',  default  => TRUE       ;
+has 'block_size'      => is => 'rw', isa => 'Int',   default  => 1024       ;
+has 'dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE ;
+has 'exception_class' => is => 'rw', isa => 'Str',
+   default            => q(File::DataClass::Exception)                      ;
+has 'io_handle'       => is => 'rw', isa => 'Maybe[Object]'                 ;
+has 'is_open'         => is => 'rw', isa => 'Bool',  default  => FALSE      ;
+has 'lock_obj'        => is => 'rw', isa => 'Object'                        ;
+has 'mode'            => is => 'rw', isa => 'Maybe[Str]'                    ;
+has 'name'            => is => 'rw', isa => 'Str',   required => TRUE       ;
+has 'type'            => is => 'rw', isa => 'Maybe[Str]'                    ;
+has '_assert'         => is => 'rw', isa => 'Bool',  default  => FALSE      ;
+has '_atomic'         => is => 'rw', isa => 'Maybe[Str]'                    ;
+has '_binary'         => is => 'rw', isa => 'Bool',  default  => FALSE      ;
+has '_binmode'        => is => 'rw', isa => 'Str',   default  => NUL        ;
+has '_chomp'          => is => 'rw', isa => 'Bool',  default  => FALSE      ;
+has '_encoding'       => is => 'rw', isa => 'Str',   default  => NUL        ;
+has '_lock'           => is => 'rw', isa => 'Bool',  default  => FALSE      ;
+has '_perms'          => is => 'rw', isa => 'Num',   default  => oct q(0644);
+has '_utf8'           => is => 'rw', isa => 'Bool',  default  => FALSE      ;
 
 around BUILDARGS => sub {
    my ($orig, $class, @rest) = @_; my $attrs;

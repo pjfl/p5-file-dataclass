@@ -14,29 +14,29 @@ use File::DataClass::Element;
 with qw(File::DataClass::Util);
 
 has 'attributes' =>
-   is => q(rw), isa => q(ArrayRef), default => sub { return [] };
+   is => 'rw', isa => 'ArrayRef', default => sub { return [] };
 has 'defaults' =>
-   is => q(rw), isa => q(HashRef),  default => sub { return {} };
+   is => 'rw', isa => 'HashRef',  default => sub { return {} };
 has 'element' =>
-   is => q(rw), isa => q(Str),      default => NUL;
+   is => 'rw', isa => 'Str',      default => NUL;
 has 'label_attr' =>
-   is => q(rw), isa => q(Str),      default => NUL;
+   is => 'rw', isa => 'Str',      default => NUL;
 
 has 'source' =>
-   is => q(ro), isa => q(Object),   weak_ref => TRUE;
+   is => 'ro', isa => 'Object',   weak_ref => TRUE;
 
 has 'element_class' =>
-   is => q(ro), isa => q(ClassName),
+   is => 'ro', isa => 'ClassName',
    default => q(File::DataClass::Element);
 
 has 'storage_attributes' =>
-   is => q(ro), isa => q(HashRef),  default => sub { return {} };
+   is => 'ro', isa => 'HashRef',  default => sub { return {} };
 has 'storage_base' =>
-   is => q(ro), isa => q(Str),      default => q(File::DataClass::Storage);
+   is => 'ro', isa => 'Str',      default => q(File::DataClass::Storage);
 has 'storage_class' =>
-   is => q(ro), isa => q(Str),      default => q(XML::Simple);
+   is => 'ro', isa => 'Str',      default => q(XML::Simple);
 has 'storage' =>
-   is => q(rw), isa => q(Object),   lazy_build => TRUE;
+   is => 'rw', isa => 'Object',   lazy_build => TRUE;
 
 sub create_element {
    my ($self, $path, $attrs) = @_;

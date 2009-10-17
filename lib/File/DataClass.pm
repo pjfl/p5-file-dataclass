@@ -18,36 +18,31 @@ use IPC::SRLock;
 
 with qw(File::DataClass::Util);
 
-has 'path' =>
-   is => q(rw), isa => q(Maybe[DataClassPath]);
-has 'debug' =>
-   is => q(ro), isa => q(Bool),      default => FALSE;
-has 'log' =>
-   is => q(ro), isa => q(Object),    default => sub { Class::Null->new };
-has 'tempdir' =>
-   is => q(ro), isa => q(Str),       default => sub { File::Spec->tmpdir };
+has 'path'    => is => 'rw', isa => 'Maybe[DataClassPath]';
+has 'debug'   => is => 'ro', isa => 'Bool', default => FALSE;
+has 'log'     => is => 'ro', isa => 'Object',
+   default    => sub { Class::Null->new };
+has 'tempdir' => is => 'ro', isa => 'Str',
+   default    => sub { File::Spec->tmpdir };
 
-has 'cache_attributes' =>
-   is => q(ro), isa => q(HashRef),   default => sub { return {} };
-has 'cache_class' =>
-   is => q(ro), isa => q(ClassName), default => q(Cache::FileCache);
-has 'cache' =>
-   is => q(rw), isa => q(Object),    lazy_build => TRUE;
+has 'cache_attributes' => is => 'ro', isa => 'HashRef',
+   default             => sub { return {} };
+has 'cache_class'      => is => 'ro', isa => 'ClassName',
+   default             => q(Cache::FileCache);
+has 'cache'            => is => 'rw', isa => 'Object', lazy_build => TRUE;
 
-has 'lock_attributes' =>
-   is => q(ro), isa => q(HashRef),   default => sub { return {} };
-has 'lock_class' =>
-   is => q(ro), isa => q(ClassName), default => q(IPC::SRLock);
-has 'lock' =>
-   is => q(rw), isa => q(Object),    lazy_build => TRUE;
+has 'lock_attributes'  => is => 'ro', isa => 'HashRef',
+   default             => sub { return {} };
+has 'lock_class'       => is => 'ro', isa => 'ClassName',
+   default             => q(IPC::SRLock);
+has 'lock'             => is => 'rw', isa => 'Object', lazy_build => TRUE;
 
-has 'result_source_attributes' =>
-   is => q(ro), isa => q(HashRef),   default => sub { return {} };
-has 'result_source_class' =>
-   is => q(ro), isa => q(ClassName),
-   default => q(File::DataClass::ResultSource);
-has 'result_source' =>
-   is => q(ro), isa => q(Object),    lazy_build => TRUE;
+has 'result_source_attributes' => is => 'ro', isa => 'HashRef',
+   default                     => sub { return {} };
+has 'result_source_class'      => is => 'ro', isa => 'ClassName',
+   default                     => q(File::DataClass::ResultSource);
+has 'result_source'            => is => 'ro', isa => 'Object',
+   lazy_build                  => TRUE;
 
 sub create {
    my ($self, $args) = @_; return $self->_resultset( $args )->create( $args );
@@ -193,7 +188,7 @@ File::DataClass - Read and write structured data files
 
    use File::DataClass;
 
-   my $file_obj = File::DataClass->new( tempdir => q(/var/yourapp/tmp) );
+   my $file_obj = File::DataClass->new( tempdir => '/var/yourapp/tmp' );
 
 =head1 Description
 
