@@ -22,9 +22,9 @@ BEGIN {
 }
 
 sub test {
-   my ($file, $method, @rest) = @_; my $wantarray = wantarray;
+   my ($file, $method, @rest) = @_; local $EVAL_ERROR;
 
-   my ($e, $res); local $EVAL_ERROR;
+   my $wantarray = wantarray; my ($e, $res);
 
    eval {
       if ($wantarray) { @{ $res } = $file->$method( @rest ) }
@@ -78,6 +78,14 @@ $res = test( $file, q(create), $args );
 
 is( $res, q(dummy), 'Creates dummy element and inserts' );
 
+$args->{fields}->{text} = q(value2);
+
+test( $file, q(update), $args ); delete $args->{fields};
+
+$res = test( $file, q(find), $args );
+
+is( $res->text, q(value2), 'Can update and find' );
+
 $e = test( $file, q(create), $args );
 
 ok( $e =~ m{ already \s+ exists }mx, 'Detects already existing element' );
@@ -101,13 +109,9 @@ ok( !$diff, 'Load and dump roundtrips' );
 $schema->element( q(fields) ); $schema->attributes( [ qw(width) ] );
 $args = { name => q(feedback.body), path => q(t/default.xml) };
 
-$res = test( $file, q(find), $args );
-
-ok( $res->width == 72, 'Can find' );
-
 $res = test( $file, q(list), $args );
 
-ok( $res->found && scalar @{ $res->list } == 3, 'Can list' );
+ok( $res->element->width == 72 && scalar @{ $res->list } == 3, 'Can list' );
 
 # push
 
@@ -119,7 +123,6 @@ my @res = test( $file, q(search), $args );
 ok( $res[0] && $res[0]->name eq q(admin), 'Can search' );
 
 # splice
-# update
 
 unlink( q(t/dumped.xml) );
 unlink( q(t/ipc_srlock.lck) );
