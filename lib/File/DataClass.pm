@@ -289,7 +289,7 @@ object containing the list of new items
 
 =head2 search
 
-   $file_obj->search( { path => $to_file, criterion => $to_search_for } );
+   $file_obj->search( { path => $to_file, where => $to_search_for } );
 
 Search for elements that match the supplied criteria
 

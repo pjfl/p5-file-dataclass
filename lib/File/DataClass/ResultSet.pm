@@ -137,7 +137,7 @@ sub search {
    my ($self, $args) = @_;
 
    return $self->_txn_do( $self->path, sub {
-      $self->_search( $args->{criterion} );
+      $self->_search( $args->{where} );
    } );
 }
 
@@ -177,24 +177,24 @@ sub update {
 # Private methods
 
 sub _eval_criterion {
-   my ($self, $criterion, $attrs) = @_; my $lhs;
+   my ($self, $where, $attrs) = @_; my $lhs;
 
-   for my $attr (keys %{ $criterion }) {
+   for my $attr (keys %{ $where }) {
       return FALSE unless (exists  $attrs->{ $attr });
       return FALSE unless (defined ($lhs = $attrs->{ $attr }));
 
-      if (ref $criterion->{ $attr } eq HASH) {
-         while (my ($op, $rhs) = each %{ $criterion->{ $attr } }) {
+      if (ref $where->{ $attr } eq HASH) {
+         while (my ($op, $rhs) = each %{ $where->{ $attr } }) {
             return FALSE unless ($self->_eval_op( $lhs, $op, $rhs ));
          }
       }
       else {
          if (ref $lhs eq ARRAY) {
-            unless ($self->is_member( $criterion->{ $attr }, @{ $lhs })) {
+            unless ($self->is_member( $where->{ $attr }, @{ $lhs })) {
                return FALSE;
             }
          }
-         else { return FALSE unless ($lhs eq $criterion->{ $attr }) }
+         else { return FALSE unless ($lhs eq $where->{ $attr }) }
       }
    }
 
@@ -250,7 +250,7 @@ sub _list {
    }
    else { $attrs = { name => $name } }
 
-   $new->element( $self->schema->create_element( $self->path, $attrs ));
+   $new->element( $self->schema->create_element( $self->path, $attrs ) );
 
    return $new;
 }
@@ -290,7 +290,7 @@ sub _push {
 }
 
 sub _search {
-   my ($self, $criterion) = @_; my $elements = $self->_elements; my @tmp;
+   my ($self, $where) = @_; my $elements = $self->_elements; my @tmp;
 
    unless ($self->_elements) {
       $self->_elements( [] ); $self->_iterator( 0 );
@@ -302,18 +302,15 @@ sub _search {
       for my $name (keys %{ $elements }) {
          my $attrs = { %{ $elements->{ $name } }, name => $name };
 
-         if (not $criterion
-              or $self->_eval_criterion( $criterion, $attrs )) {
+         if (not $where or $self->_eval_criterion( $where, $attrs )) {
             CORE::push @{ $self->_elements },
                $self->schema->create_element( $self->path, $attrs );
          }
       }
    }
-   elsif ($criterion and defined $elements->[0]) {
+   elsif ($where and defined $elements->[0]) {
       for my $attrs (@{ $elements }) {
-         if ($self->_eval_criterion( $criterion, $attrs )) {
-            CORE::push @tmp, $attrs;
-         }
+         CORE::push @tmp, $attrs if ($self->_eval_criterion( $where, $attrs ));
       }
 
       $self->_elements( \@tmp );
@@ -347,7 +344,7 @@ sub _splice {
 }
 
 sub _txn_do {
-   my ($self, $path, $code_ref) = @_;
+   my ($self, $path, $code_ref) = @_; my $wantarray = wantarray;
 
    $self->throw( 'No file path specified' ) unless ($path);
 
@@ -356,14 +353,14 @@ sub _txn_do {
    try {
       $self->storage->lock->set( k => $key );
 
-      if (wantarray) { @{ $res } = $code_ref->() }
+      if ($wantarray) { @{ $res } = $code_ref->() }
       else { $res = $code_ref->() }
 
       $self->storage->lock->reset( k => $key );
    }
    catch ($e) { $self->storage->lock->reset( k => $key ); $self->throw( $e ) }
 
-   return wantarray ? @{ $res } : $res;
+   return $wantarray ? @{ $res } : $res;
 }
 
 sub _validate_params {
@@ -397,7 +394,7 @@ File::DataClass::ResultSet - Core element methods
    my $attrs  = { schema_attributes => $schema_attributes };
    my $source = File::DataClass::ResultSource->new( $attrs ) );
    my $rs     = $source->resultset( $path );
-   my $result = $rs->search( $criterion );
+   my $result = $rs->search( $where );
 
    for $element_obj ($result->next) {
       # Do something with the element object
@@ -445,7 +442,7 @@ Finds the named element object and updates it's attributes
 
 =head2 first
 
-   $element_obj = $rs->search( $criterion )->first;
+   $element_obj = $rs->search( $where )->first;
 
 Returns the first element object that is the result of the search call
 
@@ -457,7 +454,7 @@ Returns a L<list|File::DataClass::List> object
 
 =head2 last
 
-   $element_obj = $rs->search( $criterion )->last;
+   $element_obj = $rs->search( $where )->last;
 
 Returns the last element object that is the result of the search call
 
@@ -465,7 +462,7 @@ Returns the last element object that is the result of the search call
 
 =head2 next
 
-   $element_obj = $rs->search( $criterion )->next;
+   $element_obj = $rs->search( $where )->next;
 
 Iterate over the elements returned by the search call
 
@@ -482,7 +479,7 @@ Returns the source schema object
 
 =head2 search
 
-   $result = $rs->search( $criterion );
+   $result = $rs->search( $where );
 
 Search for elements that match the given criterion. The criterion is a hash
 ref whose keys are element attribute names. The criterion values are either
@@ -491,7 +488,7 @@ the corresponding element attribute values. Hash ref keys are treated as
 comparison operators, the hash ref values are compared with the element
 attribute values, e.g.
 
-   $criterion = { quick_links => { '>=' => 0 } };
+   $where = { quick_links => { '>=' => 0 } };
 
 =head2 splice
 

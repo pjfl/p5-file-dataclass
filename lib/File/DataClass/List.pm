@@ -9,7 +9,7 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 use Moose;
 
 has 'element' =>
-   ( is => q(rw), isa => q(Object),    required => 1 );
+   ( is => q(rw), isa => q(Object) );
 has 'found'   =>
    ( is => q(rw), isa => q(Bool),      default  => 0 );
 has 'labels'  =>

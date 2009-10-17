@@ -9,6 +9,7 @@ use lib catdir( $Bin, updir, q(lib) );
 
 use English qw(-no_match_vars);
 use Test::More;
+use Text::Diff;
 
 BEGIN {
    if ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
@@ -16,22 +17,34 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 14;
+   plan tests => 18;
+   use_ok( q(File::DataClass) );
 }
 
-use File::DataClass;
+sub test {
+   my ($file, $method, @rest) = @_; my $wantarray = wantarray;
+
+   my ($e, $res); local $EVAL_ERROR;
+
+   eval {
+      if ($wantarray) { @{ $res } = $file->$method( @rest ) }
+      else { $res = $file->$method( @rest ) }
+   };
+
+   return $e if ($e = $EVAL_ERROR);
+
+   return $wantarray ? @{ $res } : $res;
+}
 
 my $file = File::DataClass->new( tempdir => q(t) );
 
-isa_ok( $file, 'File::DataClass' );
+isa_ok( $file, q(File::DataClass) );
 
-my $cfg = eval { $file->load( qw(nonexistant_file) ) };
-
-my $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+my $e = test( $file, qw(load nonexistant_file) );
 
 is( $e, 'Cannot open nonexistant_file', 'Cannot open nonexistant_file' );
 
-$cfg = eval { $file->load( qw(t/default.xml t/default_en.xml) ) };
+my $cfg = test( $file, qw(load t/default.xml t/default_en.xml) );
 
 ok( $cfg->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 1' );
@@ -41,57 +54,76 @@ ok( $cfg->{ '_cvs_lang_default' } =~ m{ @\(\#\)\$Id: }mx,
 
 ok( ref $cfg->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays' );
 
-my $res = eval { $file->create }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+$e = test( $file, q(create) );
 
 is( $e, 'No element name specified', 'No element name specified' );
 
-my $args = {}; $args->{name} = q(dummy);
-
-$res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+my $args = {}; $args->{name} = q(dummy); $e = test( $file, q(create), $args );
 
 is( $e, 'No file path specified', 'No file path specified' );
 
-$args->{path} = q(t/default.xml);
-
-$res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+$args->{path} = q(t/default.xml); $e = test( $file, q(create), $args );
 
 is( $e, 'No element specified', 'No element specified' );
 
-my $schema = $file->result_source->schema;
+my $schema = $file->result_source->schema; $schema->element( q(globals) );
 
-$schema->element( q(globals) );
-
-$res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+my $res = test( $file, q(create), $args );
 
 ok( !defined $res, 'Creates dummy element but does not insert' );
 
-$schema->attributes( [ qw(text) ] );
-$args->{fields}->{text} = q(value1);
+$schema->attributes( [ qw(text) ] ); $args->{fields}->{text} = q(value1);
 
-$res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+$res = test( $file, q(create), $args );
 
 is( $res, q(dummy), 'Creates dummy element and inserts' );
 
-$res = eval { $file->create( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+$e = test( $file, q(create), $args );
 
 ok( $e =~ m{ already \s+ exists }mx, 'Detects already existing element' );
 
-$res = eval { $file->delete( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+$res = test( $file, q(delete), $args );
 
 is( $res, q(dummy), 'Deletes dummy element' );
 
-$res = eval { $file->delete( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+$e = test( $file, q(delete), $args );
 
 ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
 
-$schema->element( q(levels) );
-$schema->attributes( [ qw(acl state) ] );
-$args = {}; $args->{path} = q(t/default.xml);
-$args->{criterion} = { acl => q(@support) }; my @res;
+$args = { data => $file->load( q(t/default.xml) ), path => q(t/dumped.xml) };
 
-@res = eval { $file->search( $args ) }; $e = $EVAL_ERROR; $EVAL_ERROR = undef;
+test( $file, q(dump), $args );
+
+my $diff = diff q(t/default.xml), q(t/dumped.xml);
+
+ok( !$diff, 'Load and dump roundtrips' );
+
+$schema->element( q(fields) ); $schema->attributes( [ qw(width) ] );
+$args = { name => q(feedback.body), path => q(t/default.xml) };
+
+$res = test( $file, q(find), $args );
+
+ok( $res->width == 72, 'Can find' );
+
+$res = test( $file, q(list), $args );
+
+ok( $res->found && scalar @{ $res->list } == 3, 'Can list' );
+
+# push
+
+$schema->element( q(levels) ); $schema->attributes( [ qw(acl state) ] );
+$args = { path => q(t/default.xml), criterion => { acl => q(@support) } };
+
+my @res = test( $file, q(search), $args );
 
 ok( $res[0] && $res[0]->name eq q(admin), 'Can search' );
+
+# splice
+# update
+
+unlink( q(t/dumped.xml) );
+unlink( q(t/ipc_srlock.lck) );
+unlink( q(t/ipc_srlock.shm) );
 
 # Local Variables:
 # mode: perl
