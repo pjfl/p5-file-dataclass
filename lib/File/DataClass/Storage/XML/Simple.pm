@@ -17,7 +17,8 @@ sub _read_file {
    my ($self, $path, $for_update) = @_;
 
    my $method = sub {
-      my $data   = $self->_dtd_parse( $path->all );
+      my $rdr    = shift;
+      my $data   = $self->_dtd_parse( $rdr->all );
       my $arrays = [ keys %{ $self->_arrays } ];
       my $xs     = XML::Simple->new( SuppressEmpty => 1 );
 

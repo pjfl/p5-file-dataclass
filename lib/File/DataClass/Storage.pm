@@ -77,6 +77,26 @@ sub select {
    return exists $data->{ $elem } ? $data->{ $elem } : {};
 }
 
+sub txn_do {
+   my ($self, $path, $code_ref) = @_; my $wantarray = wantarray;
+
+   $self->throw( 'No file path specified' ) unless ($path);
+
+   my $key = q(txn:).$path->pathname; my $res;
+
+   try {
+      $self->lock->set( k => $key );
+
+      if ($wantarray) { @{ $res } = $code_ref->() }
+      else { $res = $code_ref->() }
+
+      $self->lock->reset( k => $key );
+   }
+   catch ($e) { $self->lock->reset( k => $key ); $self->throw( $e ) }
+
+   return $wantarray ? @{ $res } : $res;
+}
+
 sub update {
    my ($self, $path, $element_obj, $overwrite, $condition) = @_;
 
@@ -206,7 +226,7 @@ sub _read_file_with_locking {
    my ($data, $mtime) = $self->_cache_get( $pathname );
 
    if (not $data or $mtime < $path_mtime) {
-      try        { $data = $coderef->() }
+      try        { $data = $coderef->( $path->lock ) }
       catch ($e) { $self->lock->reset( k => $pathname ); $self->throw( $e ) }
 
       $self->_cache_set( $pathname, $data, $path_mtime );
@@ -259,7 +279,7 @@ sub _write_file_with_locking {
       $self->throw( error => 'File [_1] not found', args => [ $pathname ] );
    }
 
-   my $wtr = $path->perms( oct q(0664) )->atomic; my $data;
+   my $wtr = $path->perms( oct q(0664) )->atomic->lock; my $data;
 
    try        { $data = $coderef->( $wtr ) }
    catch ($e) { $wtr->delete; $self->lock->reset( k => $pathname );
@@ -328,6 +348,10 @@ it returns. Paths are instances of L<File::DataClass::IO>
 
 Returns a hash ref containing all the elements of the type specified in the
 schema
+
+=head2 txn_do
+
+Executes the supplied coderef wrapped in lock on the pathname
 
 =head2 update
 

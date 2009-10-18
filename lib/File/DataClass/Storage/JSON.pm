@@ -18,7 +18,7 @@ has '+extn' => default => q(.json);
 sub _read_file {
    my ($self, $path, $for_update) = @_;
 
-   my $method = sub { return JSON->new->decode( $path->all ) };
+   my $method = sub { my $rdr = shift; return JSON->new->decode( $rdr->all ) };
 
    return $self->_read_file_with_locking( $method, $path, $for_update );
 }

@@ -29,12 +29,13 @@ sub all {
 }
 
 sub create {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_;
 
-   my $updated = $self->_txn_do( $self->path, sub {
-      my $attrs = { %{ $args->{fields} || {} }, name => $name };
-
-      $self->schema->create_element( $self->path, $attrs )->insert;
+   my $schema  = $self->schema;
+   my $name    = $self->_validate_params( $args );
+   my $attrs   = { %{ $args->{fields} || {} }, name => $name };
+   my $updated = $schema->txn_do( $self->path, sub {
+      $schema->create_element( $self->path, $attrs )->insert;
    } );
 
    return $updated ? $name : undef;
@@ -43,19 +44,19 @@ sub create {
 sub delete {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   $self->_txn_do( $self->path, sub {
+   $self->schema->txn_do( $self->path, sub {
       my ($element, $error);
 
       unless ($element = $self->_find( $name )) {
          $error = 'File [_1] element [_2] does not exist';
-         $self->throw( error => $error,
-                       args  => [ $self->path->pathname, $name ] );
+         $args  = [ $self->path->pathname, $name ];
+         $self->throw( error => $error, args => $args );
       }
 
       unless ($element->delete) {
          $error = 'File [_1] element [_2] not deleted';
-         $self->throw( error => $error,
-                       args  => [ $self->path->pathname, $name ] );
+         $args  = [ $self->path->pathname, $name ];
+         $self->throw( error => $error, args => $args );
       }
    } );
 
@@ -71,7 +72,7 @@ sub dump {
 sub find {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   return $self->_txn_do( $self->path, sub { $self->_find( $name ) } );
+   return $self->schema->txn_do( $self->path, sub { $self->_find( $name ) } );
 }
 
 sub first {
@@ -85,7 +86,9 @@ sub last {
 sub list {
    my ($self, $args) = @_;
 
-   return $self->_txn_do( $self->path, sub { $self->_list( $args->{name} ) } );
+   return $self->schema->txn_do( $self->path, sub {
+      $self->_list( $args->{name} );
+   } );
 }
 
 sub load {
@@ -115,12 +118,16 @@ sub push {
 
    $self->throw( 'List contains no items' ) unless ($items->[0]);
 
-   $self->_txn_do( $self->path, sub {
+   $self->schema->txn_do( $self->path, sub {
       ($attrs, $added) = $self->_push( $name, $list, $items );
       $self->_find_and_update( $name, $attrs );
    } );
 
    return $added;
+}
+
+sub reset {
+   my $self = shift; return $self->_iterator( 0 );
 }
 
 sub schema {
@@ -130,7 +137,7 @@ sub schema {
 sub search {
    my ($self, $args) = @_;
 
-   return $self->_txn_do( $self->path, sub {
+   return $self->schema->txn_do( $self->path, sub {
       $self->_search( $args->{where} );
    } );
 }
@@ -146,7 +153,7 @@ sub splice {
 
    $self->throw( 'List contains no items' ) unless ($items->[0]);
 
-   $self->_txn_do( $self->path, sub {
+   $self->schema->txn_do( $self->path, sub {
       ($attrs, $removed) = $self->_splice( $name, $list, $items );
       $self->_find_and_update( $name, $attrs );
    } );
@@ -161,7 +168,7 @@ sub storage {
 sub update {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   $self->_txn_do( $self->path, sub {
+   $self->schema->txn_do( $self->path, sub {
       $self->_find_and_update( $name, $args->{fields} || {} );
    } );
 
@@ -173,34 +180,37 @@ sub update {
 sub _eval_criterion {
    my ($self, $where, $attrs) = @_; my $lhs;
 
-   for my $attr (keys %{ $where }) {
-      return FALSE unless (exists  $attrs->{ $attr });
-      return FALSE unless (defined ($lhs = $attrs->{ $attr }));
+   while (my ($where_key, $clause) = each %{ $where }) {
+      return FALSE unless (    exists  $attrs->{ $where_key }
+                           and defined ($lhs = $attrs->{ $where_key }));
 
-      if (ref $where->{ $attr } eq HASH) {
-         while (my ($op, $rhs) = each %{ $where->{ $attr } }) {
-            return FALSE unless ($self->_eval_op( $lhs, $op, $rhs ));
-         }
+      if (ref $clause eq HASH) {
+         return FALSE unless ($self->_eval_clause( $lhs, $clause ));
       }
-      else {
-         if (ref $lhs eq ARRAY) {
-            unless ($self->is_member( $where->{ $attr }, @{ $lhs })) {
-               return FALSE;
-            }
-         }
-         else { return FALSE unless ($lhs eq $where->{ $attr }) }
+      elsif (ref $lhs eq ARRAY) {
+         return FALSE unless ($self->is_member( $clause, @{ $lhs } ));
       }
+      else { return FALSE unless ($lhs eq $clause) }
    }
 
    return TRUE;
 }
 
-sub _eval_op {
-   my ($self, $lhs, $op, $rhs) = @_;
+sub _eval_clause {
+   my ($self, $lhs, $clause) = @_; my $subr;
 
-   my $subr = $self->_operators->{ $op };
+   while (my ($op, $rhs) = each %{ $clause }) {
+      return FALSE unless ($subr = $self->_operators->{ $op });
 
-   return $subr ? $subr->( $lhs, $rhs ) : undef;
+      if (ref $lhs eq ARRAY) {
+         for my $lhs_val (@{ $lhs }) {
+            return FALSE unless ($subr->( $lhs_val, $rhs ));
+         }
+      }
+      else { return FALSE unless ($subr->( $lhs, $rhs )) }
+   }
+
+   return TRUE;
 }
 
 sub _find {
@@ -228,8 +238,8 @@ sub _find_and_update {
 sub _list {
    my ($self, $name) = @_; my ($attr, $attrs);
 
-   my $elements = $self->storage->select( $self->path );
    my $new      = $self->list_class->new;
+   my $elements = $self->storage->select( $self->path );
 
    $new->list( [ sort keys %{ $elements } ] );
 
@@ -335,26 +345,6 @@ sub _splice {
 
    $attrs->{ $attr } = $list;
    return ($attrs, $out);
-}
-
-sub _txn_do {
-   my ($self, $path, $code_ref) = @_; my $wantarray = wantarray;
-
-   $self->throw( 'No file path specified' ) unless ($path);
-
-   my $key = q(txn:).$path->pathname; my $res;
-
-   try {
-      $self->storage->lock->set( k => $key );
-
-      if ($wantarray) { @{ $res } = $code_ref->() }
-      else { $res = $code_ref->() }
-
-      $self->storage->lock->reset( k => $key );
-   }
-   catch ($e) { $self->storage->lock->reset( k => $key ); $self->throw( $e ) }
-
-   return $wantarray ? @{ $res } : $res;
 }
 
 sub _validate_params {
@@ -464,6 +454,10 @@ Iterate over the elements returned by the search call
    ($attrs, $added) = $rs->push( $name, $list, $items );
 
 Adds items to the attribute list
+
+=head2 reset
+
+Resets the resultset's cursor, so you can iterate through the elements again
 
 =head2 schema
 

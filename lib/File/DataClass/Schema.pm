@@ -49,6 +49,10 @@ sub create_element {
    return $self->element_class->new( $attrs );
 }
 
+sub txn_do {
+   my ($self, @rest) = @_; return $self->storage->txn_do( @rest );
+}
+
 sub update_attributes {
    my ($self, $element, $attrs) = @_;
 

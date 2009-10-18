@@ -20,9 +20,9 @@ sub _read_file {
    my ($self, $path, $for_update) = @_;
 
    my $method = sub {
-      my $data;
+      my $rdr = shift; my $data;
 
-      $data = $self->_dtd_parse( $path->all );
+      $data = $self->_dtd_parse( $rdr->all );
       $data = XML::Bare->new( text => $data )->parse() || {};
       $data = $data->{ $self->root_name } || {};
       $self->_read_filter( $self->_arrays || {}, $data );
