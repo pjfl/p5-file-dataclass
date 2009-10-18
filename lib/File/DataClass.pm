@@ -53,7 +53,9 @@ sub delete {
 }
 
 sub dump {
-   my ($self, $args) = @_; return $self->_resultset( $args )->dump( $args );
+   my ($self, $args) = @_; $args->{path} ||= $self->path;
+
+   return $self->result_source->schema->dump( $args );
 }
 
 sub find {
@@ -69,7 +71,7 @@ sub load {
 
    push @paths, $self->path unless ($paths[0]);
 
-   return $self->result_source->resultset->load( @paths );
+   return $self->result_source->schema->load( @paths );
 }
 
 sub push {

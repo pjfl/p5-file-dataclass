@@ -52,6 +52,10 @@ sub select {
    return exists $data->{ $elem } ? $data->{ $elem } : {};
 }
 
+sub txn_do {
+   my ($self, @rest) = @_; return $self->storage->txn_do( @rest );
+}
+
 sub update {
    my ($self, $path, $element_obj) = @_;
 

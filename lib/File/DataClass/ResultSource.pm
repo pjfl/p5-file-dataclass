@@ -39,13 +39,9 @@ sub resultset {
    $path = $self->io( $path ) if ($path and not blessed $path);
 
    my $attrs = { %{ $self->resultset_attributes },
-                 path => $path, source => $self };
+                 path => $path, schema => $self->schema };
 
    return $self->resultset_class->new( $attrs );
-}
-
-sub storage {
-   return shift->schema->storage;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -94,10 +90,6 @@ which defaults to L<File::DataClass::Schema>
 Sets the resultset's I<path> attribute from the optional
 parameters. Creates and returns a new
 L<File::DataClass::Resultset> object
-
-=head2 storage
-
-Returns the storage handle for the current schema
 
 =head1 Diagnostics
 

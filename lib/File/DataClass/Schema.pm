@@ -22,9 +22,6 @@ has 'element' =>
 has 'label_attr' =>
    is => 'rw', isa => 'Str',      default => NUL;
 
-has 'source' =>
-   is => 'ro', isa => 'Object',   weak_ref => TRUE;
-
 has 'element_class' =>
    is => 'ro', isa => 'ClassName',
    default => q(File::DataClass::Element);
@@ -47,6 +44,26 @@ sub create_element {
    $attrs->{_schema} = $self;
 
    return $self->element_class->new( $attrs );
+}
+
+sub dump {
+   my ($self, $args) = @_; my $path = $args->{path};
+
+   $path = $self->io( $path ) unless (blessed $path);
+
+   return $self->storage->dump( $path, $args->{data} || {} );
+}
+
+sub load {
+   my ($self, @paths) = @_;
+
+   @paths = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
+
+   return $self->storage->load( @paths ) || {};
+}
+
+sub select {
+   my ($self, $path) = @_; return $self->storage->select( $path );
 }
 
 sub txn_do {
@@ -105,6 +122,12 @@ inherit from this
 =head1 Subroutines/Methods
 
 =head2 create_element
+
+=head2 dump
+
+=head2 load
+
+=head2 select
 
 =head2 update_attributes
 

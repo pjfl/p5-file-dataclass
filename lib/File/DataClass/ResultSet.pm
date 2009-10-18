@@ -16,7 +16,7 @@ use File::DataClass::List;
 with qw(File::DataClass::Util);
 
 has 'path'       => is => 'rw', isa => 'Maybe[DataClassPath]';
-has 'source'     => is => 'ro', isa => 'Object',   weak_ref => TRUE;
+has 'schema'     => is => 'ro', isa => 'Object',   weak_ref => TRUE;
 has 'list_class' => is => 'ro', isa => 'ClassName',
    default       => q(File::DataClass::List);
 has '_elements'  => is => 'rw', isa => 'ArrayRef', init_arg => undef,
@@ -31,18 +31,17 @@ sub all {
 sub create {
    my ($self, $args) = @_;
 
-   my $schema  = $self->schema;
-   my $name    = $self->_validate_params( $args );
+   my $name    = $self->_get_element_name( $args );
    my $attrs   = { %{ $args->{fields} || {} }, name => $name };
-   my $updated = $schema->txn_do( $self->path, sub {
-      $schema->create_element( $self->path, $attrs )->insert;
+   my $updated = $self->schema->txn_do( $self->path, sub {
+      $self->schema->create_element( $self->path, $attrs )->insert;
    } );
 
    return $updated ? $name : undef;
 }
 
 sub delete {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
 
    $self->schema->txn_do( $self->path, sub {
       my ($element, $error);
@@ -63,14 +62,8 @@ sub delete {
    return $name;
 }
 
-sub dump {
-   my ($self, $args) = @_;
-
-   return $self->storage->dump( $self->path, $args->{data} || {} );
-}
-
 sub find {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
 
    return $self->schema->txn_do( $self->path, sub { $self->_find( $name ) } );
 }
@@ -91,14 +84,6 @@ sub list {
    } );
 }
 
-sub load {
-   my ($self, @paths) = @_;
-
-   @paths = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
-
-   return $self->storage->load( @paths ) || {};
-}
-
 sub next {
    my $self  = shift;
 
@@ -110,7 +95,7 @@ sub next {
 sub push {
    my ($self, $args) = @_; my ($added, $attrs, $list);
 
-   my $name = $self->_validate_params( $args );
+   my $name = $self->_get_element_name( $args );
 
    $self->throw( 'No list name specified' ) unless ($list = $args->{list});
 
@@ -130,10 +115,6 @@ sub reset {
    my $self = shift; return $self->_iterator( 0 );
 }
 
-sub schema {
-   return shift->source->schema;
-}
-
 sub search {
    my ($self, $args) = @_;
 
@@ -145,7 +126,7 @@ sub search {
 sub splice {
    my ($self, $args) = @_; my ($attrs, $list, $removed);
 
-   my $name = $self->_validate_params( $args );
+   my $name = $self->_get_element_name( $args );
 
    $self->throw( 'No list name specified' ) unless ($list = $args->{list});
 
@@ -161,12 +142,8 @@ sub splice {
    return $removed;
 }
 
-sub storage {
-   return shift->schema->storage;
-}
-
 sub update {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
 
    $self->schema->txn_do( $self->path, sub {
       $self->_find_and_update( $name, $args->{fields} || {} );
@@ -216,7 +193,7 @@ sub _eval_clause {
 sub _find {
    my ($self, $name) = @_;
 
-   my $elements = $self->storage->select( $self->path );
+   my $elements = $self->schema->select( $self->path );
 
    return unless ($name and exists $elements->{ $name });
 
@@ -235,11 +212,19 @@ sub _find_and_update {
    return $element->update;
 }
 
+sub _get_element_name {
+   my ($self, $args) = @_; $args ||= {}; my $name;
+
+   $self->throw( 'No element name specified' ) unless ($name = $args->{name});
+
+   return $name;
+}
+
 sub _list {
    my ($self, $name) = @_; my ($attr, $attrs);
 
    my $new      = $self->list_class->new;
-   my $elements = $self->storage->select( $self->path );
+   my $elements = $self->schema->select( $self->path );
 
    $new->list( [ sort keys %{ $elements } ] );
 
@@ -277,7 +262,7 @@ sub _operators {
 sub _push {
    my ($self, $name, $attr, $items) = @_;
 
-   my $elements = $self->storage->select( $self->path );
+   my $elements = $self->schema->select( $self->path );
    my $attrs    = { %{ $elements->{ $name } } };
    my $list     = [ @{ $attrs->{ $attr } || [] } ];
    my $in       = [];
@@ -301,7 +286,7 @@ sub _search {
    }
 
    if (not defined $elements->[0]) {
-      $elements = $self->storage->select( $self->path );
+      $elements = $self->schema->select( $self->path );
 
       for my $name (keys %{ $elements }) {
          my $attrs = { %{ $elements->{ $name } }, name => $name };
@@ -326,7 +311,7 @@ sub _search {
 sub _splice {
    my ($self, $name, $attr, $items) = @_;
 
-   my $elements = $self->storage->select( $self->path ) || {};
+   my $elements = $self->schema->select( $self->path ) || {};
    my $attrs    = { %{ $elements->{ $name } } };
    my $list     = [ @{ $attrs->{ $attr } || [] } ];
    my $out      = [];
@@ -345,14 +330,6 @@ sub _splice {
 
    $attrs->{ $attr } = $list;
    return ($attrs, $out);
-}
-
-sub _validate_params {
-   my ($self, $args) = @_; $args ||= {}; my $name;
-
-   $self->throw( 'No element name specified' ) unless ($name = $args->{name});
-
-   return $name;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -409,8 +386,6 @@ object from the attributes provided
 
 =head2 delete
 
-=head2 dump
-
 =head2 find
 
    $element_obj = $rs->find( $name );
@@ -442,8 +417,6 @@ Returns a L<list|File::DataClass::List> object
 
 Returns the last element object that is the result of the search call
 
-=head2 load
-
 =head2 next
 
    $element_obj = $rs->search( $where )->next;
@@ -458,12 +431,6 @@ Adds items to the attribute list
 =head2 reset
 
 Resets the resultset's cursor, so you can iterate through the elements again
-
-=head2 schema
-
-   $schema = $rs->schema;
-
-Returns the source schema object
 
 =head2 search
 
@@ -483,10 +450,6 @@ attribute values, e.g.
    ($attrs, $removed) = $rs->splice( $name, $list, $items );
 
 Removes items from the attribute list
-
-=head2 storage
-
-Returns the schema storage object
 
 =head2 update
 
