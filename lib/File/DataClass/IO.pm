@@ -7,6 +7,7 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
+use File::DataClass::Exception;
 use English      qw( -no_match_vars );
 use Fcntl        qw( :flock );
 use File::Basename ();
@@ -24,11 +25,11 @@ has 'atomic_pref'     => is => 'rw', isa => 'Str',   default  => q(B_)      ;
 has 'autoclose'       => is => 'rw', isa => 'Bool',  default  => TRUE       ;
 has 'block_size'      => is => 'rw', isa => 'Int',   default  => 1024       ;
 has 'dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE ;
-has 'exception_class' => is => 'rw', isa => 'Str',
+has 'exception_class' => is => 'rw', isa => 'Maybe[Str]',
    default            => q(File::DataClass::Exception)                      ;
 has 'io_handle'       => is => 'rw', isa => 'Maybe[Object]'                 ;
 has 'is_open'         => is => 'rw', isa => 'Bool',  default  => FALSE      ;
-has 'lock_obj'        => is => 'rw', isa => 'Object'                        ;
+has 'lock_obj'        => is => 'rw', isa => 'Maybe[Object]'                 ;
 has 'mode'            => is => 'rw', isa => 'Maybe[Str]'                    ;
 has 'name'            => is => 'rw', isa => 'Str',   required => TRUE       ;
 has 'type'            => is => 'rw', isa => 'Maybe[Str]'                    ;
