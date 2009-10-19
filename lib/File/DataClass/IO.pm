@@ -3,7 +3,8 @@
 package File::DataClass::IO;
 
 use strict;
-use namespace::autoclean;
+use namespace::clean -except => 'meta';
+use overload '""' => sub { shift->pathname }, fallback => 1;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
@@ -32,13 +33,16 @@ has 'is_open'         => is => 'rw', isa => 'Bool',  default  => FALSE      ;
 has 'lock_obj'        => is => 'rw', isa => 'Maybe[Object]'                 ;
 has 'mode'            => is => 'rw', isa => 'Maybe[Str]'                    ;
 has 'name'            => is => 'rw', isa => 'Str',   required => TRUE       ;
+has 'sort'            => is => 'rw', isa => 'Bool',  default  => TRUE       ;
 has 'type'            => is => 'rw', isa => 'Maybe[Str]'                    ;
 has '_assert'         => is => 'rw', isa => 'Bool',  default  => FALSE      ;
 has '_atomic'         => is => 'rw', isa => 'Maybe[Str]'                    ;
 has '_binary'         => is => 'rw', isa => 'Bool',  default  => FALSE      ;
 has '_binmode'        => is => 'rw', isa => 'Str',   default  => NUL        ;
 has '_chomp'          => is => 'rw', isa => 'Bool',  default  => FALSE      ;
+has '_deep'           => is => 'rw', isa => 'Bool',  default  => FALSE      ;
 has '_encoding'       => is => 'rw', isa => 'Str',   default  => NUL        ;
+has '_filter'         => is => 'rw', isa => 'Maybe[CodeRef]'                ;
 has '_lock'           => is => 'rw', isa => 'Bool',  default  => FALSE      ;
 has '_perms'          => is => 'rw', isa => 'Num',   default  => oct q(0644);
 has '_utf8'           => is => 'rw', isa => 'Bool',  default  => FALSE      ;
@@ -66,6 +70,14 @@ sub absolute {
 }
 
 sub all {
+   my ($self, @rest) = @_;
+
+   $self->is_dir && return $self->_find_all( TRUE, TRUE, @rest );
+
+   return $self->_all_file_contents;
+}
+
+sub _all_file_contents {
    my $self = shift;
 
    $self->assert_open( q(r) );
@@ -77,8 +89,16 @@ sub all {
    return $all;
 }
 
+sub all_dirs {
+   my ($self, $level) = @_; return $self->_find_all( FALSE, TRUE, $level );
+}
+
+sub all_files {
+   my ($self, $level) = @_; return $self->_find_all( TRUE, FALSE, $level );
+}
+
 sub append {
-   my ($self, @rest ) = @_;
+   my ($self, @rest) = @_;
 
    $self->assert_open( q(a) );
    $self->print( @rest );
@@ -86,7 +106,7 @@ sub append {
 }
 
 sub appendln {
-   my ($self, @rest ) = @_;
+   my ($self, @rest) = @_;
 
    $self->assert_open( q(a) );
    $self->println( @rest );
@@ -235,6 +255,10 @@ sub _close_file {
    return $self->_close;
 }
 
+sub deep {
+   my $self = shift; $self->_deep( TRUE ); return $self;
+}
+
 sub delete {
    my $self = shift;
 
@@ -322,6 +346,30 @@ sub filepath {
    return File::Spec->catpath( $volume, $path, NUL );
 }
 
+sub filter {
+   my ($self, @rest) = @_; $self->_filter( @rest ) if ($rest[0]); return $self;
+}
+
+sub _find_all {
+   my ($self, $files, $dirs, $level) = @_;
+
+   my $filter = $self->_filter; my (@all, $io);
+
+   $level = $self->_deep ? 0 : 1 unless (defined $level);
+
+   while (defined ($io = $self->next)) {
+      if (($files and $io->is_file) or ($dirs and $io->is_dir)) {
+         push @all, $io unless (defined $filter and not $filter->( $io ));
+      }
+
+      if ($io->is_dir and $level != 1) {
+         push @all, $io->_find_all( $files, $dirs, $level ? $level - 1 : 0 );
+      }
+   }
+
+   return $self->sort ? sort { $a->name cmp $b->name } @all : @all;
+}
+
 sub getline {
    my ($self, @rest) = @_; my $line;
 
@@ -381,14 +429,16 @@ sub is_dir {
    my $self = shift;
 
    $self->type && return $self->type eq q(dir) ? TRUE : FALSE;
-   return $self->pathname and -d $self->pathname ? TRUE : FALSE;
+
+   return $self->pathname && -d $self->pathname ? TRUE : FALSE;
 }
 
 sub is_file {
    my $self = shift;
 
    $self->type && return $self->type eq q(file) ? TRUE : FALSE;
-   return $self->pathname and -f $self->pathname ? TRUE : FALSE;
+
+   return $self->pathname && -f $self->pathname ? TRUE : FALSE;
 }
 
 sub length {
@@ -400,12 +450,12 @@ sub lock {
 }
 
 sub next {
-   my $self = shift; my ($io, $name);
+   my $self = shift; my $class = blessed $self; my ($io, $name);
 
    $self->type || $self->dir;
    $self->assert_open;
    return unless defined ($name = $self->read_dir);
-   $io = $self->new( File::Spec->catfile( $self->pathname, $name ) );
+   $io = $class->new( File::Spec->catfile( $self->pathname, $name ) );
    return $io;
 }
 
@@ -425,7 +475,8 @@ sub _open_dir {
       && $self->pathname && $self->assert_dirpath( $self->pathname );
 
    unless ($io = IO::Dir->new( $self->pathname )) {
-      $self->throw( error => 'Cannot open [_1]', args => [ $self->pathname ] );
+      $self->throw( error => 'Directory [_1] cannot open',
+                    args  => [ $self->pathname ] );
    }
 
    $self->io_handle( $io );
@@ -447,7 +498,8 @@ sub _open_file {
       my $pathname = $self->_atomic ? $self->_atomic : $self->pathname;
 
       unless ($io = IO::File->new( $pathname, @args )) {
-         $self->throw( error => 'Cannot open [_1]', args => [ $pathname ] );
+         $self->throw( error => 'File [_1] cannot open',
+                       args  => [ $pathname ] );
       }
 
       $self->io_handle( $io );
@@ -520,6 +572,14 @@ sub read_dir {
    return $name;
 }
 
+sub relative {
+   my $self = shift;
+
+   $self->is_absolute
+      && $self->pathname( File::Spec->abs2rel( $self->pathname ) );
+   return $self;
+}
+
 sub set_binmode {
    my $self = shift;
 
@@ -553,17 +613,13 @@ sub slurp {
 
    wantarray || return $slurp;
 
-   if ($self->_chomp) {
-      return map { CORE::chomp; $_ } split m{ (?<=\Q$RS\E) }mx, $slurp;
-   }
+   return split m{ (?<=\Q$RS\E) }mx, $slurp unless ($self->_chomp);
 
-   return split m{ (?<=\Q$RS\E) }mx, $slurp;
+   return map { CORE::chomp; $_ } split m{ (?<=\Q$RS\E) }mx, $slurp;
 }
 
 sub stat {
-   my $self = shift;
-
-   $self->pathname || return {};
+   my $self = shift; $self->pathname || return {};
 
    my %stat_hash = ( id => $self->filename );
 
@@ -708,11 +764,27 @@ makes without any options
 
 Makes the pathname absolute
 
+=head2 All
+
+Same a L</all>(0)
+
 =head2 all
 
    my $lines = $self->io( q(path_to_file) )->all;
 
-Read all the lines from the file. Returns them as a single scalar
+For a file read all the lines and return them as a single scalar
+
+   my @entries = $self->io( q(path_to_directory) )->all( 1 );
+
+For directories returns a list of IO objects for all files and
+subdirectories. Excludes L<File::Spec/curdir> and L<File::Spec/updir>
+
+Takes an optional argument telling how many directories deep to
+search. The default is 1. Zero (0) means search as deep as possible
+
+The filter method can be used to limit the results
+
+The items returned are sorted by name unless ->sort(0) is used
 
 =head2 append
 
@@ -1108,6 +1180,20 @@ There are no known incompatibilities in this module
 There are no known bugs in this module.
 Please report problems to the address below.
 Patches are welcome
+
+=head1 Acknowledgements
+
+=over 3
+
+=item Larry Wall
+
+For the Perl programming language
+
+=item Ingy döt Net <ingy@cpan.org>
+
+For IO::All from which I took the API and some tests
+
+=back
 
 =head1 Author
 
