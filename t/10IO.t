@@ -16,7 +16,7 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 31;
+   plan tests => 37;
    use_ok( q(File::DataClass::IO) );
 }
 
@@ -91,19 +91,48 @@ is( p( io( 't/mydir' )->all_files(5)    ), f( $exp_files4 ), 'All files 5'   );
 is( p( io( 't/mydir' )->all_files(0)    ), f( $exp_files4 ), 'All files 0'   );
 is( p( io( 't/mydir' )->deep->all_files ), f( $exp_files4 ), 'All files deep');
 
-is( p( io( 't/mydir' )->all_dirs       ), f( $exp_dirs1), 'All dirs'      );
-is( p( io( 't/mydir' )->all_dirs(1)    ), f( $exp_dirs1), 'All dirs 1'    );
-is( p( io( 't/mydir' )->all_dirs(2)    ), f( $exp_dirs2), 'All dirs 2'    );
-is( p( io( 't/mydir' )->all_dirs(3)    ), f( $exp_dirs3), 'All dirs 3'    );
-is( p( io( 't/mydir' )->all_dirs(4)    ), f( $exp_dirs3), 'All dirs 4'    );
-is( p( io( 't/mydir' )->all_dirs(5)    ), f( $exp_dirs3), 'All dirs 5'    );
-is( p( io( 't/mydir' )->all_dirs(0)    ), f( $exp_dirs3), 'All dirs 0'    );
-is( p( io( 't/mydir' )->deep->all_dirs ), f( $exp_dirs3), 'All dirs deep' );
+is( p( io( 't/mydir' )->all_dirs       ), f( $exp_dirs1 ), 'All dirs'      );
+is( p( io( 't/mydir' )->all_dirs(1)    ), f( $exp_dirs1 ), 'All dirs 1'    );
+is( p( io( 't/mydir' )->all_dirs(2)    ), f( $exp_dirs2 ), 'All dirs 2'    );
+is( p( io( 't/mydir' )->all_dirs(3)    ), f( $exp_dirs3 ), 'All dirs 3'    );
+is( p( io( 't/mydir' )->all_dirs(4)    ), f( $exp_dirs3 ), 'All dirs 4'    );
+is( p( io( 't/mydir' )->all_dirs(5)    ), f( $exp_dirs3 ), 'All dirs 5'    );
+is( p( io( 't/mydir' )->all_dirs(0)    ), f( $exp_dirs3 ), 'All dirs 0'    );
+is( p( io( 't/mydir' )->deep->all_dirs ), f( $exp_dirs3 ), 'All dirs deep' );
 
 is( p( io( 't/mydir' )->filter( sub { m{ dira }mx } )->deep->all_dirs ),
     f( $exp_filt1 ), 'Filter 1' );
 is( p( io( 't/mydir' )->filter( sub { m{ x }mx    } )->deep->all_dirs ),
     f( $exp_filt2 ), 'Filter 2' );
+
+# Assert
+
+ok( !-e 't/output/newpath/hello.txt', 'Non existant file' );
+ok( !-e 't/output/newpath', 'Non existant directory' );
+
+$io = io( 't/output/newpath/hello.txt' )->assert;
+
+ok( !-e 't/output/newpath', 'Assert does not create directory' );
+
+$io->println( 'Hello' );
+
+ok( -f 't/output/newpath/hello.txt', 'Writing file creates directory' );
+
+io( 't/output' )->rmtree;
+
+# Chomp
+
+$io = io( $PROGRAM_NAME )->chomp; my $seen = 0;
+
+for ($io->slurp) { $seen = 1 if (m{ [\n] }mx) }
+
+ok( !$seen, 'Slurp chomps newlines' );
+
+$io->close;
+
+for ($io->chomp->separator( 'io' )->getlines) { $seen = 1 if (m { io }mx) }
+
+ok( !$seen, 'Getlines chomps record separators' );
 
 #unlink( q(t/ipc_srlock.lck) );
 #unlink( q(t/ipc_srlock.shm) );

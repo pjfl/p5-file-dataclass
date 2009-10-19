@@ -70,31 +70,29 @@ sub absolute {
 }
 
 sub all {
-   my ($self, @rest) = @_;
+   my ($self, $level) = @_;
 
-   $self->is_dir && return $self->_find_all( TRUE, TRUE, @rest );
+   $self->is_dir && return $self->_find( TRUE, TRUE, $level );
 
    return $self->_all_file_contents;
 }
 
-sub _all_file_contents {
-   my $self = shift;
+sub all_dirs {
+   my ($self, $level) = @_; return $self->_find( FALSE, TRUE, $level );
+}
 
-   $self->assert_open( q(r) );
+sub all_files {
+   my ($self, $level) = @_; return $self->_find( TRUE, FALSE, $level );
+}
+
+sub _all_file_contents {
+   my $self = shift; $self->assert_open( q(r) );
 
    local $RS = undef; my $all = $self->io_handle->getline;
 
    $self->error_check;
    $self->autoclose && $self->close;
    return $all;
-}
-
-sub all_dirs {
-   my ($self, $level) = @_; return $self->_find_all( FALSE, TRUE, $level );
-}
-
-sub all_files {
-   my ($self, $level) = @_; return $self->_find_all( TRUE, FALSE, $level );
 }
 
 sub append {
@@ -300,7 +298,11 @@ sub dirname {
 }
 
 sub empty {
-   my $self = shift; return -z $self->pathname;
+   my $self = shift;
+
+   $self->is_file && return -z $self->pathname;
+
+   return $self->next ? FALSE : TRUE;
 }
 
 sub encoding {
@@ -347,23 +349,25 @@ sub filepath {
 }
 
 sub filter {
-   my ($self, @rest) = @_; $self->_filter( @rest ) if ($rest[0]); return $self;
+   my ($self, $code) = @_; $self->_filter( $code ) if ($code); return $self;
 }
 
-sub _find_all {
+sub _find {
    my ($self, $files, $dirs, $level) = @_;
 
    my $filter = $self->_filter; my (@all, $io);
 
    $level = $self->_deep ? 0 : 1 unless (defined $level);
 
-   while (defined ($io = $self->next)) {
-      if (($files and $io->is_file) or ($dirs and $io->is_dir)) {
-         push @all, $io unless (defined $filter and not $filter->( $io ));
+   while ($io = $self->next) {
+      unless (defined $filter and not map { $filter->() } ($io)) {
+         if (($files and $io->is_file) or ($dirs and $io->is_dir)) {
+            push @all, $io;
+         }
       }
 
       if ($io->is_dir and $level != 1) {
-         push @all, $io->_find_all( $files, $dirs, $level ? $level - 1 : 0 );
+         push @all, $io->_find( $files, $dirs, $level ? $level - 1 : 0 );
       }
    }
 
@@ -450,12 +454,15 @@ sub lock {
 }
 
 sub next {
-   my $self = shift; my $class = blessed $self; my ($io, $name);
+   my $self = shift; my $name;
 
-   $self->type || $self->dir;
-   $self->assert_open;
-   return unless defined ($name = $self->read_dir);
-   $io = $class->new( File::Spec->catfile( $self->pathname, $name ) );
+   return unless (defined ($name = $self->read_dir));
+
+   my $class = blessed $self;
+   my $io    = $class->new( File::Spec->catfile( $self->pathname, $name ) );
+
+   $io->filter( $self->_filter ) if (defined $self->_filter);
+
    return $io;
 }
 
@@ -578,6 +585,20 @@ sub relative {
    $self->is_absolute
       && $self->pathname( File::Spec->abs2rel( $self->pathname ) );
    return $self;
+}
+
+sub rmdir {
+    my $self = shift; return rmdir $self->pathname;
+}
+
+sub rmtree {
+    my ($self, @rest) = @_;
+
+    return File::Path::rmtree( $self->pathname, @rest );
+}
+
+sub separator {
+   my ($self, $value) = @_; $RS = $value; return $self;
 }
 
 sub set_binmode {
