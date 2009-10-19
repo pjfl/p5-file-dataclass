@@ -21,7 +21,7 @@ has 'extn'   => is => 'rw', isa => 'Str',     default  => NUL;
 has 'lock'   => is => 'ro', isa => 'Object',  required => 1;
 has 'log'    => is => 'ro', isa => 'Object',
    default   => sub { Class::Null->new };
-has 'schema' => is => 'ro', isa => 'Object',  weak_ref => TRUE;
+has 'schema' => is => 'ro', isa => 'Object',  required => 1, weak_ref => TRUE;
 
 sub delete {
    my ($self, $path, $element_obj) = @_;

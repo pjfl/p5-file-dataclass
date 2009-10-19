@@ -46,8 +46,8 @@ sub select {
 
    push @paths, $self->_make_lang_path( $path ) if ($self->_lang);
 
-   my $elem = $self->storage->validate_params;
-   my $data = $self->storage->load( @paths );
+   my $data = $self->load( @paths );
+   my $elem = $self->validate_params( $path );
 
    return exists $data->{ $elem } ? $data->{ $elem } : {};
 }
@@ -60,6 +60,10 @@ sub update {
    my ($self, $path, $element_obj) = @_;
 
    return $self->_update( $path, $element_obj, TRUE );
+}
+
+sub validate_params {
+   my ($self, @rest) = @_; return $self->storage->validate_params( @rest );
 }
 
 # Private methods
