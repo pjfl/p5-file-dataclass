@@ -16,7 +16,7 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 68;
+   plan tests => 82;
    use_ok( q(File::DataClass::IO) );
 }
 
@@ -24,9 +24,7 @@ sub io {
    return File::DataClass::IO->new( @_ );
 }
 
-my $io = io( $PROGRAM_NAME );
-
-isa_ok( $io, q(File::DataClass::IO) );
+isa_ok( io( $PROGRAM_NAME ), q(File::DataClass::IO) );
 
 # Error
 
@@ -44,9 +42,40 @@ eval { io( 'qwerty' )->empty };
 
 like( $EVAL_ERROR, qr{ Path \s+ \S+ \s+ not \s+ found }mx, 'No test empty' );
 
-# Absolute
+# File Spec
 
-$io->absolute;
+is( io( '././t/default.xml' )->canonpath, f( catfile( qw(t default.xml) ) ),
+    'Canonpath' );
+is( io( '././t/bogus'       )->canonpath, f( catfile( qw(t bogus) ) ),
+    'Bogus canonpath' );
+ok( io( catfile( q(), qw(foo bar) ) )->is_absolute, 'Is absolute' );
+
+my ($v, $d, $f) = io( catdir( qw(foo bar) ) )->splitpath;
+
+is( $d.q(x), catdir( q(foo), q(x) ), 'Splitpath directory' );
+is( $f, q(bar), 'Splitpath file' );
+
+my @dirs = io( catdir( qw(foo bar baz) ) )->splitdir;
+
+is( scalar @dirs, 3, 'Splitdir count' );
+is( (join q(+), @dirs), q(foo+bar+baz), 'Splitdir string' );
+is( io( catdir( q(), qw(foo bar baz) ) )->abs2rel( catdir( q(), q(foo) ) ),
+    f( catdir( qw(bar baz) ) ), 'Can abs2rel' );
+is( io( catdir( qw(foo bar baz) ) )->rel2abs( catdir( q(), q(moo) ) ),
+    f( catdir( q(), qw(moo foo bar baz) ) ), 'Can rel2abs' );
+is( io->dir( catdir( qw(doo foo) ) )->catdir( qw(goo hoo) ),
+    f( catdir( qw(doo foo goo hoo) ) ), 'Catdir 1' );
+is( io->dir->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 2' );
+is( io->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 3' );
+is( io->file( catdir( qw(doo foo) ) )->catfile( qw(goo hoo) ),
+    f( catfile( qw(doo foo goo hoo) ) ), 'Catfile 1' );
+is( io->file->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ),
+    'Catfile 2' );
+is( io->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ), 'Catfile 3' );
+
+# Absolute/relative
+
+my $io = io( $PROGRAM_NAME )->absolute;
 
 is( "$io", File::Spec->rel2abs( $PROGRAM_NAME ), 'Stringifies' );
 
@@ -54,6 +83,27 @@ $io->relative;
 
 is( $io->pathname, File::Spec->abs2rel( $PROGRAM_NAME ), 'Relative paths' );
 ok( io( q(t) )->absolute->next->is_absolute, 'Absolute directory paths' );
+
+# Stat
+
+my ($device, $inode, $mode, $nlink, $uid, $gid, $device_id,
+    $size, $atime, $mtime, $ctime, $blksize, $blocks) = stat( $PROGRAM_NAME );
+my $stat = io( $PROGRAM_NAME )->stat;
+
+is( $stat->{device},    $device,      'Stat device'      );
+is( $stat->{inode},     $inode,       'Stat inode'       );
+is( $stat->{mode},      $mode,        'Stat mode'        );
+is( $stat->{nlink},     $nlink,       'Stat nlink'       );
+is( $stat->{uid},       $uid,         'Stat uid'         );
+is( $stat->{gid},       $gid,         'Stat gid'         );
+is( $stat->{device_id}, $device_id,   'Stat device_id'   );
+is( $stat->{size},      $size,        'Stat size'        );
+ok( ($stat->{atime} ==  $atime)
+ || ($stat->{atime} == ($atime + 1)), 'Stat access time' );
+is( $stat->{mtime},     $mtime,       'Stat modify time' );
+is( $stat->{ctime},     $ctime,       'Stat create time' );
+is( $stat->{blksize},   $blksize,     'Stat block size'  );
+is( $stat->{blocks},    $blocks,      'Stat blocks'      );
 
 # All
 
@@ -107,20 +157,7 @@ is( p( io( $dir )->filter( sub { m{ dira }mx } )->deep->all_dirs ),
 is( p( io( $dir )->filter( sub { m{ x }mx    } )->deep->all_dirs ),
     f( $exp_filt2 ), 'Filter 2' );
 
-# Assert
-
-ok( !-e catfile( qw(t output newpath hello.txt) ), 'Non existant file' );
-ok( !-e catdir( qw(t output newpath ) ), 'Non existant directory' );
-
-$io = io( catfile( qw(t output newpath hello.txt) ) )->assert;
-
-ok( !-e catdir( qw(t output newpath) ), 'Assert does not create directory' );
-
-$io->println( 'Hello' );
-
-ok( -d catfile( qw(t output newpath) ), 'Writing file creates directory' );
-
-# Chomp
+# Slurp/Chomp
 
 $io = io( $PROGRAM_NAME )->chomp; my $seen = 0;
 
@@ -134,48 +171,18 @@ for ($io->chomp->separator( 'io' )->getlines) { $seen = 1 if (m { io }mx) }
 
 ok( !$seen, 'Getlines chomps record separators' );
 
-# Empty
+# Assert
 
-$io = io( catdir( qw(t output empty) ) );
+ok( !-e catfile( qw(t output newpath hello.txt) ), 'Non existant file' );
+ok( !-e catdir( qw(t output newpath ) ), 'Non existant directory' );
 
-ok( $io->mkdir, 'Make directories' );
-ok( $io->empty, 'Empty directory' );
+$io = io( catfile( qw(t output newpath hello.txt) ) )->assert;
 
-$io = io( catfile( qw(t output file) ) );
+ok( !-e catdir( qw(t output newpath) ), 'Assert does not create directory' );
 
-ok( $io->touch, 'Touch' );
-ok( $io->empty, 'Empty file' );
+$io->println( 'Hello' );
 
-# File Spec
-
-is( io( '././t/default.xml' )->canonpath, f( catfile( qw(t default.xml) ) ),
-    'Canonpath' );
-is( io( '././t/bogus'       )->canonpath, f( catfile( qw(t bogus) ) ),
-    'Bogus canonpath' );
-ok( io( catfile( q(), qw(foo bar) ) )->is_absolute, 'Is absolute' );
-
-my ($v, $d, $f) = io( catdir( qw(foo bar) ) )->splitpath;
-
-is( $d.q(x), catdir( q(foo), q(x) ), 'Splitpath directory' );
-is( $f, q(bar), 'Splitpath file' );
-
-my @dirs = io( catdir( qw(foo bar baz) ) )->splitdir;
-
-is( scalar @dirs, 3, 'Splitdir count' );
-is( (join q(+), @dirs), q(foo+bar+baz), 'Splitdir string' );
-is( io( catdir( q(), qw(foo bar baz) ) )->abs2rel( catdir( q(), q(foo) ) ),
-    f( catdir( qw(bar baz) ) ), 'Can abs2rel' );
-is( io( catdir( qw(foo bar baz) ) )->rel2abs( catdir( q(), q(moo) ) ),
-    f( catdir( q(), qw(moo foo bar baz) ) ), 'Can rel2abs' );
-is( io->dir( catdir( qw(doo foo) ) )->catdir( qw(goo hoo) ),
-    f( catdir( qw(doo foo goo hoo) ) ), 'Catdir 1' );
-is( io->dir->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 2' );
-is( io->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 3' );
-is( io->file( catdir( qw(doo foo) ) )->catfile( qw(goo hoo) ),
-    f( catfile( qw(doo foo goo hoo) ) ), 'Catfile 1' );
-is( io->file->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ),
-    'Catfile 2' );
-is( io->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ), 'Catfile 3' );
+ok( -d catfile( qw(t output newpath) ), 'Writing file creates directory' );
 
 # Print
 
@@ -189,16 +196,45 @@ $io = io( catfile( qw(t output print.t) ) );
 is( $io->println( "one" )->println( "two" )->close->slurp, "one\ntwo\n",
     'Print 2' );
 
-# Read
+# Empty
+
+$io = io( catdir( qw(t output empty) ) );
+
+ok( $io->mkdir, 'Make directories' );
+ok( $io->empty, 'Empty directory' );
+
+$io = io( catfile( qw(t output file) ) );
+
+ok( $io->touch, 'Touch' );
+ok( $io->empty, 'Empty file' );
+
+# Tempfile/seek
+
+my @lines = io( $PROGRAM_NAME )->chomp->slurp;
+my $temp  = io( q(t) )->tempfile;
+
+$temp->println( @lines ); $temp->seek( 0, 0 );
+
+my $text  = $temp->slurp;
+
+ok( length $text == $size, 'Tempfile/seek' );
+
+# Read/write
 
 my $outfile = catfile( qw(t output out.pm) );
-my $input   = io( catfile( qw(lib File DataClass IO.pm) ) )->open;
-my $output  = io( $outfile )->open( q(w) );
-my $buffer; $input->buffer( $buffer ); $output->buffer( $buffer );
 
 ok( !-f $outfile,    'Non existant output file' );
+
+my $input   = io( catfile( qw(lib File DataClass IO.pm) ) )->open;
+
 ok( ref $input,      'Open input' );
+
+my $output  = io( $outfile )->open( q(w) );
+
 ok( ref $output,     'Open output' );
+
+my $buffer; $input->buffer( $buffer ); $output->buffer( $buffer );
+
 ok( defined $buffer, 'Define buffer' );
 
 $output->write while ($input->read);

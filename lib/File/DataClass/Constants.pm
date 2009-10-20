@@ -9,7 +9,8 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 my @constants;
 
 BEGIN {
- @constants = ( qw(ARRAY CODE FALSE HASH LSB NUL SPC TRUE) );
+   @constants = ( qw(ARRAY CODE DIR_PERMS EVIL FALSE HASH LSB NUL PERMS
+                     SPC STAT_FIELDS TRUE) );
 }
 
 use Sub::Exporter -setup => {
@@ -22,6 +23,14 @@ sub ARRAY () {
 
 sub CODE () {
    return q(CODE);
+}
+
+sub DIR_PERMS () {
+   return oct q(0755);
+}
+
+sub EVIL () {
+   return q(MSWin32);
 }
 
 sub FALSE () {
@@ -40,8 +49,17 @@ sub NUL () {
    return q();
 }
 
+sub PERMS () {
+   return oct q(0644);
+}
+
 sub SPC () {
    return q( );
+}
+
+sub STAT_FIELDS () {
+   return qw(device inode mode nlink uid gid device_id size atime
+             mtime ctime blksize blocks);
 }
 
 sub TRUE () {

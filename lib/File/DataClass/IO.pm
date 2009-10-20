@@ -18,35 +18,36 @@ use File::Temp     ();
 use IO::Dir;
 use IO::File;
 use Moose;
+use Moose::Util::TypeConstraints;
 
-my @STAT_FIELDS = (
-   qw(dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks) );
+enum 'Mode' => qw(a a+ r r+ w w+);
+enum 'Type' => qw(dir file);
 
-has 'atomic_pref'     => is => 'rw', isa => 'Str',   default => q(B_)       ;
-has 'autoclose'       => is => 'rw', isa => 'Bool',  default => TRUE        ;
-has 'block_size'      => is => 'rw', isa => 'Int',   default => 1024        ;
-has 'dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE ;
-has 'exception_class' => is => 'rw', isa => 'Maybe[Str]',
-   default            => q(File::DataClass::Exception)                      ;
-has 'io_handle'       => is => 'rw', isa => 'Maybe[Object]'                 ;
-has 'is_open'         => is => 'rw', isa => 'Bool',  default => FALSE       ;
-has 'lock_obj'        => is => 'rw', isa => 'Maybe[Object]'                 ;
-has 'mode'            => is => 'rw', isa => 'Str',   default => q(r)        ;
-has 'name'            => is => 'rw', isa => 'Str',   default => NUL         ;
-has 'sort'            => is => 'rw', isa => 'Bool',  default => TRUE        ;
-has 'type'            => is => 'rw', isa => 'Maybe[Str]'                    ;
-has '_assert'         => is => 'rw', isa => 'Bool',  default => FALSE       ;
-has '_atomic'         => is => 'rw', isa => 'Maybe[Str]'                    ;
-has '_binary'         => is => 'rw', isa => 'Bool',  default => FALSE       ;
-has '_binmode'        => is => 'rw', isa => 'Str',   default => NUL         ;
-has '_chomp'          => is => 'rw', isa => 'Bool',  default => FALSE       ;
-has '_deep'           => is => 'rw', isa => 'Bool',  default => FALSE       ;
-has '_encoding'       => is => 'rw', isa => 'Str',   default => NUL         ;
-has '_filter'         => is => 'rw', isa => 'Maybe[CodeRef]'                ;
-has '_lock'           => is => 'rw', isa => 'Bool',  default => FALSE       ;
-has '_perms'          => is => 'rw', isa => 'Num',   default => oct q(0644) ;
-has '_separator'      => is => 'rw', isa => 'Str',   default => $RS         ;
-has '_utf8'           => is => 'rw', isa => 'Bool',  default => FALSE       ;
+has 'atomic_pref'     => is => 'rw', isa => 'Str',       default    => q(B_) ;
+has 'autoclose'       => is => 'rw', isa => 'Bool',      default    => TRUE  ;
+has 'block_size'      => is => 'rw', isa => 'Int',       default    => 1024  ;
+has 'dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE  ;
+has 'exception_class' => is => 'rw', isa => 'ClassName',
+   default            => q(File::DataClass::Exception)                       ;
+has 'io_handle'       => is => 'rw', isa => 'Maybe[Object]'                  ;
+has 'is_open'         => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has 'lock_obj'        => is => 'rw', isa => 'Maybe[Object]'                  ;
+has 'mode'            => is => 'rw', isa => 'Mode',      default    => q(r)  ;
+has 'name'            => is => 'rw', isa => 'Str',       default    => NUL   ;
+has 'sort'            => is => 'rw', isa => 'Bool',      default    => TRUE  ;
+has 'type'            => is => 'rw', isa => 'Maybe[Type]'                    ;
+has '_assert'         => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has '_atomic'         => is => 'rw', isa => 'Str',       default    => NUL   ;
+has '_binary'         => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has '_binmode'        => is => 'rw', isa => 'Str',       default    => NUL   ;
+has '_chomp'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has '_deep'           => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has '_encoding'       => is => 'rw', isa => 'Str',       default    => NUL   ;
+has '_filter'         => is => 'rw', isa => 'Maybe[CodeRef]'                 ;
+has '_lock'           => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has '_perms'          => is => 'rw', isa => 'Num',       default    => PERMS ;
+has '_separator'      => is => 'rw', isa => 'Str',       default    => $RS   ;
+has '_utf8'           => is => 'rw', isa => 'Bool',      default    => FALSE ;
 
 around BUILDARGS => sub {
    my ($orig, $class, @rest) = @_; my $attrs;
@@ -93,22 +94,23 @@ sub _all_file_contents {
 
    $self->error_check;
    $self->autoclose && $self->close;
+
    return $all;
 }
 
 sub append {
    my ($self, @rest) = @_;
 
-   $self->assert_open( q(a) );
-   $self->print( @rest );
+   $self->assert_open( q(a) ); $self->print( @rest );
+
    return;
 }
 
 sub appendln {
    my ($self, @rest) = @_;
 
-   $self->assert_open( q(a) );
-   $self->println( @rest );
+   $self->assert_open( q(a) ); $self->println( @rest );
+
    return;
 }
 
@@ -117,10 +119,10 @@ sub assert {
 }
 
 sub assert_dirpath {
-   my ($self, $dir_name) = @_; my $perms = $self->_perms || oct q(0775);
+   my ($self, $dir_name) = @_; $dir_name || return;
 
    return $dir_name if (-d $dir_name
-                        or CORE::mkdir( $self->name, $perms )
+                        or CORE::mkdir( $self->name, DIR_PERMS )
                         or File::Path::mkpath( $dir_name ));
 
    $self->throw( error => 'Path [_1] cannot create', args  => [ $dir_name ] );
@@ -128,11 +130,9 @@ sub assert_dirpath {
 }
 
 sub assert_filepath {
-   my $self = shift;
-   my $name = $self->name or return;
-   my $dir;
+   my $self = shift; my $dir; $self->name || return;
 
-   (undef, $dir) = File::Spec->splitpath( $name );
+   (undef, $dir) = File::Spec->splitpath( $self->name );
 
    return $self->assert_dirpath( $dir );
 }
@@ -142,6 +142,7 @@ sub assert_open {
 
    $self->is_open && return $self;
    $self->type || $self->file;
+
    return $self->open( @rest );
 }
 
@@ -151,13 +152,12 @@ sub atomic {
    my $path = $self->filepath;
 
    $self->_atomic( $path ? File::Spec->catfile( $path, $file ) : $file );
+
    return $self;
 }
 
 sub basename {
-   my ($self, @suffixes ) = @_;
-
-   return unless ($self->name);
+   my ($self, @suffixes ) = @_; $self->name || return;
 
    return File::Basename::basename( $self->name, @suffixes );
 }
@@ -167,6 +167,7 @@ sub binary {
 
    $self->is_open && CORE::binmode( $self->io_handle );
    $self->_binary( TRUE );
+
    return $self;
 }
 
@@ -242,6 +243,7 @@ sub close {
 
    $self->is_dir  && return $self->_close_dir;
    $self->is_file && return $self->_close_file;
+
    return $self;
 }
 
@@ -250,8 +252,9 @@ sub _close {
 
    $self->io_handle && $self->io_handle->close;
    $self->io_handle( undef );
-   $self->mode( q(r) );
-   $self->is_open( FALSE );
+   $self->is_open  ( FALSE );
+   $self->mode     ( q(r)  );
+
    return $self;
 }
 
@@ -268,9 +271,9 @@ sub _close_file {
                           args  => [ $self->_atomic, $self->name ] );
    }
 
-   $self->_atomic( undef );
    $self->is_open || return;
    $self->unlock;
+
    return $self->_close;
 }
 
@@ -286,6 +289,7 @@ sub delete {
    my $self = shift;
 
    $self->_atomic && -f $self->_atomic && unlink $self->_atomic;
+
    return $self->_close_file;
 }
 
@@ -307,6 +311,7 @@ sub DEMOLISH {
 
    $self->_atomic && $self->delete;
    $self->is_open && $self->close;
+
    return;
 }
 
@@ -315,9 +320,7 @@ sub dir {
 }
 
 sub dirname {
-   my $self = shift;
-
-   return unless ($self->name);
+   my $self = shift; $self->name || return;
 
    return File::Basename::dirname( $self->name );
 }
@@ -377,7 +380,7 @@ sub filepath {
 }
 
 sub filter {
-   my ($self, $code) = @_; $self->_filter( $code ) if ($code); return $self;
+   my ($self, $code) = @_; $self->_filter( $code ); return $self;
 }
 
 sub _find {
@@ -403,35 +406,41 @@ sub _find {
 }
 
 sub getline {
-   my ($self, @rest) = @_; my ($line, $sep);
+   my ($self, $separator) = @_; my ($line, $sep);
 
    $self->assert_open( q(r) );
 
-   {  local $RS = $rest[0] || $self->_separator;
+   {  local $RS = $separator || $self->_separator;
       $line = $self->io_handle->getline;
       CORE::chomp $line if ($self->_chomp && defined $line);
    }
 
    $self->error_check;
+
    return $line if (defined $line);
+
    $self->autoclose && $self->close;
+
    return;
 }
 
 sub getlines {
-   my ($self, @rest) = @_; my (@lines, $sep);
+   my ($self, $separator) = @_; my (@lines, $sep);
 
    $self->assert_open( q(r) );
 
-   {  local $RS = $rest[0] || $self->_separator;
+   {  local $RS = $separator || $self->_separator;
       @lines = $self->io_handle->getlines;
 
       if ($self->_chomp) { CORE::chomp for @lines }
    }
 
    $self->error_check;
+
    return (@lines) if (scalar @lines);
+
    $self->autoclose && $self->close;
+
    return ();
 }
 
@@ -492,7 +501,7 @@ sub lock {
 sub mkdir {
    my ($self, $perms) = @_;
 
-   return CORE::mkdir( $self->name, $perms || oct q(0775) );
+   return CORE::mkdir( $self->name, $perms || DIR_PERMS );
 }
 
 sub mkpath {
@@ -516,6 +525,7 @@ sub open {
 
    $self->is_dir  && return $self->_open_dir(  @rest );
    $self->is_file && return $self->_open_file( @rest );
+
    return $self;
 }
 
@@ -523,7 +533,7 @@ sub _open_dir {
    my ($self, @rest) = @_; my $io;
 
    $self->is_open && return $self;
-   $self->_assert && $self->name && $self->assert_dirpath( $self->name );
+   $self->_assert && $self->assert_dirpath( $self->name );
 
    unless ($io = IO::Dir->new( $self->name )) {
       $self->throw( error => 'Directory [_1] cannot open',
@@ -538,8 +548,7 @@ sub _open_dir {
 sub _open_file {
    my ($self, @rest) = @_; my ($mode, $perms) = @rest; my (@args, $io);
 
-   return $self if ($self->is_open);
-
+   $self->is_open && return $self;
    $self->_assert && $self->assert_filepath;
    @args = ( $self->mode( $mode || $self->mode ) );
    $self->_perms( $perms )   if (defined $perms);
@@ -557,8 +566,8 @@ sub _open_file {
       $self->is_open( TRUE );
    }
 
-   $self->is_open && $self->set_lock;
-   $self->is_open && $self->set_binmode;
+   $self->is_open && $self->set_lock && $self->set_binmode;
+
    return $self;
 }
 
@@ -571,9 +580,7 @@ sub perms {
 }
 
 sub print {
-   my ($self, @rest) = @_;
-
-   $self->assert_open( q(w) );
+   my ($self, @rest) = @_; $self->assert_open( q(w) );
 
    for (@rest) {
       print {$self->io_handle} $_
@@ -590,14 +597,15 @@ sub println {
 }
 
 sub read {
-   my ($self, @rest) = @_;
+   my ($self, @rest) = @_; $self->assert_open( q(r) );
 
-   $self->assert_open( q(r) );
    my $length = (@rest or $self->is_dir)
               ? $self->io_handle->read( @rest )
               : $self->io_handle->read( ${ $self->buffer },
                                         $self->block_size, $self->length );
+
    $self->error_check;
+
    return $length || $self->autoclose && $self->close && 0;
 }
 
@@ -639,6 +647,18 @@ sub rmtree {
    my ($self, @rest) = @_; return File::Path::rmtree( $self->name, @rest );
 }
 
+sub seek {
+   my ($self, @rest) = @_;
+
+   $self->assert_open( $OSNAME eq EVIL ? q(r) : q(r+) );
+
+   my @sunk = $self->io_handle->seek( @rest );
+
+   $self->error_check;
+
+   return wantarray ? @sunk : $sunk[0];
+}
+
 sub separator {
    my ($self, $value) = @_; $self->_separator( $value ); return $self;
 }
@@ -660,15 +680,13 @@ sub set_binmode {
 }
 
 sub set_lock {
-   my $self = shift;
-
-   return unless ($self->_lock);
+   my $self = shift; $self->_lock || return;
 
    return $self->lock_obj->set( k => $self->name ) if ($self->lock_obj);
 
-   my $flag = $self->mode =~ m{ \A [r] \z }mx ? LOCK_SH : LOCK_EX;
+   flock $self->io_handle, $self->mode eq q(r) ? LOCK_SH : LOCK_EX;
 
-   return flock $self->io_handle, $flag;
+   return $self;
 }
 
 sub slurp {
@@ -696,7 +714,8 @@ sub stat {
 
    my %stat_hash = ( id => $self->filename );
 
-   @stat_hash{ @STAT_FIELDS } = stat $self->name;
+   @stat_hash{ STAT_FIELDS() } = stat $self->name;
+
    return \%stat_hash;
 }
 
@@ -726,14 +745,12 @@ sub throw {
 }
 
 sub touch {
-   my ($self, @rest) = @_;
-
-   $self->name || return;
+   my ($self, @rest) = @_; $self->name || return;
 
    if (-e $self->name) {
       my $now = time; utime $now, $now, $self->name;
    }
-   else { $self->_open_file( q(w), $self->_perms || oct q(0664) )->close }
+   else { $self->_open_file( q(w) )->close }
 
    return $self;
 }
@@ -754,25 +771,28 @@ sub unlock {
 sub utf8 {
    my $self = shift;
 
-   $self->encoding( q(utf8) );
-   $self->_utf8( TRUE );
+   $self->encoding( q(utf8) ); $self->_utf8( TRUE );
+
    return $self;
 }
 
 sub write {
-   my ($self, @rest) = @_;
+   my ($self, @rest) = @_; $self->assert_open( q(w) );
 
-   $self->assert_open( q(w) );
    my $length = @rest
               ? $self->io_handle->write( @rest )
               : $self->io_handle->write( ${ $self->buffer }, $self->length );
+
    $self->error_check;
+
    $self->clear unless (@rest);
+
    return $length;
 }
 
 __PACKAGE__->meta->make_immutable;
 
+no Moose::Util::TypeConstraints;
 no Moose;
 
 1;
@@ -1312,7 +1332,7 @@ Exposes the C<throw> method in the class exception class
 =head2 touch
 
 Create a zero length file if one does not already exist with given
-file system permissions which default to 0664 octal. If the file
+file system permissions which default to 0644 octal. If the file
 already exists update it's last modified datetime stamp
 
 =head2 unlink
