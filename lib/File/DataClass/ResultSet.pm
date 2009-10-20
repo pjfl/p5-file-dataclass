@@ -222,12 +222,13 @@ sub _get_element_name {
 sub _list {
    my ($self, $name) = @_; my ($attr, $attrs);
 
+   my $schema   = $self->schema;
    my $new      = $self->list_class->new;
-   my $elements = $self->schema->select( $self->path );
+   my $elements = $schema->select( $self->path );
 
    $new->list( [ sort keys %{ $elements } ] );
 
-   if ($attr = $self->schema->label_attr) {
+   if ($attr = $schema->label_attr) {
       $new->labels
          ( { map { $_ => $elements->{ $_ }->{ $attr } } @{ $new->list } } );
    }
@@ -238,7 +239,7 @@ sub _list {
    }
    else { $attrs = { name => $name } }
 
-   $new->element( $self->schema->create_element( $self->path, $attrs ) );
+   $new->element( $schema->create_element( $self->path, $attrs ) );
 
    return $new;
 }
