@@ -8,7 +8,6 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use Moose;
-use Scalar::Util qw(blessed);
 use TryCatch;
 
 use File::DataClass::List;

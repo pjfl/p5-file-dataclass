@@ -16,23 +16,8 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 37;
+   plan tests => 67;
    use_ok( q(File::DataClass::IO) );
-}
-
-sub test {
-   my ($obj, $method, @args) = @_; local $EVAL_ERROR;
-
-   my $wantarray = wantarray; my ($e, $res);
-
-   eval {
-      if ($wantarray) { @{ $res } = $obj->$method( @args ) }
-      else { $res = $obj->$method( @args ) }
-   };
-
-   return $e if ($e = $EVAL_ERROR);
-
-   return $wantarray ? @{ $res } : $res;
 }
 
 sub io {
@@ -42,6 +27,22 @@ sub io {
 my $io = io( $PROGRAM_NAME );
 
 isa_ok( $io, q(File::DataClass::IO) );
+
+# Error
+
+eval { io( 'quack' )->slurp };
+
+like( $EVAL_ERROR, qr{ File \s+ \S+ \s+ cannot \s+ open }mx,
+      'Cannot open file' );
+
+eval { io( catdir( qw(t xxxxx) ) )->next };
+
+like( $EVAL_ERROR, qr{ Directory \s+ \S+ \s+ cannot \s+ open }mx,
+      'Cannot open directory' );
+
+eval { io( 'qwerty' )->empty };
+
+like( $EVAL_ERROR, qr{ Path \s+ \S+ \s+ not \s+ found }mx, 'No test empty' );
 
 # Absolute
 
@@ -73,52 +74,52 @@ my $exp_filt2 = 't/mydir/dir1/dira/dirx';
 sub p { join q(;), grep { not m{ \.svn }mx } @_ }
 sub f { my $s = shift; $s =~ s/\//\\/g if ($^O =~ /^mswin32$/i); return $s }
 
-is( p( io( 't/mydir' )->all       ), f( $exp1 ), 'All default'       );
-is( p( io( 't/mydir' )->all(1)    ), f( $exp1 ), 'All level 1'       );
-is( p( io( 't/mydir' )->all(2)    ), f( $exp2 ), 'All level 2'       );
-is( p( io( 't/mydir' )->all(3)    ), f( $exp3 ), 'All level 3'       );
-is( p( io( 't/mydir' )->all(4)    ), f( $exp4 ), 'All level 4'       );
-is( p( io( 't/mydir' )->all(5)    ), f( $exp4 ), 'All level 5'       );
-is( p( io( 't/mydir' )->all(0)    ), f( $exp4 ), 'All level 0'       );
-is( p( io( 't/mydir' )->deep->all ), f( $exp4 ), 'All default deep'  );
+my $dir = catdir( qw(t mydir) );
 
-is( p( io( 't/mydir' )->all_files       ), f( $exp_files1 ), 'All files'     );
-is( p( io( 't/mydir' )->all_files(1)    ), f( $exp_files1 ), 'All files 1'   );
-is( p( io( 't/mydir' )->all_files(2)    ), f( $exp_files2 ), 'All files 2'   );
-is( p( io( 't/mydir' )->all_files(3)    ), f( $exp_files2 ), 'All files 3'   );
-is( p( io( 't/mydir' )->all_files(4)    ), f( $exp_files4 ), 'All files 4'   );
-is( p( io( 't/mydir' )->all_files(5)    ), f( $exp_files4 ), 'All files 5'   );
-is( p( io( 't/mydir' )->all_files(0)    ), f( $exp_files4 ), 'All files 0'   );
-is( p( io( 't/mydir' )->deep->all_files ), f( $exp_files4 ), 'All files deep');
+is( p( io( $dir )->all       ), f( $exp1 ), 'All default'      );
+is( p( io( $dir )->all(1)    ), f( $exp1 ), 'All level 1'      );
+is( p( io( $dir )->all(2)    ), f( $exp2 ), 'All level 2'      );
+is( p( io( $dir )->all(3)    ), f( $exp3 ), 'All level 3'      );
+is( p( io( $dir )->all(4)    ), f( $exp4 ), 'All level 4'      );
+is( p( io( $dir )->all(5)    ), f( $exp4 ), 'All level 5'      );
+is( p( io( $dir )->all(0)    ), f( $exp4 ), 'All level 0'      );
+is( p( io( $dir )->deep->all ), f( $exp4 ), 'All default deep' );
 
-is( p( io( 't/mydir' )->all_dirs       ), f( $exp_dirs1 ), 'All dirs'      );
-is( p( io( 't/mydir' )->all_dirs(1)    ), f( $exp_dirs1 ), 'All dirs 1'    );
-is( p( io( 't/mydir' )->all_dirs(2)    ), f( $exp_dirs2 ), 'All dirs 2'    );
-is( p( io( 't/mydir' )->all_dirs(3)    ), f( $exp_dirs3 ), 'All dirs 3'    );
-is( p( io( 't/mydir' )->all_dirs(4)    ), f( $exp_dirs3 ), 'All dirs 4'    );
-is( p( io( 't/mydir' )->all_dirs(5)    ), f( $exp_dirs3 ), 'All dirs 5'    );
-is( p( io( 't/mydir' )->all_dirs(0)    ), f( $exp_dirs3 ), 'All dirs 0'    );
-is( p( io( 't/mydir' )->deep->all_dirs ), f( $exp_dirs3 ), 'All dirs deep' );
+is( p( io( $dir )->all_files       ), f( $exp_files1 ), 'All files'      );
+is( p( io( $dir )->all_files(1)    ), f( $exp_files1 ), 'All files 1'    );
+is( p( io( $dir )->all_files(2)    ), f( $exp_files2 ), 'All files 2'    );
+is( p( io( $dir )->all_files(3)    ), f( $exp_files2 ), 'All files 3'    );
+is( p( io( $dir )->all_files(4)    ), f( $exp_files4 ), 'All files 4'    );
+is( p( io( $dir )->all_files(5)    ), f( $exp_files4 ), 'All files 5'    );
+is( p( io( $dir )->all_files(0)    ), f( $exp_files4 ), 'All files 0'    );
+is( p( io( $dir )->deep->all_files ), f( $exp_files4 ), 'All files deep' );
 
-is( p( io( 't/mydir' )->filter( sub { m{ dira }mx } )->deep->all_dirs ),
+is( p( io( $dir )->all_dirs       ), f( $exp_dirs1 ), 'All dirs'      );
+is( p( io( $dir )->all_dirs(1)    ), f( $exp_dirs1 ), 'All dirs 1'    );
+is( p( io( $dir )->all_dirs(2)    ), f( $exp_dirs2 ), 'All dirs 2'    );
+is( p( io( $dir )->all_dirs(3)    ), f( $exp_dirs3 ), 'All dirs 3'    );
+is( p( io( $dir )->all_dirs(4)    ), f( $exp_dirs3 ), 'All dirs 4'    );
+is( p( io( $dir )->all_dirs(5)    ), f( $exp_dirs3 ), 'All dirs 5'    );
+is( p( io( $dir )->all_dirs(0)    ), f( $exp_dirs3 ), 'All dirs 0'    );
+is( p( io( $dir )->deep->all_dirs ), f( $exp_dirs3 ), 'All dirs deep' );
+
+is( p( io( $dir )->filter( sub { m{ dira }mx } )->deep->all_dirs ),
     f( $exp_filt1 ), 'Filter 1' );
-is( p( io( 't/mydir' )->filter( sub { m{ x }mx    } )->deep->all_dirs ),
+is( p( io( $dir )->filter( sub { m{ x }mx    } )->deep->all_dirs ),
     f( $exp_filt2 ), 'Filter 2' );
 
 # Assert
 
-ok( !-e 't/output/newpath/hello.txt', 'Non existant file' );
-ok( !-e 't/output/newpath', 'Non existant directory' );
+ok( !-e catfile( qw(t output newpath hello.txt) ), 'Non existant file' );
+ok( !-e catdir( qw(t output newpath ) ), 'Non existant directory' );
 
-$io = io( 't/output/newpath/hello.txt' )->assert;
+$io = io( catfile( qw(t output newpath hello.txt) ) )->assert;
 
-ok( !-e 't/output/newpath', 'Assert does not create directory' );
+ok( !-e catdir( qw(t output newpath) ), 'Assert does not create directory' );
 
 $io->println( 'Hello' );
 
-ok( -f 't/output/newpath/hello.txt', 'Writing file creates directory' );
-
-io( 't/output' )->rmtree;
+ok( -d catfile( qw(t output newpath) ), 'Writing file creates directory' );
 
 # Chomp
 
@@ -128,14 +129,106 @@ for ($io->slurp) { $seen = 1 if (m{ [\n] }mx) }
 
 ok( !$seen, 'Slurp chomps newlines' );
 
-$io->close;
+$io->close; $seen = 0;
 
 for ($io->chomp->separator( 'io' )->getlines) { $seen = 1 if (m { io }mx) }
 
 ok( !$seen, 'Getlines chomps record separators' );
 
-#unlink( q(t/ipc_srlock.lck) );
-#unlink( q(t/ipc_srlock.shm) );
+# Empty
+
+$io = io( catdir( qw(t output empty) ) );
+
+ok( $io->mkdir, 'Make directories' );
+ok( $io->empty, 'Empty directory' );
+
+$io = io( catfile( qw(t output file) ) );
+
+ok( $io->touch, 'Touch' );
+ok( $io->empty, 'Empty file' );
+
+# File Spec
+
+is( io( '././t/default.xml' )->canonpath, f( catfile( qw(t default.xml) ) ),
+    'Canonpath' );
+is( io( '././t/bogus'       )->canonpath, f( catfile( qw(t bogus) ) ),
+    'Bogus canonpath' );
+ok( io( catfile( q(), qw(foo bar) ) )->is_absolute, 'Is absolute' );
+
+my ($v, $d, $f) = io( catdir( qw(foo bar) ) )->splitpath;
+
+is( $d.q(x), catdir( q(foo), q(x) ), 'Splitpath directory' );
+is( $f, q(bar), 'Splitpath file' );
+
+my @dirs = io( catdir( qw(foo bar baz) ) )->splitdir;
+
+is( scalar @dirs, 3, 'Splitdir count' );
+
+is( (join q(+), @dirs), q(foo+bar+baz), 'Splitdir string' );
+
+is( io( catdir( q(), qw(foo bar baz) ) )->abs2rel( catdir( q(), q(foo) ) ),
+    f( catdir( qw(bar baz) ) ), 'Can abs2rel' );
+
+is( io( catdir( qw(foo bar baz) ) )->rel2abs( catdir( q(), q(moo) ) ),
+    f( catdir( q(), qw(moo foo bar baz) ) ), 'Can rel2abs' );
+
+is( io->dir( catdir( qw(doo foo) ) )->catdir( qw(goo hoo) ),
+    f( catdir( qw(doo foo goo hoo) ) ), 'Catdir 1' );
+
+is( io->dir->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 2' );
+
+is( io->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 3' );
+
+is( io->file( catdir( qw(doo foo) ) )->catfile( qw(goo hoo) ),
+    f( catfile( qw(doo foo goo hoo) ) ), 'Catfile 1' );
+
+is( io->file->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ),
+    'Catfile 2' );
+
+is( io->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ), 'Catfile 3' );
+
+# Print
+
+$io = io( catfile( qw(t output print.t) ) );
+
+is( $io->print( "one\n" )->print( "two\n" )->close->slurp, "one\ntwo\n",
+    'Print 1' );
+
+$io = io( catfile( qw(t output print.t) ) );
+
+is( $io->println( "one" )->println( "two" )->close->slurp, "one\ntwo\n",
+    'Print 2' );
+
+# Read
+
+my $outfile = catfile( qw(t output out.pm) );
+
+ok( !-f $outfile, 'Non existant output file' );
+
+my $input = io( catfile( qw(lib File DataClass IO.pm) ) )->open;
+
+ok( ref $input, 'Open input' );
+
+my $output = io( $outfile )->open( q(w) );
+
+ok( ref $output, 'Open output' );
+
+my $buffer;
+
+$input->buffer( $buffer );
+$output->buffer( $buffer );
+
+ok( defined $buffer, 'Define buffer' );
+
+$output->write while ($input->read);
+
+ok( !length $buffer, 'Empty buffer' );
+
+ok( $output->close, 'Close output' );
+
+# Cleanup
+
+io( catdir( qw(t output) ) )->rmtree;
 
 # Local Variables:
 # mode: perl

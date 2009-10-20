@@ -21,6 +21,10 @@ BEGIN {
    use_ok( q(File::DataClass) );
 }
 
+sub io {
+   return File::DataClass::IO->new( @_ );
+}
+
 sub test {
    my ($obj, $method, @args) = @_; local $EVAL_ERROR;
 
@@ -42,7 +46,7 @@ isa_ok( $obj, q(File::DataClass) );
 
 my $e = test( $obj, qw(load nonexistant_file) );
 
-is( $e, 'Cannot open nonexistant_file', 'Cannot open nonexistant_file' );
+is( $e, 'File nonexistant_file cannot open', 'Cannot open nonexistant_file' );
 
 my $cfg = test( $obj, qw(load t/default.xml t/default_en.xml) );
 
@@ -124,9 +128,11 @@ ok( $res[0] && $res[0]->name eq q(admin), 'Can search' );
 
 # splice
 
-unlink( q(t/dumped.xml) );
-unlink( q(t/ipc_srlock.lck) );
-unlink( q(t/ipc_srlock.shm) );
+# Cleanup
+
+io( 't/dumped.xml'     )->unlink;
+io( 't/ipc_srlock.lck' )->unlink;
+io( 't/ipc_srlock.shm' )->unlink;
 
 # Local Variables:
 # mode: perl

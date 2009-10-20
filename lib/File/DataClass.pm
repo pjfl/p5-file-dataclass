@@ -10,7 +10,6 @@ use Class::Null;
 use File::DataClass::Constants;
 use File::Spec;
 use Moose;
-use Scalar::Util qw(blessed);
 
 use Cache::FileCache;
 use File::DataClass::ResultSource;

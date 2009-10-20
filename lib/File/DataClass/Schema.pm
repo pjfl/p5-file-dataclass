@@ -128,6 +128,8 @@ inherit from this
 
 =head2 select
 
+=head2 txn_do
+
 =head2 update_attributes
 
 =head1 Configuration and Environment

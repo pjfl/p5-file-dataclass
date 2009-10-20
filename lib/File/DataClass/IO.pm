@@ -22,30 +22,31 @@ use Moose;
 my @STAT_FIELDS = (
    qw(dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks) );
 
-has 'atomic_pref'     => is => 'rw', isa => 'Str',   default  => q(B_)      ;
-has 'autoclose'       => is => 'rw', isa => 'Bool',  default  => TRUE       ;
-has 'block_size'      => is => 'rw', isa => 'Int',   default  => 1024       ;
+has 'atomic_pref'     => is => 'rw', isa => 'Str',   default => q(B_)       ;
+has 'autoclose'       => is => 'rw', isa => 'Bool',  default => TRUE        ;
+has 'block_size'      => is => 'rw', isa => 'Int',   default => 1024        ;
 has 'dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE ;
 has 'exception_class' => is => 'rw', isa => 'Maybe[Str]',
    default            => q(File::DataClass::Exception)                      ;
 has 'io_handle'       => is => 'rw', isa => 'Maybe[Object]'                 ;
-has 'is_open'         => is => 'rw', isa => 'Bool',  default  => FALSE      ;
+has 'is_open'         => is => 'rw', isa => 'Bool',  default => FALSE       ;
 has 'lock_obj'        => is => 'rw', isa => 'Maybe[Object]'                 ;
-has 'mode'            => is => 'rw', isa => 'Maybe[Str]'                    ;
-has 'name'            => is => 'rw', isa => 'Str',   required => TRUE       ;
-has 'sort'            => is => 'rw', isa => 'Bool',  default  => TRUE       ;
+has 'mode'            => is => 'rw', isa => 'Str',   default => q(r)        ;
+has 'name'            => is => 'rw', isa => 'Str',   default => NUL         ;
+has 'sort'            => is => 'rw', isa => 'Bool',  default => TRUE        ;
 has 'type'            => is => 'rw', isa => 'Maybe[Str]'                    ;
-has '_assert'         => is => 'rw', isa => 'Bool',  default  => FALSE      ;
+has '_assert'         => is => 'rw', isa => 'Bool',  default => FALSE       ;
 has '_atomic'         => is => 'rw', isa => 'Maybe[Str]'                    ;
-has '_binary'         => is => 'rw', isa => 'Bool',  default  => FALSE      ;
-has '_binmode'        => is => 'rw', isa => 'Str',   default  => NUL        ;
-has '_chomp'          => is => 'rw', isa => 'Bool',  default  => FALSE      ;
-has '_deep'           => is => 'rw', isa => 'Bool',  default  => FALSE      ;
-has '_encoding'       => is => 'rw', isa => 'Str',   default  => NUL        ;
+has '_binary'         => is => 'rw', isa => 'Bool',  default => FALSE       ;
+has '_binmode'        => is => 'rw', isa => 'Str',   default => NUL         ;
+has '_chomp'          => is => 'rw', isa => 'Bool',  default => FALSE       ;
+has '_deep'           => is => 'rw', isa => 'Bool',  default => FALSE       ;
+has '_encoding'       => is => 'rw', isa => 'Str',   default => NUL         ;
 has '_filter'         => is => 'rw', isa => 'Maybe[CodeRef]'                ;
-has '_lock'           => is => 'rw', isa => 'Bool',  default  => FALSE      ;
-has '_perms'          => is => 'rw', isa => 'Num',   default  => oct q(0644);
-has '_utf8'           => is => 'rw', isa => 'Bool',  default  => FALSE      ;
+has '_lock'           => is => 'rw', isa => 'Bool',  default => FALSE       ;
+has '_perms'          => is => 'rw', isa => 'Num',   default => oct q(0644) ;
+has '_separator'      => is => 'rw', isa => 'Str',   default => $RS         ;
+has '_utf8'           => is => 'rw', isa => 'Bool',  default => FALSE       ;
 
 around BUILDARGS => sub {
    my ($orig, $class, @rest) = @_; my $attrs;
@@ -61,12 +62,12 @@ around BUILDARGS => sub {
    return $class->$orig( $attrs );
 };
 
-sub absolute {
-   my $self = shift;
+sub abs2rel {
+   my ($self, $base) = @_; return File::Spec->abs2rel( $self->name, $base );
+}
 
-   $self->is_absolute
-      || $self->pathname( File::Spec->rel2abs( $self->pathname ) );
-   return $self;
+sub absolute {
+   my $self = shift; $self->name( $self->rel2abs ); return $self;
 }
 
 sub all {
@@ -119,20 +120,21 @@ sub assert_dirpath {
    my ($self, $dir_name) = @_; my $perms = $self->_perms || oct q(0775);
 
    return $dir_name if (-d $dir_name
-                        or CORE::mkdir( $self->pathname, $perms )
-                        or File::Path::mkpath( $dir_name )
-                        or $self->throw( error => 'Path [_1] cannot create',
-                                         args  => [ $dir_name ] ));
-   return;
+                        or CORE::mkdir( $self->name, $perms )
+                        or File::Path::mkpath( $dir_name ));
+
+   $self->throw( error => 'Path [_1] cannot create', args  => [ $dir_name ] );
+   return; # Never reached
 }
 
 sub assert_filepath {
    my $self = shift;
-   my $name = $self->pathname or return;
-   my $directory;
+   my $name = $self->name or return;
+   my $dir;
 
-   (undef, $directory) = File::Spec->splitpath( $name );
-   return $self->assert_dirpath( $directory );
+   (undef, $dir) = File::Spec->splitpath( $name );
+
+   return $self->assert_dirpath( $dir );
 }
 
 sub assert_open {
@@ -146,19 +148,18 @@ sub assert_open {
 sub atomic {
    my $self = shift;
    my $file = $self->atomic_pref.$self->filename;
-   my $path = $self->filepath
-            ? File::Spec->catfile( $self->filepath, $file ) : $file;
+   my $path = $self->filepath;
 
-   $self->_atomic( $path );
+   $self->_atomic( $path ? File::Spec->catfile( $path, $file ) : $file );
    return $self;
 }
 
 sub basename {
    my ($self, @suffixes ) = @_;
 
-   return unless ($self->pathname);
+   return unless ($self->name);
 
-   return File::Basename::basename( $self->pathname, @suffixes );
+   return File::Basename::basename( $self->name, @suffixes );
 }
 
 sub binary {
@@ -182,20 +183,20 @@ sub binmode {
 }
 
 sub buffer {
-   my ($self, @rest) = @_;
+   my $self = shift;
 
-   if (not @rest) {
-      unless (exists *$self->{buffer}) {
-         *$self->{buffer} = do { my $x = NUL; \$x };
-      }
-
-      return *$self->{buffer};
+   if (@_) {
+      my $buffer_ref   = ref $_[0] ? $_[0] : \$_[0];
+      ${ $buffer_ref } = NUL unless (defined ${ $buffer_ref });
+      $self->{buffer}  = $buffer_ref;
+      return $self;
    }
 
-   my $buffer_ref   = ref $rest[0] ? $rest[0] : \$rest[0];
-   ${ $buffer_ref } = NUL unless defined ${ $buffer_ref };
-   *$self->{buffer} = $buffer_ref;
-   return $self;
+   unless (exists $self->{buffer}) {
+      $self->{buffer} = do { my $x = NUL; \$x };
+   }
+
+   return $self->{buffer};
 }
 
 sub _build_dir_pattern {
@@ -206,6 +207,26 @@ sub _build_dir_pattern {
    $pat .= "\Q$updir\E"  if ($updir);
 
    return qr{ \A $pat \z }mx;
+}
+
+sub canonpath {
+   my $self = shift; return File::Spec->canonpath( $self->name );
+}
+
+sub catdir {
+   my ($self, @rest) = @_;
+
+   my @args = grep { defined and length } $self->name, @rest;
+
+   return $self->_constructor->dir( File::Spec->catdir( @args ) );
+}
+
+sub catfile {
+   my ($self, @rest) = @_;
+
+   my @args = grep { defined and length } $self->name, @rest;
+
+   return $self->_constructor->file( File::Spec->catfile( @args ) );
 }
 
 sub chomp {
@@ -221,7 +242,7 @@ sub close {
 
    $self->is_dir  && return $self->_close_dir;
    $self->is_file && return $self->_close_file;
-   return;
+   return $self;
 }
 
 sub _close {
@@ -229,7 +250,7 @@ sub _close {
 
    $self->io_handle && $self->io_handle->close;
    $self->io_handle( undef );
-   $self->mode( undef );
+   $self->mode( q(r) );
    $self->is_open( FALSE );
    return $self;
 }
@@ -242,15 +263,19 @@ sub _close_file {
    my $self = shift;
 
    if ($self->_atomic and -f $self->_atomic) {
-      rename $self->_atomic, $self->pathname
+      rename $self->_atomic, $self->name
          or $self->throw( error => 'Cannot rename [_1] to [_2]',
-                          args  => [ $self->_atomic, $self->pathname ] );
+                          args  => [ $self->_atomic, $self->name ] );
    }
 
    $self->_atomic( undef );
    $self->is_open || return;
    $self->unlock;
    return $self->_close;
+}
+
+sub _constructor {
+   my ($self, @rest) = @_; return (blessed $self)->new( @rest );
 }
 
 sub deep {
@@ -292,15 +317,18 @@ sub dir {
 sub dirname {
    my $self = shift;
 
-   return unless ($self->pathname);
+   return unless ($self->name);
 
-   return File::Basename::dirname( $self->pathname );
+   return File::Basename::dirname( $self->name );
 }
 
 sub empty {
    my $self = shift;
 
-   $self->is_file && return -z $self->pathname;
+   $self->is_file && return -z $self->name;
+
+   $self->throw( error => 'Path [_1] not found',
+                 args  => [ $self->name ] ) unless ($self->is_dir);
 
    return $self->next ? FALSE : TRUE;
 }
@@ -327,7 +355,7 @@ sub error_check {
 }
 
 sub exists {
-   my $self = shift; return -e $self->pathname;
+   my $self = shift; return -e $self->name;
 }
 
 sub file {
@@ -337,15 +365,15 @@ sub file {
 sub filename {
    my $self = shift; my $file;
 
-   (undef, undef, $file) = File::Spec->splitpath( $self->pathname );
+   (undef, undef, $file) = File::Spec->splitpath( $self->name );
+
    return $file;
 }
 
 sub filepath {
-   my $self = shift;
-   my ($volume, $path) = File::Spec->splitpath( $self->pathname );
+   my $self = shift; my ($volume, $dir) = File::Spec->splitpath( $self->name );
 
-   return File::Spec->catpath( $volume, $path, NUL );
+   return File::Spec->catpath( $volume, $dir, NUL );
 }
 
 sub filter {
@@ -375,12 +403,11 @@ sub _find {
 }
 
 sub getline {
-   my ($self, @rest) = @_; my $line;
+   my ($self, @rest) = @_; my ($line, $sep);
 
    $self->assert_open( q(r) );
 
-   {
-      $rest[0] and local $RS = $rest[0];
+   {  local $RS = $rest[0] || $self->_separator;
       $line = $self->io_handle->getline;
       CORE::chomp $line if ($self->_chomp && defined $line);
    }
@@ -392,12 +419,11 @@ sub getline {
 }
 
 sub getlines {
-   my ($self, @rest) = @_; my @lines;
+   my ($self, @rest) = @_; my (@lines, $sep);
 
    $self->assert_open( q(r) );
 
-   {
-      $rest[0] and local $RS = $rest[0];
+   {  local $RS = $rest[0] || $self->_separator;
       @lines = $self->io_handle->getlines;
 
       if ($self->_chomp) { CORE::chomp for @lines }
@@ -424,9 +450,7 @@ sub _init {
 }
 
 sub is_absolute {
-   my $self = shift;
-
-   return File::Spec->file_name_is_absolute( $self->pathname );
+   my $self = shift; return File::Spec->file_name_is_absolute( $self->name );
 }
 
 sub is_dir {
@@ -434,7 +458,11 @@ sub is_dir {
 
    $self->type && return $self->type eq q(dir) ? TRUE : FALSE;
 
-   return $self->pathname && -d $self->pathname ? TRUE : FALSE;
+   return $self->name && -d $self->name ? TRUE : FALSE;
+}
+
+sub is_executable {
+   my $self = shift; return $self->name && -x $self->name ? TRUE : FALSE;
 }
 
 sub is_file {
@@ -442,7 +470,15 @@ sub is_file {
 
    $self->type && return $self->type eq q(file) ? TRUE : FALSE;
 
-   return $self->pathname && -f $self->pathname ? TRUE : FALSE;
+   return $self->name && -f $self->name ? TRUE : FALSE;
+}
+
+sub is_readable {
+   my $self = shift; return $self->name && -r $self->name ? TRUE : FALSE;
+}
+
+sub is_writable {
+   my $self = shift; return $self->name && -w $self->name ? TRUE : FALSE;
 }
 
 sub length {
@@ -453,13 +489,22 @@ sub lock {
    my $self = shift; $self->_lock( TRUE ); return $self;
 }
 
+sub mkdir {
+   my ($self, $perms) = @_;
+
+   return CORE::mkdir( $self->name, $perms || oct q(0775) );
+}
+
+sub mkpath {
+   my $self = shift; return File::Path::mkpath( $self->name );
+}
+
 sub next {
    my $self = shift; my $name;
 
    return unless (defined ($name = $self->read_dir));
 
-   my $class = blessed $self;
-   my $io    = $class->new( File::Spec->catfile( $self->pathname, $name ) );
+   my $io = $self->_constructor( File::Spec->catfile( $self->name, $name ) );
 
    $io->filter( $self->_filter ) if (defined $self->_filter);
 
@@ -471,19 +516,18 @@ sub open {
 
    $self->is_dir  && return $self->_open_dir(  @rest );
    $self->is_file && return $self->_open_file( @rest );
-   return;
+   return $self;
 }
 
 sub _open_dir {
    my ($self, @rest) = @_; my $io;
 
    $self->is_open && return $self;
-   $self->_assert
-      && $self->pathname && $self->assert_dirpath( $self->pathname );
+   $self->_assert && $self->name && $self->assert_dirpath( $self->name );
 
-   unless ($io = IO::Dir->new( $self->pathname )) {
+   unless ($io = IO::Dir->new( $self->name )) {
       $self->throw( error => 'Directory [_1] cannot open',
-                    args  => [ $self->pathname ] );
+                    args  => [ $self->name ] );
    }
 
    $self->io_handle( $io );
@@ -501,8 +545,8 @@ sub _open_file {
    $self->_perms( $perms )   if (defined $perms);
    push @args, $self->_perms if (defined $self->_perms);
 
-   if (defined $self->pathname) {
-      my $pathname = $self->_atomic ? $self->_atomic : $self->pathname;
+   if (defined $self->name) {
+      my $pathname = $self->_atomic ? $self->_atomic : $self->name;
 
       unless ($io = IO::File->new( $pathname, @args )) {
          $self->throw( error => 'File [_1] cannot open',
@@ -536,7 +580,7 @@ sub print {
          or $self->throw( error => 'IO error [_1]', args  => [ $ERRNO ] );
    }
 
-   return;
+   return $self;
 }
 
 sub println {
@@ -579,26 +623,24 @@ sub read_dir {
    return $name;
 }
 
-sub relative {
-   my $self = shift;
+sub rel2abs {
+   my ($self, $base) = @_; return File::Spec->rel2abs( $self->name, $base );
+}
 
-   $self->is_absolute
-      && $self->pathname( File::Spec->abs2rel( $self->pathname ) );
-   return $self;
+sub relative {
+   my $self = shift; $self->name( $self->abs2rel ); return $self;
 }
 
 sub rmdir {
-    my $self = shift; return rmdir $self->pathname;
+   my $self = shift; return rmdir $self->name;
 }
 
 sub rmtree {
-    my ($self, @rest) = @_;
-
-    return File::Path::rmtree( $self->pathname, @rest );
+   my ($self, @rest) = @_; return File::Path::rmtree( $self->name, @rest );
 }
 
 sub separator {
-   my ($self, $value) = @_; $RS = $value; return $self;
+   my ($self, $value) = @_; $self->_separator( $value ); return $self;
 }
 
 sub set_binmode {
@@ -622,7 +664,7 @@ sub set_lock {
 
    return unless ($self->_lock);
 
-   return $self->lock_obj->set( k => $self->pathname ) if ($self->lock_obj);
+   return $self->lock_obj->set( k => $self->name ) if ($self->lock_obj);
 
    my $flag = $self->mode =~ m{ \A [r] \z }mx ? LOCK_SH : LOCK_EX;
 
@@ -634,24 +676,34 @@ sub slurp {
 
    wantarray || return $slurp;
 
+   local $RS = $self->_separator;
+
    return split m{ (?<=\Q$RS\E) }mx, $slurp unless ($self->_chomp);
 
    return map { CORE::chomp; $_ } split m{ (?<=\Q$RS\E) }mx, $slurp;
 }
 
+sub splitdir {
+   my $self = shift; return File::Spec->splitdir( $self->name );
+}
+
+sub splitpath {
+   my $self = shift; return File::Spec->splitpath( $self->name );
+}
+
 sub stat {
-   my $self = shift; $self->pathname || return {};
+   my $self = shift; $self->name || return {};
 
    my %stat_hash = ( id => $self->filename );
 
-   @stat_hash{ @STAT_FIELDS } = stat $self->pathname;
+   @stat_hash{ @STAT_FIELDS } = stat $self->name;
    return \%stat_hash;
 }
 
 sub tempfile {
    my ($self, $tmplt) = @_; my ($tempdir, $tmpfh);
 
-   unless ($tempdir = $self->pathname and -d $tempdir) {
+   unless ($tempdir = $self->name and -d $tempdir) {
       $tempdir = File::Spec->tmpdir;
    }
 
@@ -676,20 +728,24 @@ sub throw {
 sub touch {
    my ($self, @rest) = @_;
 
-   $self->pathname || return;
+   $self->name || return;
 
-   if (-e $self->pathname) {
-      my $now = time; utime $now, $now, $self->pathname;
+   if (-e $self->name) {
+      my $now = time; utime $now, $now, $self->name;
    }
    else { $self->_open_file( q(w), $self->_perms || oct q(0664) )->close }
 
    return $self;
 }
 
+sub unlink {
+   my $self = shift; return unlink $self->name;
+}
+
 sub unlock {
    my $self = shift; $self->_lock || return;
 
-   if ($self->lock_obj) { $self->lock_obj->reset( k => $self->pathname ) }
+   if ($self->lock_obj) { $self->lock_obj->reset( k => $self->name ) }
    else { flock $self->io_handle, LOCK_UN }
 
    return $self;
@@ -717,7 +773,7 @@ sub write {
 
 __PACKAGE__->meta->make_immutable;
 
-no Moose; no Moose::Util::TypeConstraints;
+no Moose;
 
 1;
 
@@ -726,7 +782,6 @@ __END__
 =pod
 
 =head1 Name
-
 File::DataClass::IO - Better IO syntax
 
 =head1 Version
@@ -749,10 +804,10 @@ File::DataClass::IO - Better IO syntax
    }
 
    # Read the first line of a file and chomp the result
-   my $line = $self->io( q(path_name) )->chomp->getline;
+   my $line = io( q(path_name) )->chomp->getline;
 
    # Write the line to file set permissions, atomic update and fcntl locking
-   $self->io( q(path_name), q(w), q(0644) )->atomic->lock->print( $line );
+   io( q(path_name), q(w), q(0644) )->atomic->lock->print( $line );
 
 =head1 Description
 
@@ -771,7 +826,8 @@ be called from outside this package
 
 =head2 new
 
-   my $io = File::DataClass::IO->new( $pathname, [ $mode, $perms ] );
+   $io = File::DataClass::IO->new( { name => $pathname, ... } );
+   $io = File::DataClass::IO->new( $pathname, [ $mode, $perms ] );
 
 Called with either a single hash ref containing a list of key value
 pairs which are the object's attributes (where I<name> is the
@@ -779,49 +835,62 @@ pathname) or a list of values which are taken as the pathname, mode and
 permissions. Returns the value from the call to L</_init> which it
 makes without any options
 
+=head2 abs2rel
+
+   $io = io( q(relative_path_to_file) )->abs2rel( q(optional_base_path) );
+
+Makes the pathname relative
+
 =head2 absolute
 
-   my $io = $self->io( q(path_to_file) )->absolute;
-
-Makes the pathname absolute
-
-=head2 All
-
-Same a L</all>(0)
+Calls L</rel2abs> without an optional base path
 
 =head2 all
 
-   my $lines = $self->io( q(path_to_file) )->all;
+   $lines = io( q(path_to_file) )->all;
 
 For a file read all the lines and return them as a single scalar
 
-   my @entries = $self->io( q(path_to_directory) )->all( 1 );
+   @entries = io( q(path_to_directory) )->all( $level );
 
 For directories returns a list of IO objects for all files and
 subdirectories. Excludes L<File::Spec/curdir> and L<File::Spec/updir>
 
 Takes an optional argument telling how many directories deep to
 search. The default is 1. Zero (0) means search as deep as possible
+The default can be changed to zero by calling the L</deep> method
 
 The filter method can be used to limit the results
 
-The items returned are sorted by name unless ->sort(0) is used
+The items returned are sorted by name unless L</sort>(0) is used
+
+=head2 all_dirs
+
+   @entries = io( q(path_to_directory) )->all_dirs( $level );
+
+Like C<< ->all( $level ) >> but returns only directories
+
+=head2 all_files
+
+   @entries = io( q(path_to_directory) )->all_files( $level );
+
+Like C<< ->all( $level ) >> but returns only files
 
 =head2 append
 
-   $self->io( q(path_to_file) )->append( $line1, $line2, ... );
+   io( q(path_to_file) )->append( $line1, $line2, ... );
 
 Opens the file in append mode and calls L</print> with the passed args
 
 =head2 appendln
 
-   $self->io( q(path_to_file) )->appendln( $line, $line2, ... );
+   io( q(path_to_file) )->appendln( $line, $line2, ... );
 
 Opens the file in append mode and calls L</println> with the passed args
 
 =head2 assert
 
-   my $io = $self->io( q(path_to_file) )->assert;
+   $io = io( q(path_to_file) )->assert;
 
 Sets the private attribute B<_assert> to true. Causes the open methods
 to create the path to the directory before the file/directory is
@@ -829,26 +898,26 @@ opened
 
 =head2 assert_dirpath
 
-   $self->io( q(path_to_file) )->assert_dirpath;
+   io( q(path_to_file) )->assert_dirpath;
 
 Create the given directory if it doesn't already exist
 
 =head2 assert_filepath
 
-   $self->io( q(path_to_file) )->assert_filepath;
+   io( q(path_to_file) )->assert_filepath;
 
 Calls L</assert_dirpath> on the directory part of the full pathname
 
 =head2 assert_open
 
-   my $io = $self->io( q(path_to_file) )->assert_open( $mode, $perms );
+   $io = io( q(path_to_file) )->assert_open( $mode, $perms );
 
 Calls L</file> to default the type if its not already set and then
 calls L</open> passing in the optional arguments
 
 =head2 atomic
 
-   my $io = $self->io( q(path_to_file) )->atomic;
+   $io = io( q(path_to_file) )->atomic;
 
 Implements atomic file updates by writing to a temporary file and then
 renaming it on closure. This method stores the temporary pathname in the
@@ -856,19 +925,19 @@ B<_atomic> attribute
 
 =head2 basename
 
-   $dirname = $self->io( q(path_to_file) )->basename( @suffixes );
+   $dirname = io( q(path_to_file) )->basename( @suffixes );
 
 Returns the L<File::Basename> C<basename> of the passed path
 
 =head2 binary
 
-   my $io = $self->io( q(path_to_file) )->binary;
+   $io = io( q(path_to_file) )->binary;
 
 Sets binary mode
 
 =head2 binmode
 
-   my $io = $self->io( q(path_to_file) )->binmode( $layer );
+   $io = io( q(path_to_file) )->binmode( $layer );
 
 Sets binmode to the given layer
 
@@ -876,13 +945,31 @@ Sets binmode to the given layer
 
 The internal buffer used by L</read> and L</write>
 
+=head2 canonpath
+
+   $canonpath = io( '././path_to_file' )->canonpath;
+
+Returns the canonical path for the object
+
+=head2 catdir
+
+Create a new C<IO> directory object by concatenating this objects pathname
+with the one that is supplied
+
+=head2 catfile
+
+Create a new C<IO> file object by concatenating this objects pathname
+with the one that is supplied
+
 =head2 chomp
 
-   my $io = $self->io( q(path_to_file) )->chomp;
+   $io = io( q(path_to_file) )->chomp;
 
 Causes input lines to be chomped when L</getline> or L</getlines> are called
 
 =head2 clear
+
+   $io->clear
 
 Set the contents of the internal buffer to the null string
 
@@ -901,6 +988,13 @@ Closes the open directory handle.
 If the temporary atomic file exists, renames it to the original
 filename. Unlocks the file if it was locked. Closes the file handle
 
+=head2 deep
+
+   @files = io( 'path_to_root_of_tree' )->deep->all_files
+
+Changes the default level for the L</all> methods to zero so
+that the whole directory tree is searched
+
 =head2 delete
 
 Deletes the atomic update temporary file if it exists. Then calls
@@ -908,7 +1002,7 @@ L</_close_file>
 
 =head2 delete_tmp_files
 
-   $self->io( $tempdir )->delete_tmp_files( $template );
+   io( $tempdir )->delete_tmp_files( $template );
 
 Delete temporary files for this process (temporary file names include
 the process id). Temporary files are stored in the C<$tempdir>. Can override
@@ -930,7 +1024,7 @@ directory
 
 =head2 dirname
 
-   $dirname = $self->io( q(path_to_file) )->dirname;
+   $dirname = io( q(path_to_file) )->dirname;
 
 Returns the L<File::Basename> C<dirname> of the passed path
 
@@ -940,7 +1034,7 @@ Returns true if the pathname exists and is zero bytes in size
 
 =head2 encoding
 
-   my $io = $self->io( q(path_to_file) )->encoding( $encoding );
+   $io = io( q(path_to_file) )->encoding( $encoding );
 
 Apply the given encoding to the open file handle and store it on the
 B<_encoding> attribute
@@ -965,6 +1059,12 @@ Returns the filename part of pathname
 =head2 filepath
 
 Returns the directory part of pathname
+
+=head2 filter
+
+Takes a subroutine reference that is used by the L</all> methods to
+filter which entries are returned. Called with C<$_> set to each
+pathname in turn. It should return true if the entry is wanted
 
 =head2 getline
 
@@ -1032,15 +1132,33 @@ Return true if the pathname is absolute
 
 =head2 is_dir
 
-   my $bool = $self->io( q(path_to_file) )->is_dir;
+   $bool = io( q(path_to_file) )->is_dir;
 
 Tests to see if the I<IO> object is a directory
 
+=head2 is_executable
+
+   $bool = io( q(path_to_file) )->is_executable;
+
+Tests to see if the I<IO> object is executable
+
 =head2 is_file
 
-   my $bool = $self->io( q(path_to_file) )->is_file;
+   $bool = io( q(path_to_file) )->is_file;
 
 Tests to see if the I<IO> object is a file
+
+=head2 is_readable
+
+   $bool = io( q(path_to_file) )->is_readable;
+
+Tests to see if the I<IO> object is readable
+
+=head2 is_writable
+
+   $bool = io( q(path_to_file) )->is_writable;
+
+Tests to see if the I<IO> object is writable
 
 =head2 length
 
@@ -1048,10 +1166,22 @@ Returns the length of the internal buffer
 
 =head2 lock
 
-   my $io = $self->io( q(path_to_file) )->lock;
+   $io = io( q(path_to_file) )->lock;
 
 Causes L</_open_file> to set a shared flock if its a read an exclusive
 flock for any other mode
+
+=head2 mkdir
+
+   io( q(path_to_directory) )->mkdir;
+
+Create the specified directory
+
+=head2 mkpath
+
+   io( q(path_to_directory) )->mkpath;
+
+Create the specified path
 
 =head2 next
 
@@ -1061,7 +1191,7 @@ entry. It returns an IO object for that entry
 
 =head2 open
 
-   my $io = $self->io( q(path_to_file) )->open( $mode, $perms );
+   $io = io( q(path_to_file) )->open( $mode, $perms );
 
 Calls either L</_open_dir> or L</_open_file> depending on type. You do not
 usually need to call this method directly. It is called as required by
@@ -1083,13 +1213,13 @@ succeeds L</set_lock> and L</set_binmode> are called
 
 =head2 pathname
 
-   my $pathname = $io->pathname( $pathname );
+   $pathname = $io->pathname( $pathname );
 
 Sets and returns then I<name> attribute
 
 =head2 perms
 
-   my $io = $self->io( q(path_to_file) )->perms( $perms );
+   $io = io( q(path_to_file) )->perms( $perms );
 
 Stores the given permissions on the I<_perms> attribute
 
@@ -1101,14 +1231,14 @@ statement fails
 
 =head2 println
 
-   $self->io( q(path_to_file) )->println( $line1, $line2, ... );
+   io( q(path_to_file) )->println( $line1, $line2, ... );
 
 Calls L</print> appending a newline to each of the passed list args
 that doesn't already have one
 
 =head2 read
 
-   my $bytes_read = $self->io( q(path_to_file) )->read( $buffer, $length );
+   $bytes_read = io( q(path_to_file) )->read( $buffer, $length );
 
 Asserts that the pathname is open for reading then calls L</read> on
 the open file handle. If called with args then these are passed to the
@@ -1120,6 +1250,28 @@ instead. Returns the number of bytes read
 Asserts that the file is open for reading. If called in an array context
 returns a list of all the entries in the directory. If called in a scalar
 context returns the first/next entry in the directory
+
+=head2 rel2abs
+
+   $io = io( q(relative_path_to_file) )->rel2abs( q(optional_base_path) );
+
+Makes the pathname absolute
+
+=head2 relative
+
+Calls L</abs2rel> without an optional base path
+
+=head2 rmdir
+
+Remove the director
+
+=head2 rmtree
+
+Remove the directory tree
+
+=head2 separator
+
+Set the record separator used in calls to getlines and chomp
 
 =head2 set_binmode
 
@@ -1134,6 +1286,14 @@ Calls L</flock> on the open file handle
 In a scalar context calls L</all> and returns its value. In an array
 context returns the list created by splitting the scalar return value
 on the system record separator. Will chomp each line if required
+
+=head2 splitdir
+
+Proxy for L<File::Spec/splitdir>
+
+=head2 splitpath
+
+Proxy for L<File::Spec/splitpath>
 
 =head2 stat
 
@@ -1155,6 +1315,10 @@ Create a zero length file if one does not already exist with given
 file system permissions which default to 0664 octal. If the file
 already exists update it's last modified datetime stamp
 
+=head2 unlink
+
+Delete the specified file
+
 =head2 unlock
 
 Calls C<flock> on the open file handle with the I<LOCK_UN> option to
@@ -1167,7 +1331,7 @@ Sets the current encoding to utf8
 
 =head2 write
 
-   my $bytes_written = $self->io( q(pathname) )->write( $buffer, $length );
+   $bytes_written = io( q(pathname) )->write( $buffer, $length );
 
 Asserts that the file is open for writing then write the C<$length> bytes
 from C<$buffer>. Checks for errors and returns the number of bytes
@@ -1186,9 +1350,15 @@ None
 
 =over 3
 
-=item L<Class::Accessor::Fast>
+=item L<namespace::clean>
 
-=item L<Exception::Class>
+=item L<overload>
+
+=item L<File::DataClass::Constants>
+
+=item L<File::DataClass::Exception>
+
+=item L<Moose>
 
 =back
 

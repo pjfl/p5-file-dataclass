@@ -166,12 +166,16 @@ it returns. Paths are instances of L<File::DataClass::IO>
 Returns a hash ref containing all the elements of the type specified in the
 schema
 
+=head2 txn_do
+
 =head2 update
 
    $bool = $self->update( $element_obj );
 
 Updates the specified element object returning true if successful. Throws
 an error otherwise
+
+=head2 validate_params
 
 =head1 Diagnostics
 
