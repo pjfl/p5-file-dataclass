@@ -16,7 +16,7 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 67;
+   plan tests => 68;
    use_ok( q(File::DataClass::IO) );
 }
 
@@ -53,7 +53,6 @@ is( "$io", File::Spec->rel2abs( $PROGRAM_NAME ), 'Stringifies' );
 $io->relative;
 
 is( $io->pathname, File::Spec->abs2rel( $PROGRAM_NAME ), 'Relative paths' );
-
 ok( io( q(t) )->absolute->next->is_absolute, 'Absolute directory paths' );
 
 # All
@@ -163,28 +162,19 @@ is( $f, q(bar), 'Splitpath file' );
 my @dirs = io( catdir( qw(foo bar baz) ) )->splitdir;
 
 is( scalar @dirs, 3, 'Splitdir count' );
-
 is( (join q(+), @dirs), q(foo+bar+baz), 'Splitdir string' );
-
 is( io( catdir( q(), qw(foo bar baz) ) )->abs2rel( catdir( q(), q(foo) ) ),
     f( catdir( qw(bar baz) ) ), 'Can abs2rel' );
-
 is( io( catdir( qw(foo bar baz) ) )->rel2abs( catdir( q(), q(moo) ) ),
     f( catdir( q(), qw(moo foo bar baz) ) ), 'Can rel2abs' );
-
 is( io->dir( catdir( qw(doo foo) ) )->catdir( qw(goo hoo) ),
     f( catdir( qw(doo foo goo hoo) ) ), 'Catdir 1' );
-
 is( io->dir->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 2' );
-
 is( io->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 3' );
-
 is( io->file( catdir( qw(doo foo) ) )->catfile( qw(goo hoo) ),
     f( catfile( qw(doo foo goo hoo) ) ), 'Catfile 1' );
-
 is( io->file->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ),
     'Catfile 2' );
-
 is( io->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ), 'Catfile 3' );
 
 # Print
@@ -202,29 +192,20 @@ is( $io->println( "one" )->println( "two" )->close->slurp, "one\ntwo\n",
 # Read
 
 my $outfile = catfile( qw(t output out.pm) );
+my $input   = io( catfile( qw(lib File DataClass IO.pm) ) )->open;
+my $output  = io( $outfile )->open( q(w) );
+my $buffer; $input->buffer( $buffer ); $output->buffer( $buffer );
 
-ok( !-f $outfile, 'Non existant output file' );
-
-my $input = io( catfile( qw(lib File DataClass IO.pm) ) )->open;
-
-ok( ref $input, 'Open input' );
-
-my $output = io( $outfile )->open( q(w) );
-
-ok( ref $output, 'Open output' );
-
-my $buffer;
-
-$input->buffer( $buffer );
-$output->buffer( $buffer );
-
+ok( !-f $outfile,    'Non existant output file' );
+ok( ref $input,      'Open input' );
+ok( ref $output,     'Open output' );
 ok( defined $buffer, 'Define buffer' );
 
 $output->write while ($input->read);
 
 ok( !length $buffer, 'Empty buffer' );
-
-ok( $output->close, 'Close output' );
+ok( $output->close,  'Close output' );
+ok( -s $outfile,     'Exists output file' );
 
 # Cleanup
 
