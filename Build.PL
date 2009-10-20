@@ -7,6 +7,7 @@ my $TRACKER    = q(http://rt.cpan.org/NoAuth/Bugs.html?Dist=);
 my $REQUIRES   = {
    'perl'                     => 5.008,
    'namespace::autoclean'     => 0.09,
+   'namespace::clean'         => 0.11,
    'overload'                 => 1.04,
    'version'                  => 0.74,
    'Cache::Cache'             => 1.05,
@@ -41,6 +42,17 @@ use File::Spec::Functions;
 use Module::Build;
 use SVN::Class ();
 
+sub repository {
+   # Accessor for the SVN repository information
+   my $file = SVN::Class->svn_file( q(.svn) );
+
+   return unless ($file);
+
+   my $info = $file->info;
+
+   return $info && $info->root !~ m{ \A file: }mx ? $info->root : undef;
+}
+
 my $class_path = catfile( q(lib), split m{ :: }mx, $MODULE.q(.pm) );
 my $distname   = $MODULE; $distname =~ s{ :: }{-}gmx;
 my $repository = repository();
@@ -70,17 +82,6 @@ my $builder = Module::Build->new
      sign               => 1, );
 
 $builder->create_build_script; # Goal
-
-sub repository {
-   # Accessor for the SVN repository information
-   my $file = SVN::Class->svn_file( q(.svn) );
-
-   return unless ($file);
-
-   my $info = $file->info;
-
-   return $info && $info->root !~ m{ \A file: }mx ? $info->root : undef;
-}
 
 # Local Variables:
 # mode: perl
