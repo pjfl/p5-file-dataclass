@@ -1289,6 +1289,10 @@ Remove the director
 
 Remove the directory tree
 
+=head2 seek
+
+Seeks to the selected point in the file
+
 =head2 separator
 
 Set the record separator used in calls to getlines and chomp

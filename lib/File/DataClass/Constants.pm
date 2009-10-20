@@ -92,71 +92,29 @@ Exports a list of subroutines each of which returns a constants value
 
 =head1 Subroutines/Methods
 
-=head2 ACCESS_OK
-
-Access to an action has been granted
-
-=head2 ACCESS_NO_UGRPS
-
-No list of users/groups for selected action
-
-=head2 ACCESS_UNKNOWN_USER
-
-The current user is unknown and anonymous access is not allowed
-
-=head2 ACCESS_DENIED
-
-Access to the selected action for this user is denied
-
-=head2 ACTION_OPEN
-
-Then action is available
-
-=head2 ACTION_HIDDEN
-
-The action is available but does not appear in the navigation menus
-
-=head2 ACTION_CLOSED
-
-The action is not available
-
 =head2 ARRAY
 
 String ARRAY
-
-=head2 BRK
-
-Separate leader (: ) from message
 
 =head2 CODE
 
 String CODE
 
-=head2 DEFAULT_ACTION
+=head2 DIR_PERMS
 
-All controllers should implement this method as a redirect
+Default permissions for directory creation
 
-=head2 DOTS
+=head2 EVIL
 
-Multiple dots ....
+The devil's spawn
 
 =head2 FALSE
 
 Digit 0
 
-=head2 GT
-
 =head2 HASH
 
 String HASH
-
-=head2 HASH_CHAR
-
-Hash character
-
-=head2 LANG
-
-Default language code
 
 =head2 LSB
 
@@ -166,25 +124,21 @@ Left square bracket
 
 Empty string
 
-=head2 ROOT
+=head2 PERMS
 
-Root namespace symbol
-
-=head2 SEP
-
-Slash (/) character
+Default file creation permissions
 
 =head2 SPC
 
 Space character
 
+=head2 STAT_FIELDS
+
+The list of fields returned by the core C<stat> function
+
 =head2 TRUE
 
 Digit 1
-
-=head2 TTS
-
-Help tips title separator string
 
 =head1 Diagnostics
 
