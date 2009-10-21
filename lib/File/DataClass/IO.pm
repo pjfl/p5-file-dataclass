@@ -20,34 +20,38 @@ use IO::File;
 use Moose;
 use Moose::Util::TypeConstraints;
 
+use Sub::Exporter -setup => {
+   exports => [ qw(io) ], groups => { default => [ qw(io) ], },
+};
+
 enum 'Mode' => qw(a a+ r r+ w w+);
 enum 'Type' => qw(dir file);
 
-has 'atomic_pref'     => is => 'rw', isa => 'Str',       default    => q(B_) ;
-has 'autoclose'       => is => 'rw', isa => 'Bool',      default    => TRUE  ;
-has 'block_size'      => is => 'rw', isa => 'Int',       default    => 1024  ;
-has 'dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE  ;
+has 'atomic_pref'     => is => 'rw', isa => 'Str',       default    => q(B_);
+has 'autoclose'       => is => 'rw', isa => 'Bool',      default    => TRUE ;
+has 'block_size'      => is => 'rw', isa => 'Int',       default    => 1024 ;
+has 'dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE ;
 has 'exception_class' => is => 'rw', isa => 'ClassName',
-   default            => q(File::DataClass::Exception)                       ;
-has 'io_handle'       => is => 'rw', isa => 'Maybe[Object]'                  ;
-has 'is_open'         => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has 'lock_obj'        => is => 'rw', isa => 'Maybe[Object]'                  ;
-has 'mode'            => is => 'rw', isa => 'Mode',      default    => q(r)  ;
-has 'name'            => is => 'rw', isa => 'Str',       default    => NUL   ;
-has 'sort'            => is => 'rw', isa => 'Bool',      default    => TRUE  ;
-has 'type'            => is => 'rw', isa => 'Maybe[Type]'                    ;
-has '_assert'         => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_atomic'         => is => 'rw', isa => 'Str',       default    => NUL   ;
-has '_binary'         => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_binmode'        => is => 'rw', isa => 'Str',       default    => NUL   ;
-has '_chomp'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_deep'           => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_encoding'       => is => 'rw', isa => 'Str',       default    => NUL   ;
-has '_filter'         => is => 'rw', isa => 'Maybe[CodeRef]'                 ;
-has '_lock'           => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_perms'          => is => 'rw', isa => 'Num',       default    => PERMS ;
-has '_separator'      => is => 'rw', isa => 'Str',       default    => $RS   ;
-has '_utf8'           => is => 'rw', isa => 'Bool',      default    => FALSE ;
+   default            => q(File::DataClass::Exception)                      ;
+has 'io_handle'       => is => 'rw', isa => 'Maybe[Object]'                 ;
+has 'is_open'         => is => 'rw', isa => 'Bool',      default    => FALSE;
+has 'lock_obj'        => is => 'rw', isa => 'Maybe[Object]'                 ;
+has 'mode'            => is => 'rw', isa => 'Mode',      default    => q(r) ;
+has 'name'            => is => 'rw', isa => 'Str',       default    => NUL  ;
+has 'sort'            => is => 'rw', isa => 'Bool',      default    => TRUE ;
+has 'type'            => is => 'rw', isa => 'Maybe[Type]'                   ;
+has '_assert'         => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_atomic'         => is => 'rw', isa => 'Str',       default    => NUL  ;
+has '_binary'         => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_binmode'        => is => 'rw', isa => 'Str',       default    => NUL  ;
+has '_chomp'          => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_deep'           => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_encoding'       => is => 'rw', isa => 'Str',       default    => NUL  ;
+has '_filter'         => is => 'rw', isa => 'Maybe[CodeRef]'                ;
+has '_lock'           => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_perms'          => is => 'rw', isa => 'Num',       default    => PERMS;
+has '_separator'      => is => 'rw', isa => 'Str',       default    => $RS  ;
+has '_utf8'           => is => 'rw', isa => 'Bool',      default    => FALSE;
 
 around BUILDARGS => sub {
    my ($orig, $class, @rest) = @_; my $attrs;
@@ -458,6 +462,10 @@ sub _init {
    return $self;
 }
 
+sub io {
+   return __PACKAGE__->new( @_ );
+}
+
 sub is_absolute {
    my $self = shift; return File::Spec->file_name_is_absolute( $self->name );
 }
@@ -610,13 +618,14 @@ sub read {
 }
 
 sub read_dir {
-   my $self = shift; my $dir_pat = $self->dir_pattern; my ($name, @names);
+   my $self = shift; my $dir_pat = $self->dir_pattern; my $name;
 
    $self->type || $self->dir;
    $self->assert_open;
 
    if (wantarray) {
-      @names = grep { $_ !~ $dir_pat } $self->io_handle->read;
+      my @names = grep { $_ !~ $dir_pat } $self->io_handle->read;
+
       $self->_close_dir;
       return @names;
    }
@@ -1145,6 +1154,10 @@ method. The L</file> method is called by the L</assert_open> method if
 the I<type> attribute is false
 
 =back
+
+=head2 io
+
+Subroutine exported by default. Return a new IO object
 
 =head2 is_absolute
 

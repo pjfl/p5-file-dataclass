@@ -21,10 +21,6 @@ BEGIN {
    use_ok( q(File::DataClass) );
 }
 
-sub io {
-   return File::DataClass::IO->new( @_ );
-}
-
 sub test {
    my ($obj, $method, @args) = @_; local $EVAL_ERROR;
 
@@ -66,7 +62,9 @@ my $args = {}; $args->{name} = q(dummy); $e = test( $obj, q(create), $args );
 
 is( $e, 'No file path specified', 'No file path specified' );
 
-$args->{path} = q(t/default.xml); $e = test( $obj, q(create), $args );
+my $path = catfile( qw(t default.xml) );
+
+$args->{path} = $path; $e = test( $obj, q(create), $args );
 
 is( $e, 'No element specified', 'No element specified' );
 
@@ -102,36 +100,38 @@ $e = test( $obj, q(delete), $args );
 
 ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
 
-$args = { data => $obj->load( q(t/default.xml) ), path => q(t/dumped.xml) };
+my $dumped = catfile( qw(t dumped.xml) );
+
+$args = { data => $obj->load( $path ), path => $dumped };
 
 test( $obj, q(dump), $args );
 
-my $diff = diff q(t/default.xml), q(t/dumped.xml);
+my $diff = diff $path, $dumped;
 
 ok( !$diff, 'Load and dump roundtrips' );
 
 $schema->element( q(fields) ); $schema->attributes( [ qw(width) ] );
-$args = { name => q(feedback.body), path => q(t/default.xml) };
+$args = { name => q(feedback.body), path => $path };
 
 $res = test( $obj, q(list), $args );
 
 ok( $res->element->width == 72 && scalar @{ $res->list } == 3, 'Can list' );
 
 $schema->element( q(levels) ); $schema->attributes( [ qw(acl state) ] );
-$args = { list => q(acl), name => q(admin), path => q(t/default.xml) };
+$args = { list => q(acl), name => q(admin), path => $path };
 $args->{items} = [ qw(group1 group2) ];
 $res  = test( $obj, q(push), $args );
 
 ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
     'Can push' );
 
-$args = { criterion => { acl => q(@support) }, path => q(t/default.xml) };
+$args = { criterion => { acl => q(@support) }, path => $path };
 
 my @res = test( $obj, q(search), $args );
 
 ok( $res[0] && $res[0]->name eq q(admin), 'Can search' );
 
-$args = { list => q(acl), name => q(admin), path => q(t/default.xml) };
+$args = { list => q(acl), name => q(admin), path => $path };
 $args->{items} = [ qw(group1 group2) ];
 $res  = test( $obj, q(splice), $args );
 
@@ -140,9 +140,9 @@ ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
 
 # Cleanup
 
-io( 't/dumped.xml'     )->unlink;
-io( 't/ipc_srlock.lck' )->unlink;
-io( 't/ipc_srlock.shm' )->unlink;
+unlink $dumped;
+unlink catfile( qw(t ipc_srlock.lck) );
+unlink catfile( qw(t ipc_srlock.shm) );
 
 # Local Variables:
 # mode: perl

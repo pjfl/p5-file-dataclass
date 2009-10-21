@@ -20,10 +20,6 @@ BEGIN {
    use_ok( q(File::DataClass::IO) );
 }
 
-sub io {
-   return File::DataClass::IO->new( @_ );
-}
-
 isa_ok( io( $PROGRAM_NAME ), q(File::DataClass::IO) );
 
 # Error
