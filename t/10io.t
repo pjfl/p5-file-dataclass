@@ -16,7 +16,7 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 82;
+   plan tests => 84;
    use_ok( q(File::DataClass::IO) );
 }
 
@@ -77,18 +77,18 @@ is( io->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ), 'Catfile 3' );
 
 my $io = io( $PROGRAM_NAME )->absolute;
 
-is( "$io", File::Spec->rel2abs( $PROGRAM_NAME ), 'Stringifies' );
+is( "$io", File::Spec->rel2abs( $PROGRAM_NAME ), 'Absolute' );
 
 $io->relative;
 
-is( $io->pathname, File::Spec->abs2rel( $PROGRAM_NAME ), 'Relative paths' );
+is( "$io", File::Spec->abs2rel( $PROGRAM_NAME ), 'Relative' );
 ok( io( q(t) )->absolute->next->is_absolute, 'Absolute directory paths' );
 
 # Stat
 
 my ($device, $inode, $mode, $nlink, $uid, $gid, $device_id,
     $size, $atime, $mtime, $ctime, $blksize, $blocks) = stat( $PROGRAM_NAME );
-my $stat = io( $PROGRAM_NAME )->stat;
+my $stat = $io->stat;
 
 is( $stat->{device},    $device,      'Stat device'      );
 is( $stat->{inode},     $inode,       'Stat inode'       );
@@ -188,13 +188,17 @@ ok( -d catfile( qw(t output newpath) ), 'Writing file creates directory' );
 
 $io = io( catfile( qw(t output print.t) ) );
 
+is( $io->print( "one" )->print( "two" )->close->slurp, 'onetwo', 'Print 1' );
+
+$io = io( catfile( qw(t output print.t) ) );
+
 is( $io->print( "one\n" )->print( "two\n" )->close->slurp, "one\ntwo\n",
-    'Print 1' );
+    'Print 2' );
 
 $io = io( catfile( qw(t output print.t) ) );
 
 is( $io->println( "one" )->println( "two" )->close->slurp, "one\ntwo\n",
-    'Print 2' );
+    'Print 3' );
 
 # Empty
 
@@ -242,6 +246,8 @@ $output->write while ($input->read);
 ok( !length $buffer, 'Empty buffer' );
 ok( $output->close,  'Close output' );
 ok( -s $outfile,     'Exists output file' );
+
+ok( $input->stat->{size} == $output->stat->{size}, 'File sizes match' );
 
 # Cleanup
 

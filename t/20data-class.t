@@ -17,7 +17,7 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 18;
+   plan tests => 20;
    use_ok( q(File::DataClass) );
 }
 
@@ -117,16 +117,26 @@ $res = test( $obj, q(list), $args );
 
 ok( $res->element->width == 72 && scalar @{ $res->list } == 3, 'Can list' );
 
-# push
-
 $schema->element( q(levels) ); $schema->attributes( [ qw(acl state) ] );
-$args = { path => q(t/default.xml), criterion => { acl => q(@support) } };
+$args = { list => q(acl), name => q(admin), path => q(t/default.xml) };
+$args->{items} = [ qw(group1 group2) ];
+$res  = test( $obj, q(push), $args );
+
+ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
+    'Can push' );
+
+$args = { criterion => { acl => q(@support) }, path => q(t/default.xml) };
 
 my @res = test( $obj, q(search), $args );
 
 ok( $res[0] && $res[0]->name eq q(admin), 'Can search' );
 
-# splice
+$args = { list => q(acl), name => q(admin), path => q(t/default.xml) };
+$args->{items} = [ qw(group1 group2) ];
+$res  = test( $obj, q(splice), $args );
+
+ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
+    'Can splice' );
 
 # Cleanup
 
