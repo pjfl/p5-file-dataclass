@@ -53,7 +53,7 @@ sub set {
 
       my $mtimes = $self->cache->get( q(mtimes) ) || {};
 
-      $mtimes->{ $key } = $meta->{mtime} || 0;
+      $mtimes->{ $key } = $meta->{mtime};
       $self->cache->set( q(mtimes), $mtimes );
    }
 

@@ -17,7 +17,7 @@ has '_arrays'   => is => 'rw', isa => 'HashRef',  default => sub { return {} };
 has '_dtd'      => is => 'rw', isa => 'ArrayRef', default => sub { return [] };
 
 around '_meta_pack' => sub {
-   my ($orig, $self, $attrs) = @_; my $packed = $self->$orig( $attrs );
+   my ($orig, $self, $args) = @_; my $packed = $self->$orig( $args );
 
    $packed->{_dtd} = $self->_dtd if ($self->_dtd);
 

@@ -54,6 +54,8 @@ sub load {
 
    return $data if ($data and not $stale); $data = {};
 
+   return $self->_read_file( $paths[0], FALSE ) || {} if (scalar @paths == 1);
+
    for my $path (@paths) {
       next unless ($red = $self->_read_file( $path, FALSE ));
 
@@ -117,11 +119,13 @@ sub _delete {
 }
 
 sub _meta_pack {
-   my ($self, $attrs) = @_; return $attrs;
+   # Can be modified in a subclass
+   my ($self, $mtime) = @_; return { mtime => $mtime };
 }
 
 sub _meta_unpack {
-   my ($self, $attrs) = @_; return $attrs;
+   # Can be modified in a subclass
+   my ($self, $attrs) = @_; return $attrs->{mtime};
 }
 
 sub _read_file {
@@ -133,15 +137,13 @@ sub _read_file {
 
    my $path_mtime    = $path->stat->{mtime};
    my ($data, $meta) = $self->cache->get( $pathname );
+   my $cache_mtime   = $self->_meta_unpack( $meta );
 
-   $meta = $self->_meta_unpack( $meta );
-
-   if (not $data or $meta->{mtime} < $path_mtime) {
+   if (not $data or $cache_mtime < $path_mtime) {
       try        { $data = inner( $path->lock ) }
       catch ($e) { $self->lock->reset( k => $pathname ); $self->throw( $e ) }
 
-      $meta = $self->_meta_pack( { mtime => $path_mtime } );
-      $self->cache->set( $pathname, $data, $meta );
+      $self->cache->set( $pathname, $data, $self->_meta_pack( $path_mtime ) );
 
       $self->log->debug( "Read file  $pathname" ) if ($self->debug);
    }
