@@ -25,18 +25,11 @@ has 'schema_attributes' =>
 has 'schema_class' =>
    is => 'ro', isa => 'ClassName', default => q(File::DataClass::Schema);
 has 'schema' =>
-   is => 'ro', isa => 'Object',    lazy_build => 1, init_arg => undef;
-
-sub _build_schema {
-   my $self = shift;
-
-   my $attrs = { %{ $self->schema_attributes }, source => $self };
-
-   return $self->schema_class->new( $attrs );
-}
+   is => 'ro', isa => 'Object',    lazy_build => 1, init_arg => undef,
+   handles => [ qw(load) ];
 
 sub resultset {
-   my ($self, $path) = @_; $path ||= $self->path;
+   my ($self, $args) = @_; my $path = $args->{path} || $self->path;
 
    $path = $self->io( $path ) if ($path and not blessed $path);
 
@@ -46,6 +39,53 @@ sub resultset {
                  path => $path, schema => $self->schema };
 
    return $self->resultset_class->new( $attrs );
+}
+
+sub create {
+   my ($self, $args) = @_; return $self->resultset( $args )->create( $args );
+}
+
+sub delete {
+   my ($self, $args) = @_; return $self->resultset( $args )->delete( $args );
+}
+
+sub find {
+   my ($self, $args) = @_; return $self->resultset( $args )->find( $args );
+}
+
+sub list {
+   my ($self, $args) = @_; return $self->resultset( $args )->list( $args );
+}
+
+sub push {
+   my ($self, $args) = @_; return $self->resultset( $args )->push( $args );
+}
+
+sub search {
+   my ($self, $args) = @_; return $self->resultset( $args )->search( $args );
+}
+
+sub splice {
+   my ($self, $args) = @_; return $self->resultset( $args )->splice( $args );
+}
+
+sub update {
+   my ($self, $args) = @_; return $self->resultset( $args )->update( $args );
+}
+
+sub dump {
+   # Moose bug. Cannot delegate to a method called dump
+   my ($self, $args) = @_; return $self->schema->dump( $args );
+}
+
+# Private methods
+
+sub _build_schema {
+   my $self = shift;
+
+   my $attrs = { %{ $self->schema_attributes }, source => $self };
+
+   return $self->schema_class->new( $attrs );
 }
 
 __PACKAGE__->meta->make_immutable;

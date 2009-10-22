@@ -38,44 +38,12 @@ has 'result_source_attributes' => is => 'ro', isa => 'HashRef',
 has 'result_source_class'      => is => 'ro', isa => 'ClassName',
    default                     => q(File::DataClass::ResultSource);
 has 'result_source'            => is => 'ro', isa => 'Object',
-   lazy_build                  => TRUE;
-
-sub create {
-   my ($self, $args) = @_; return $self->_resultset( $args )->create( $args );
-}
-
-sub delete {
-   my ($self, $args) = @_; return $self->_resultset( $args )->delete( $args );
-}
+   lazy_build                  => TRUE, handles =>
+   [ qw(create delete find list load push search splice update) ];
 
 sub dump {
-   my ($self, $args) = @_; return $self->result_source->schema->dump( $args );
-}
-
-sub find {
-   my ($self, $args) = @_; return $self->_resultset( $args )->find( $args );
-}
-
-sub list {
-   my ($self, $args) = @_; return $self->_resultset( $args )->list( $args );
-}
-
-sub load {
-   my ($self, @paths) = @_;
-
-   return $self->result_source->schema->load( @paths );
-}
-
-sub push {
-   my ($self, $args) = @_; return $self->_resultset( $args )->push( $args );
-}
-
-sub search {
-   my ($self, $args) = @_; return $self->_resultset( $args )->search( $args );
-}
-
-sub splice {
-   my ($self, $args) = @_; return $self->_resultset( $args )->splice( $args );
+   # Moose bug. Cannot delegate to a method called dump
+   my ($self, $args) = @_; return $self->result_source->dump( $args );
 }
 
 sub translate {
@@ -101,10 +69,6 @@ sub translate {
    $dest->dump( { path => $args->{to}, data => $data } );
 
    return;
-}
-
-sub update {
-   my ($self, $args) = @_; return $self->_resultset( $args )->update( $args );
 }
 
 # Private methods
@@ -150,12 +114,6 @@ sub _build_result_source {
    $storage->{lock } ||= $self->lock;
 
    return $self->result_source_class->new( $attrs );
-}
-
-sub _resultset {
-   my ($self, $args) = @_; $args ||= {};
-
-   return $self->result_source->resultset( $args->{path} );
 }
 
 __PACKAGE__->meta->make_immutable;
