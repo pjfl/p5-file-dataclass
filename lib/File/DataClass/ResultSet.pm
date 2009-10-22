@@ -353,12 +353,17 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Synopsis
 
-   my $attrs  = { schema_attributes => $schema_attributes };
-   my $source = File::DataClass::ResultSource->new( $attrs ) );
-   my $rs     = $source->resultset( $path );
-   my $result = $rs->search( $where );
+   use File:DataClass;
 
-   for $element_obj ($result->next) {
+   $attrs = { result_source_attributes => { schema_attributes => { ... } } };
+
+   $result_source = File::DataClass->new( $attrs )->result_source;
+
+   $rs = $result_source->resultset( { path => q(path_to_data_file) } );
+
+   $result = $rs->search( { where => $hash_ref_of_where_clauses } );
+
+   for $element_object ($result->next) {
       # Do something with the element object
    }
 
@@ -380,54 +385,62 @@ Returns all the elements that are returned by the L</search> call
 
 =head2 create
 
-   $element_obj = $rs->create( $attrs );
+   $new_element_name = $rs->create( $args );
 
-Creates and returns a new L<element|File::DataClass::Element>
-object from the attributes provided
+Creates and inserts an new element. The C<$args> hash requires these
+keys; I<name> of the element to create and I<fields> is a hash
+containing the attributes of the new element. Missing attributes are
+defaulted from the I<defaults> attribute of the
+L<File::DataClass::Schema> object. Returns the new element's name
 
 =head2 delete
 
+   $rs->delete( { name => $of_element_to_delete } );
+
+Deletes an element
+
 =head2 find
 
-   $element_obj = $rs->find( $name );
+   $element_object = $rs->find( { name => $of_element_to_find } );
 
 Finds the named element and returns an
 L<element|File::DataClass::Element> object for it
 
-=head2 find_and_update
-
-   $element_obj = $rs->find_and_update( $name, $attrs );
-
-Finds the named element object and updates it's attributes
-
 =head2 first
 
-   $element_obj = $rs->search( $where )->first;
+   $element_object = $rs->search( { where => $where_clauses } )->first;
 
 Returns the first element object that is the result of the search call
 
 =head2 list
 
-   $list = $rs->list( $name );
+   $list_obect = $rs->list( { name => $name } );
 
 Returns a L<list|File::DataClass::List> object
 
+Retrieves the named element and a list of elements
+
 =head2 last
 
-   $element_obj = $rs->search( $where )->last;
+   $element_object = $rs->search( { where => $where } )->last;
 
 Returns the last element object that is the result of the search call
 
 =head2 next
 
-   $element_obj = $rs->search( $where )->next;
+   $element_object = $rs->search( { where => $where } )->next;
 
 Iterate over the elements returned by the search call
 
 =head2 push
-   ($attrs, $added) = $rs->push( $name, $list, $items );
 
-Adds items to the attribute list
+   $added = $rs->push( { name => $name, list => $list, items => $items } );
+
+Adds items to the attribute list. The C<$args> hash requires these
+keys; I<name> the element to edit, I<list> the attribute of the named
+element containing the list of existing items, I<req> the request
+object and I<items> the field on the request object containing the
+list of new items
 
 =head2 reset
 
@@ -435,7 +448,7 @@ Resets the resultset's cursor, so you can iterate through the elements again
 
 =head2 search
 
-   $result = $rs->search( $where );
+   $result = $rs->search( { where => $hash_ref_of_where_clauses } );
 
 Search for elements that match the given criterion. The criterion is a hash
 ref whose keys are element attribute names. The criterion values are either
@@ -444,15 +457,25 @@ the corresponding element attribute values. Hash ref keys are treated as
 comparison operators, the hash ref values are compared with the element
 attribute values, e.g.
 
-   $where = { quick_links => { '>=' => 0 } };
+   $where = { 'some_element_attribute_name' => { '>=' => 0 } };
 
 =head2 splice
 
-   ($attrs, $removed) = $rs->splice( $name, $list, $items );
+   $removed = $rs->splice( { name => $name, list => $list, items => $items } );
 
 Removes items from the attribute list
 
 =head2 update
+
+   $rs->update( { name => $of_element, fields => $attr_hash } );
+
+Updates the named element
+
+=head2 _find_and_update
+
+   $updated_element_name = $rs->_find_and_update( $name, $attrs );
+
+Finds the named element object and updates it's attributes
 
 =head1 Diagnostics
 

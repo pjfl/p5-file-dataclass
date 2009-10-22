@@ -17,34 +17,31 @@ use IPC::SRLock;
 
 with qw(File::DataClass::Util);
 
-has 'debug'   => is => 'ro', isa => 'Bool', default => FALSE;
-has 'log'     => is => 'ro', isa => 'Object',
-   default    => sub { Class::Null->new };
-has 'tempdir' => is => 'ro', isa => 'Str',
-   default    => sub { File::Spec->tmpdir };
+has 'debug'   =>
+   is => 'ro', isa => 'Bool',      default    => FALSE;
+has 'log'     =>
+   is => 'ro', isa => 'Object',    default    => sub { Class::Null->new };
+has 'tempdir' =>
+   is => 'ro', isa => 'Str',       default    => sub { File::Spec->tmpdir };
 
-has 'cache_attributes' => is => 'ro', isa => 'HashRef',
-   default             => sub { return {} };
-has 'cache'            => is => 'rw', isa => 'Object', lazy_build => TRUE;
+has 'cache_attributes' =>
+   is => 'ro', isa => 'HashRef',   default    => sub { return {} };
+has 'cache'            =>
+   is => 'rw', isa => 'Object',    lazy_build => TRUE;
 
-has 'lock_attributes'  => is => 'ro', isa => 'HashRef',
-   default             => sub { return {} };
-has 'lock_class'       => is => 'ro', isa => 'ClassName',
-   default             => q(IPC::SRLock);
-has 'lock'             => is => 'rw', isa => 'Object', lazy_build => TRUE;
+has 'lock_attributes'  =>
+   is => 'ro', isa => 'HashRef',   default    => sub { return {} };
+has 'lock_class'       =>
+   is => 'ro', isa => 'ClassName', default    => q(IPC::SRLock);
+has 'lock'             =>
+   is => 'rw', isa => 'Object',    lazy_build => TRUE;
 
 has 'result_source_attributes' =>
-   is => 'ro', isa => 'HashRef',   default => sub { return {} };
-has 'result_source_class' =>
+   is => 'ro', isa => 'HashRef',   default    => sub { return {} };
+has 'result_source_class'      =>
    is => 'ro', isa => 'ClassName', default => q(File::DataClass::ResultSource);
-has 'result_source' =>
-   is => 'ro', isa => 'Object',    lazy_build => TRUE, init_arg => undef,
-   handles => [ qw(load) ];
-
-sub dump {
-   # Moose bug. Cannot delegate to a method called dump
-   my ($self, $args) = @_; return $self->result_source->dump( $args );
-}
+has 'result_source'            =>
+   is => 'ro', isa => 'Object',    lazy_build => TRUE, init_arg => undef;
 
 sub translate {
    my ($self, $args) = @_;
@@ -58,13 +55,13 @@ sub translate {
       }
    };
    my $class  = blessed $self;
-   my $source = $class->new( $attrs );
+   my $source = $class->new( $attrs )->result_source;
    my $data   = $source->load( $args->{from} ) || {};
 
    $attrs->{result_source_attributes}->{schema_attributes}->{storage_class}
       = $args->{to_class};
 
-   my $dest   = $class->new( $attrs );
+   my $dest   = $class->new( $attrs )->result_source;
 
    $dest->dump( { path => $args->{to}, data => $data } );
 
@@ -138,7 +135,7 @@ File::DataClass - Read and write structured data files
 
    use File::DataClass;
 
-   my $file_obj = File::DataClass->new( tempdir => '/var/yourapp/tmp' );
+   my $object = File::DataClass->new( tempdir => '/var/yourapp/tmp' );
 
 =head1 Description
 
@@ -152,8 +149,6 @@ This class defines these attributes
 
 =over 3
 
-=item B<path>
-
 =item B<debug>
 
 =item B<log>
@@ -161,8 +156,6 @@ This class defines these attributes
 =item B<tempdir>
 
 =item B<cache_attributes>
-
-=item B<cache_class>
 
 =item B<cache>
 
@@ -182,79 +175,11 @@ This class defines these attributes
 
 =head1 Subroutines/Methods
 
-=head2 create
-
-   $file_obj->create( { path => $to_file, name => $of_element, fields => $attr_hash } );
-
-Creates a new element. The args hash requires these keys; I<path>
-of the file to edit, I<name> of the element to edit and I<fields> is a hash
-containing the attributes of the new element. Missing attributes are
-defaulted from the I<defaults> attribute of the
-L<File::DataClass::Schema> object
-
-=head2 delete
-
-   $file_obj->delete( { path => $to_file, name => $of_element } );
-
-Deletes an element
-
-=head2 dump
-
-   $file_obj->dump( { path => $to_file, data => $data_hash } );
-
-Dumps the data structure to a file
-
-=head2 find
-
-   $file_obj->find( { path => $to_file, name => $of_element } );
-
-Retrieves the named element
-
-=head2 list
-
-   $file_obj->list( { path => $to_file, name => $of_element } );
-
-Retrieves the named element and a list of elements
-
-=head2 load
-
-   $file_obj->load( @paths );
-
-Returns the merged data structure from the named files
-
-=head2 push
-
-   $file_obj->push( $args );
-
-Add new items to an attribute list. The C<$args> hash requires these
-keys; I<path> the file to edit, I<name> the element to edit, I<list>
-the attribute of the named element containing the list of existing
-items, I<req> the request object and I<items> the field on the request
-object containing the list of new items
-
-=head2 search
-
-   $file_obj->search( { path => $to_file, where => $to_search_for } );
-
-Search for elements that match the supplied criteria
-
-=head2 splice
-
-   $file_obj->splice( $args );
-
-Removes items from an attribute list
-
 =head2 translate
 
-   $file_obj->translate( { from => $source_path, to => $dest_path } );
+   $object->translate( { from => $source_path, to => $dest_path } );
 
 Reads a file in one format and writes it back out in another format
-
-=head2 update
-
-   $file_obj->update(  { path => $to_file, name => $of_element, fields => $attr_hash } );
-
-Updates the named element
 
 =head1 Diagnostics
 

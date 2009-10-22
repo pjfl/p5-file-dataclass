@@ -39,7 +39,9 @@ isa_ok( $obj, q(File::DataClass) );
 
 my $path = catfile( qw(t aliases) ); my $dumped = catfile( qw(t dumped) );
 
-$obj->dump( { data => $obj->load( $path ), path => $dumped } );
+my $data = $obj->result_source->load( $path );
+
+$obj->result_source->dump( { data => $data, path => $dumped } );
 
 my $diff = diff $path, $dumped;
 

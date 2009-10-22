@@ -211,7 +211,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Storage - Factory subclass loader
+File::DataClass::Storage - Storage base class
 
 =head1 Version
 
@@ -221,46 +221,51 @@ File::DataClass::Storage - Factory subclass loader
 
 =head1 Description
 
-Loads and instantiates a factory subclass
+Storage base class
 
 =head1 Subroutines/Methods
 
 =head2 delete
 
-   $bool = $self->delete( $element_obj );
+   $bool = $storage->delete( $path, $element_obj );
 
 Deletes the specified element object returning true if successful. Throws
-an error otherwise
+an error otherwise. Path is an instance of L<File::DataClass::IO>
 
 =head2 dump
 
+   $data = $storage->dump( $path, $data );
+
+Dumps the data to the specified path. Path is an instance of
+L<File::DataClass::IO>
+
 =head2 insert
 
-   $bool = $self->insert( $element_obj );
+   $bool = $storage->insert( $path, $element_obj );
 
 Inserts the specified element object returning true if successful. Throws
-an error otherwise
+an error otherwise. Path is an instance of L<File::DataClass::IO>
 
 =head2 load
 
-   $hash_ref = $self->load( @paths );
+   $hash_ref = $storage->load( @paths );
 
 Loads each of the specified files merging the resultant hash ref which
 it returns. Paths are instances of L<File::DataClass::IO>
 
 =head2 select
 
-   $hash_ref = $self->select;
+   $hash_ref = $storage->select( $path );
 
 Returns a hash ref containing all the elements of the type specified in the
-schema
+schema. Path is an instance of L<File::DataClass::IO>
 
 =head2 update
 
-   $bool = $self->update( $element_obj );
+   $bool = $storage->update( $path, $element_object, $overwrite, $condition );
 
 Updates the specified element object returning true if successful. Throws
-an error otherwise
+an error otherwise. Path is an instance of L<File::DataClass::IO>
 
 =head2 validate_params
 

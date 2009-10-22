@@ -80,9 +80,9 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
    $attrs = { result_source_attributes => { schema_attributes => { ... } } };
 
-   $result_source = File::DataClass->new( $attrs );
+   $result_source = File::DataClass->new( $attrs )->result_source;
 
-   $result_source->resultset( $file );
+   $rs = $result_source->resultset( { path => q(path_to_data_file) } );
 
 =head1 Description
 

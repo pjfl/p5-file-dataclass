@@ -131,6 +131,14 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Synopsis
 
+   use File::DataClass;
+
+   $attrs = { result_source_attributes => { schema_attributes => { ... } } };
+
+   $result_source = File::DataClass->new( $attrs )->result_source;
+
+   $schema = $result_source->schema;
+
 =head1 Description
 
 This is the base class for schema definitions. Each element in a data file
@@ -143,17 +151,15 @@ inherit from this
 
 =head2 dump
 
-   $file_obj->dump( { path => $to_file, data => $data_hash } );
+   $schema->dump( { path => $to_file, data => $data_hash } );
 
 Dumps the data structure to a file
 
 =head2 load
 
-   $file_obj->load( @paths );
+   $schema->load( @paths );
 
 Returns the merged data structure from the named files
-
-=head2 select
 
 =head2 txn_do
 
@@ -178,13 +184,7 @@ None
 
 =over 3
 
-=item L<File::DataClass::Base>
-
-=item L<File::DataClass::Combinator>
-
-=item L<File::DataClass::Storage>
-
-=item L<Scalar::Util>
+=item L<File::DataClass::Element>
 
 =back
 

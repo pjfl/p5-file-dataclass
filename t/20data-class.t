@@ -41,11 +41,12 @@ my $obj = File::DataClass->new( tempdir => q(t) );
 
 isa_ok( $obj, q(File::DataClass) );
 
-my $e = test( $obj, qw(load nonexistant_file) );
+my $source = $obj->result_source;
+my $e      = test( $source, qw(load nonexistant_file) );
 
 is( $e, 'File nonexistant_file cannot open', 'Cannot open nonexistant_file' );
 
-my $data = test( $obj, qw(load t/default.xml t/default_en.xml) );
+my $data = test( $source, qw(load t/default.xml t/default_en.xml) );
 
 ok( $data->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 1' );
@@ -58,19 +59,19 @@ ok( ref $data->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays' );
 my $path   = catfile( qw(t default.xml) );
 my $dumped = catfile( qw(t dumped.xml) );
 
-$data = $obj->load( $path ); my $args = { data => $data, path => $dumped };
+$data = $source->load( $path ); my $args = { data => $data, path => $dumped };
 
-test( $obj, q(dump), $args );
+test( $source, q(dump), $args );
 
 my $diff = diff $path, $dumped;
 
 ok( !$diff, 'Load and dump roundtrips' );
 
-$e = test( $obj->result_source, q(resultset) );
+$e = test( $source, q(resultset) );
 
 is( $e, 'No file path specified', 'No file path specified' );
 
-my $rs = $obj->result_source->resultset( { path => $path } );
+my $rs = $source->resultset( { path => $path } );
 
 $args = {}; $e = test( $rs, q(create), $args );
 
@@ -80,7 +81,7 @@ $args->{name} = q(dummy); $e = test( $rs, q(create), $args );
 
 is( $e, 'No element specified', 'No element specified' );
 
-my $schema = $obj->result_source->schema; $schema->element( q(globals) );
+my $schema = $source->schema; $schema->element( q(globals) );
 
 my $res = test( $rs, q(create), $args );
 

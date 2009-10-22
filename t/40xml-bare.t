@@ -36,9 +36,9 @@ isa_ok( $obj, q(File::DataClass) );
 
 my $path   = catfile( qw(t default.xml) );
 my $dumped = catfile( qw(t dumped) );
-my $data   = $obj->load( $path );
+my $data   = $obj->result_source->load( $path );
 
-$obj->dump( { data => $data, path => $dumped } );
+$obj->result_source->dump( { data => $data, path => $dumped } );
 
 my $diff = diff $path, $dumped;
 
