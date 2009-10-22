@@ -25,21 +25,20 @@ BEGIN {
 my $args = {
    result_source_attributes => {
       schema_attributes => {
-         attributes     => [ qw(comment created owner recipients) ],
-         defaults       => {},
-         element        => q(aliases),
-         storage_class  => q(MailAlias),
+         storage_class  => q(XML::Bare),
       }
    },
    tempdir => q(t),
 };
-my $obj  = File::DataClass->new( $args );
+my $obj = File::DataClass->new( $args );
 
 isa_ok( $obj, q(File::DataClass) );
 
-my $path = catfile( qw(t aliases) ); my $dumped = catfile( qw(t dumped) );
+my $path   = catfile( qw(t default.xml) );
+my $dumped = catfile( qw(t dumped) );
+my $data   = $obj->load( $path );
 
-$obj->dump( { data => $obj->load( $path ), path => $dumped } );
+$obj->dump( { data => $data, path => $dumped } );
 
 my $diff = diff $path, $dumped;
 

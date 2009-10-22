@@ -8,6 +8,7 @@ use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
 
 use English qw(-no_match_vars);
+use File::DataClass::IO;
 use Test::More;
 use Text::Diff;
 
@@ -140,9 +141,10 @@ ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
 
 # Cleanup
 
-unlink $dumped;
-unlink catfile( qw(t ipc_srlock.lck) );
-unlink catfile( qw(t ipc_srlock.shm) );
+io( $dumped )->unlink;
+io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
+io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
+io( catdir ( qw(t file-dataclass) ) )->rmtree;
 
 # Local Variables:
 # mode: perl
