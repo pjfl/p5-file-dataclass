@@ -26,7 +26,7 @@ has 'schema' => is => 'ro', isa => 'Object',  required => 1, weak_ref => TRUE;
 sub delete {
    my ($self, $path, $element_obj) = @_;
 
-   return $self->_delete( $element_obj, $path );
+   return $self->_delete( $path, $element_obj );
 }
 
 sub dump {
@@ -42,7 +42,7 @@ sub dump {
 sub insert {
    my ($self, $path, $element_obj) = @_;
 
-   return $self->_update( $element_obj, $path, FALSE, sub { TRUE } );
+   return $self->_update( $path, $element_obj, FALSE, sub { TRUE } );
 }
 
 sub load {
@@ -84,7 +84,7 @@ sub update {
 
    $overwrite ||= TRUE; $condition ||= sub { TRUE };
 
-   return $self->_update( $element_obj, $path, $overwrite, $condition );
+   return $self->_update( $path, $element_obj, $overwrite, $condition );
 }
 
 sub validate_params {
@@ -101,7 +101,7 @@ sub validate_params {
 # Private methods
 
 sub _delete {
-   my ($self, $element_obj, $path) = @_;
+   my ($self, $path, $element_obj) = @_;
 
    my $name = $element_obj->{name};
    my $elem = $self->validate_params( $path );
@@ -157,7 +157,7 @@ sub _read_file {
 }
 
 sub _update {
-   my ($self, $element_obj, $path, $overwrite, $condition) = @_;
+   my ($self, $path, $element_obj, $overwrite, $condition) = @_;
 
    my $name = $element_obj->{name};
    my $elem = $self->validate_params( $path );

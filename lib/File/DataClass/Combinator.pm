@@ -87,12 +87,12 @@ sub _update {
 
    my $schema    = $self->storage->schema;
    my $condition = sub { !$schema->lang_dep || !$schema->lang_dep->{ $_[0] } };
-   my $updated   = $self->storage->update( $element_obj, $path,
+   my $updated   = $self->storage->update( $path, $element_obj,
                                            $overwrite, $condition );
 
    if (my $lpath = $self->_make_lang_path( $path )) {
       $condition  = sub { $schema->lang_dep && $schema->lang_dep->{ $_[0] } };
-      my $written = $self->storage->update( $element_obj, $lpath,
+      my $written = $self->storage->update( $lpath, $element_obj,
                                             $overwrite, $condition );
       $updated ||= $written;
    }

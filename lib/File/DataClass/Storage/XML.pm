@@ -83,7 +83,7 @@ sub _is_in_dtd {
 }
 
 sub _update {
-   my ($self, $element_obj, $path, $overwrite, $condition) = @_;
+   my ($self, $path, $element_obj, $overwrite, $condition) = @_;
 
    $path->touch unless ($overwrite);
 
@@ -94,7 +94,7 @@ sub _update {
       push @{ $self->_dtd }, '<!ELEMENT '.$element_name.' (ARRAY)*>';
    }
 
-   return $self->next::method( $element_obj, $path, $overwrite, $condition );
+   return $self->next::method( $path, $element_obj, $overwrite, $condition );
 }
 
 __PACKAGE__->meta->make_immutable;
