@@ -7,11 +7,11 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::Null;
+use File::DataClass::Cache;
 use File::DataClass::Constants;
 use File::Spec;
 use Moose;
 
-use Cache::FileCache;
 use File::DataClass::ResultSource;
 use IPC::SRLock;
 
@@ -123,13 +123,14 @@ sub _build_cache {
 
    return $_Cache if ($_Cache);
 
-   my $attrs = $self->cache_attributes;
-   (my $ns   = lc __PACKAGE__) =~ s{ :: }{-}gmx;
+   my $attrs = {}; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
 
-   $attrs->{cache_root} ||= $self->tempdir;
-   $attrs->{namespace } ||= $ns;
+   $attrs->{cache_attributes}                 = $self->cache_attributes;
+   $attrs->{cache_class     }                 = $self->cache_class;
+   $attrs->{cache_attributes}->{cache_root} ||= $self->tempdir;
+   $attrs->{cache_attributes}->{namespace } ||= $ns;
 
-   return $_Cache = $self->cache_class->new( $attrs );
+   return $_Cache = File::DataClass::Cache->new( $attrs );
 }
 
 sub _build_lock {

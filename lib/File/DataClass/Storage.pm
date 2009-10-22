@@ -50,9 +50,9 @@ sub load {
 
    return {} unless ($paths[0]);
 
-   my ($data, $stale) = $self->_cache_get_by_paths( \@paths );
+   my ($data, $stale) = $self->cache->get_by_paths( \@paths );
 
-   return $data if ($data and not $stale); $data = {};
+   return $self->_cache_unpack( $data ) if ($data and not $stale); $data = {};
 
    for my $path (@paths) {
       next unless ($red = $self->_read_file( $path, FALSE ));
@@ -64,7 +64,7 @@ sub load {
       }
    }
 
-   $self->_cache_set_by_paths( \@paths, $data );
+   $self->cache->set_by_paths( \@paths, $self->_cache_pack( $data ) );
 
    return $data;
 }
@@ -98,76 +98,12 @@ sub validate_params {
 
 # Private methods
 
-sub _cache_get {
-   my ($self, $key) = @_;
-
-   my $cached = $key    ? $self->cache->get( $key ) : FALSE;
-   my $data   = $cached ? $cached->{data }          : undef;
-   my $mtime  = $cached ? $cached->{mtime} || 0     : 0;
-
-   return ($data, $mtime);
+sub _cache_pack {
+   my ($self, $data) = @_; return $data;
 }
 
-sub _cache_get_by_paths {
-   my ($self, $paths) = @_;
-   my ($key, $newest) = $self->_cache_get_key_and_newest( $paths );
-   my ($data, $mtime) = $self->_cache_get( $key );
-
-   return ($data, $mtime < $newest);
-}
-
-sub _cache_get_key_and_newest {
-   my ($self, $paths) = @_; my ($key, $pathname); my $newest = 0;
-
-   my $mtimes = $self->cache->get( q(mtimes) ) || {};
-
-   for my $path (@{ $paths }) {
-      next unless ($pathname = $path->pathname);
-
-      $key .= $key ? q(~).$pathname : $pathname;
-
-      my $mtime = $mtimes->{ $pathname } || 0;
-
-      $newest = $mtime if ($mtime > $newest);
-   }
-
-   return ($key, $newest);
-}
-
-sub _cache_remove {
-   my ($self, $key) = @_;
-
-   return unless ($key);
-
-   my $mtimes = $self->cache->get( q(mtimes) ) || {};
-
-   delete $mtimes->{ $key };
-   $self->cache->set( q(mtimes), $mtimes );
-   $self->cache->remove( $key );
-   return;
-}
-
-sub _cache_set {
-   my ($self, $key, $data, $mtime) = @_;
-
-   if ($key) {
-      $self->cache->set( $key, { data => $data, mtime => $mtime || 0 } );
-
-      my $mtimes = $self->cache->get( q(mtimes) ) || {};
-
-      $mtimes->{ $key } = $mtime;
-      $self->cache->set( q(mtimes), $mtimes );
-   }
-
-   return ($data, $mtime);
-}
-
-sub _cache_set_by_paths {
-   my ($self, $paths, $data) = @_;
-
-   my ($key, $newest) = $self->_cache_get_key_and_newest( $paths );
-
-   return $self->_cache_set( $key, $data, $newest );
+sub _cache_unpack {
+   my ($self, $data) = @_; return $data;
 }
 
 sub _delete {
@@ -196,18 +132,20 @@ sub _read_file {
    $self->lock->set( k => $pathname );
 
    my $path_mtime     = $path->stat->{mtime};
-   my ($data, $mtime) = $self->_cache_get( $pathname );
+   my ($data, $mtime) = $self->cache->get( $pathname );
 
    if (not $data or $mtime < $path_mtime) {
       try        { $data = inner( $path->lock ) }
       catch ($e) { $self->lock->reset( k => $pathname ); $self->throw( $e ) }
 
-      $self->_cache_set( $pathname, $data, $path_mtime );
+      $self->cache->set( $pathname, $self->_cache_pack( $data ), $path_mtime );
 
       $self->log->debug( "Read file  $pathname" ) if ($self->debug);
    }
    else {
       $self->log->debug( "Read cache $pathname" ) if ($self->debug);
+
+      $data = $self->_cache_unpack( $data );
    }
 
    $self->lock->reset( k => $pathname ) unless ($for_update);
@@ -253,7 +191,7 @@ sub _write_file {
                 $self->throw( $e ) }
 
    $wtr->close;
-   $self->_cache_remove( $pathname );
+   $self->cache->remove( $pathname );
    $self->lock->reset( k => $pathname );
    return $data;
 }

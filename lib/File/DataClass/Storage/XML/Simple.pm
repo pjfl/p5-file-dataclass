@@ -6,6 +6,7 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use File::DataClass::Constants;
 use Moose;
 use XML::Simple;
 
@@ -16,7 +17,7 @@ augment '_read_file' => sub {
 
    my $data   = $self->_dtd_parse( $rdr->all );
    my $arrays = [ keys %{ $self->_arrays } ];
-   my $xs     = XML::Simple->new( SuppressEmpty => 1 );
+   my $xs     = XML::Simple->new( SuppressEmpty => TRUE );
 
    return $xs->xml_in( $data, ForceArray => $arrays );
 };
@@ -24,7 +25,7 @@ augment '_read_file' => sub {
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_;
 
-   my $xs  = XML::Simple->new( NoAttr   => 1, SuppressEmpty => 1,
+   my $xs  = XML::Simple->new( NoAttr   => TRUE, SuppressEmpty => TRUE,
                                RootName => $self->root_name );
 
    $wtr->println( @{ $self->_dtd } ) if ($self->_dtd->[0]);

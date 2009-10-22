@@ -18,35 +18,20 @@ has '_dtd'      => is => 'rw', isa => 'ArrayRef', default => sub { return [] };
 
 # Private methods
 
-sub _cache_get {
-   my ($self, $key) = @_;
+sub _cache_pack {
+   my ($self, $data) = @_; my $packed = { data => $data };
 
-   my $cached = $key    ? $self->cache->get( $key ) : FALSE;
-   my $data   = $cached ? $cached->{data }          : undef;
-   my $mtime  = $cached ? $cached->{mtime} || 0     : 0;
+   $packed->{_dtd} = $self->_dtd if ($self->_dtd);
 
-   $self->_dtd( $cached && exists $cached->{_dtd} ? $cached->{_dtd} : [] );
-
-   return ($data, $mtime);
+   return $packed;
 }
 
-sub _cache_set {
-   my ($self, $key, $data, $mtime) = @_;
+sub _cache_unpack {
+   my ($self, $packed) = @_; $packed ||= {};
 
-   if ($key) {
-      my $ref = { data => $data, mtime => $mtime || 0 };
+   $self->_dtd( exists $packed->{_dtd} ? $packed->{_dtd} : [] );
 
-      $ref->{_dtd} = $self->_dtd if ($self->_dtd);
-
-      $self->cache->set( $key, $ref );
-
-      my $mtimes = $self->cache->get( q(mtimes) ) || {};
-
-      $mtimes->{ $key } = $mtime;
-      $self->cache->set( q(mtimes), $mtimes );
-   }
-
-   return ($data, $mtime);
+   return $packed->{data};
 }
 
 sub _dtd_parse {
