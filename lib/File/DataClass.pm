@@ -7,11 +7,11 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::Null;
-use File::DataClass::Cache;
 use File::DataClass::Constants;
 use File::Spec;
 use Moose;
 
+use File::DataClass::Cache;
 use File::DataClass::ResultSource;
 use IPC::SRLock;
 
@@ -26,8 +26,6 @@ has 'tempdir' => is => 'ro', isa => 'Str',
 
 has 'cache_attributes' => is => 'ro', isa => 'HashRef',
    default             => sub { return {} };
-has 'cache_class'      => is => 'ro', isa => 'ClassName',
-   default             => q(Cache::FileCache);
 has 'cache'            => is => 'rw', isa => 'Object', lazy_build => TRUE;
 
 has 'lock_attributes'  => is => 'ro', isa => 'HashRef',
@@ -126,7 +124,6 @@ sub _build_cache {
    my $attrs = {}; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
 
    $attrs->{cache_attributes}                 = $self->cache_attributes;
-   $attrs->{cache_class     }                 = $self->cache_class;
    $attrs->{cache_attributes}->{cache_root} ||= $self->tempdir;
    $attrs->{cache_attributes}->{namespace } ||= $ns;
 
@@ -317,9 +314,9 @@ debug method to be called with useful information
 
 =over 3
 
-=item L<Cache::FileCache>
-
 =item L<Class::Null>
+
+=item L<File::DataClass::Cache>
 
 =item L<File::DataClass::Constants>
 
