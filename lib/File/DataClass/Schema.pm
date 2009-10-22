@@ -146,7 +146,15 @@ inherit from this
 
 =head2 dump
 
+   $file_obj->dump( { path => $to_file, data => $data_hash } );
+
+Dumps the data structure to a file
+
 =head2 load
+
+   $file_obj->load( @paths );
+
+Returns the merged data structure from the named files
 
 =head2 select
 
