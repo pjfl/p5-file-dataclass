@@ -20,18 +20,18 @@ sub get {
    my ($self, $key) = @_;
 
    my $cached = $key    ? $self->cache->get( $key ) : FALSE;
-   my $data   = $cached ? $cached->{data }          : undef;
-   my $mtime  = $cached ? $cached->{mtime} || 0     : 0;
+   my $data   = $cached ? $cached->{data}           : undef;
+   my $meta   = $cached ? $cached->{meta}           : { mtime => 0 };
 
-   return ($data, $mtime);
+   return ($data, $meta);
 }
 
 sub get_by_paths {
    my ($self, $paths) = @_;
    my ($key, $newest) = $self->_get_key_and_newest( $paths );
-   my ($data, $mtime) = $self->get( $key );
+   my ($data, $meta)  = $self->get( $key );
 
-   return ($data, $mtime < $newest);
+   return ($data, $meta->{mtime} < $newest);
 }
 
 sub remove {
@@ -46,18 +46,18 @@ sub remove {
 }
 
 sub set {
-   my ($self, $key, $data, $mtime) = @_;
+   my ($self, $key, $data, $meta) = @_; $meta ||= {}; $meta->{mtime} ||= 0;
 
-   if ($key) {
-      $self->cache->set( $key, { data => $data, mtime => $mtime || 0 } );
+   if ($key and defined $data) {
+      $self->cache->set( $key, { data => $data, meta => $meta } );
 
       my $mtimes = $self->cache->get( q(mtimes) ) || {};
 
-      $mtimes->{ $key } = $mtime;
+      $mtimes->{ $key } = $meta->{mtime} || 0;
       $self->cache->set( q(mtimes), $mtimes );
    }
 
-   return ($data, $mtime);
+   return ($data, $meta);
 }
 
 sub set_by_paths {
@@ -65,7 +65,7 @@ sub set_by_paths {
 
    my ($key, $newest) = $self->_get_key_and_newest( $paths );
 
-   return $self->set( $key, $data, $newest );
+   return $self->set( $key, $data, { mtime => $newest } );
 }
 
 # Private methods

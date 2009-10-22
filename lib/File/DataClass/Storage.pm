@@ -52,7 +52,7 @@ sub load {
 
    my ($data, $stale) = $self->cache->get_by_paths( \@paths );
 
-   return $self->_cache_unpack( $data ) if ($data and not $stale); $data = {};
+   return $data if ($data and not $stale); $data = {};
 
    for my $path (@paths) {
       next unless ($red = $self->_read_file( $path, FALSE ));
@@ -64,7 +64,7 @@ sub load {
       }
    }
 
-   $self->cache->set_by_paths( \@paths, $self->_cache_pack( $data ) );
+   $self->cache->set_by_paths( \@paths, $data );
 
    return $data;
 }
@@ -98,14 +98,6 @@ sub validate_params {
 
 # Private methods
 
-sub _cache_pack {
-   my ($self, $data) = @_; return $data;
-}
-
-sub _cache_unpack {
-   my ($self, $data) = @_; return $data;
-}
-
 sub _delete {
    my ($self, $element_obj, $path) = @_;
 
@@ -124,6 +116,14 @@ sub _delete {
    return FALSE;
 }
 
+sub _meta_pack {
+   my ($self, $attrs) = @_; return $attrs;
+}
+
+sub _meta_unpack {
+   my ($self, $attrs) = @_; return $attrs;
+}
+
 sub _read_file {
    my ($self, $path, $for_update) = @_;
 
@@ -131,21 +131,22 @@ sub _read_file {
 
    $self->lock->set( k => $pathname );
 
-   my $path_mtime     = $path->stat->{mtime};
-   my ($data, $mtime) = $self->cache->get( $pathname );
+   my $path_mtime    = $path->stat->{mtime};
+   my ($data, $meta) = $self->cache->get( $pathname );
 
-   if (not $data or $mtime < $path_mtime) {
+   $meta = $self->_meta_unpack( $meta );
+
+   if (not $data or $meta->{mtime} < $path_mtime) {
       try        { $data = inner( $path->lock ) }
       catch ($e) { $self->lock->reset( k => $pathname ); $self->throw( $e ) }
 
-      $self->cache->set( $pathname, $self->_cache_pack( $data ), $path_mtime );
+      $meta = $self->_meta_pack( { mtime => $path_mtime } );
+      $self->cache->set( $pathname, $data, $meta );
 
       $self->log->debug( "Read file  $pathname" ) if ($self->debug);
    }
    else {
       $self->log->debug( "Read cache $pathname" ) if ($self->debug);
-
-      $data = $self->_cache_unpack( $data );
    }
 
    $self->lock->reset( k => $pathname ) unless ($for_update);

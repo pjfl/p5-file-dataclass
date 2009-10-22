@@ -16,23 +16,23 @@ has 'root_name' => is => 'ro', isa => 'Str',      default => q(config);
 has '_arrays'   => is => 'rw', isa => 'HashRef',  default => sub { return {} };
 has '_dtd'      => is => 'rw', isa => 'ArrayRef', default => sub { return [] };
 
-# Private methods
-
-sub _cache_pack {
-   my ($self, $data) = @_; my $packed = { data => $data };
+around '_meta_pack' => sub {
+   my ($orig, $self, $attrs) = @_; my $packed = $self->$orig( $attrs );
 
    $packed->{_dtd} = $self->_dtd if ($self->_dtd);
 
    return $packed;
-}
+};
 
-sub _cache_unpack {
-   my ($self, $packed) = @_; $packed ||= {};
+around '_meta_unpack' => sub {
+   my ($orig, $self, $packed) = @_; $packed ||= {};
 
-   $self->_dtd( exists $packed->{_dtd} ? $packed->{_dtd} : [] );
+   $self->_dtd( exists $packed->{_dtd} ? delete $packed->{_dtd} : [] );
 
-   return $packed->{data};
-}
+   return $self->$orig( $packed );
+};
+
+# Private methods
 
 sub _dtd_parse {
    my ($self, $data) = @_;
