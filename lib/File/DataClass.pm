@@ -17,7 +17,6 @@ use IPC::SRLock;
 
 with qw(File::DataClass::Util);
 
-has 'path'    => is => 'rw', isa => 'Maybe[DataClassPath]';
 has 'debug'   => is => 'ro', isa => 'Bool', default => FALSE;
 has 'log'     => is => 'ro', isa => 'Object',
    default    => sub { Class::Null->new };
@@ -50,9 +49,7 @@ sub delete {
 }
 
 sub dump {
-   my ($self, $args) = @_; $args->{path} ||= $self->path;
-
-   return $self->result_source->schema->dump( $args );
+   my ($self, $args) = @_; return $self->result_source->schema->dump( $args );
 }
 
 sub find {
@@ -65,8 +62,6 @@ sub list {
 
 sub load {
    my ($self, @paths) = @_;
-
-   push @paths, $self->path unless ($paths[0]);
 
    return $self->result_source->schema->load( @paths );
 }
@@ -160,9 +155,7 @@ sub _build_result_source {
 sub _resultset {
    my ($self, $args) = @_; $args ||= {};
 
-   my $path = $args->{path} || $self->path;
-
-   return $self->result_source->resultset( $path );
+   return $self->result_source->resultset( $args->{path} );
 }
 
 __PACKAGE__->meta->make_immutable;

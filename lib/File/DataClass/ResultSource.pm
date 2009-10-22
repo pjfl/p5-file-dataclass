@@ -13,6 +13,8 @@ use File::DataClass::Schema;
 
 with qw(File::DataClass::Util);
 
+has 'path' => is => 'rw', isa => 'Maybe[Str]';
+
 has 'resultset_attributes' =>
    is => 'ro', isa => 'HashRef',   default => sub { return {} };
 has 'resultset_class' =>
@@ -34,9 +36,11 @@ sub _build_schema {
 }
 
 sub resultset {
-   my ($self, $path) = @_;
+   my ($self, $path) = @_; $path ||= $self->path;
 
    $path = $self->io( $path ) if ($path and not blessed $path);
+
+   $self->throw( 'No file path specified' ) unless ($path);
 
    my $attrs = { %{ $self->resultset_attributes },
                  path => $path, schema => $self->schema };

@@ -23,6 +23,9 @@ has 'element'    =>
 has 'label_attr' =>
    is => 'rw', isa => 'Str',       default => NUL;
 
+has 'source' =>
+   is => 'ro', isa => 'Object',    required => TRUE, weak_ref => TRUE;
+
 has 'element_class' =>
    is => 'ro', isa => 'ClassName', default => q(File::DataClass::Element);
 
@@ -47,7 +50,7 @@ sub create_element {
 }
 
 sub dump {
-   my ($self, $args) = @_; my $path = $args->{path};
+   my ($self, $args) = @_; my $path = $args->{path} || $self->source->path;
 
    $path = $self->io( $path ) unless (blessed $path);
 
@@ -57,7 +60,9 @@ sub dump {
 sub load {
    my ($self, @paths) = @_;
 
-   @paths = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
+   $paths[0] = $self->source->path unless ($paths[0]);
+
+   @paths    = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
 
    return $self->storage->load( @paths ) || {};
 }

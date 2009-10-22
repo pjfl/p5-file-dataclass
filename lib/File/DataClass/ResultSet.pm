@@ -14,13 +14,14 @@ use File::DataClass::List;
 
 with qw(File::DataClass::Util);
 
-has 'path'       => is => 'rw', isa => 'Maybe[DataClassPath]';
-has 'schema'     => is => 'ro', isa => 'Object',   weak_ref => TRUE;
+has 'path'       => is => 'rw', isa => 'DataClassPath', required => TRUE;
+has 'schema'     => is => 'ro', isa => 'Object',        required => TRUE,
+   weak_ref      => TRUE;
 has 'list_class' => is => 'ro', isa => 'ClassName',
    default       => q(File::DataClass::List);
-has '_elements'  => is => 'rw', isa => 'ArrayRef', init_arg => undef,
+has '_elements'  => is => 'rw', isa => 'ArrayRef',      init_arg => undef,
    default       => sub { return [] };
-has '_iterator'  => is => 'rw', isa => 'Int',      init_arg => undef,
+has '_iterator'  => is => 'rw', isa => 'Int',           init_arg => undef,
    default       => 0;
 
 sub all {

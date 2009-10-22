@@ -57,15 +57,15 @@ ok( ref $cfg->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays' );
 
 $e = test( $obj, q(create) );
 
-is( $e, 'No element name specified', 'No element name specified' );
-
-my $args = {}; $args->{name} = q(dummy); $e = test( $obj, q(create), $args );
-
 is( $e, 'No file path specified', 'No file path specified' );
 
-my $path = catfile( qw(t default.xml) );
+my $path = catfile( qw(t default.xml) ); my $args = {};
 
 $args->{path} = $path; $e = test( $obj, q(create), $args );
+
+is( $e, 'No element name specified', 'No element name specified' );
+
+$args->{name} = q(dummy); $e = test( $obj, q(create), $args );
 
 is( $e, 'No element specified', 'No element specified' );
 
