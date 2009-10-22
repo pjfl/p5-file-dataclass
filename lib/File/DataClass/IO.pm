@@ -11,6 +11,7 @@ use File::DataClass::Constants;
 use File::DataClass::Exception;
 use English      qw( -no_match_vars );
 use Fcntl        qw( :flock );
+use List::Util   qw( first );
 use File::Basename ();
 use File::Path     ();
 use File::Spec     ();
@@ -41,7 +42,7 @@ has 'name'            => is => 'rw', isa => 'Str',       default    => NUL  ;
 has 'sort'            => is => 'rw', isa => 'Bool',      default    => TRUE ;
 has 'type'            => is => 'rw', isa => 'Maybe[Type]'                   ;
 has '_assert'         => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_atomic'         => is => 'rw', isa => 'Str',       default    => NUL  ;
+has '_atomic'         => is => 'rw', isa => 'Bool',      default    => FALSE;
 has '_binary'         => is => 'rw', isa => 'Bool',      default    => FALSE;
 has '_binmode'        => is => 'rw', isa => 'Str',       default    => NUL  ;
 has '_chomp'          => is => 'rw', isa => 'Bool',      default    => FALSE;
@@ -151,13 +152,7 @@ sub assert_open {
 }
 
 sub atomic {
-   my $self = shift;
-   my $file = $self->atomic_pref.$self->filename;
-   my $path = $self->filepath;
-
-   $self->_atomic( $path ? File::Spec->catfile( $path, $file ) : $file );
-
-   return $self;
+   my $self = shift; $self->_atomic( TRUE ); return $self;
 }
 
 sub basename {
@@ -267,12 +262,12 @@ sub _close_dir {
 }
 
 sub _close_file {
-   my $self = shift;
+   my $self = shift; my $path;
 
-   if ($self->_atomic and -f $self->_atomic) {
-      rename $self->_atomic, $self->name
+   if ($self->_atomic and $path = $self->_get_atomic_path and -f $path) {
+      rename $path, $self->name
          or $self->throw( error => 'Cannot rename [_1] to [_2]',
-                          args  => [ $self->_atomic, $self->name ] );
+                          args  => [ $path, $self->name ] );
    }
 
    $self->is_open || return;
@@ -290,9 +285,9 @@ sub deep {
 }
 
 sub delete {
-   my $self = shift;
+   my $self = shift; my $path = $self->_get_atomic_path;
 
-   $self->_atomic && -f $self->_atomic && unlink $self->_atomic;
+   $self->_atomic && -f $path && unlink $path;
 
    return $self->_close_file;
 }
@@ -409,6 +404,14 @@ sub _find {
    return $self->sort ? sort { $a->name cmp $b->name } @all : @all;
 }
 
+sub _get_atomic_path {
+   my $self = shift; my $path = $self->filepath;
+
+   my $file = $self->atomic_pref.$self->filename;
+
+   return $path ? File::Spec->catfile( $path, $file ) : $file;
+}
+
 sub getline {
    my ($self, $separator) = @_; my ($line, $sep);
 
@@ -451,9 +454,7 @@ sub getlines {
 sub _init {
    my ($self, $type, $name) = @_;
 
-   $self->atomic_pref( q(B_) );
    $self->autoclose  ( TRUE  );
-   $self->block_size ( 1024  );
    $self->io_handle  ( undef );
    $self->is_open    ( FALSE );
    $self->name       ( $name ) if ($name);
@@ -492,6 +493,10 @@ sub is_file {
 
 sub is_readable {
    my $self = shift; return $self->name && -r $self->name ? TRUE : FALSE;
+}
+
+sub is_reading {
+   my $self = shift; return first { $_ eq $self->mode } qw(r r+);
 }
 
 sub is_writable {
@@ -563,7 +568,8 @@ sub _open_file {
    push @args, $self->_perms if (defined $self->_perms);
 
    if (defined $self->name) {
-      my $pathname = $self->_atomic ? $self->_atomic : $self->name;
+      my $pathname = $self->_atomic && !$self->is_reading
+                   ? $self->_get_atomic_path : $self->name;
 
       unless ($io = IO::File->new( $pathname, @args )) {
          $self->throw( error => 'File [_1] cannot open',
@@ -1186,6 +1192,10 @@ Tests to see if the I<IO> object is a file
    $bool = io( q(path_to_file) )->is_readable;
 
 Tests to see if the I<IO> object is readable
+
+=head2 is_reading
+
+Returns true if this I<IO> object is in one of the read modes
 
 =head2 is_writable
 

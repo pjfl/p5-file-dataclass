@@ -36,14 +36,15 @@ has 'storage_base' =>
 has 'storage_class' =>
    is => 'ro', isa => 'Str',       default => q(XML::Simple);
 has 'storage' =>
-   is => 'rw', isa => 'Object',    lazy_build => TRUE;
+   is => 'rw', isa => 'Object',    lazy_build => TRUE,
+   handles => [ qw(select) ];
 
 sub create_element {
    my ($self, $path, $attrs) = @_;
 
    $attrs = { %{ $self->defaults }, %{ $attrs } };
 
-   $attrs->{_path  } = $path;
+   $attrs->{_path  } = $path || $self->source->path;
    $attrs->{_schema} = $self;
 
    return $self->element_class->new( $attrs );
@@ -67,16 +68,12 @@ sub load {
    return $self->storage->load( @paths ) || {};
 }
 
-sub select {
-   my ($self, $path) = @_; return $self->storage->select( $path );
-}
-
 sub txn_do {
-   my ($self, $path, $code_ref) = @_; my $wantarray = wantarray;
+   my ($self, $path, $code_ref) = @_; $path ||= $self->source->path;
 
    $self->throw( 'No file path specified' ) unless ($path);
 
-   my $key = q(txn:).$path->pathname; my $res;
+   my $key = q(txn:).$path->pathname; my $wantarray = wantarray; my $res;
 
    try {
       $self->storage->lock->set( k => $key );

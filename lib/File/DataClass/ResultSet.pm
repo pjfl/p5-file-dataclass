@@ -14,7 +14,7 @@ use File::DataClass::List;
 
 with qw(File::DataClass::Util);
 
-has 'path'       => is => 'rw', isa => 'DataClassPath', required => TRUE;
+has 'path'       => is => 'ro', isa => 'DataClassPath', required => TRUE;
 has 'schema'     => is => 'ro', isa => 'Object',        required => TRUE,
    weak_ref      => TRUE;
 has 'list_class' => is => 'ro', isa => 'ClassName',
@@ -103,12 +103,12 @@ sub push {
 
    $self->throw( 'List contains no items' ) unless ($items->[0]);
 
-   $self->schema->txn_do( $self->path, sub {
+   my $res = $self->schema->txn_do( $self->path, sub {
       ($attrs, $added) = $self->_push( $name, $list, $items );
       $self->_find_and_update( $name, $attrs );
    } );
 
-   return $added;
+   return $res ? $added : undef;
 }
 
 sub reset {
@@ -134,22 +134,22 @@ sub splice {
 
    $self->throw( 'List contains no items' ) unless ($items->[0]);
 
-   $self->schema->txn_do( $self->path, sub {
+   my $res = $self->schema->txn_do( $self->path, sub {
       ($attrs, $removed) = $self->_splice( $name, $list, $items );
       $self->_find_and_update( $name, $attrs );
    } );
 
-   return $removed;
+   return $res ? $removed : undef;
 }
 
 sub update {
    my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
 
-   $self->schema->txn_do( $self->path, sub {
+   my $res = $self->schema->txn_do( $self->path, sub {
       $self->_find_and_update( $name, $args->{fields} || {} );
    } );
 
-   return $name;
+   return $res ? $name : undef;
 }
 
 # Private methods

@@ -33,13 +33,13 @@ has 'lock_class'       => is => 'ro', isa => 'ClassName',
    default             => q(IPC::SRLock);
 has 'lock'             => is => 'rw', isa => 'Object', lazy_build => TRUE;
 
-has 'result_source_attributes' => is => 'ro', isa => 'HashRef',
-   default                     => sub { return {} };
-has 'result_source_class'      => is => 'ro', isa => 'ClassName',
-   default                     => q(File::DataClass::ResultSource);
-has 'result_source'            => is => 'ro', isa => 'Object',
-   lazy_build                  => TRUE, handles =>
-   [ qw(create delete find list load push search splice update) ];
+has 'result_source_attributes' =>
+   is => 'ro', isa => 'HashRef',   default => sub { return {} };
+has 'result_source_class' =>
+   is => 'ro', isa => 'ClassName', default => q(File::DataClass::ResultSource);
+has 'result_source' =>
+   is => 'ro', isa => 'Object',    lazy_build => TRUE, init_arg => undef,
+   handles => [ qw(load) ];
 
 sub dump {
    # Moose bug. Cannot delegate to a method called dump

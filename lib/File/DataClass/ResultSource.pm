@@ -28,6 +28,11 @@ has 'schema' =>
    is => 'ro', isa => 'Object',    lazy_build => 1, init_arg => undef,
    handles => [ qw(load) ];
 
+sub dump {
+   # Moose bug. Cannot delegate to a method called dump
+   my ($self, $args) = @_; return $self->schema->dump( $args );
+}
+
 sub resultset {
    my ($self, $args) = @_; my $path = $args->{path} || $self->path;
 
@@ -39,43 +44,6 @@ sub resultset {
                  path => $path, schema => $self->schema };
 
    return $self->resultset_class->new( $attrs );
-}
-
-sub create {
-   my ($self, $args) = @_; return $self->resultset( $args )->create( $args );
-}
-
-sub delete {
-   my ($self, $args) = @_; return $self->resultset( $args )->delete( $args );
-}
-
-sub find {
-   my ($self, $args) = @_; return $self->resultset( $args )->find( $args );
-}
-
-sub list {
-   my ($self, $args) = @_; return $self->resultset( $args )->list( $args );
-}
-
-sub push {
-   my ($self, $args) = @_; return $self->resultset( $args )->push( $args );
-}
-
-sub search {
-   my ($self, $args) = @_; return $self->resultset( $args )->search( $args );
-}
-
-sub splice {
-   my ($self, $args) = @_; return $self->resultset( $args )->splice( $args );
-}
-
-sub update {
-   my ($self, $args) = @_; return $self->resultset( $args )->update( $args );
-}
-
-sub dump {
-   # Moose bug. Cannot delegate to a method called dump
-   my ($self, $args) = @_; return $self->schema->dump( $args );
 }
 
 # Private methods
@@ -123,11 +91,9 @@ L<DBIx::Class>
 
 =head1 Subroutines/Methods
 
-=head2 new
+=head2 dump
 
-Constructor's arguments are the application object and a hash ref of
-schema attributes. Creates a new instance of the schema class
-which defaults to L<File::DataClass::Schema>
+Moose bug. Cannot delegate a method called dump so we have to do it instead
 
 =head2 resultset
 

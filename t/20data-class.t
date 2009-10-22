@@ -18,7 +18,7 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 20;
+   plan tests => 21;
    use_ok( q(File::DataClass) );
 }
 
@@ -45,65 +45,20 @@ my $e = test( $obj, qw(load nonexistant_file) );
 
 is( $e, 'File nonexistant_file cannot open', 'Cannot open nonexistant_file' );
 
-my $cfg = test( $obj, qw(load t/default.xml t/default_en.xml) );
+my $data = test( $obj, qw(load t/default.xml t/default_en.xml) );
 
-ok( $cfg->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
+ok( $data->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 1' );
 
-ok( $cfg->{ '_cvs_lang_default' } =~ m{ @\(\#\)\$Id: }mx,
+ok( $data->{ '_cvs_lang_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 2' );
 
-ok( ref $cfg->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays' );
+ok( ref $data->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays' );
 
-$e = test( $obj, q(create) );
+my $path   = catfile( qw(t default.xml) );
+my $dumped = catfile( qw(t dumped.xml) );
 
-is( $e, 'No file path specified', 'No file path specified' );
-
-my $path = catfile( qw(t default.xml) ); my $args = {};
-
-$args->{path} = $path; $e = test( $obj, q(create), $args );
-
-is( $e, 'No element name specified', 'No element name specified' );
-
-$args->{name} = q(dummy); $e = test( $obj, q(create), $args );
-
-is( $e, 'No element specified', 'No element specified' );
-
-my $schema = $obj->result_source->schema; $schema->element( q(globals) );
-
-my $res = test( $obj, q(create), $args );
-
-ok( !defined $res, 'Creates dummy element but does not insert' );
-
-$schema->attributes( [ qw(text) ] ); $args->{fields}->{text} = q(value1);
-
-$res = test( $obj, q(create), $args );
-
-is( $res, q(dummy), 'Creates dummy element and inserts' );
-
-$args->{fields}->{text} = q(value2);
-
-test( $obj, q(update), $args ); delete $args->{fields};
-
-$res = test( $obj, q(find), $args );
-
-is( $res->text, q(value2), 'Can update and find' );
-
-$e = test( $obj, q(create), $args );
-
-ok( $e =~ m{ already \s+ exists }mx, 'Detects already existing element' );
-
-$res = test( $obj, q(delete), $args );
-
-is( $res, q(dummy), 'Deletes dummy element' );
-
-$e = test( $obj, q(delete), $args );
-
-ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
-
-my $data = $obj->load( $path ); my $dumped = catfile( qw(t dumped.xml) );
-
-$args = { data => $data, path => $dumped };
+$data = $obj->load( $path ); my $args = { data => $data, path => $dumped };
 
 test( $obj, q(dump), $args );
 
@@ -111,30 +66,78 @@ my $diff = diff $path, $dumped;
 
 ok( !$diff, 'Load and dump roundtrips' );
 
+$e = test( $obj->result_source, q(resultset) );
+
+is( $e, 'No file path specified', 'No file path specified' );
+
+my $rs = $obj->result_source->resultset( { path => $path } );
+
+$args = {}; $e = test( $rs, q(create), $args );
+
+is( $e, 'No element name specified', 'No element name specified' );
+
+$args->{name} = q(dummy); $e = test( $rs, q(create), $args );
+
+is( $e, 'No element specified', 'No element specified' );
+
+my $schema = $obj->result_source->schema; $schema->element( q(globals) );
+
+my $res = test( $rs, q(create), $args );
+
+ok( !defined $res, 'Creates dummy element but does not insert' );
+
+$schema->attributes( [ qw(text) ] ); $args->{fields}->{text} = q(value1);
+
+$res = test( $rs, q(create), $args );
+
+is( $res, q(dummy), 'Creates dummy element and inserts' );
+
+$args->{fields}->{text} = q(value2);
+
+$res = test( $rs, q(update), $args );
+
+is( $res, q(dummy), 'Can update' );
+
+delete $args->{fields}; $res = test( $rs, q(find), $args );
+
+is( $res->text, q(value2), 'Can find' );
+
+$e = test( $rs, q(create), $args );
+
+ok( $e =~ m{ already \s+ exists }mx, 'Detects already existing element' );
+
+$res = test( $rs, q(delete), $args );
+
+is( $res, q(dummy), 'Deletes dummy element' );
+
+$e = test( $rs, q(delete), $args );
+
+ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
+
 $schema->element( q(fields) ); $schema->attributes( [ qw(width) ] );
 $args = { name => q(feedback.body), path => $path };
 
-$res = test( $obj, q(list), $args );
+$res = test( $rs, q(list), $args );
 
 ok( $res->element->width == 72 && scalar @{ $res->list } == 3, 'Can list' );
 
 $schema->element( q(levels) ); $schema->attributes( [ qw(acl state) ] );
 $args = { list => q(acl), name => q(admin), path => $path };
 $args->{items} = [ qw(group1 group2) ];
-$res  = test( $obj, q(push), $args );
+$res  = test( $rs, q(push), $args );
 
 ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
     'Can push' );
 
 $args = { criterion => { acl => q(@support) }, path => $path };
 
-my @res = test( $obj, q(search), $args );
+my @res = test( $rs, q(search), $args );
 
 ok( $res[0] && $res[0]->name eq q(admin), 'Can search' );
 
 $args = { list => q(acl), name => q(admin), path => $path };
 $args->{items} = [ qw(group1 group2) ];
-$res  = test( $obj, q(splice), $args );
+$res  = test( $rs, q(splice), $args );
 
 ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
     'Can splice' );
