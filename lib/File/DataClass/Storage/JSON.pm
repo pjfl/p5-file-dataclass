@@ -13,27 +13,16 @@ extends qw(File::DataClass::Storage);
 
 has '+extn' => default => q(.json);
 
-# Private methods
+augment '_read_file' => sub {
+   my ($self, $rdr) = @_; return JSON->new->decode( $rdr->all );
+};
 
-sub _read_file {
-   my ($self, $path, $for_update) = @_;
+augment '_write_file' => sub {
+   my ($self, $wtr, $data) = @_;
 
-   my $method = sub { my $rdr = shift; return JSON->new->decode( $rdr->all ) };
-
-   return $self->_read_file_with_locking( $method, $path, $for_update );
-}
-
-sub _write_file {
-   my ($self, $path, $data, $create) = @_;
-
-   my $method = sub {
-      my $wtr = shift;
-      $wtr->append( JSON->new->pretty->encode( $data ) );
-      return $data;
-   };
-
-   return $self->_write_file_with_locking( $method, $path, $create );
-}
+   $wtr->append( JSON->new->pretty->encode( $data ) );
+   return $data;
+};
 
 __PACKAGE__->meta->make_immutable;
 

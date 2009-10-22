@@ -12,29 +12,20 @@ use Text::Wrap;
 
 extends qw(File::DataClass::Storage);
 
+augment '_read_file' => sub {
+   my ($self, $rdr) = @_;
+
+   return $self->_read_filter( [ $rdr->chomp->getlines ] );
+};
+
+augment '_write_file' => sub {
+   my ($self, $wtr, $data) = @_;
+
+   $wtr->println( @{ $self->_write_filter( $data ) } );
+   return $data;
+};
+
 # Private methods
-
-sub _read_file {
-   my ($self, $path, $for_update) = @_;
-
-   my $method = sub {
-      my $rdr = shift; return $self->_read_filter( [ $rdr->chomp->getlines ] );
-   };
-
-   return $self->_read_file_with_locking( $method, $path, $for_update );
-}
-
-sub _write_file {
-   my ($self, $path, $data, $create) = @_;
-
-   my $method = sub {
-      my $wtr = shift;
-      $wtr->println( @{ $self->_write_filter( $data ) } );
-      return $data;
-   };
-
-   return $self->_write_file_with_locking( $method, $path, $create );
-}
 
 sub _read_filter {
    my ($self, $buf) = @_; $buf ||= [];

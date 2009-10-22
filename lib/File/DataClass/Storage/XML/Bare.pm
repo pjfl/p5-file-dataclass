@@ -14,37 +14,24 @@ extends qw(File::DataClass::Storage::XML);
 
 my $PADDING = q(  );
 
-# Private methods
+augment '_read_file' => sub {
+   my ($self, $rdr) = @_; my $data;
 
-sub _read_file {
-   my ($self, $path, $for_update) = @_;
+   $data = $self->_dtd_parse( $rdr->all );
+   $data = XML::Bare->new( text => $data )->parse() || {};
+   $data = $data->{ $self->root_name } || {};
+   $self->_read_filter( $self->_arrays || {}, $data );
+   return $data;
+};
 
-   my $method = sub {
-      my $rdr = shift; my $data;
+augment '_write_file' => sub {
+   my ($self, $wtr, $data) = @_;
 
-      $data = $self->_dtd_parse( $rdr->all );
-      $data = XML::Bare->new( text => $data )->parse() || {};
-      $data = $data->{ $self->root_name } || {};
-      $self->_read_filter( $self->_arrays || {}, $data );
-      return $data;
-   };
+   $wtr->println( @{ $self->_dtd } ) if ($self->_dtd->[0]);
 
-   return $self->_read_file_with_locking( $method, $path, $for_update );
-}
-
-sub _write_file {
-   my ($self, $path, $data, $create) = @_;
-
-   my $method = sub {
-      my $wtr = shift;
-
-      $wtr->println( @{ $self->_dtd } ) if ($self->_dtd->[0]);
-      $wtr->print  ( $self->_write_filter( 0, $self->root_name, $data ) );
-      return $data;
-   };
-
-   return $self->_write_file_with_locking( $method, $path, $create );
-}
+   $wtr->print( $self->_write_filter( 0, $self->root_name, $data ) );
+   return $data;
+};
 
 # Private methods
 

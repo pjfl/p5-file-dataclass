@@ -211,14 +211,6 @@ sub _delete {
 sub _read_file {
    my ($self, $path, $for_update) = @_;
 
-   $self->throw( error => 'Method _read_file not overridden in [_1]',
-                 args  => [ ref $self ] );
-   return;
-}
-
-sub _read_file_with_locking {
-   my ($self, $coderef, $path, $for_update) = @_;
-
    my $pathname = $path->pathname;
 
    $self->lock->set( k => $pathname );
@@ -227,7 +219,7 @@ sub _read_file_with_locking {
    my ($data, $mtime) = $self->_cache_get( $pathname );
 
    if (not $data or $mtime < $path_mtime) {
-      try        { $data = $coderef->( $path->lock ) }
+      try        { $data = inner( $path->lock ) }
       catch ($e) { $self->lock->reset( k => $pathname ); $self->throw( $e ) }
 
       $self->_cache_set( $pathname, $data, $path_mtime );
@@ -268,21 +260,15 @@ sub _update {
 sub _write_file {
    my ($self, $path, $data, $create) = @_;
 
-   $self->throw( error => 'Method _write_file not overridden in [_1]',
-                 args  => [ ref $self ] );
-   return;
-}
+   my $pathname = $path->pathname;
 
-sub _write_file_with_locking {
-   my ($self, $coderef, $path, $create) = @_; my $pathname = $path->pathname;
-
-   unless ($create or ($pathname and -f $pathname)) {
+   unless ($create or $path->is_file) {
       $self->throw( error => 'File [_1] not found', args => [ $pathname ] );
    }
 
-   my $wtr = $path->perms( oct q(0664) )->atomic->lock; my $data;
+   my $wtr = $path->perms( oct q(0664) )->atomic->lock;
 
-   try        { $data = $coderef->( $wtr ) }
+   try        { $data = inner( $wtr, $data ) }
    catch ($e) { $wtr->delete; $self->lock->reset( k => $pathname );
                 $self->throw( $e ) }
 

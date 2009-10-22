@@ -11,38 +11,27 @@ use XML::Simple;
 
 extends qw(File::DataClass::Storage::XML);
 
-# Private methods
+augment '_read_file' => sub {
+   my ($self, $rdr) = @_;
 
-sub _read_file {
-   my ($self, $path, $for_update) = @_;
+   my $data   = $self->_dtd_parse( $rdr->all );
+   my $arrays = [ keys %{ $self->_arrays } ];
+   my $xs     = XML::Simple->new( SuppressEmpty => 1 );
 
-   my $method = sub {
-      my $rdr    = shift;
-      my $data   = $self->_dtd_parse( $rdr->all );
-      my $arrays = [ keys %{ $self->_arrays } ];
-      my $xs     = XML::Simple->new( SuppressEmpty => 1 );
+   return $xs->xml_in( $data, ForceArray => $arrays );
+};
 
-      return $xs->xml_in( $data, ForceArray => $arrays );
-   };
+augment '_write_file' => sub {
+   my ($self, $wtr, $data) = @_;
 
-   return $self->_read_file_with_locking( $method, $path, $for_update );
-}
+   my $xs  = XML::Simple->new( NoAttr   => 1, SuppressEmpty => 1,
+                               RootName => $self->root_name );
 
-sub _write_file {
-   my ($self, $path, $data, $create) = @_;
+   $wtr->println( @{ $self->_dtd } ) if ($self->_dtd->[0]);
 
-   my $method = sub {
-      my $wtr = shift;
-      my $xs  = XML::Simple->new( NoAttr   => 1, SuppressEmpty => 1,
-                                  RootName => $self->root_name );
-
-      $wtr->println( @{ $self->_dtd } ) if ($self->_dtd->[0]);
-      $wtr->append ( $xs->xml_out( $data ) );
-      return $data;
-   };
-
-   return $self->_write_file_with_locking( $method, $path, $create );
-}
+   $wtr->append ( $xs->xml_out( $data ) );
+   return $data;
+};
 
 __PACKAGE__->meta->make_immutable;
 
