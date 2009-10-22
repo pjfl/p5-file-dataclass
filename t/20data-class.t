@@ -101,9 +101,9 @@ $e = test( $obj, q(delete), $args );
 
 ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
 
-my $dumped = catfile( qw(t dumped.xml) );
+my $data = $obj->load( $path ); my $dumped = catfile( qw(t dumped.xml) );
 
-$args = { data => $obj->load( $path ), path => $dumped };
+$args = { data => $data, path => $dumped };
 
 test( $obj, q(dump), $args );
 
