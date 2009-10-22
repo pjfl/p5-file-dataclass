@@ -184,9 +184,9 @@ sub _write_file {
       $self->throw( error => 'File [_1] not found', args => [ $pathname ] );
    }
 
-   my $wtr = $path->perms( oct q(0664) )->atomic->lock;
+   my $wtr = $path->perms( oct q(0664) )->atomic;
 
-   try        { $data = inner( $wtr, $data ) }
+   try        { $data = inner( $wtr->lock, $data ) }
    catch ($e) { $wtr->delete; $self->lock->reset( k => $pathname );
                 $self->throw( $e ) }
 

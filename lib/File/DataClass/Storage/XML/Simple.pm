@@ -25,12 +25,12 @@ augment '_read_file' => sub {
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_;
 
-   my $xs  = XML::Simple->new( NoAttr   => TRUE, SuppressEmpty => TRUE,
-                               RootName => $self->root_name );
+   my $xs = XML::Simple->new( NoAttr   => TRUE, SuppressEmpty => TRUE,
+                              RootName => $self->root_name );
 
    $wtr->println( @{ $self->_dtd } ) if ($self->_dtd->[0]);
 
-   $wtr->append ( $xs->xml_out( $data ) );
+   $wtr->append( $xs->xml_out( $data ) );
    return $data;
 };
 
