@@ -71,7 +71,11 @@ sub set_by_paths {
 # Private methods
 
 sub _build_cache {
-   my $self = shift; return $self->cache_class->new( $self->cache_attributes );
+   my $self = shift; my $attrs = $self->cache_attributes;
+
+   my $class = delete $attrs->{cache_class} || $self->cache_class;
+
+   return $class->new( $attrs );
 }
 
 sub _get_key_and_newest {
@@ -132,7 +136,7 @@ File::DataClass::Cache - Adds extra methods to the Cache::Cache API
 
 =over 3
 
-=item L<Class::Accessor::Fast>
+=item L<Cache::FileCache>
 
 =back
 
