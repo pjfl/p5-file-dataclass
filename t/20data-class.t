@@ -18,7 +18,7 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 21;
+   plan tests => 22;
    use_ok( q(File::DataClass) );
 }
 
@@ -143,9 +143,21 @@ $res  = test( $rs, q(splice), $args );
 ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
     'Can splice' );
 
+my $translate = catfile( qw(t translate.json) );
+
+$args = { from => $path,      from_class => q(XML::Simple),
+          to   => $translate, to_class   => q(JSON) };
+
+test( $obj, q(translate), $args );
+
+my $diff = diff catfile( qw(t default.json) ), $translate;
+
+ok( !$diff, 'Can translate from XML to JSON' );
+
 # Cleanup
 
-io( $dumped )->unlink;
+io( $dumped    )->unlink;
+io( $translate )->unlink;
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
 io( catdir ( qw(t file-dataclass) ) )->rmtree;

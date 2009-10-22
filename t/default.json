@@ -1,0 +1,69 @@
+{
+   "levels" : {
+      "admin" : {
+         "acl" : [
+            "@support"
+         ],
+         "state" : "0"
+      },
+      "library" : {
+         "acl" : [
+            "any"
+         ],
+         "state" : "0"
+      },
+      "entrance" : {
+         "acl" : [
+            "any"
+         ],
+         "state" : "0"
+      }
+   },
+   "_cvs_default" : "@(#)$Id: default.xml 474 2008-09-01 22:48:04Z pjf$",
+   "fields" : {
+      "app_closed.passwd" : {
+         "clear" : "left",
+         "type" : "password"
+      },
+      "feedback.body" : {
+         "width" : "72",
+         "sep" : "&nbsp;&nbsp;&nbsp;",
+         "type" : "textarea",
+         "height" : "24",
+         "palign" : "left"
+      },
+      "app_closed.user" : {
+         "width" : "20"
+      }
+   },
+   "pages" : {
+      "closed" : {
+         "columns" : "1",
+         "class" : "centre narrow"
+      },
+      "cracker" : {
+         "columns" : "1",
+         "class" : "centre narrow"
+      },
+      "err" : {
+         "columns" : "1",
+         "class" : "centre narrow"
+      },
+      "about" : {
+         "columns" : "1",
+         "class" : "centre narrow"
+      },
+      "app_closed" : {
+         "columns" : "1",
+         "class" : "centre narrow"
+      },
+      "default" : {
+         "columns" : "1",
+         "class" : "centre narrow"
+      },
+      "company" : {
+         "columns" : "1",
+         "class" : "centre narrow"
+      }
+   }
+}
