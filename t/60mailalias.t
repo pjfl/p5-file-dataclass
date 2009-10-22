@@ -1,0 +1,56 @@
+# @(#)$Id$
+
+use strict;
+use warnings;
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+use File::Spec::Functions;
+use FindBin qw( $Bin );
+use lib catdir( $Bin, updir, q(lib) );
+
+use English qw(-no_match_vars);
+use Test::More;
+use Text::Diff;
+
+BEGIN {
+   if ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
+       || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) {
+      plan skip_all => q(CPAN Testing stopped);
+   }
+
+   plan tests => 3;
+   use_ok( q(File::DataClass) );
+}
+
+my $args = {
+   result_source_attributes => {
+      schema_attributes => {
+         attributes     => [ qw(comment created owner recipients) ],
+         defaults       => {},
+         element        => q(aliases),
+         storage_class  => q(MailAlias),
+      }
+   },
+   tempdir => q(t),
+};
+my $obj  = File::DataClass->new( $args );
+
+isa_ok( $obj, q(File::DataClass) );
+
+my $path = catfile( qw(t aliases) ); my $dumped = catfile( qw(t dumped) );
+
+$obj->dump( { data => $obj->load( $path ), path => $dumped } );
+
+my $diff = diff $path, $dumped;
+
+ok( !$diff, 'Load and dump roundtrips' );
+
+# Cleanup
+
+unlink $dumped;
+unlink catfile( qw(t ipc_srlock.lck) );
+unlink catfile( qw(t ipc_srlock.shm) );
+
+# Local Variables:
+# mode: perl
+# tab-width: 3
+# End:
