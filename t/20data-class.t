@@ -150,7 +150,7 @@ $args = { from => $path,      from_class => q(XML::Simple),
 
 test( $obj, q(translate), $args );
 
-my $diff = diff catfile( qw(t default.json) ), $translate;
+$diff = diff catfile( qw(t default.json) ), $translate;
 
 ok( !$diff, 'Can translate from XML to JSON' );
 
