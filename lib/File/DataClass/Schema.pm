@@ -8,6 +8,7 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use Moose;
+use TryCatch;
 
 use File::DataClass::Element;
 
@@ -66,7 +67,23 @@ sub select {
 }
 
 sub txn_do {
-   my ($self, @rest) = @_; return $self->storage->txn_do( @rest );
+   my ($self, $path, $code_ref) = @_; my $wantarray = wantarray;
+
+   $self->throw( 'No file path specified' ) unless ($path);
+
+   my $key = q(txn:).$path->pathname; my $res;
+
+   try {
+      $self->storage->lock->set( k => $key );
+
+      if ($wantarray) { @{ $res } = $code_ref->() }
+      else { $res = $code_ref->() }
+
+      $self->storage->lock->reset( k => $key );
+   }
+   catch ($e) { $self->storage->lock->reset( k => $key ); $self->throw( $e ) }
+
+   return $wantarray ? @{ $res } : $res;
 }
 
 sub update_attributes {
@@ -129,6 +146,8 @@ inherit from this
 =head2 select
 
 =head2 txn_do
+
+Executes the supplied coderef wrapped in lock on the pathname
 
 =head2 update_attributes
 

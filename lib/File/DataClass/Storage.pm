@@ -77,26 +77,6 @@ sub select {
    return exists $data->{ $elem } ? $data->{ $elem } : {};
 }
 
-sub txn_do {
-   my ($self, $path, $code_ref) = @_; my $wantarray = wantarray;
-
-   $self->throw( 'No file path specified' ) unless ($path);
-
-   my $key = q(txn:).$path->pathname; my $res;
-
-   try {
-      $self->lock->set( k => $key );
-
-      if ($wantarray) { @{ $res } = $code_ref->() }
-      else { $res = $code_ref->() }
-
-      $self->lock->reset( k => $key );
-   }
-   catch ($e) { $self->lock->reset( k => $key ); $self->throw( $e ) }
-
-   return $wantarray ? @{ $res } : $res;
-}
-
 sub update {
    my ($self, $path, $element_obj, $overwrite, $condition) = @_;
 
@@ -304,8 +284,6 @@ Loads and instantiates a factory subclass
 
 =head1 Subroutines/Methods
 
-=head2 new
-
 =head2 delete
 
    $bool = $self->delete( $element_obj );
@@ -335,10 +313,6 @@ it returns. Paths are instances of L<File::DataClass::IO>
 
 Returns a hash ref containing all the elements of the type specified in the
 schema
-
-=head2 txn_do
-
-Executes the supplied coderef wrapped in lock on the pathname
 
 =head2 update
 

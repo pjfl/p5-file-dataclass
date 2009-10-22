@@ -52,10 +52,6 @@ sub select {
    return exists $data->{ $elem } ? $data->{ $elem } : {};
 }
 
-sub txn_do {
-   my ($self, @rest) = @_; return $self->storage->txn_do( @rest );
-}
-
 sub update {
    my ($self, $path, $element_obj) = @_;
 
@@ -165,8 +161,6 @@ it returns. Paths are instances of L<File::DataClass::IO>
 
 Returns a hash ref containing all the elements of the type specified in the
 schema
-
-=head2 txn_do
 
 =head2 update
 
