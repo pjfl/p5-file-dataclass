@@ -99,8 +99,8 @@ sub _all_file_contents {
 
    local $RS = undef; my $all = $self->io_handle->getline;
 
-   $self->error_check;
-   $self->autoclose && $self->close;
+   $self->error_check; $self->autoclose && $self->close;
+
    return $all;
 }
 
@@ -170,8 +170,7 @@ sub basename {
 sub binary {
    my $self = shift;
 
-   $self->is_open && CORE::binmode( $self->io_handle );
-   $self->_binary( TRUE );
+   $self->is_open && CORE::binmode( $self->io_handle ); $self->_binary( TRUE );
 
    return $self;
 }
@@ -337,9 +336,8 @@ sub empty {
    my $self = shift;
 
    $self->is_file && return -z $self->name;
-
-   $self->throw( error => 'Path [_1] not found',
-                 args  => [ $self->name ] ) unless ($self->is_dir);
+   $self->is_dir  || $self->throw( error => 'Path [_1] not found',
+                                   args  => [ $self->name ] );
 
    return $self->next ? FALSE : TRUE;
 }
