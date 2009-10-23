@@ -105,19 +105,15 @@ sub _all_file_contents {
 }
 
 sub append {
-   my ($self, @rest) = @_;
+   my ($self, @rest) = @_; $self->assert_open( q(a) );
 
-   $self->assert_open( q(a) ); $self->print( @rest );
-
-   return;
+   return $self->print( @rest );
 }
 
 sub appendln {
-   my ($self, @rest) = @_;
+   my ($self, @rest) = @_; $self->assert_open( q(a) );
 
-   $self->assert_open( q(a) ); $self->println( @rest );
-
-   return;
+   return $self->println( @rest );
 }
 
 sub assert {
@@ -261,7 +257,7 @@ sub _close {
 }
 
 sub _close_dir {
-   my $self = shift; return $self->is_open ? $self->_close : undef;
+   my $self = shift; return $self->is_open ? $self->_close : $self;
 }
 
 sub _close_file {
@@ -273,7 +269,7 @@ sub _close_file {
                           args  => [ $path, $self->name ] );
    }
 
-   $self->is_open || return;
+   $self->is_open || return $self;
    $self->unlock;
    return $self->_close;
 }
@@ -303,8 +299,7 @@ sub delete_tmp_files {
       unlink $entry->pathname if ($entry->filename =~ m{ \A $pat \z }mx);
    }
 
-   $self->_close_dir;
-   return;
+   return $self->_close_dir;
 }
 
 sub DEMOLISH {
@@ -573,8 +568,8 @@ sub _open_args {
    if ($self->exists) { $perms = $self->stat->{mode} & 07777 }
    else { $perms ||= $self->_perms || PERMS }
 
-   $self->_perms( $perms );
-   $self->_umask_push( $perms );
+   $self->_umask_push( $self->_perms( $perms ) );
+
    return @args;
 }
 
@@ -588,8 +583,8 @@ sub _open_file {
 
    $self->io_handle( IO::File->new( @args ) ) && $self->is_open( TRUE );
    $self->_umask_pop;
-   $self->is_open ||
-      $self->throw( error => 'File [_1] cannot open', args => [ $args[0] ] );
+   $self->is_open || $self->throw( error => 'File [_1] cannot open',
+                                   args  => [ $args[0] ] );
    $self->set_binmode;
    $self->set_lock;
    return $self;
@@ -636,8 +631,7 @@ sub read {
 sub read_dir {
    my $self = shift; my $dir_pat = $self->dir_pattern; my $name;
 
-   $self->type || $self->dir;
-   $self->assert_open;
+   $self->type || $self->dir; $self->assert_open;
 
    if (wantarray) {
       my @names = grep { $_ !~ $dir_pat } $self->io_handle->read;
@@ -784,11 +778,11 @@ sub _umask_pop {
 }
 
 sub _umask_push {
-   my ($self, $perms) = @_; my $first = $self->_umask->[0];
+   my ($self, $perms) = @_; my $first = $self->_umask->[0]; $perms ^= 0777;
 
    $first && $first == NO_UMASK_STACK && return umask;
-   push @{ $self->_umask }, umask;
-   return umask ($perms ^ 0777);
+   push @{ $self->_umask }, umask $perms;
+   return $perms;
 }
 
 sub unlink {
