@@ -11,7 +11,13 @@ use Moose;
 
 with qw(File::DataClass::Util);
 
-has 'storage' => is => 'ro', isa => 'Object', required => TRUE;
+has 'storage' => is => 'ro', isa => 'Object', required => TRUE,
+   handles => [ qw(load lock validate_params) ];
+
+sub dump {
+   # Moose delegation bug
+   my ($self, $path, $data) = @_; return $self->storage->dump( $path, $data );
+}
 
 sub delete {
    my ($self, $path, $element_obj) = @_;
@@ -27,18 +33,10 @@ sub delete {
    return $deleted;
 }
 
-sub dump {
-   my ($self, $path, $data) = @_; return $self->storage->dump( $path, $data );
-}
-
 sub insert {
    my ($self, $path, $element_obj) = @_;
 
    return $self->_update( $path, $element_obj, FALSE );
-}
-
-sub load {
-   my ($self, @paths) = @_; return $self->storage->load( @paths );
 }
 
 sub select {
@@ -56,10 +54,6 @@ sub update {
    my ($self, $path, $element_obj) = @_;
 
    return $self->_update( $path, $element_obj, TRUE );
-}
-
-sub validate_params {
-   my ($self, @rest) = @_; return $self->storage->validate_params( @rest );
 }
 
 # Private methods

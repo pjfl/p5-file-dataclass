@@ -46,29 +46,9 @@ sub insert {
 }
 
 sub load {
-   my ($self, @paths) = @_; my $red;
+   my ($self, @paths) = @_; $paths[0] || return {};
 
-   return {} unless ($paths[0]);
-
-   my ($data, $stale) = $self->cache->get_by_paths( \@paths );
-
-   return $data if ($data and not $stale); $data = {};
-
-   return $self->_read_file( $paths[0], FALSE ) || {} if (scalar @paths == 1);
-
-   for my $path (@paths) {
-      next unless ($red = $self->_read_file( $path, FALSE ));
-
-      for (keys %{ $red }) {
-         $data->{ $_ } = exists $data->{ $_ }
-                       ? merge( $data->{ $_ }, $red->{ $_ } )
-                       : $red->{ $_ };
-      }
-   }
-
-   $self->cache->set_by_paths( \@paths, $data );
-
-   return $data;
+   return $self->_load( @paths );
 }
 
 sub select {
@@ -82,7 +62,7 @@ sub select {
 sub update {
    my ($self, $path, $element_obj, $overwrite, $condition) = @_;
 
-   $overwrite ||= TRUE; $condition ||= sub { TRUE };
+   defined $overwrite or $overwrite = TRUE; $condition ||= sub { TRUE };
 
    return $self->_update( $path, $element_obj, $overwrite, $condition );
 }
@@ -109,13 +89,38 @@ sub _delete {
 
    if (exists $data->{ $elem } and exists $data->{ $elem }->{ $name }) {
       delete $data->{ $elem }->{ $name };
-      delete $data->{ $elem } if (0 <= scalar keys %{ $data->{ $elem } });
+      delete $data->{ $elem } if (scalar keys %{ $data->{ $elem } } == 0);
       $self->_write_file( $path, $data );
       return TRUE;
    }
 
    $self->lock->reset( k => $path->pathname );
    return FALSE;
+}
+
+sub _load {
+   my ($self, @paths) = @_;
+   my ($data, $stale) = $self->cache->get_by_paths( \@paths );
+
+   return $data if ($data and not $stale);
+
+   return $self->_read_file( $paths[0], FALSE ) || {} if (scalar @paths == 1);
+
+   my $red; $data = {};
+
+   for my $path (@paths) {
+      next unless ($red = $self->_read_file( $path, FALSE ));
+
+      for (keys %{ $red }) {
+         $data->{ $_ } = exists $data->{ $_ }
+                       ? merge( $data->{ $_ }, $red->{ $_ } )
+                       : $red->{ $_ };
+      }
+   }
+
+   $self->cache->set_by_paths( \@paths, $data );
+
+   return $data;
 }
 
 sub _meta_pack {
@@ -144,7 +149,6 @@ sub _read_file {
       catch ($e) { $self->lock->reset( k => $pathname ); $self->throw( $e ) }
 
       $self->cache->set( $pathname, $data, $self->_meta_pack( $path_mtime ) );
-
       $self->log->debug( "Read file  $pathname" ) if ($self->debug);
    }
    else {
@@ -187,6 +191,7 @@ sub _write_file {
       $self->throw( error => 'File [_1] not found', args => [ $pathname ] );
    }
 
+   # TODO: Make perms + atomic configurable
    my $wtr = $path->perms( oct q(0664) )->atomic;
 
    try        { $data = inner( $wtr->lock, $data ) }

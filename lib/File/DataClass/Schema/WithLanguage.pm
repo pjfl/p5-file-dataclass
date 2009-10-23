@@ -10,10 +10,10 @@ use File::DataClass::Combinator;
 use File::DataClass::Constants;
 use Moose;
 
-with qw(File::DataClass::Schema);
+extends qw(File::DataClass::Schema);
 
 has 'lang'     => is => 'rw', isa => 'Str', default => NUL;
-has 'lang_dep' => is => 'rw', isa => 'Maybe[ArrayRef]';
+has 'lang_dep' => is => 'rw', isa => 'Maybe[HashRef]';
 
 sub BUILD {
    my $self = shift;
@@ -55,10 +55,7 @@ inherit from this
 
 =head1 Subroutines/Methods
 
-=head2 new
-
-Creates a new instance of the storage class which defaults to
-L<File::DataClass::Storage::XML::Simple>
+=head2 BUILD
 
 If the schema is language dependent then an instance of
 L<File::DataClass::Combinator> is created as a proxy for the

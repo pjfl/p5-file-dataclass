@@ -31,7 +31,7 @@ sub get_by_paths {
    my ($key, $newest) = $self->_get_key_and_newest( $paths );
    my ($data, $meta)  = $self->get( $key );
 
-   return ($data, $meta->{mtime} < $newest);
+   return ($data, ($newest == 0 or $meta->{mtime} < $newest));
 }
 
 sub remove {
