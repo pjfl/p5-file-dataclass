@@ -597,10 +597,8 @@ sub _open_file {
 
    $self->io_handle( IO::File->new( @args ) ) && $self->is_open( TRUE );
    $self->_restore_umask;
-
-   $self->throw( error => 'File [_1] cannot open', args => [ $args[0] ] )
-      unless ($self->is_open);
-
+   $self->is_open ||
+      $self->throw( error => 'File [_1] cannot open', args => [ $args[0] ] );
    $self->set_binmode;
    $self->set_lock;
    return $self;
