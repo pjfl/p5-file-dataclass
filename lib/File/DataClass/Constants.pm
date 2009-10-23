@@ -26,7 +26,7 @@ sub CODE () {
 }
 
 sub DIR_PERMS () {
-   return oct q(0750);
+   return oct q(0770);
 }
 
 sub EVIL () {
@@ -50,7 +50,7 @@ sub NUL () {
 }
 
 sub PERMS () {
-   return oct q(0640);
+   return oct q(0660);
 }
 
 sub SPC () {

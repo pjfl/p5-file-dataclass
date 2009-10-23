@@ -430,7 +430,7 @@ sub _get_open_args {
                 ? $self->_get_atomic_path : $self->name;
    my @args     = ( $pathname, $self->mode( $mode || $self->mode ) );
 
-   $perms ||= $self->_perms || ($self->stat->{mode} || 0) & 07777;
+   $perms ||= $self->_perms || ($self->stat->{mode} || 0) & 07777 || PERMS;
    $self->_set_umask( $perms );
    return @args;
 }
@@ -593,15 +593,14 @@ sub _open_file {
    $self->is_open && return $self;
    $self->_assert && $self->assert_filepath;
 
-   my @args = $self->_get_open_args( @rest ); my $io;
+   my @args = $self->_get_open_args( @rest );
 
-   unless ($io = IO::File->new( @args )) {
-      $self->throw( error => 'File [_1] cannot open', args  => [ $args[0] ] );
-   }
-
-   $self->io_handle( $io );
-   $self->is_open( TRUE );
+   $self->io_handle( IO::File->new( @args ) ) && $self->is_open( TRUE );
    $self->_restore_umask;
+
+   $self->throw( error => 'File [_1] cannot open', args => [ $args[0] ] )
+      unless ($self->is_open);
+
    $self->set_binmode;
    $self->set_lock;
    return $self;
