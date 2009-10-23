@@ -50,7 +50,7 @@ sub NUL () {
 }
 
 sub PERMS () {
-   return oct q(0644);
+   return oct q(0640);
 }
 
 sub SPC () {
