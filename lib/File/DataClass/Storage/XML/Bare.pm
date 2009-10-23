@@ -113,7 +113,7 @@ sub _write_filter {
             for (sort keys %{ $value }) {
                $xml .= $padding.q(<).$key.q(>)."\n";
                $xml .= $padding.$PADDING.q(<name>).$_.q(</name>)."\n";
-               $xml .= $self->_write_filter( $level + 1, q(), $value->{ $_ } );
+               $xml .= $self->_write_filter( $level + 1, NUL, $value->{ $_ } );
                $xml .= $padding.q(</).$key.q(>)."\n";
             }
          }
