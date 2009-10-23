@@ -26,7 +26,7 @@ sub CODE () {
 }
 
 sub DIR_PERMS () {
-   return oct q(0755);
+   return oct q(0750);
 }
 
 sub EVIL () {

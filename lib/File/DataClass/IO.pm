@@ -52,6 +52,7 @@ has '_filter'         => is => 'rw', isa => 'Maybe[CodeRef]'                ;
 has '_lock'           => is => 'rw', isa => 'Bool',      default    => FALSE;
 has '_perms'          => is => 'rw', isa => 'Num',       default    => 0    ;
 has '_separator'      => is => 'rw', isa => 'Str',       default    => $RS  ;
+has '_umask'          => is => 'rw', isa => 'Num',       default    => 0    ;
 has '_utf8'           => is => 'rw', isa => 'Bool',      default    => FALSE;
 
 around BUILDARGS => sub {
@@ -126,12 +127,18 @@ sub assert {
 sub assert_dirpath {
    my ($self, $dir_name) = @_; $dir_name || return;
 
-   return $dir_name if (-d $dir_name
-                        or CORE::mkdir( $self->name )
-                        or File::Path::mkpath( $dir_name ));
+   return $dir_name if (-d $dir_name);
 
-   $self->throw( error => 'Path [_1] cannot create', args  => [ $dir_name ] );
-   return; # Never reached
+   $self->_set_umask( DIR_PERMS );
+
+   CORE::mkdir( $dir_name ) or File::Path::mkpath( $dir_name );
+
+   $self->_restore_umask;
+
+   $self->throw( error => 'Path [_1] cannot create', args  => [ $dir_name ] )
+      unless (-d $dir_name);
+
+   return $dir_name;
 }
 
 sub assert_filepath {
@@ -424,9 +431,7 @@ sub _get_open_args {
    my @args     = ( $pathname, $self->mode( $mode || $self->mode ) );
 
    $perms ||= $self->_perms || ($self->stat->{mode} || 0) & 07777;
-
-   umask ($perms ^ 0777) if ($perms);
-
+   $self->_set_umask( $perms );
    return @args;
 }
 
@@ -530,13 +535,19 @@ sub lock {
 }
 
 sub mkdir {
-   my ($self, $perms) = @_;
+   my ($self, $perms) = @_; $self->_set_umask( $perms || DIR_PERMS );
 
-   return CORE::mkdir( $self->name );
+   my $result = CORE::mkdir( $self->name ); $self->_restore_umask;
+
+   return $result;
 }
 
 sub mkpath {
-   my $self = shift; return File::Path::mkpath( $self->name );
+   my ($self, $perms) = @_; $self->_set_umask( $perms || DIR_PERMS );
+
+   my $result = File::Path::mkpath( $self->name ); $self->_restore_umask;
+
+   return $result;
 }
 
 sub next {
@@ -590,6 +601,7 @@ sub _open_file {
 
    $self->io_handle( $io );
    $self->is_open( TRUE );
+   $self->_restore_umask;
    $self->set_binmode;
    $self->set_lock;
    return $self;
@@ -664,6 +676,10 @@ sub relative {
    my $self = shift; $self->name( $self->abs2rel ); return $self;
 }
 
+sub _restore_umask {
+   my $self = shift; umask $self->_umask; return;
+}
+
 sub rmdir {
    my $self = shift; return rmdir $self->name;
 }
@@ -712,6 +728,14 @@ sub set_lock {
    flock $self->io_handle, $self->mode eq q(r) ? LOCK_SH : LOCK_EX;
 
    return $self;
+}
+
+sub _set_umask {
+   my ($self, $perms) = @_;
+
+   $self->_umask( umask ); umask ($perms ^ 0777) if ($perms);
+
+   return;
 }
 
 sub slurp {
