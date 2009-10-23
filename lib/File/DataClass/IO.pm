@@ -57,15 +57,20 @@ has '_umask'          => is => 'rw', isa => 'ArrayRef[Num]',
 has '_utf8'           => is => 'rw', isa => 'Bool',      default    => FALSE;
 
 around BUILDARGS => sub {
-   my ($orig, $class, @rest) = @_; my $attrs;
+   my ($orig, $class, @rest) = @_; my $car = $rest[0]; my $attrs;
 
-   return $class->$orig( @rest ) unless ($attrs = $rest[0]);
-
-   unless (ref $attrs eq HASH) {
+   if    ($car and ref $car eq HASH)  { $attrs = $car }
+   elsif ($car and ref $car eq ARRAY) {
+      $attrs = { name => $car->[0] };
+      $attrs->{mode  } = $car->[1] if ($car->[1]);
+      $attrs->{_perms} = $car->[2] if ($car->[2]);
+   }
+   elsif ($car and not ref $car) {
       $attrs = { name => $rest[0] };
       $attrs->{mode  } = $rest[1] if ($rest[1]);
       $attrs->{_perms} = $rest[2] if ($rest[2]);
    }
+   else { $attrs = {} }
 
    return $class->$orig( $attrs );
 };
