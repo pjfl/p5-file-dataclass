@@ -4,29 +4,26 @@ package File::MailAlias;
 
 use strict;
 use warnings;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
-use parent qw(CatalystX::Usul::File);
 
-use CatalystX::Usul::Constants;
+use File::DataClass::Constants;
 use English qw(-no_match_vars);
 use File::Copy;
-use MRO::Compat;
+use Moose;
 
-__PACKAGE__->config( cmd_suffix        => q(_cli),
-                     commit            => FALSE,
-                     file              => q(aliases),
-                     newaliases        => q(newaliases),
-                     schema_attributes => {
-                        attributes     =>
-                           [ qw(comment created owner recipients) ],
-                        defaults       => {},
-                        element        => q(aliases),
-                        lang_dep       => FALSE,
-                        storage_class  => q(MailAlias), },
-                     system_aliases    => q(/etc/mail/aliases), );
-
-__PACKAGE__->mk_accessors( qw(cmd_suffix commit commit_cmd file newaliases
-                              system_aliases update_cmd) );
+has 'cmd_suffix' => is => 'ro', isa => 'Str',  default => q(_cli);
+has 'commit'     => is => 'rw', isa => 'Bool', default => FALSE;
+has 'file'       => is => 'rw', isa => 'Str',  default => q(aliases);
+has 'newaliases' => is => 'ro', isa => 'Str',  default => q(newaliases);
+has 'schema_attributes' =>
+   is => 'ro', isa => 'HashRef', default =>
+   sub { return { attributes     => [ qw(comment created owner recipients) ],
+                  defaults       => {},
+                  element        => q(aliases),
+                  storage_class  => q(+File::MailAlias::Storage), } };
+has 'system_aliases' =>
+   is => 'ro', isa => 'Str',     default => q(/etc/mail/aliases);
 
 sub new {
    my ($self, $app, $config) = @_;
