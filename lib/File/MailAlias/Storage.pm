@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package File::Mail::Alias::Storage;
+package File::MailAlias::Storage;
 
 use strict;
 use namespace::autoclean;
@@ -124,7 +124,7 @@ __END__
 
 =head1 Name
 
-File::Mail::Alias::Storage - Storage class file the mail alias file
+File::MailAlias::Storage - Storage class file the mail alias file
 
 =head1 Version
 
@@ -132,7 +132,7 @@ File::Mail::Alias::Storage - Storage class file the mail alias file
 
 =head1 Synopsis
 
-   use File::Mail::Alias::Storage;
+   use File::MailAlias::Storage;
 
 =head1 Description
 

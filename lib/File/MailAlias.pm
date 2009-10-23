@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package CatalystX::Usul::MailAliases;
+package File::MailAlias;
 
 use strict;
 use warnings;
@@ -110,7 +110,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::MailAliases - Manipulate the mail aliases file
+File::MailAlias - Manipulate the mail aliases file
 
 =head1 Version
 
@@ -118,9 +118,7 @@ CatalystX::Usul::MailAliases - Manipulate the mail aliases file
 
 =head1 Synopsis
 
-   use CatalystX::Usul::MailAliases;
-
-   $alias_obj = CatalystX::Usul::MailAliases->new( $app, $config );
+   use File::MailAlias;
 
 =head1 Description
 
@@ -247,7 +245,7 @@ None
 
 =over 3
 
-=item L<CatalystX::Usul::File>
+=item L<File::DataClass>
 
 =back
 
@@ -267,7 +265,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2008 Peter Flanigan. All rights reserved
+Copyright (c) 2009 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
