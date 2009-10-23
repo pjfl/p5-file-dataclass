@@ -477,11 +477,11 @@ sub getlines {
 sub _init {
    my ($self, $type, $name) = @_;
 
-   $self->autoclose  ( TRUE  );
-   $self->io_handle  ( undef );
-   $self->is_open    ( FALSE );
-   $self->name       ( $name ) if ($name);
-   $self->type       ( $type );
+   $self->autoclose( TRUE  );
+   $self->io_handle( undef );
+   $self->is_open  ( FALSE );
+   $self->name     ( $name ) if ($name);
+   $self->type     ( $type );
 
    return $self;
 }
