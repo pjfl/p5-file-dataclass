@@ -56,7 +56,7 @@ is( $source->schema->lang, q(en), 'Has language attribute' );
 
 my $path = catfile( qw(t default.xml) );
 
-my $rs = $source->resultset( { path => $path } ); my $args = {};
+my $rs = $source->resultset( $path ); my $args = {};
 
 $args->{name  } = q(dummy);
 $args->{fields}->{columns} = 3;

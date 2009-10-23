@@ -71,7 +71,7 @@ $e = test( $source, q(resultset) );
 
 is( $e, 'No file path specified', 'No file path specified' );
 
-my $rs = $source->resultset( { path => $path } );
+my $rs = $source->resultset( $path );
 
 $args = {}; $e = test( $rs, q(create), $args );
 
@@ -116,27 +116,27 @@ $e = test( $rs, q(delete), $args );
 ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
 
 $schema->element( q(fields) ); $schema->attributes( [ qw(width) ] );
-$args = { name => q(feedback.body), path => $path };
+$args = { name => q(feedback.body) };
 
 $res = test( $rs, q(list), $args );
 
 ok( $res->element->width == 72 && scalar @{ $res->list } == 3, 'Can list' );
 
 $schema->element( q(levels) ); $schema->attributes( [ qw(acl state) ] );
-$args = { list => q(acl), name => q(admin), path => $path };
+$args = { list => q(acl), name => q(admin) };
 $args->{items} = [ qw(group1 group2) ];
 $res  = test( $rs, q(push), $args );
 
 ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
     'Can push' );
 
-$args = { criterion => { acl => q(@support) }, path => $path };
+$args = { criterion => { acl => q(@support) } };
 
 my @res = test( $rs, q(search), $args );
 
 ok( $res[0] && $res[0]->name eq q(admin), 'Can search' );
 
-$args = { list => q(acl), name => q(admin), path => $path };
+$args = { list => q(acl), name => q(admin) };
 $args->{items} = [ qw(group1 group2) ];
 $res  = test( $rs, q(splice), $args );
 

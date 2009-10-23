@@ -36,7 +36,7 @@ sub dump {
 }
 
 sub resultset {
-   my ($self, $args) = @_; my $path = $args->{path} || $self->path;
+   my ($self, $path) = @_; $path ||= $self->path;
 
    $path = $self->io( $path ) if ($path and not blessed $path);
 
