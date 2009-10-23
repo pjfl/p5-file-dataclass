@@ -9,7 +9,7 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 my @constants;
 
 BEGIN {
-   @constants = ( qw(ARRAY CODE DIR_PERMS EVIL FALSE HASH LSB NUL PERMS
+   @constants = ( qw(ARRAY CODE EVIL FALSE HASH LSB NUL PERMS
                      SPC STAT_FIELDS TRUE) );
 }
 
@@ -23,10 +23,6 @@ sub ARRAY () {
 
 sub CODE () {
    return q(CODE);
-}
-
-sub DIR_PERMS () {
-   return oct q(0770);
 }
 
 sub EVIL () {
@@ -99,10 +95,6 @@ String ARRAY
 =head2 CODE
 
 String CODE
-
-=head2 DIR_PERMS
-
-Default permissions for directory creation
 
 =head2 EVIL
 

@@ -191,9 +191,7 @@ sub _write_file {
       $self->throw( error => 'File [_1] not found', args => [ $pathname ] );
    }
 
-   my $wtr = $path->atomic;
-
-   $wtr->perms( $self->schema->source->perms ) if ($create);
+   my $wtr = $path->perms( $self->schema->source->perms )->atomic;
 
    try        { $data = inner( $wtr->lock, $data ) }
    catch ($e) { $wtr->delete; $self->lock->reset( k => $pathname );

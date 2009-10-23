@@ -52,7 +52,8 @@ has '_filter'         => is => 'rw', isa => 'Maybe[CodeRef]'                ;
 has '_lock'           => is => 'rw', isa => 'Bool',      default    => FALSE;
 has '_perms'          => is => 'rw', isa => 'Num',       default    => 0    ;
 has '_separator'      => is => 'rw', isa => 'Str',       default    => $RS  ;
-has '_umask'          => is => 'rw', isa => 'Num',       default    => 0    ;
+has '_umask'          => is => 'rw', isa => 'ArrayRef[Num]',
+   default            => sub { return [] }                                  ;
 has '_utf8'           => is => 'rw', isa => 'Bool',      default    => FALSE;
 
 around BUILDARGS => sub {
@@ -129,13 +130,11 @@ sub assert_dirpath {
 
    return $dir_name if (-d $dir_name);
 
-   $self->_set_umask( DIR_PERMS );
-
+   $self->_umask_push( $self->_dir_perms( $self->_perms || PERMS ) );
    CORE::mkdir( $dir_name ) or File::Path::mkpath( $dir_name );
+   $self->_umask_pop;
 
-   $self->_restore_umask;
-
-   $self->throw( error => 'Path [_1] cannot create', args  => [ $dir_name ] )
+   $self->throw( error => 'Path [_1] cannot create', args => [ $dir_name ] )
       unless (-d $dir_name);
 
    return $dir_name;
@@ -327,6 +326,10 @@ sub dir {
    my ($self, @rest) = @_; return $self->_init( q(dir), @rest );
 }
 
+sub _dir_perms {
+   my ($self, $perms) = @_; return (($perms & 0444) >> 2) | $perms;
+}
+
 sub dirname {
    my $self = shift; $self->name || return;
 
@@ -419,20 +422,6 @@ sub _get_atomic_path {
    my $file = $self->atomic_pref.$self->filename;
 
    return $path ? File::Spec->catfile( $path, $file ) : $file;
-}
-
-sub _get_open_args {
-   my ($self, $mode, $perms) = @_;
-
-   $self->name || $self->throw( 'No file path specified' );
-
-   my $pathname = $self->_atomic && !$self->is_reading
-                ? $self->_get_atomic_path : $self->name;
-   my @args     = ( $pathname, $self->mode( $mode || $self->mode ) );
-
-   $perms ||= $self->_perms || ($self->stat->{mode} || 0) & 07777 || PERMS;
-   $self->_set_umask( $perms );
-   return @args;
 }
 
 sub getline {
@@ -535,17 +524,21 @@ sub lock {
 }
 
 sub mkdir {
-   my ($self, $perms) = @_; $self->_set_umask( $perms || DIR_PERMS );
+   my ($self, $perms) = @_;
 
-   my $result = CORE::mkdir( $self->name ); $self->_restore_umask;
+   $self->_umask_push( $perms || $self->_dir_perms( $self->_perms || PERMS ) );
+
+   my $result = CORE::mkdir( $self->name ); $self->_umask_pop;
 
    return $result;
 }
 
 sub mkpath {
-   my ($self, $perms) = @_; $self->_set_umask( $perms || DIR_PERMS );
+   my ($self, $perms) = @_;
 
-   my $result = File::Path::mkpath( $self->name ); $self->_restore_umask;
+   $self->_umask_push( $perms || $self->_dir_perms( $self->_perms || PERMS ) );
+
+   my $result = File::Path::mkpath( $self->name ); $self->_umask_pop;
 
    return $result;
 }
@@ -576,15 +569,27 @@ sub _open_dir {
 
    $self->is_open && return $self;
    $self->_assert && $self->assert_dirpath( $self->name );
+   $self->io_handle( IO::Dir->new( $self->name ) ) && $self->is_open( TRUE );
+   $self->is_open || $self->throw( error => 'Directory [_1] cannot open',
+                                   args  => [ $self->name ] );
 
-   unless ($io = IO::Dir->new( $self->name )) {
-      $self->throw( error => 'Directory [_1] cannot open',
-                    args  => [ $self->name ] );
-   }
-
-   $self->io_handle( $io );
-   $self->is_open( TRUE );
    return $self;
+}
+
+sub _open_args {
+   my ($self, $mode, $perms) = @_;
+
+   $self->name || $self->throw( 'No file path specified' );
+
+   my $pathname = $self->_atomic && !$self->is_reading
+                ? $self->_get_atomic_path : $self->name;
+   my @args     = ( $pathname, $self->mode( $mode || $self->mode ) );
+
+   if ($self->exists) { $perms = $self->stat->{mode} & 07777 }
+   else { $perms ||= $self->_perms || PERMS }
+
+   $self->_umask_push( $perms );
+   return @args;
 }
 
 sub _open_file {
@@ -593,10 +598,10 @@ sub _open_file {
    $self->is_open && return $self;
    $self->_assert && $self->assert_filepath;
 
-   my @args = $self->_get_open_args( @rest );
+   my @args = $self->_open_args( @rest );
 
    $self->io_handle( IO::File->new( @args ) ) && $self->is_open( TRUE );
-   $self->_restore_umask;
+   $self->_umask_pop;
    $self->is_open ||
       $self->throw( error => 'File [_1] cannot open', args => [ $args[0] ] );
    $self->set_binmode;
@@ -673,10 +678,6 @@ sub relative {
    my $self = shift; $self->name( $self->abs2rel ); return $self;
 }
 
-sub _restore_umask {
-   my $self = shift; umask $self->_umask; return;
-}
-
 sub rmdir {
    my $self = shift; return rmdir $self->name;
 }
@@ -725,14 +726,6 @@ sub set_lock {
    flock $self->io_handle, $self->mode eq q(r) ? LOCK_SH : LOCK_EX;
 
    return $self;
-}
-
-sub _set_umask {
-   my ($self, $perms) = @_;
-
-   $self->_umask( umask ); umask ($perms ^ 0777) if ($perms);
-
-   return;
 }
 
 sub slurp {
@@ -799,6 +792,20 @@ sub touch {
    else { $self->_open_file( q(w) )->close }
 
    return $self;
+}
+
+sub _umask_pop {
+   my $self = shift; my $perms = $self->_umask->[-1]; $perms || return;
+
+   umask pop @{ $self->_umask };
+   return $perms;
+}
+
+sub _umask_push {
+   my ($self, $perms) = @_;
+
+   push @{ $self->_umask }, umask;
+   return umask ($perms ^ 0777);
 }
 
 sub unlink {
