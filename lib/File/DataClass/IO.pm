@@ -101,7 +101,6 @@ sub _all_file_contents {
 
    $self->error_check;
    $self->autoclose && $self->close;
-
    return $all;
 }
 
@@ -126,17 +125,16 @@ sub assert {
 }
 
 sub assert_dirpath {
-   my ($self, $dir_name) = @_; $dir_name || return;
+   my ($self, $dir_name) = @_;
 
-   return $dir_name if (-d $dir_name);
+   $dir_name || return; -d $dir_name && return $dir_name;
 
-   $self->_umask_push( $self->_dir_perms( $self->_perms || PERMS ) );
+   $self->_umask_push( $self->_dir_perms );
    CORE::mkdir( $dir_name ) or File::Path::mkpath( $dir_name );
    $self->_umask_pop;
 
-   $self->throw( error => 'Path [_1] cannot create', args => [ $dir_name ] )
-      unless (-d $dir_name);
-
+   -d $dir_name || $self->throw( error => 'Path [_1] cannot create',
+                                 args  => [ $dir_name ] );
    return $dir_name;
 }
 
@@ -200,9 +198,7 @@ sub buffer {
       return $self;
    }
 
-   unless (exists $self->{buffer}) {
-      $self->{buffer} = do { my $x = NUL; \$x };
-   }
+   exists $self->{buffer} || ($self->{buffer} = do { my $x = NUL; \$x });
 
    return $self->{buffer};
 }
@@ -280,7 +276,6 @@ sub _close_file {
 
    $self->is_open || return;
    $self->unlock;
-
    return $self->_close;
 }
 
@@ -327,7 +322,9 @@ sub dir {
 }
 
 sub _dir_perms {
-   my ($self, $perms) = @_; return (($perms & 0444) >> 2) | $perms;
+   my ($self, $perms) = @_; $perms ||= $self->_perms || PERMS;
+
+   return (($perms & 0444) >> 2) | $perms;
 }
 
 sub dirname {
@@ -399,7 +396,7 @@ sub _find {
 
    my $filter = $self->_filter; my (@all, $io);
 
-   $level = $self->_deep ? 0 : 1 unless (defined $level);
+   defined $level || ($level = $self->_deep ? 0 : 1);
 
    while ($io = $self->next) {
       unless (defined $filter and not map { $filter->() } ($io)) {
@@ -431,15 +428,12 @@ sub getline {
 
    {  local $RS = $separator || $self->_separator;
       $line = $self->io_handle->getline;
-      CORE::chomp $line if ($self->_chomp && defined $line);
+      $self->_chomp && defined $line && CORE::chomp $line;
    }
 
    $self->error_check;
-
-   return $line if (defined $line);
-
+   defined $line && return $line;
    $self->autoclose && $self->close;
-
    return;
 }
 
@@ -455,11 +449,8 @@ sub getlines {
    }
 
    $self->error_check;
-
-   return (@lines) if (scalar @lines);
-
+   scalar @lines && return (@lines);
    $self->autoclose && $self->close;
-
    return ();
 }
 
@@ -524,9 +515,7 @@ sub lock {
 }
 
 sub mkdir {
-   my ($self, $perms) = @_;
-
-   $self->_umask_push( $perms || $self->_dir_perms( $self->_perms || PERMS ) );
+   my ($self, $perms) = @_; $self->_umask_push( $perms || $self->_dir_perms );
 
    my $result = CORE::mkdir( $self->name ); $self->_umask_pop;
 
@@ -534,9 +523,7 @@ sub mkdir {
 }
 
 sub mkpath {
-   my ($self, $perms) = @_;
-
-   $self->_umask_push( $perms || $self->_dir_perms( $self->_perms || PERMS ) );
+   my ($self, $perms) = @_; $self->_umask_push( $perms || $self->_dir_perms );
 
    my $result = File::Path::mkpath( $self->name ); $self->_umask_pop;
 
@@ -546,11 +533,11 @@ sub mkpath {
 sub next {
    my $self = shift; my $name;
 
-   return unless (defined ($name = $self->read_dir));
+   defined ($name = $self->read_dir) || return;
 
    my $io = $self->_constructor( File::Spec->catfile( $self->name, $name ) );
 
-   $io->filter( $self->_filter ) if (defined $self->_filter);
+   defined $self->_filter && $io->filter( $self->_filter );
 
    return $io;
 }
@@ -588,6 +575,7 @@ sub _open_args {
    if ($self->exists) { $perms = $self->stat->{mode} & 07777 }
    else { $perms ||= $self->_perms || PERMS }
 
+   $self->_perms( $perms );
    $self->_umask_push( $perms );
    return @args;
 }
@@ -721,7 +709,7 @@ sub set_binmode {
 sub set_lock {
    my $self = shift; $self->_lock || return;
 
-   return $self->lock_obj->set( k => $self->name ) if ($self->lock_obj);
+   $self->lock_obj && return $self->lock_obj->set( k => $self->name );
 
    flock $self->io_handle, $self->mode eq q(r) ? LOCK_SH : LOCK_EX;
 
@@ -731,11 +719,9 @@ sub set_lock {
 sub slurp {
    my $self = shift; my $slurp = $self->all;
 
-   wantarray || return $slurp;
+   wantarray || return $slurp; local $RS = $self->_separator;
 
-   local $RS = $self->_separator;
-
-   return split m{ (?<=\Q$RS\E) }mx, $slurp unless ($self->_chomp);
+   $self->_chomp || return split m{ (?<=\Q$RS\E) }mx, $slurp;
 
    return map { CORE::chomp; $_ } split m{ (?<=\Q$RS\E) }mx, $slurp;
 }
@@ -778,7 +764,6 @@ sub throw {
    my ($self, @rest) = @_;
 
    eval { $self->unlock; };
-
    $self->exception_class->throw( @rest );
    return; # Never reached
 }
@@ -786,24 +771,24 @@ sub throw {
 sub touch {
    my ($self, @rest) = @_; $self->name || return;
 
-   if (-e $self->name) {
-      my $now = time; utime $now, $now, $self->name;
-   }
+   if (-e $self->name) { my $now = time; utime $now, $now, $self->name }
    else { $self->_open_file( q(w) )->close }
 
    return $self;
 }
 
 sub _umask_pop {
-   my $self = shift; my $perms = $self->_umask->[-1]; $perms || return;
+   my $self = shift; my $perms = $self->_umask->[-1];
 
+   ($perms && $perms != NO_UMASK_STACK) || return umask;
    umask pop @{ $self->_umask };
    return $perms;
 }
 
 sub _umask_push {
-   my ($self, $perms) = @_;
+   my ($self, $perms) = @_; my $first = $self->_umask->[0];
 
+   $first && $first == NO_UMASK_STACK && return umask;
    push @{ $self->_umask }, umask;
    return umask ($perms ^ 0777);
 }
@@ -837,9 +822,7 @@ sub write {
               : $self->io_handle->write( ${ $self->buffer }, $self->length );
 
    $self->error_check;
-
-   $self->clear unless (@rest);
-
+   scalar @rest || $self->clear;
    return $length;
 }
 

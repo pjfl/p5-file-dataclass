@@ -9,8 +9,8 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 my @constants;
 
 BEGIN {
-   @constants = ( qw(ARRAY CODE EVIL FALSE HASH LSB NUL PERMS
-                     SPC STAT_FIELDS TRUE) );
+   @constants = ( qw(ARRAY CODE EVIL FALSE HASH LSB NO_UMASK_STACK
+                     NUL PERMS SPC STAT_FIELDS TRUE) );
 }
 
 use Sub::Exporter -setup => {
@@ -39,6 +39,10 @@ sub HASH () {
 
 sub LSB () {
    return q([);
+}
+
+sub NO_UMASK_STACK () {
+   return -1;
 }
 
 sub NUL () {
@@ -111,6 +115,11 @@ String HASH
 =head2 LSB
 
 Left square bracket
+
+=head2 NO_UMASK_STACK
+
+Prevent the IO object from pushing and restoring umasks by pushing this
+value onto the I<_umask> array ref attribute
 
 =head2 NUL
 
