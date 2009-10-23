@@ -89,7 +89,7 @@ sub _delete {
 
    if (exists $data->{ $elem } and exists $data->{ $elem }->{ $name }) {
       delete $data->{ $elem }->{ $name };
-      delete $data->{ $elem } if (scalar keys %{ $data->{ $elem } } == 0);
+      delete $data->{ $elem } unless (scalar keys %{ $data->{ $elem } });
       $self->_write_file( $path, $data );
       return TRUE;
    }
@@ -191,8 +191,9 @@ sub _write_file {
       $self->throw( error => 'File [_1] not found', args => [ $pathname ] );
    }
 
-   # TODO: Make perms + atomic configurable
-   my $wtr = $path->perms( oct q(0664) )->atomic;
+   my $wtr = $path->atomic;
+
+   $wtr->perms( $self->schema->source->perms ) if ($create);
 
    try        { $data = inner( $wtr->lock, $data ) }
    catch ($e) { $wtr->delete; $self->lock->reset( k => $pathname );

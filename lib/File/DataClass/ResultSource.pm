@@ -8,12 +8,14 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 
+use File::DataClass::Constants;
 use File::DataClass::ResultSet;
 use File::DataClass::Schema;
 
 with qw(File::DataClass::Util);
 
-has 'path' => is => 'rw', isa => 'Maybe[Str]';
+has 'path'  => is => 'rw', isa => 'Maybe[Str]';
+has 'perms' => is => 'rw', isa => 'Num', default => PERMS;
 
 has 'resultset_attributes' =>
    is => 'ro', isa => 'HashRef',   default => sub { return {} };
@@ -25,7 +27,7 @@ has 'schema_attributes' =>
 has 'schema_class' =>
    is => 'ro', isa => 'ClassName', default => q(File::DataClass::Schema);
 has 'schema' =>
-   is => 'ro', isa => 'Object',    lazy_build => 1, init_arg => undef,
+   is => 'ro', isa => 'Object',    lazy_build => TRUE, init_arg => undef,
    handles => [ qw(load) ];
 
 sub dump {

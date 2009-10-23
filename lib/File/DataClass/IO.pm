@@ -50,7 +50,7 @@ has '_deep'           => is => 'rw', isa => 'Bool',      default    => FALSE;
 has '_encoding'       => is => 'rw', isa => 'Str',       default    => NUL  ;
 has '_filter'         => is => 'rw', isa => 'Maybe[CodeRef]'                ;
 has '_lock'           => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_perms'          => is => 'rw', isa => 'Num',       default    => PERMS;
+has '_perms'          => is => 'rw', isa => 'Num',       default    => 0    ;
 has '_separator'      => is => 'rw', isa => 'Str',       default    => $RS  ;
 has '_utf8'           => is => 'rw', isa => 'Bool',      default    => FALSE;
 
@@ -127,7 +127,7 @@ sub assert_dirpath {
    my ($self, $dir_name) = @_; $dir_name || return;
 
    return $dir_name if (-d $dir_name
-                        or CORE::mkdir( $self->name, DIR_PERMS )
+                        or CORE::mkdir( $self->name )
                         or File::Path::mkpath( $dir_name ));
 
    $self->throw( error => 'Path [_1] cannot create', args  => [ $dir_name ] );
@@ -135,7 +135,9 @@ sub assert_dirpath {
 }
 
 sub assert_filepath {
-   my $self = shift; my $dir; $self->name || return;
+   my $self = shift; my $dir;
+
+   $self->name || $self->throw( 'No file path specified' );
 
    (undef, $dir) = File::Spec->splitpath( $self->name );
 
@@ -412,6 +414,22 @@ sub _get_atomic_path {
    return $path ? File::Spec->catfile( $path, $file ) : $file;
 }
 
+sub _get_open_args {
+   my ($self, $mode, $perms) = @_;
+
+   $self->name || $self->throw( 'No file path specified' );
+
+   my $pathname = $self->_atomic && !$self->is_reading
+                ? $self->_get_atomic_path : $self->name;
+   my @args     = ( $pathname, $self->mode( $mode || $self->mode ) );
+
+   $perms ||= $self->_perms || ($self->stat->{mode} || 0) & 07777;
+
+   umask ($perms ^ 0777) if ($perms);
+
+   return @args;
+}
+
 sub getline {
    my ($self, $separator) = @_; my ($line, $sep);
 
@@ -514,7 +532,7 @@ sub lock {
 sub mkdir {
    my ($self, $perms) = @_;
 
-   return CORE::mkdir( $self->name, $perms || DIR_PERMS );
+   return CORE::mkdir( $self->name );
 }
 
 sub mkpath {
@@ -559,29 +577,21 @@ sub _open_dir {
 }
 
 sub _open_file {
-   my ($self, @rest) = @_; my ($mode, $perms) = @rest; my (@args, $io);
+   my ($self, @rest) = @_;
 
    $self->is_open && return $self;
    $self->_assert && $self->assert_filepath;
-   @args = ( $self->mode( $mode || $self->mode ) );
-   $self->_perms( $perms )   if (defined $perms);
-   push @args, $self->_perms if (defined $self->_perms);
 
-   if (defined $self->name) {
-      my $pathname = $self->_atomic && !$self->is_reading
-                   ? $self->_get_atomic_path : $self->name;
+   my @args = $self->_get_open_args( @rest ); my $io;
 
-      unless ($io = IO::File->new( $pathname, @args )) {
-         $self->throw( error => 'File [_1] cannot open',
-                       args  => [ $pathname ] );
-      }
-
-      $self->io_handle( $io );
-      $self->is_open( TRUE );
+   unless ($io = IO::File->new( @args )) {
+      $self->throw( error => 'File [_1] cannot open', args  => [ $args[0] ] );
    }
 
-   $self->is_open && $self->set_lock && $self->set_binmode;
-
+   $self->io_handle( $io );
+   $self->is_open( TRUE );
+   $self->set_binmode;
+   $self->set_lock;
    return $self;
 }
 
