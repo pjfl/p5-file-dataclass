@@ -11,9 +11,9 @@ use Moose;
 extends qw(Moose::Object Class::Accessor::Grouped);
 with    qw(File::DataClass::Util);
 
-has 'name'    => is => 'rw', isa => 'Str',           required => 1;
-has '_path'   => is => 'ro', isa => 'DataClassPath', required => 1;
-has '_schema' => is => 'ro', isa => 'Object',        required => 1,
+has 'name'    => is => 'rw', isa => 'Str',       required => 1;
+has '_path'   => is => 'ro', isa => 'F_DC_Path', required => 1;
+has '_schema' => is => 'ro', isa => 'Object',    required => 1,
    weak_ref   => 1;
 
 sub BUILD {

@@ -16,11 +16,11 @@ use Moose::Role;
 use Moose::Util::TypeConstraints;
 use TryCatch;
 
-subtype 'DataClassPath' => as 'Object'    =>
+subtype 'F_DC_Path' => as 'Object' =>
    where { $_->isa( q(File::DataClass::IO) ) };
-subtype 'Exception'     => as 'ClassName' => where { $_->can( q(throw) ) };
+subtype 'F_DC_Exception' => as 'ClassName' => where { $_->can( q(throw) ) };
 
-has '_exception_class' => is => 'rw', isa => 'Exception',
+has '_exception_class' => is => 'rw', isa => 'F_DC_Exception',
    default => q(File::DataClass::Exception), writer => 'exception_class';
 
 sub basename {

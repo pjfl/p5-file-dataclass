@@ -8,94 +8,117 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
-use English qw(-no_match_vars);
+use English  qw( -no_match_vars );
+use IPC::Cmd qw( can_run run );
 use File::Copy;
 use Moose;
 
-has 'cmd_suffix' => is => 'ro', isa => 'Str',  default => q(_cli);
-has 'commit'     => is => 'rw', isa => 'Bool', default => FALSE;
-has 'file'       => is => 'rw', isa => 'Str',  default => q(aliases);
-has 'newaliases' => is => 'ro', isa => 'Str',  default => q(newaliases);
-has 'schema_attributes' =>
-   is => 'ro', isa => 'HashRef', default =>
-   sub { return { attributes     => [ qw(comment created owner recipients) ],
-                  defaults       => {},
-                  element        => q(aliases),
-                  storage_class  => q(+File::MailAlias::Storage), } };
+extends qw(File::DataClass);
+
+has 'commit' =>
+   is => 'rw', isa => 'Bool',      default  => FALSE;
+has 'commit_cmd' =>
+   is => 'ro', isa => 'ArrayRef',  default  => sub {
+      return [ qw(svn ci -m "Updated") ] };
+has 'path' =>
+   is => 'rw', isa => 'Str',       required => TRUE;
+has 'newaliases' =>
+   is => 'ro', isa => 'ArrayRef',  default  => sub {
+      return [ q(newaliases) ] };
 has 'system_aliases' =>
-   is => 'ro', isa => 'Str',     default => q(/etc/mail/aliases);
+   is => 'ro', isa => 'Str',       default  => q(/etc/mail/aliases);
+has 'root_update' =>
+   is => 'rw', isa => 'Bool',      default  => FALSE;
+has 'root_update_cmd' =>
+   is => 'ro', isa => 'Maybe[Str]';
+has 'root_update_attrs' =>
+   is => 'ro', isa => 'ArrayRef', default => sub {
+      return [ qw(-S -n -c update_mail_aliases) ] };
+has '+result_source_attributes' => default  => sub { return {
+   schema_attributes => {
+      attributes     => [ qw(comment created owner recipients) ],
+      defaults       => {},
+      element        => q(aliases),
+      storage_class  => q(+File::MailAlias::Storage), }
+} };
 
-sub new {
-   my ($self, $app, $config) = @_;
-
-   my $ac   = $app->config || {};
-   my $new  = $self->next::method( $app, $config );
-   my $path = $self->catfile( $ac->{ctrldir}, $new->file );
-   my $cmd  = $self->catfile( $ac->{binsdir}, $ac->{prefix}.$new->cmd_suffix );
-
-   $new->commit_cmd( $new->commit_cmd || "$cmd -n -c vcs -- commit" );
-   $new->path      ( $new->path       || $path                      );
-   $new->update_cmd( $new->suid.' -n -c update_mail_aliases'        );
-
-   return $new;
+sub BUILD {
+   my $self = shift; $self->result_source->path( $self->path ); return;
 }
 
 sub create {
    my ($self, $args) = @_;
 
-   my $name = $self->next::method( $args );
+   my $name = $self->_resultset->create( $args );
    my $out  = $self->_run_update_cmd;
 
-   return $name;
+   return ($name, $out);
 }
 
 sub delete {
    my ($self, $args) = @_;
 
-   my $name = $self->next::method( $args );
+   my $name = $self->_resultset->delete( $args );
    my $out  = $self->_run_update_cmd;
 
-   return $name;
+   return ($name, $out);
+}
+
+sub list {
+   my ($self, @rest) = @_; return $self->_resultset->list( @rest );
 }
 
 sub update {
    my ($self, $args) = @_;
 
-   my $name = $self->next::method( $args );
+   my $name = $self->_resultset->update( $args );
    my $out  = $self->_run_update_cmd;
 
-   return $name;
+   return ($name, $out);
 }
 
 sub update_as_root {
+   my $self = shift; my $cmd;
+
+   unless ($self->newaliases and $cmd = can_run( $self->newaliases )) {
+      $cmd = join SPC, @{ $self->newaliases };
+      $self->throw( error => 'Path [_1] cannot execute', args => [ $cmd ] );
+   }
+
+   $self->throw( $ERRNO ) unless (copy( $self->path, $self->system_aliases ));
+
+   return $self->_run_cmd( $cmd );
+}
+
+# Private methods
+
+sub _resultset {
+   return shift->result_source->resultset;
+}
+
+sub _run_update_cmd {
    my $self = shift; my $out = NUL;
 
-   if (-x $self->newaliases) {
-      unless (copy( $self->path, $self->system_aliases )) {
-         $self->throw( $ERRNO );
-      }
+   if ($self->commit and $self->commit_cmd) {
+      $out .= $self->_run_cmd( [ @{ $self->commit_cmd }, $self->path ] );
+   }
 
-      $out .= $self->run_cmd( $self->newaliases, { err => q(out) } )->out;
+   if ($self->root_update and $self->root_update_cmd) {
+      my $cmd  = [ $self->root_update_cmd, @{ $self->root_update_attrs },
+                   $self->path ];
+
+      $out .= $self->_run_cmd( $cmd );
    }
 
    return $out;
 }
 
-# Private methods
+sub _run_cmd {
+   my ($self, $cmd) = @_; my ($ok, $err, $out) = run( command => $cmd );
 
-sub _run_update_cmd {
-   my $self = shift; my $out = NUL;
-
-   if ($self->commit) {
-      my $cmd = $self->commit_cmd.SPC.$self->path;
-
-      $out .= $self->run_cmd( $cmd, { err => q(out) } )->out;
-   }
-
-   if ($self->newaliases) {
-      $out .= $self->run_cmd( $self->update_cmd, { err => q(out) } )->out;
-   }
-
+   $out && ref $out eq ARRAY && ($out = join "\n", @{ $out });
+   $ok || $self->throw( error => "Could not run [_1] -- [_2]\n[_3]",
+                        args  => [ $err, $ERRNO, $out ] );
    return $out;
 }
 
