@@ -15,25 +15,27 @@ use Moose;
 
 extends qw(File::DataClass);
 
-has 'commit' =>
-   is => 'rw', isa => 'Bool',      default  => FALSE;
-has 'commit_cmd' =>
-   is => 'ro', isa => 'ArrayRef',  default  => sub {
-      return [ qw(svn ci -m "Updated") ] };
-has 'path' =>
-   is => 'rw', isa => 'Str',       required => TRUE;
-has 'newaliases' =>
-   is => 'ro', isa => 'ArrayRef',  default  => sub {
-      return [ q(newaliases) ] };
+has 'path'           =>
+   is => 'rw', isa => 'Str',      required => TRUE;
+has 'newaliases'     =>
+   is => 'ro', isa => 'ArrayRef', default  => sub { return [ q(newaliases) ] };
 has 'system_aliases' =>
-   is => 'ro', isa => 'Str',       default  => q(/etc/mail/aliases);
-has 'root_update' =>
-   is => 'rw', isa => 'Bool',      default  => FALSE;
-has 'root_update_cmd' =>
+   is => 'ro', isa => 'Str',      default  => q(/etc/mail/aliases);
+
+has 'commit'     =>
+   is => 'rw', isa => 'Bool',     default  => FALSE;
+has 'commit_cmd' =>
+   is => 'ro', isa => 'ArrayRef', default  => sub {
+      return [ qw(svn ci -m "Updated") ] };
+
+has 'root_update'       =>
+   is => 'rw', isa => 'Bool',     default  => FALSE;
+has 'root_update_cmd'   =>
    is => 'ro', isa => 'Maybe[Str]';
 has 'root_update_attrs' =>
    is => 'ro', isa => 'ArrayRef', default => sub {
       return [ qw(-S -n -c update_mail_aliases) ] };
+
 has '+result_source_attributes' => default  => sub { return {
    schema_attributes => {
       attributes     => [ qw(comment created owner recipients) ],
@@ -41,6 +43,19 @@ has '+result_source_attributes' => default  => sub { return {
       element        => q(aliases),
       storage_class  => q(+File::MailAlias::Storage), }
 } };
+
+around BUILDARGS => sub {
+   my ($orig, $class, @rest) = @_; my $car = $rest[0]; my $attrs = {};
+
+   if ($car and not ref $car) {
+      $attrs->{path          } = shift @rest;
+      $attrs->{system_aliases} = shift @rest;
+      $attrs->{newaliases    } = [ @rest ];
+   }
+   elsif ($car and ref $car eq HASH) { $attrs = $car }
+
+   return $class->$orig( $attrs );
+};
 
 sub BUILD {
    my $self = shift; $self->result_source->path( $self->path ); return;
@@ -105,7 +120,7 @@ sub _run_update_cmd {
 
    if ($self->root_update and $self->root_update_cmd) {
       my $cmd  = [ $self->root_update_cmd, @{ $self->root_update_attrs },
-                   $self->path ];
+                   $self->path, $self->system_aliases, @{ $self->newaliases }];
 
       $out .= $self->_run_cmd( $cmd );
    }
