@@ -159,9 +159,7 @@ File::MailAlias - Manipulate the mail aliases file
 
 Management model file the system mail alias file
 
-=head1 Subroutines/Methods
-
-=head2 new
+=head1 Configuration and Environment
 
 Sets these attributes:
 
@@ -199,6 +197,10 @@ access to the real mail alias file
 
 =back
 
+=head1 Subroutines/Methods
+
+=head2 BUILD
+
 =head2 create
 
    $alias_obj->create( $fields );
@@ -216,9 +218,9 @@ Deletes the named mail alias. Calls L</update_as_root> via the C<suid>
 wrapper. Adds the text from the wrapper call to the results section on
 the stash
 
-=head2 retrieve
+=head2 list
 
-   $response_obj = $alias_obj->retrieve( $name );
+   $response_obj = $alias_obj->list( { name => $name } );
 
 Returns an object containing a list of alias names and the fields pertaining
 to the requested alias if it exists
@@ -269,10 +271,6 @@ List of recipients for the selected owner
 =back
 
 =head1 Diagnostics
-
-None
-
-=head1 Configuration and Environment
 
 None
 

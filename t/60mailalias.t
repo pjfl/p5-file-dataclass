@@ -28,7 +28,7 @@ my $args = {
          attributes     => [ qw(comment created owner recipients) ],
          defaults       => {},
          element        => q(aliases),
-         storage_class  => q(MailAlias),
+         storage_class  => q(+File::MailAlias::Storage),
       }
    },
    tempdir => q(t),

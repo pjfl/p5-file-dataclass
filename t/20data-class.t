@@ -79,7 +79,8 @@ is( $e, 'No element name specified', 'No element name specified' );
 
 $args->{name} = q(dummy); $e = test( $rs, q(create), $args );
 
-is( $e, 'No element specified', 'No element specified' );
+ok( $e =~ m{ \A Path \s+ \S+ \s+ no \s+ element \s+ specified }mx,
+    'No element specified' );
 
 my $schema = $source->schema; $schema->element( q(globals) );
 
@@ -130,7 +131,7 @@ $res  = test( $rs, q(push), $args );
 ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
     'Can push' );
 
-$args = { criterion => { acl => q(@support) } };
+$args = { where => { acl => q(@support) } };
 
 my @res = test( $rs, q(search), $args );
 

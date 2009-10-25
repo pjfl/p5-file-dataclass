@@ -18,7 +18,7 @@ has 'lang_dep' => is => 'rw', isa => 'Maybe[HashRef]';
 sub BUILD {
    my $self = shift;
 
-   if ($self->lang and $self->lang_dep) {
+   if ($self->lang_dep) {
       my $attrs = { storage => $self->storage };
 
       $self->storage( File::DataClass::Combinator->new( $attrs ) );

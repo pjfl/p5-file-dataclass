@@ -14,15 +14,16 @@ use File::DataClass::List;
 
 with qw(File::DataClass::Util);
 
-has 'path'       => is => 'ro', isa => 'F_DC_Path', required => TRUE;
-has 'schema'     => is => 'ro', isa => 'Object',    required => TRUE,
+has 'path'       => is => 'ro', isa => 'F_DC_Path', required   => TRUE;
+has 'schema'     => is => 'ro', isa => 'Object',    required   => TRUE,
    weak_ref      => TRUE;
 has 'list_class' => is => 'ro', isa => 'ClassName',
    default       => q(File::DataClass::List);
-has '_elements'  => is => 'rw', isa => 'ArrayRef',  init_arg => undef,
+has '_elements'  => is => 'rw', isa => 'ArrayRef',  init_arg   => undef,
    default       => sub { return [] };
-has '_iterator'  => is => 'rw', isa => 'Int',       init_arg => undef,
+has '_iterator'  => is => 'rw', isa => 'Int',       init_arg   => undef,
    default       => 0;
+has '_operators' => is => 'ro', isa => 'HashRef',   lazy_build => TRUE;
 
 sub all {
    my $self = shift; return @{ $self->_elements };
@@ -154,37 +155,62 @@ sub update {
 
 # Private methods
 
-sub _eval_criterion {
-   my ($self, $where, $attrs) = @_; my $lhs;
+sub _assert_clause {
+   my ($self, $clause, $lhs) = @_; my $state;
 
-   while (my ($where_key, $clause) = each %{ $where }) {
-      return FALSE unless (    exists  $attrs->{ $where_key }
-                           and defined ($lhs = $attrs->{ $where_key }));
+   if (ref $clause eq HASH) {
+      $state = ref $lhs eq ARRAY
+             ? FALSE : $self->_eval_clause( $clause, $lhs );
+   }
+   elsif (ref $clause eq ARRAY) {
+      $state = ref $lhs eq ARRAY
+             ? FALSE : $self->is_member( $lhs, @{ $clause } );
+    }
+   else {
+      $state = ref $lhs eq ARRAY
+             ? $self->is_member( $clause, @{ $lhs } )
+             : $clause eq $lhs ? TRUE : FALSE;
+   }
 
-      if (ref $clause eq HASH) {
-         return FALSE unless ($self->_eval_clause( $lhs, $clause ));
+   return $state;
+}
+
+sub _build__operators {
+   return {
+      q(eq) => sub { return $_[0] eq $_[1] },
+      q(==) => sub { return $_[0] == $_[1] },
+      q(ne) => sub { return $_[0] ne $_[1] },
+      q(!=) => sub { return $_[0] != $_[1] },
+      q(>)  => sub { return $_[0] >  $_[1] },
+      q(>=) => sub { return $_[0] >= $_[1] },
+      q(<)  => sub { return $_[0] <  $_[1] },
+      q(<=) => sub { return $_[0] <= $_[1] },
+      q(=~) => sub { return $_[0] =~ $_[1] },
+      q(!~) => sub { return $_[0] !~ $_[1] },
+   };
+}
+
+sub _eval_criteria {
+   my ($self, $criteria, $attrs) = @_; my $lhs;
+
+   for my $where_key (keys %{ $criteria }) {
+      unless (defined ($lhs = $attrs->{ $where_key } )
+              and $self->_assert_clause( $criteria->{ $where_key }, $lhs)) {
+         return FALSE;
       }
-      elsif (ref $lhs eq ARRAY) {
-         return FALSE unless ($self->is_member( $clause, @{ $lhs } ));
-      }
-      else { return FALSE unless ($lhs eq $clause) }
    }
 
    return TRUE;
 }
 
 sub _eval_clause {
-   my ($self, $lhs, $clause) = @_; my $subr;
+   my ($self, $clause, $lhs) = @_;
 
-   while (my ($op, $rhs) = each %{ $clause }) {
-      return FALSE unless ($subr = $self->_operators->{ $op });
+   for my $op (keys %{ $clause }) {
+      my $subr = $self->_operators->{ $op } or return FALSE;
 
-      if (ref $lhs eq ARRAY) {
-         for my $lhs_val (@{ $lhs }) {
-            return FALSE unless ($subr->( $lhs_val, $rhs ));
-         }
-      }
-      else { return FALSE unless ($subr->( $lhs, $rhs )) }
+      $_ || return FALSE for (map { $subr->( $_, $clause->{ $op } ) }
+                              ref $lhs eq ARRAY ? @{ $lhs } : ( $lhs ));
    }
 
    return TRUE;
@@ -245,21 +271,6 @@ sub _list {
    return $new;
 }
 
-sub _operators {
-   return {
-      q(eq) => sub { return $_[0] eq $_[1] },
-      q(==) => sub { return $_[0] == $_[1] },
-      q(ne) => sub { return $_[0] ne $_[1] },
-      q(!=) => sub { return $_[0] != $_[1] },
-      q(>)  => sub { return $_[0] >  $_[1] },
-      q(>=) => sub { return $_[0] >= $_[1] },
-      q(<)  => sub { return $_[0] <  $_[1] },
-      q(<=) => sub { return $_[0] <= $_[1] },
-      q(=~) => sub { return $_[0] =~ $_[1] },
-      q(!~) => sub { return $_[0] !~ $_[1] },
-   };
-}
-
 sub _push {
    my ($self, $name, $attr, $items) = @_;
 
@@ -292,7 +303,7 @@ sub _search {
       for my $name (keys %{ $elements }) {
          my $attrs = { %{ $elements->{ $name } }, name => $name };
 
-         if (not $where or $self->_eval_criterion( $where, $attrs )) {
+         if (not $where or $self->_eval_criteria( $where, $attrs )) {
             CORE::push @{ $self->_elements },
                $self->schema->create_element( $self->path, $attrs );
          }
@@ -300,7 +311,7 @@ sub _search {
    }
    elsif ($where and defined $elements->[0]) {
       for my $attrs (@{ $elements }) {
-         CORE::push @tmp, $attrs if ($self->_eval_criterion( $where, $attrs ));
+         CORE::push @tmp, $attrs if ($self->_eval_criteria( $where, $attrs ));
       }
 
       $self->_elements( \@tmp );

@@ -71,9 +71,15 @@ sub validate_params {
    my ($self, $path) = @_; my ($elem, $schema);
 
    $self->throw( 'No file path specified' ) unless ($path);
-   $self->throw( 'Path is not blessed'    ) unless (blessed $path);
-   $self->throw( 'No schema specified'    ) unless ($schema = $self->schema);
-   $self->throw( 'No element specified'   ) unless ($elem = $schema->element);
+
+   $self->throw( error => 'Path [_1] is not blessed', args => [ $path ] )
+      unless (blessed $path);
+
+   $self->throw( error => 'Path [_1] no schema specified', args => [ $path ] )
+      unless ($schema = $self->schema);
+
+   $self->throw( error => 'Path [_1] no element specified', args => [ $path ] )
+      unless ($elem = $schema->element);
 
    return $elem;
 }
