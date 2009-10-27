@@ -6,7 +6,7 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
-use JSON qw();
+use JSON::PP qw();
 use Moose;
 
 extends qw(File::DataClass::Storage);
@@ -14,13 +14,13 @@ extends qw(File::DataClass::Storage);
 has '+extn' => default => q(.json);
 
 augment '_read_file' => sub {
-   my ($self, $rdr) = @_; return JSON->new->decode( $rdr->all );
+   my ($self, $rdr) = @_; return JSON::PP->new->decode( $rdr->all );
 };
 
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_;
 
-   $wtr->append( JSON->new->pretty->encode( $data ) );
+   $wtr->append( JSON::PP->new->pretty->encode( $data ) );
    return $data;
 };
 
@@ -46,7 +46,7 @@ File::DataClass::Storage::JSON - Read/write JSON data storage model
 
 =head1 Description
 
-Uses L<JSON> to read and write JSON files
+Uses L<JSON::PP> to read and write JSON files
 
 =head1 Subroutines/Methods
 
@@ -64,7 +64,7 @@ None
 
 =item L<File::DataClass::Storage>
 
-=item L<JSON>
+=item L<JSON::PP>
 
 =back
 
@@ -77,6 +77,8 @@ There are no known incompatibilities in this module
 There are no known bugs in this module.
 Please report problems to the address below.
 Patches are welcome
+
+Using the module L<JSON::XS> causes the roundtrip test to fail
 
 =head1 Author
 

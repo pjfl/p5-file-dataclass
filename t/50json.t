@@ -35,7 +35,7 @@ my $obj = File::DataClass->new( $args );
 isa_ok( $obj, q(File::DataClass) );
 
 my $path   = catfile( qw(t default.json) );
-my $dumped = catfile( qw(t dumped) );
+my $dumped = catfile( qw(t dumped) ); io( $dumped )->unlink;
 my $data   = $obj->result_source->load( $path );
 
 $obj->result_source->dump( { data => $data, path => $dumped } );

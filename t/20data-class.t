@@ -144,7 +144,7 @@ $res  = test( $rs, q(splice), $args );
 ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
     'Can splice' );
 
-my $translate = catfile( qw(t translate.json) );
+my $translate = catfile( qw(t translate.json) ); io( $translate )->unlink;
 
 $args = { from => $path,      from_class => q(XML::Simple),
           to   => $translate, to_class   => q(JSON) };
