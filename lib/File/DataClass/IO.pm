@@ -72,7 +72,7 @@ around BUILDARGS => sub {
    }
    else { $attrs = {} }
 
-   return $class->$orig( $attrs );
+   return $attrs;
 };
 
 sub abs2rel {

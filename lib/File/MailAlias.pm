@@ -54,7 +54,7 @@ around BUILDARGS => sub {
    }
    elsif ($car and ref $car eq HASH) { $attrs = $car }
 
-   return $class->$orig( $attrs );
+   return $attrs;
 };
 
 sub BUILD {
