@@ -83,7 +83,7 @@ sub _localize {
    return unless $key; $key = NUL.$key; # Stringify
 
    # Lookup the message using the supplied key
-   my $messages = $self->{messages}   || {};
+   my $messages = $self->messages     || {};
    my $msg      = $messages->{ $key } || {};
    my $text     = ($msg && ref $msg eq HASH ? $msg->{text} : $msg) || $key;
 
