@@ -80,10 +80,10 @@ sub to_string {
    # Expand positional parameters of the form [_<n>]
    0 > index $text, LSB and return $text;
 
-   my @args = @{ $self->args };
+   my @args = @{ $self->args }; push @args, map { NUL } 0 .. 10;
 
-   push @args, map { NUL } 0 .. 10;
    $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
+
    return $text;
 }
 
