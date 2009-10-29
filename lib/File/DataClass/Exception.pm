@@ -2,13 +2,13 @@
 
 package File::DataClass::Exception;
 
+use Exception::Class
+   ( 'File::DataClass::Exception::Base' => { fields => [ qw(args) ] } );
+
 use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
-use overload '""' => sub { shift->as_string }, fallback => 1;
-use Exception::Class
-   ( 'File::DataClass::Exception::Base' => {
-      fields => [ qw(args messages) ] } );
+use overload '""' => sub { shift->to_string }, fallback => 1;
 use base qw(File::DataClass::Exception::Base);
 
 use Carp;
@@ -25,15 +25,14 @@ sub new {
    return $self->next::method( args           => [],
                                error          => 'Error unknown',
                                ignore_package => $IGNORE,
-                               messages       => {},
                                show_trace     => FALSE,
                                @rest );
 }
 
 sub as_string {
-   my ($self, $verbosity, $offset) = @_; $verbosity ||= 1; $offset ||= 1;
+   my ($self, $verbosity, $offset) = @_;
 
-   my $text = $self->_localize;
+   my $text = $self->error; $verbosity ||= 1; $offset ||= 1;
 
    return $text if ($verbosity < 2 and not $self->show_trace);
 
@@ -75,28 +74,20 @@ sub throw_on_error {
    return $e = $self->catch ? $self->throw( $e ) : undef;
 }
 
-# Private methods
-
-sub _localize {
-   my $self = shift; my $key = $self->error;
-
-   return unless $key; $key = NUL.$key; # Stringify
-
-   # Lookup the message using the supplied key
-   my $messages = $self->messages     || {};
-   my $msg      = $messages->{ $key } || {};
-   my $text     = ($msg && ref $msg eq HASH ? $msg->{text} : $msg) || $key;
+sub to_string {
+   my $self = shift; my $text = $self->error || return;
 
    # Expand positional parameters of the form [_<n>]
-   if (0 <= index $text, LSB) {
-      my @args = @{ $self->args };
+   0 > index $text, LSB and return $text;
 
-      push @args, map { NUL } 0 .. 10;
-      $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
-   }
+   my @args = @{ $self->args };
 
+   push @args, map { NUL } 0 .. 10;
+   $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
    return $text;
 }
+
+# Private methods
 
 1;
 
@@ -181,6 +172,10 @@ in this case
 =head2 throw_on_error
 
 Calls L</catch> and if the was an exception L</throw>s it
+
+=head2 to_string
+
+What an instance of this class stringifies to
 
 =head1 Diagnostics
 
