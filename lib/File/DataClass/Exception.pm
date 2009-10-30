@@ -117,37 +117,16 @@ semantics. Inherits from L<Exception::Class>
 Create an exception object. You probably do not want to call this directly,
 but indirectly through L</catch> and L</throw>
 
-=head2 as_string
-
-   warn $e->as_string( $verbosity, $offset );
-
-Serialise the exception to a string. The passed parameters; I<verbosity>
-and I<offset> determine how much output is returned.
-
-The I<verbosity> parameter can be:
-
-=over 3
-
-=item 1
-
-The default value. Only show a stack trace if C<< $self->show_trace >> is true
-
-=item 2
-
-Always show the stack trace and start at frame I<offset> which
-defaults to 1. The stack trace stops when the first duplicate output
-line is detected
-
-=item 3
-
-Always shows the complete stack trace starting at frame 0
-
-=back
-
 =head2 catch
 
 Catches and returns a thrown exception or generates a new exception if
 I<EVAL_ERROR> has been set
+
+=head2 stacktrace
+
+   $lines = $e->stacktrace;
+
+Return the stack trace
 
 =head2 throw
 
@@ -179,6 +158,8 @@ should be suppressed in the stack trace output
 =head1 Dependencies
 
 =over 3
+
+=item L<overload>
 
 =item L<Exception::Class>
 
