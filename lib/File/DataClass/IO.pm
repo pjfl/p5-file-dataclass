@@ -28,33 +28,35 @@ use Sub::Exporter -setup => {
 enum 'Mode' => qw(a a+ r r+ w w+);
 enum 'Type' => qw(dir file);
 
-has 'atomic_pref'     => is => 'rw', isa => 'Str',       default    => q(B_);
-has 'autoclose'       => is => 'rw', isa => 'Bool',      default    => TRUE ;
-has 'block_size'      => is => 'rw', isa => 'Int',       default    => 1024 ;
-has 'dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE ;
-has 'exception_class' => is => 'rw', isa => 'ClassName',
-   default            => q(File::DataClass::Exception)                      ;
-has 'io_handle'       => is => 'rw', isa => 'Maybe[Object]'                 ;
-has 'is_open'         => is => 'rw', isa => 'Bool',      default    => FALSE;
-has 'lock_obj'        => is => 'rw', isa => 'Maybe[Object]'                 ;
-has 'mode'            => is => 'rw', isa => 'Mode',      default    => q(r) ;
-has 'name'            => is => 'rw', isa => 'Str',       default    => NUL  ;
-has 'sort'            => is => 'rw', isa => 'Bool',      default    => TRUE ;
-has 'type'            => is => 'rw', isa => 'Maybe[Type]'                   ;
-has '_assert'         => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_atomic'         => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_binary'         => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_binmode'        => is => 'rw', isa => 'Str',       default    => NUL  ;
-has '_chomp'          => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_deep'           => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_encoding'       => is => 'rw', isa => 'Str',       default    => NUL  ;
-has '_filter'         => is => 'rw', isa => 'Maybe[CodeRef]'                ;
-has '_lock'           => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_perms'          => is => 'rw', isa => 'Num',       default    => 0    ;
-has '_separator'      => is => 'rw', isa => 'Str',       default    => $RS  ;
-has '_umask'          => is => 'rw', isa => 'ArrayRef[Num]',
-   default            => sub { return [] }                                  ;
-has '_utf8'           => is => 'rw', isa => 'Bool',      default    => FALSE;
+has 'autoclose'        => is => 'rw', isa => 'Bool',      default    => TRUE ;
+has 'io_handle'        => is => 'rw', isa => 'Maybe[Object]'                 ;
+has 'is_open'          => is => 'rw', isa => 'Bool',      default    => FALSE;
+has 'mode'             => is => 'rw', isa => 'Mode',      default    => q(r) ;
+has 'name'             => is => 'rw', isa => 'Str',       default    => NUL  ;
+has 'sort'             => is => 'rw', isa => 'Bool',      default    => TRUE ;
+has 'type'             => is => 'rw', isa => 'Maybe[Type]'                   ;
+has '_assert'          => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_atomic'          => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_atomic_prefix'   => is => 'rw', isa => 'Str',       default    => q(B_);
+has '_binary'          => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_binmode'         => is => 'rw', isa => 'Str',       default    => NUL  ;
+has '_block_size'      => is => 'rw', isa => 'Int',       default    => 1024 ;
+has '_chomp'           => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_deep'            => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE ;
+has '_encoding'        => is => 'rw', isa => 'Str',       default    => NUL  ;
+has '_exception_class' => is => 'rw', isa => 'ClassName',
+   default             => q(File::DataClass::Exception),
+   writer              => 'exception_class';
+has '_filter'          => is => 'rw', isa => 'Maybe[CodeRef]'                ;
+has '_lock'            => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_lock_obj'        => is => 'rw', isa => 'Maybe[Object]',
+   writer              => 'lock_obj';
+has '_perms'           => is => 'rw', isa => 'Num',       default    => 0    ;
+has '_separator'       => is => 'rw', isa => 'Str',       default    => $RS  ;
+has '_umask'           => is => 'rw', isa => 'ArrayRef[Num]',
+   default             => sub { return [] }                                  ;
+has '_utf8'            => is => 'rw', isa => 'Bool',      default    => FALSE;
 
 around BUILDARGS => sub {
    my ($orig, $class, @rest) = @_; my $car = $rest[0]; my $attrs;
@@ -162,6 +164,10 @@ sub atomic {
    my $self = shift; $self->_atomic( TRUE ); return $self;
 }
 
+sub atomic_prefix {
+   my ($self, $prefix) = @_; $self->_atomic_prefix( $prefix ); return $self;
+}
+
 sub basename {
    my ($self, @suffixes ) = @_; $self->name || return;
 
@@ -188,6 +194,10 @@ sub binmode {
    return $self;
 }
 
+sub block_size {
+   my ($self, $size) = @_; $self->_block_size( $size ); return $self;
+}
+
 sub buffer {
    my $self = shift;
 
@@ -203,7 +213,7 @@ sub buffer {
    return $self->{buffer};
 }
 
-sub _build_dir_pattern {
+sub _build__dir_pattern {
    my $self = shift; my ($curdir, $pat, $updir);
 
    $pat  = "\Q$curdir\E" if ($curdir = File::Spec->curdir);
@@ -414,7 +424,7 @@ sub _find {
 sub _get_atomic_path {
    my $self = shift; my $path = $self->filepath;
 
-   my $file = $self->atomic_pref.$self->filename;
+   my $file = $self->_atomic_prefix.$self->filename;
 
    return $path ? File::Spec->catfile( $path, $file ) : $file;
 }
@@ -459,6 +469,8 @@ sub _init {
    $self->io_handle( undef );
    $self->is_open  ( FALSE );
    $self->name     ( $name ) if ($name);
+   $self->mode     ( q(r)  );
+   $self->sort     ( TRUE  );
    $self->type     ( $type );
 
    return $self;
@@ -626,7 +638,7 @@ sub read {
    my $length = (@rest or $self->is_dir)
               ? $self->io_handle->read( @rest )
               : $self->io_handle->read( ${ $self->buffer },
-                                        $self->block_size, $self->length );
+                                        $self->_block_size, $self->length );
 
    $self->error_check;
 
@@ -634,7 +646,7 @@ sub read {
 }
 
 sub read_dir {
-   my $self = shift; my $dir_pat = $self->dir_pattern; my $name;
+   my $self = shift; my $dir_pat = $self->_dir_pattern; my $name;
 
    $self->type || $self->dir; $self->assert_open;
 
@@ -706,7 +718,7 @@ sub set_binmode {
 sub set_lock {
    my $self = shift; $self->_lock || return;
 
-   $self->lock_obj && return $self->lock_obj->set( k => $self->name );
+   $self->_lock_obj && return $self->_lock_obj->set( k => $self->name );
 
    flock $self->io_handle, $self->mode eq q(r) ? LOCK_SH : LOCK_EX;
 
@@ -761,7 +773,7 @@ sub throw {
    my ($self, @rest) = @_;
 
    eval { $self->unlock; };
-   $self->exception_class->throw( @rest );
+   $self->_exception_class->throw( @rest );
    return; # Never reached
 }
 
@@ -797,7 +809,7 @@ sub unlink {
 sub unlock {
    my $self = shift; $self->_lock || return;
 
-   if ($self->lock_obj) { $self->lock_obj->reset( k => $self->name ) }
+   if ($self->_lock_obj) { $self->_lock_obj->reset( k => $self->name ) }
    else { flock $self->io_handle, LOCK_UN }
 
    return $self;
@@ -976,6 +988,11 @@ Implements atomic file updates by writing to a temporary file and then
 renaming it on closure. This method stores the temporary pathname in the
 B<_atomic> attribute
 
+=head2 atomic_prefix
+
+Defaults to I<B_>. It is prepended to the filename to create a
+temporary file for atomic updates. Attribute name I<_atomic_prefix>
+
 =head2 basename
 
    $dirname = io( q(path_to_file) )->basename( @suffixes );
@@ -994,9 +1011,18 @@ Sets binary mode
 
 Sets binmode to the given layer
 
+=head2 block_size
+
+Defaults to 1024. The default block size used by the L</read> method
+
 =head2 buffer
 
 The internal buffer used by L</read> and L</write>
+
+=head2 _build__dir_pattern
+
+Returns the pattern that will match against the current or parent
+directory
 
 =head2 canonpath
 
@@ -1070,11 +1096,6 @@ object is still open it calls the L</close> method
 
 Initialises the current object as a directory
 
-=head2 dir_pattern
-
-Returns the pattern that will match against the current or parent
-directory
-
 =head2 dirname
 
    $dirname = io( q(path_to_file) )->dirname;
@@ -1138,19 +1159,10 @@ I<type> and I<name>
 
 =over 3
 
-=item atomic_pref
-
-Defaults to I<B_>. It is prepended to the filename to create a
-temporary file for atomic updates
-
 =item autoclose
 
 Defaults to true. Attempts to read past end of file will cause the
 object to be closed
-
-=item block_size
-
-Defaults to 1024. The default block size used by the L</read> method
 
 =item exception_class
 
