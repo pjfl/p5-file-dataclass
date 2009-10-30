@@ -3,12 +3,12 @@
 package File::DataClass::Exception;
 
 use Exception::Class
-   ( 'File::DataClass::Exception::Base' => { fields => [ qw(args) ] } );
+   'File::DataClass::Exception::Base' => { fields => [ qw(args) ] };
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 use overload '""' => sub { shift->to_string }, fallback => 1;
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 use base qw(File::DataClass::Exception::Base);
 
 use Carp;
@@ -25,25 +25,24 @@ sub new {
    return $self->next::method( args           => [],
                                error          => 'Error unknown',
                                ignore_package => $IGNORE,
-                               show_trace     => FALSE,
                                @rest );
 }
 
-sub as_string {
-   my ($self, $verbosity, $offset) = @_;
+sub catch {
+   my ($self, $e) = @_; $e ||= $EVAL_ERROR;
 
-   my $text = $self->error; $verbosity ||= 1; $offset ||= 1;
+   $e and blessed $e and $e->isa( __PACKAGE__ ) and return $e;
 
-   return $text if ($verbosity < 2 and not $self->show_trace);
+   return $e ? $self->new( error => NUL.$e ) : undef;
+}
 
-   my $i = $verbosity > 2 ? 0 : $offset; my ($frame, $l_no, %seen);
+sub stacktrace {
+   my $self = shift; my ($frame, $l_no, %seen, $text); my $i = 1;
 
    while (defined ($frame = $self->trace->frame( $i++ ))) {
-      my $line = "\n".$frame->package.' line '.$frame->line;
+      next if ($l_no = $seen{ $frame->package } and $l_no == $frame->line);
 
-      if ($verbosity > 2) { $text .= $line; next }
-
-      last if (($l_no = $seen{ $frame->package }) && $l_no == $frame->line);
+      $text .= $frame->package.' line '.$frame->line."\n";
 
       $seen{ $frame->package } = $frame->line;
    }
@@ -51,34 +50,27 @@ sub as_string {
    return $text;
 }
 
-sub catch {
-   my ($self, $e) = @_; $e ||= $EVAL_ERROR;
+sub throw {
+   my ($self, @rest) = @_; my $e = $rest[0];
 
-   return $e if ($e and blessed $e and $e->isa( __PACKAGE__ ));
+   $e and blessed $e and $e->isa( __PACKAGE__ ) and croak $e;
 
-   return $self->new( error => $e ) if ($e);
+   croak $self->new( @rest == 1 ? ( error => NUL.$e ) : @rest );
+}
+
+sub throw_on_error {
+   my ($self, @rest) = @_; my $e;
+
+   $e = $self->catch( @rest ) and $self->throw( $e );
 
    return;
 }
 
-sub throw {
-   my ($self, @rest) = @_; my $e = $rest[0];
-
-   croak $e && blessed $e
-       ? $e : $self->new( @rest == 1 ? ( error => $e ) : @rest );
-}
-
-sub throw_on_error {
-   my $self = shift; my $e;
-
-   return $e = $self->catch ? $self->throw( $e ) : undef;
-}
-
 sub to_string {
-   my $self = shift; my $text = $self->error || return;
+   my $self = shift; my $text = $self->error or return;
 
    # Expand positional parameters of the form [_<n>]
-   0 > index $text, LSB and return $text;
+   0 > index $text, LOCALIZE and return $text;
 
    my @args = @{ $self->args }; push @args, map { NUL } 0 .. 10;
 
@@ -86,8 +78,6 @@ sub to_string {
 
    return $text;
 }
-
-# Private methods
 
 1;
 

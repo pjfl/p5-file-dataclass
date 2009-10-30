@@ -9,7 +9,7 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 my @constants;
 
 BEGIN {
-   @constants = ( qw(ARRAY CODE EVIL FALSE HASH LSB NO_UMASK_STACK
+   @constants = ( qw(ARRAY CODE EVIL FALSE HASH LOCALIZE NO_UMASK_STACK
                      NUL PERMS SPC STAT_FIELDS TRUE) );
 }
 
@@ -37,8 +37,8 @@ sub HASH () {
    return q(HASH);
 }
 
-sub LSB () {
-   return q([);
+sub LOCALIZE () {
+   return q([_);
 }
 
 sub NO_UMASK_STACK () {
@@ -112,9 +112,10 @@ Digit 0
 
 String HASH
 
-=head2 LSB
+=head2 LOCALIZE
 
-Left square bracket
+The character sequence that introduces a localization substitution
+parameter. Left square bracket underscore
 
 =head2 NO_UMASK_STACK
 
