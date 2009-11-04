@@ -33,8 +33,8 @@ has 'lock_class'               => is => 'ro', isa => 'ClassName',
    default                     => q(IPC::SRLock);
 has 'log'                      => is => 'ro', isa => 'Object',
    default                     => sub { Class::Null->new };
-has 'path'                     => is => 'ro', isa => 'F_DC_Path',
-   coerce                      => TRUE, required => TRUE;
+has 'path'                     => is => 'rw', isa => 'F_DC_Path',
+   coerce                      => TRUE;
 has 'perms'                    => is => 'rw', isa => 'Num',
    default                     => PERMS;
 has 'result_source_attributes' => is => 'ro', isa => 'HashRef',
