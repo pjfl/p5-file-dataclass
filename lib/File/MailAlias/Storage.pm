@@ -59,8 +59,8 @@ sub _read_filter {
          };
       }
       elsif ($line and $line !~ m{ \A \# }mx and $alias) {
-         $line =~ s{ \s+ }{ }gmx; $line =~ s{ , \z }{}mx;
-         push @{ $res->{ $alias }->recipients }, split m{ , }mx, $line;
+         $line =~ s{ \s+ }{}gmx; $line =~ s{ , \z }{}mx;
+         push @{ $res->{ $alias }->{recipients} }, split m{ , }mx, $line;
       }
       else { ($alias, $comment, $created, $owner) = (NUL, NUL, NUL, NUL) }
    }
@@ -92,7 +92,7 @@ sub _write_filter {
       }
 
       my $pad  = SPC x (2 + length $name);
-      my $line = $name.q(: ).(join q(,), @{ $alias->{recipients} || [] });
+      my $line = $name.q(: ).(join q(, ), @{ $alias->{recipients} || [] });
 
       push @{ $buf }, wrap( NUL, $pad, $line ), NUL;
    }

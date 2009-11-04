@@ -49,7 +49,7 @@ around BUILDARGS => sub {
    else { $attrs->{path} = $car }
 
    $cdr[0] and $attrs->{system_aliases} = $cdr[0];
-   $cdr[1] and $attrs->{newaliases    } = $cdr[1];
+   $cdr[1] and $attrs->{newaliases    } = [ $cdr[1] ];
 
    return $attrs;
 };
@@ -95,7 +95,7 @@ sub update_as_root {
       $self->throw( error => 'Path [_1] cannot execute', args => [ $cmd ] );
    }
 
-   copy( $self->path, $self->catfile( $self->system_aliases ) )
+   copy( NUL.$self->path, $self->catfile( $self->system_aliases ) )
       or $self->throw( $ERRNO );
 
    return $self->_run_cmd( $cmd );
@@ -107,13 +107,13 @@ sub _run_update_cmd {
    my $self = shift; my $out = NUL;
 
    if ($self->commit and $self->commit_cmd) {
-      $out .= $self->_run_cmd( [ @{ $self->commit_cmd }, $self->path ] );
+      $out .= $self->_run_cmd( [ @{ $self->commit_cmd }, NUL.$self->path ] );
    }
 
    if ($self->root_update and $self->root_update_cmd) {
       my $cmd  = [ $self->root_update_cmd,
                    @{ $self->root_update_attrs },
-                   $self->path,
+                   NUL.$self->path,
                    $self->system_aliases,
                    $self->catfile( @{ $self->newaliases } ) ];
 
