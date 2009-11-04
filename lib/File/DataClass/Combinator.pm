@@ -11,13 +11,9 @@ use Moose;
 
 with qw(File::DataClass::Util);
 
+has 'lang'    => is => 'rw', isa => 'Str',    required => TRUE;
 has 'storage' => is => 'ro', isa => 'Object', required => TRUE,
-   handles => [ qw(load lock validate_params) ];
-
-sub dump {
-   # Moose delegation bug
-   my ($self, $path, $data) = @_; return $self->storage->dump( $path, $data );
-}
+   handles => [ qw(load txn_do validate_params) ];
 
 sub delete {
    my ($self, $path, $element_obj) = @_;
@@ -33,6 +29,11 @@ sub delete {
    return $deleted;
 }
 
+sub dump {
+   # Moose delegation bug
+   my ($self, $path, $data) = @_; return $self->storage->dump( $path, $data );
+}
+
 sub insert {
    my ($self, $path, $element_obj) = @_;
 
@@ -40,14 +41,15 @@ sub insert {
 }
 
 sub select {
-   my ($self, $path) = @_; my @paths = ($path);
+   my ($self, $path, $element) = @_; my @paths = ($path);
 
-   push @paths, $self->_make_lang_path( $path ) if ($self->_lang);
+   push @paths, $self->_make_lang_path( $path ) if ($self->lang);
 
    my $data = $self->load( @paths );
-   my $elem = $self->validate_params( $path );
 
-   return exists $data->{ $elem } ? $data->{ $elem } : {};
+   $self->validate_params( $path, $element );
+
+   return exists $data->{ $element } ? $data->{ $element } : {};
 }
 
 sub update {
@@ -58,34 +60,30 @@ sub update {
 
 # Private methods
 
-sub _lang {
-   return shift->storage->schema->lang;
-}
-
 sub _make_lang_path {
    my ($self, $path) = @_;
 
-   return unless ($self->_lang);
+   return unless ($path and $self->lang);
 
-   my $pathname = $path->pathname; my $extn = $self->storage->extn;
+   my $extn = $self->storage->extn;
 
-   return $pathname.q(_).$self->_lang unless ($pathname =~ m{ $extn \z }mx);
+   return $path.q(_).$self->lang unless ($path =~ m{ $extn \z }mx);
 
-   my $file = $self->basename( $pathname, $extn ).q(_).$self->_lang.$extn;
+   my $file = $self->basename( $path, $extn ).q(_).$self->lang.$extn;
 
-   return $self->io( $self->catfile( $self->dirname( $pathname ), $file ) );
+   return $self->io( $self->catfile( $self->dirname( $path ), $file ) );
 }
 
 sub _update {
    my ($self, $path, $element_obj, $overwrite) = @_;
 
-   my $schema    = $self->storage->schema;
-   my $condition = sub { !$schema->lang_dep || !$schema->lang_dep->{ $_[0] } };
+   my $source    = $element_obj->_resultset->source;
+   my $condition = sub { !$source->lang_dep || !$source->lang_dep->{ $_[0] } };
    my $updated   = $self->storage->update( $path, $element_obj,
                                            $overwrite, $condition );
 
    if (my $lpath = $self->_make_lang_path( $path )) {
-      $condition  = sub { $schema->lang_dep && $schema->lang_dep->{ $_[0] } };
+      $condition  = sub { $source->lang_dep && $source->lang_dep->{ $_[0] } };
       my $written = $self->storage->update( $lpath, $element_obj,
                                             $overwrite, $condition );
       $updated ||= $written;
@@ -154,7 +152,7 @@ it returns. Paths are instances of L<File::DataClass::IO>
    $hash_ref = $self->select;
 
 Returns a hash ref containing all the elements of the type specified in the
-schema
+result source
 
 =head2 update
 

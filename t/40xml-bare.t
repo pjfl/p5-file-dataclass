@@ -18,38 +18,37 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 3;
-   use_ok( q(File::DataClass) );
+   plan tests => 4;
+   use_ok( q(File::DataClass::Schema) );
 }
 
-my $args = {
-   result_source_attributes => {
-      schema_attributes => {
-         storage_class  => q(XML::Bare),
-      }
-   },
-   tempdir => q(t),
-};
-my $obj = File::DataClass->new( $args );
+my $args   = { path          => q(t/default.xml),
+               storage_class => q(XML::Bare),
+               tempdir       => q(t), };
+my $schema = File::DataClass::Schema->new( $args );
 
-isa_ok( $obj, q(File::DataClass) );
+isa_ok( $schema, q(File::DataClass::Schema) );
 
-my $path   = catfile( qw(t default.xml) );
-my $dumped = catfile( qw(t dumped) );
-my $data   = $obj->result_source->load( $path );
+my $dumped = catfile( qw(t dumped.xml) ); io( $dumped )->unlink;
 
-$obj->result_source->dump( { data => $data, path => $dumped } );
+$schema->dump( { data => $schema->load, path => $dumped } );
 
-my $diff = diff $path, $dumped;
+my $diff = diff catfile( qw(t default.xml) ), $dumped;
 
-ok( !$diff, 'Load and dump roundtrips' );
+ok( !$diff, 'Load and dump roundtrips' ); io( $dumped )->unlink;
+
+$schema->dump( { data => $schema->load, path => $dumped } );
+
+$diff = diff catfile( qw(t default.xml) ), $dumped;
+
+ok( !$diff, 'Load and dump roundtrips 2' );
 
 # Cleanup
 
 io( $dumped )->unlink;
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
-io( catdir ( qw(t file-dataclass) ) )->rmtree;
+io( catdir ( qw(t file-dataclass-schema) ) )->rmtree;
 
 # Local Variables:
 # mode: perl

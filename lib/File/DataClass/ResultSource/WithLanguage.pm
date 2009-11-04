@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package File::DataClass::Schema::WithLanguage;
+package File::DataClass::ResultSource::WithLanguage;
 
 use strict;
 use namespace::autoclean;
@@ -10,21 +10,28 @@ use File::DataClass::Combinator;
 use File::DataClass::Constants;
 use Moose;
 
-extends qw(File::DataClass::Schema);
+extends qw(File::DataClass::ResultSource);
 
-has 'lang'     => is => 'rw', isa => 'Str', default => NUL;
+has 'lang'     => is => 'rw', isa => 'Str',
+   default     => NUL, trigger => \&_set_lang;
 has 'lang_dep' => is => 'rw', isa => 'Maybe[HashRef]';
 
 sub BUILD {
    my $self = shift;
 
    if ($self->lang_dep) {
-      my $attrs = { storage => $self->storage };
+      my $attrs = { lang => $self->lang, storage => $self->schema->storage };
 
-      $self->storage( File::DataClass::Combinator->new( $attrs ) );
+      $self->schema->storage( File::DataClass::Combinator->new( $attrs ) );
    }
 
    return;
+}
+
+sub _set_lang {
+   my ($self, $lang, $old_lang) = @_;
+
+   return defined $old_lang ? $self->schema->storage->lang( $lang ) : undef;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -39,7 +46,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Schema::WithLanguage - Schema localisation
+File::DataClass::ResultSource::WithLanguage - Result source localisation
 
 =head1 Version
 

@@ -18,9 +18,9 @@ BEGIN {
       plan skip_all => q(CPAN Testing stopped);
    }
 
-   plan tests => 10;
-   use_ok( q(File::DataClass) );
-   use_ok( q(File::DataClass::Schema::WithLanguage) );
+   plan tests => 11;
+   use_ok( q(File::DataClass::Schema) );
+   use_ok( q(File::DataClass::ResultSource::WithLanguage) );
 }
 
 sub test {
@@ -38,25 +38,23 @@ sub test {
    return $wantarray ? @{ $res } : $res;
 }
 
-my $obj = File::DataClass->new
-   ( result_source_attributes => {
-      schema_attributes => { attributes => [ qw(columns heading) ],
-                             element    => q(pages),
-                             lang       => q(en),
-                             lang_dep   => { qw(heading 1) } },
-      schema_class      => q(File::DataClass::Schema::WithLanguage),
-     },
-     tempdir => q(t) );
+my $schema = File::DataClass::Schema->new
+   ( path           => q(t/default.xml),
+     result_source_attributes => {
+        pages => {
+           attributes => [ qw(columns heading) ],
+           lang       => q(en),
+           lang_dep   => { qw(heading 1) }, }, },
+     result_source_class => q(File::DataClass::ResultSource::WithLanguage),
+     tempdir        => q(t) );
 
-isa_ok( $obj, q(File::DataClass) );
+isa_ok( $schema, q(File::DataClass::Schema) );
 
-my $source = $obj->result_source;
+my $source = $schema->source( q(pages) );
 
-is( $source->schema->lang, q(en), 'Has language attribute' );
+is( $source->lang, q(en), 'Has language attribute' );
 
-my $path = catfile( qw(t default.xml) );
-
-my $rs = $source->resultset( $path ); my $args = {};
+my $rs = $source->resultset; my $args = {};
 
 $args->{name  } = q(dummy);
 $args->{fields}->{columns} = 3;
@@ -89,11 +87,15 @@ $e = test( $rs, q(delete), $args );
 
 ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
 
+$source->lang( q(de) );
+
+is( $schema->storage->lang, q(de), 'Triggers storage language change' );
+
 # Cleanup
 
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
-io( catdir ( qw(t file-dataclass) ) )->rmtree;
+io( catdir ( qw(t file-dataclass-schema) ) )->rmtree;
 
 # Local Variables:
 # mode: perl

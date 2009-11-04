@@ -11,17 +11,17 @@ use Moose;
 extends qw(Moose::Object Class::Accessor::Grouped);
 with    qw(File::DataClass::Util);
 
-has 'name'    => is => 'rw', isa => 'Str',       required => 1;
-has '_path'   => is => 'ro', isa => 'F_DC_Path', required => 1;
-has '_schema' => is => 'ro', isa => 'Object',    required => 1,
-   weak_ref   => 1;
+has 'name'       => is => 'rw', isa => 'Str',    required => 1;
+has '_resultset' => is => 'ro', isa => 'Object', required => 1, weak_ref => 1;
 
 sub BUILD {
    my ($self, $args) = @_; my $class = blessed $self;
 
-   $class->mk_group_accessors( q(simple), @{ $self->_schema->attributes } );
+   my $attrs = $self->_resultset->source->attributes;
 
-   $self->_schema->update_attributes( $self, $args );
+   $class->mk_group_accessors( q(simple), @{ $attrs } );
+
+   $self->_resultset->update_attributes( $self, $args );
    return;
 }
 
@@ -39,8 +39,12 @@ sub update {
 
 # Private methods
 
+sub _path {
+   return shift->_resultset->source->schema->path;
+}
+
 sub _storage {
-   return shift->_schema->storage;
+   return shift->_resultset->source->schema->storage;
 }
 
 __PACKAGE__->meta->make_immutable;

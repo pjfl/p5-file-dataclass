@@ -25,16 +25,16 @@ use Sub::Exporter -setup => {
    exports => [ qw(io) ], groups => { default => [ qw(io) ], },
 };
 
-enum 'Mode' => qw(a a+ r r+ w w+);
-enum 'Type' => qw(dir file);
+enum 'F_DC_IO_Mode'    => qw(a a+ r r+ w w+);
+enum 'F_DC_IO_Type'    => qw(dir file);
 
 has 'autoclose'        => is => 'rw', isa => 'Bool',      default    => TRUE ;
 has 'io_handle'        => is => 'rw', isa => 'Maybe[Object]'                 ;
 has 'is_open'          => is => 'rw', isa => 'Bool',      default    => FALSE;
-has 'mode'             => is => 'rw', isa => 'Mode',      default    => q(r) ;
+has 'mode'             => is => 'rw', isa => 'F_DC_IO_Mode', default => q(r) ;
 has 'name'             => is => 'rw', isa => 'Str',       default    => NUL  ;
 has 'sort'             => is => 'rw', isa => 'Bool',      default    => TRUE ;
-has 'type'             => is => 'rw', isa => 'Maybe[Type]'                   ;
+has 'type'             => is => 'rw', isa => 'Maybe[F_DC_IO_Type]'           ;
 has '_assert'          => is => 'rw', isa => 'Bool',      default    => FALSE;
 has '_atomic'          => is => 'rw', isa => 'Bool',      default    => FALSE;
 has '_atomic_prefix'   => is => 'rw', isa => 'Str',       default    => q(B_);
@@ -59,20 +59,15 @@ has '_umask'           => is => 'rw', isa => 'ArrayRef[Num]',
 has '_utf8'            => is => 'rw', isa => 'Bool',      default    => FALSE;
 
 around BUILDARGS => sub {
-   my ($orig, $class, @rest) = @_; my $car = $rest[0]; my $attrs;
+   my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
 
-   if    ($car and ref $car eq HASH)  { $attrs = $car }
-   elsif ($car and ref $car eq ARRAY) {
-      $attrs = { name => $car->[0] };
-      $attrs->{mode  } = $car->[1] if ($car->[1]);
-      $attrs->{_perms} = $car->[2] if ($car->[2]);
-   }
-   elsif ($car and not ref $car) {
-      $attrs = { name => $rest[0] };
-      $attrs->{mode  } = $rest[1] if ($rest[1]);
-      $attrs->{_perms} = $rest[2] if ($rest[2]);
-   }
-   else { $attrs = {} }
+   $car or return $attrs; ref $car eq HASH and return $car;
+
+   if (ref $car eq ARRAY) { $attrs->{name} = File::Spec->catfile( @{ $car } ) }
+   else { $attrs->{name} = $car }
+
+   $cdr[0] and $attrs->{mode  } = $cdr[0];
+   $cdr[1] and $attrs->{_perms} = $cdr[1];
 
    return $attrs;
 };
@@ -202,9 +197,10 @@ sub buffer {
    my $self = shift;
 
    if (@_) {
-      my $buffer_ref   = ref $_[0] ? $_[0] : \$_[0];
-      ${ $buffer_ref } = NUL unless (defined ${ $buffer_ref });
-      $self->{buffer}  = $buffer_ref;
+      my $buffer_ref  = ref $_[0] ? $_[0] : \$_[0];
+
+      defined ${ $buffer_ref } or ${ $buffer_ref } = NUL;
+      $self->{buffer} = $buffer_ref;
       return $self;
    }
 
@@ -333,7 +329,7 @@ sub dir {
 sub _dir_perms {
    my ($self, $perms) = @_; $perms ||= $self->_perms || PERMS;
 
-   return (($perms & 0444) >> 2) | $perms;
+   return (($perms & oct q(0444)) >> 2) | $perms;
 }
 
 sub dirname {
@@ -355,10 +351,8 @@ sub empty {
 sub encoding {
    my ($self, $encoding) = @_;
 
-   unless ($encoding) {
+   $encoding ||
       $self->throw( 'No encoding value passed to '.__PACKAGE__.'::encoding' );
-   }
-
    $self->is_open && CORE::binmode( $self->io_handle, ":$encoding" );
    $self->_encoding( $encoding );
    return $self;
@@ -407,7 +401,7 @@ sub _find {
    defined $level || ($level = $self->_deep ? 0 : 1);
 
    while ($io = $self->next) {
-      unless (defined $filter and not map { $filter->() } ($io)) {
+      if (not defined $filter or map { $filter->() } ($io)) {
          if (($files and $io->is_file) or ($dirs and $io->is_dir)) {
             push @all, $io;
          }
@@ -582,7 +576,7 @@ sub _open_args {
                 ? $self->_get_atomic_path : $self->name;
    my @args     = ( $pathname, $self->mode( $mode || $self->mode ) );
 
-   if ($self->exists) { $perms = $self->stat->{mode} & 07777 }
+   if ($self->exists) { $perms = $self->stat->{mode} & oct q(07777) }
    else { $perms ||= $self->_perms || PERMS }
 
    $self->_umask_push( $self->_perms( $perms ) );
@@ -795,10 +789,10 @@ sub _umask_pop {
 }
 
 sub _umask_push {
-   my ($self, $perms) = @_; my $first = $self->_umask->[0]; $perms ^= 0777;
+   my ($self, $perms) = @_; my $first = $self->_umask->[0];
 
    $first && $first == NO_UMASK_STACK && return umask;
-   push @{ $self->_umask }, umask $perms;
+   $perms ^= oct q(0777); push @{ $self->_umask }, umask $perms;
    return $perms;
 }
 

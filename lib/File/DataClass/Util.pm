@@ -8,25 +8,52 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::MOP;
 use File::DataClass::Constants;
-use File::DataClass::Exception;
 use File::DataClass::IO ();
 use File::Spec;
 use List::Util qw(first);
 use Moose::Role;
 use Moose::Util::TypeConstraints;
+use Scalar::Util qw(blessed);
 use TryCatch;
 
-subtype 'F_DC_Path' => as 'Object' =>
-   where { $_->isa( q(File::DataClass::IO) ) };
-subtype 'F_DC_Exception' => as 'ClassName' => where { $_->can( q(throw) ) };
+subtype 'F_DC_Cache' => as 'Object' =>
+   where   { $_->isa( q(File::DataClass::Cache) ) } =>
+   message {
+      'Object '.(blessed $_ || $_).' is not of class File::DataClass::Cache' };
 
-has '_exception_class' => is => 'rw', isa => 'F_DC_Exception',
-   default => q(File::DataClass::Exception), writer => 'exception_class';
+subtype 'F_DC_Exception' => as 'ClassName' =>
+   where   { $_->can( q(throw) ) } =>
+   message { "Class $_ is not loaded or has no throw method" };
+
+subtype 'F_DC_Lock' => as 'Object' =>
+   where   { $_->can( q(set) ) and $_->can( q(reset) ) } =>
+   message { 'Object '.(blessed $_ || $_).' is missing set or reset methods' };
+
+subtype 'F_DC_Path' => as 'Object' =>
+   where   { $_->isa( q(File::DataClass::IO) ) } =>
+   message {
+      'Object '.(blessed $_ || $_).' is not of class File::DataClass::IO' };
+
+
+subtype 'F_DC_Directory' => as 'F_DC_Path' =>
+   where   { $_->is_dir  } =>
+   message { "Path $_ is not a directory" };
+
+subtype 'F_DC_File'      => as 'F_DC_Path' =>
+   where   { $_->is_file } =>
+   message { "Path $_ is not a file" };
+
+coerce 'F_DC_Path'      => from 'ArrayRef' => via { __PACKAGE__->io( $_ ) };
+coerce 'F_DC_Directory' => from 'ArrayRef' => via { __PACKAGE__->io( $_ ) };
+coerce 'F_DC_File'      => from 'ArrayRef' => via { __PACKAGE__->io( $_ ) };
+coerce 'F_DC_Path'      => from 'Str'      => via { __PACKAGE__->io( $_ ) };
+coerce 'F_DC_Directory' => from 'Str'      => via { __PACKAGE__->io( $_ ) };
+coerce 'F_DC_File'      => from 'Str'      => via { __PACKAGE__->io( $_ ) };
 
 sub basename {
    my ($self, $path, @suffixes) = @_;
 
-   return $self->io( $path )->basename( @suffixes );
+   return $self->io( NUL.$path )->basename( @suffixes );
 }
 
 sub catdir {
@@ -38,7 +65,7 @@ sub catfile {
 }
 
 sub dirname {
-   my ($self, $path) = @_; return $self->io( $path )->dirname;
+   my ($self, $path) = @_; return $self->io( NUL.$path )->dirname;
 }
 
 sub ensure_class_loaded {
@@ -60,25 +87,23 @@ sub ensure_class_loaded {
 }
 
 sub io {
-   my ($self, @rest) = @_;
+   my ($self, @rest) = @_; my $io = File::DataClass::IO->new( @rest );
 
-   my $io = File::DataClass::IO->new( @rest );
-
-   $io->exception_class( $self->_exception_class );
+   $io->exception_class( File::DataClass->Exception_Class );
 
    return $io;
 }
 
 sub is_member {
-   my ($self, $candidate, @rest) = @_;
-
-   return unless ($candidate);
+   my ($self, $candidate, @rest) = @_; $candidate or return;
 
    return (first { $_ eq $candidate } @rest) ? TRUE : FALSE;
 }
 
 sub throw {
-   my ($self, @rest) = @_; return $self->_exception_class->throw( @rest );
+   my ($self, @rest) = @_;
+
+   return File::DataClass->Exception_Class->throw( @rest );
 }
 
 no Moose::Util::TypeConstraints;

@@ -85,13 +85,14 @@ sub _is_in_dtd {
 sub _update {
    my ($self, $path, $element_obj, $overwrite, $condition) = @_;
 
-   $path->touch unless ($overwrite);
+   my $element = $element_obj->_resultset->source->name;
 
-   my $element_name = $self->validate_params( $path );
+   $self->validate_params( $path, $element );
+   $overwrite or $path->touch;
 
-   if (        $self->_is_array ( $element_name )
-       and not $self->_is_in_dtd( $element_name )) {
-      push @{ $self->_dtd }, '<!ELEMENT '.$element_name.' (ARRAY)*>';
+   if (        $self->_is_array ( $element )
+       and not $self->_is_in_dtd( $element )) {
+      push @{ $self->_dtd }, '<!ELEMENT '.$element.' (ARRAY)*>';
    }
 
    return $self->next::method( $path, $element_obj, $overwrite, $condition );

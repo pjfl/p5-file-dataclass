@@ -14,10 +14,11 @@ has 'cache_attributes' => is => 'ro', isa => 'HashRef',
    default             => sub { return {} };
 has 'cache_class'      => is => 'ro', isa => 'ClassName',
    default             => q(Cache::FileCache);
-has 'cache'            => is => 'ro', isa => 'Object', lazy_build => TRUE;
+has 'cache'            => is => 'ro', isa => 'Object',
+   lazy_build          => TRUE;
 
 sub get {
-   my ($self, $key) = @_;
+   my ($self, $key) = @_; $key .= NUL;
 
    my $cached = $key    ? $self->cache->get( $key ) : FALSE;
    my $data   = $cached ? $cached->{data}           : undef;
@@ -31,11 +32,11 @@ sub get_by_paths {
    my ($key, $newest) = $self->_get_key_and_newest( $paths );
    my ($data, $meta)  = $self->get( $key );
 
-   return ($data, ($newest == 0 or $meta->{mtime} < $newest));
+   return ($data, $meta, $newest);
 }
 
 sub remove {
-   my ($self, $key) = @_; $key || return;
+   my ($self, $key) = @_; $key || return; $key .= NUL;
 
    my $mtimes = $self->cache->get( q(mtimes) ) || {};
 
@@ -46,7 +47,9 @@ sub remove {
 }
 
 sub set {
-   my ($self, $key, $data, $meta) = @_; $meta ||= {}; $meta->{mtime} ||= 0;
+   my ($self, $key, $data, $meta) = @_;
+
+   $key .= NUL; $meta ||= {}; $meta->{mtime} ||= 0;
 
    if ($key and defined $data) {
       $self->cache->set( $key, { data => $data, meta => $meta } );
@@ -61,11 +64,13 @@ sub set {
 }
 
 sub set_by_paths {
-   my ($self, $paths, $data) = @_;
+   my ($self, $paths, $data, $meta) = @_; $meta ||= {};
 
    my ($key, $newest) = $self->_get_key_and_newest( $paths );
 
-   return $self->set( $key, $data, { mtime => $newest } );
+   $meta->{mtime} = $newest;
+
+   return $self->set( $key, $data, $meta );
 }
 
 # Private methods
@@ -79,16 +84,14 @@ sub _build_cache {
 }
 
 sub _get_key_and_newest {
-   my ($self, $paths) = @_; my ($key, $pathname); my $newest = 0;
+   my ($self, $paths) = @_; my $key; my $newest = 0;
 
    my $mtimes = $self->cache->get( q(mtimes) ) || {};
 
-   for my $path (@{ $paths }) {
-      next unless ($pathname = $path->pathname);
+   for my $path (map { NUL.$_ } grep { $_->pathname } @{ $paths }) {
+      $key .= $key ? q(~).$path : $path;
 
-      $key .= $key ? q(~).$pathname : $pathname;
-
-      my $mtime = $mtimes->{ $pathname } || 0;
+      my $mtime = $mtimes->{ $path } || 0;
 
       $newest = $mtime if ($mtime > $newest);
    }

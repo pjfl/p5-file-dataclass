@@ -11,60 +11,53 @@ use File::DataClass::Constants;
 use English  qw( -no_match_vars );
 use IPC::Cmd qw( can_run run );
 use File::Copy;
+use File::Spec;
 use Moose;
 
-extends qw(File::DataClass);
+extends qw(File::DataClass::Schema);
 
-has 'path'           =>
-   is => 'rw', isa => 'Str',      required => TRUE;
-has 'newaliases'     =>
-   is => 'ro', isa => 'ArrayRef', default  => sub { return [ q(newaliases) ] };
-has 'system_aliases' =>
-   is => 'ro', isa => 'Str',      default  => q(/etc/mail/aliases);
+has 'newaliases'     => is => 'ro', isa => 'ArrayRef',
+   default           => sub { return [ q(newaliases) ] };
+has 'system_aliases' => is => 'ro', isa => 'Str',
+   default           => sub {
+      return File::Spec->catfile( NUL, qw(etc mail aliases) ) };
 
-has 'commit'     =>
-   is => 'rw', isa => 'Bool',     default  => FALSE;
-has 'commit_cmd' =>
-   is => 'ro', isa => 'ArrayRef', default  => sub {
-      return [ qw(svn ci -m "Updated") ] };
+has 'commit'     => is => 'rw', isa => 'Bool',
+   default       => FALSE;
+has 'commit_cmd' => is => 'ro', isa => 'ArrayRef',
+   default       => sub { return [ qw(svn ci -m "Updated") ] };
 
-has 'root_update'       =>
-   is => 'rw', isa => 'Bool',     default  => FALSE;
-has 'root_update_cmd'   =>
-   is => 'ro', isa => 'Maybe[Str]';
-has 'root_update_attrs' =>
-   is => 'ro', isa => 'ArrayRef', default => sub {
-      return [ qw(-S -n -c update_mail_aliases) ] };
+has 'root_update'       => is => 'rw', isa => 'Bool',
+   default              => FALSE;
+has 'root_update_cmd'   => is => 'ro', isa => 'Maybe[Str]';
+has 'root_update_attrs' => is => 'ro', isa => 'ArrayRef',
+   default              => sub { return [ qw(-S -n -c update_mail_aliases) ] };
 
-has '+result_source_attributes' => default  => sub { return {
-   schema_attributes => {
-      attributes     => [ qw(comment created owner recipients) ],
-      defaults       => {},
-      element        => q(aliases),
-      storage_class  => q(+File::MailAlias::Storage), }
-} };
+has '+result_source_attributes' =>
+   default                      => sub { return {
+      aliases => { attributes => [ qw(comment created owner recipients) ],
+                   defaults   => {} }, } };
+has '+storage_class' =>
+   default           => q(+File::MailAlias::Storage);
 
 around BUILDARGS => sub {
-   my ($orig, $class, @rest) = @_; my $car = $rest[0]; my $attrs = {};
+   my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
 
-   if ($car and not ref $car) {
-      $attrs->{path          } = shift @rest;
-      $attrs->{system_aliases} = shift @rest;
-      $attrs->{newaliases    } = [ @rest ];
-   }
-   elsif ($car and ref $car eq HASH) { $attrs = $car }
+   $car or return $attrs; ref $car eq HASH and return $car;
+
+   if (ref $car eq ARRAY) { $attrs->{path} = File::Spec->catfile( @{ $car } ) }
+   else { $attrs->{path} = $car }
+
+   $cdr[0] and $attrs->{system_aliases} = $cdr[0];
+   $cdr[1] and $attrs->{newaliases    } = $cdr[1];
 
    return $attrs;
 };
 
-sub BUILD {
-   my $self = shift; $self->result_source->path( $self->path ); return;
-}
-
 sub create {
    my ($self, $args) = @_;
 
-   my $name = $self->_resultset->create( $args );
+   my $name = $self->resultset( q(aliases) )->create( $args );
    my $out  = $self->_run_update_cmd;
 
    return ($name, $out);
@@ -73,20 +66,22 @@ sub create {
 sub delete {
    my ($self, $args) = @_;
 
-   my $name = $self->_resultset->delete( $args );
+   my $name = $self->resultset( q(aliases) )->delete( $args );
    my $out  = $self->_run_update_cmd;
 
    return ($name, $out);
 }
 
 sub list {
-   my ($self, @rest) = @_; return $self->_resultset->list( @rest );
+   my ($self, @rest) = @_;
+
+   return $self->resultset( q(aliases) )->list( @rest );
 }
 
 sub update {
    my ($self, $args) = @_;
 
-   my $name = $self->_resultset->update( $args );
+   my $name = $self->resultset( q(aliases) )->update( $args );
    my $out  = $self->_run_update_cmd;
 
    return ($name, $out);
@@ -95,21 +90,18 @@ sub update {
 sub update_as_root {
    my $self = shift; my $cmd;
 
-   unless ($self->newaliases and $cmd = can_run( $self->newaliases )) {
+   unless ($self->newaliases and $cmd = can_run( $self->newaliases->[0] )) {
       $cmd = join SPC, @{ $self->newaliases };
       $self->throw( error => 'Path [_1] cannot execute', args => [ $cmd ] );
    }
 
-   $self->throw( $ERRNO ) unless (copy( $self->path, $self->system_aliases ));
+   copy( $self->path, $self->catfile( $self->system_aliases ) )
+      or $self->throw( $ERRNO );
 
    return $self->_run_cmd( $cmd );
 }
 
 # Private methods
-
-sub _resultset {
-   return shift->result_source->resultset;
-}
 
 sub _run_update_cmd {
    my $self = shift; my $out = NUL;
@@ -119,8 +111,11 @@ sub _run_update_cmd {
    }
 
    if ($self->root_update and $self->root_update_cmd) {
-      my $cmd  = [ $self->root_update_cmd, @{ $self->root_update_attrs },
-                   $self->path, $self->system_aliases, @{ $self->newaliases }];
+      my $cmd  = [ $self->root_update_cmd,
+                   @{ $self->root_update_attrs },
+                   $self->path,
+                   $self->system_aliases,
+                   $self->catfile( @{ $self->newaliases } ) ];
 
       $out .= $self->_run_cmd( $cmd );
    }
@@ -131,8 +126,8 @@ sub _run_update_cmd {
 sub _run_cmd {
    my ($self, $cmd) = @_; my ($ok, $err, $out) = run( command => $cmd );
 
-   $out && ref $out eq ARRAY && ($out = join "\n", @{ $out });
-   $ok || $self->throw( error => "Could not run [_1] -- [_2]\n[_3]",
+   $out and ref $out eq ARRAY and $out = join "\n", @{ $out };
+   $ok or $self->throw( error => "Could not run [_1] -- [_2]\n[_3]",
                         args  => [ $err, $ERRNO, $out ] );
    return $out;
 }

@@ -15,13 +15,8 @@ use TryCatch;
 
 with qw(File::DataClass::Util);
 
-has 'cache'  => is => 'ro', isa => 'Object',  required => 1;
-has 'debug'  => is => 'ro', isa => 'Bool',    default  => FALSE;
-has 'extn'   => is => 'rw', isa => 'Str',     default  => NUL;
-has 'lock'   => is => 'ro', isa => 'Object',  required => 1;
-has 'log'    => is => 'ro', isa => 'Object',
-   default   => sub { Class::Null->new };
-has 'schema' => is => 'ro', isa => 'Object',  required => 1, weak_ref => TRUE;
+has 'extn'   => is => 'rw', isa => 'Str',    default  => NUL;
+has 'schema' => is => 'ro', isa => 'Object', required => 1, weak_ref => TRUE;
 
 sub delete {
    my ($self, $path, $element_obj) = @_;
@@ -32,9 +27,8 @@ sub delete {
 sub dump {
    my ($self, $path, $data) = @_;
 
-   $self->throw( 'No file path specified' ) unless ($path);
-
-   $self->lock->set( k => $path->pathname );
+   $self->validate_params( $path, TRUE );
+   $self->_lock->set( k => $path );
 
    return $self->_write_file( $path, $data, TRUE );
 }
@@ -46,17 +40,37 @@ sub insert {
 }
 
 sub load {
-   my ($self, @paths) = @_; $paths[0] || return {};
-
-   return $self->_load( @paths );
+   my ($self, @paths) = @_; return $paths[0] ? $self->_load( @paths ) : {};
 }
 
 sub select {
-   my ($self, $path) = @_;
-   my $elem          = $self->validate_params( $path );
-   my $data          = $self->_read_file( $path, FALSE );
+   my ($self, $path, $element) = @_;
 
-   return exists $data->{ $elem } ? $data->{ $elem } : {};
+   $self->validate_params( $path, $element );
+
+   my $data = $self->_read_file( $path, FALSE );
+
+   return exists $data->{ $element } ? $data->{ $element } : {};
+}
+
+sub txn_do {
+   my ($self, $path, $code_ref) = @_;
+
+   $self->validate_params( $path, TRUE );
+
+   my $key = q(txn:).$path->pathname; my $wantarray = wantarray; my $res;
+
+   try {
+      $self->_lock->set( k => $key );
+
+      if ($wantarray) { @{ $res } = $code_ref->() }
+      else { $res = $code_ref->() }
+
+      $self->_lock->reset( k => $key );
+   }
+   catch ($e) { $self->_lock->reset( k => $key ); $self->throw( $e ) }
+
+   return $wantarray ? @{ $res } : $res;
 }
 
 sub update {
@@ -68,54 +82,67 @@ sub update {
 }
 
 sub validate_params {
-   my ($self, $path) = @_; my ($elem, $schema);
+   my ($self, $path, $element) = @_;
 
-   $self->throw( 'No file path specified' ) unless ($path);
+   $path or $self->throw( 'No file path specified' );
 
-   $self->throw( error => 'Path [_1] is not blessed', args => [ $path ] )
-      unless (blessed $path);
+   blessed $path or
+      $self->throw( error => 'Path [_1] is not blessed', args => [ $path ] );
 
-   $self->throw( error => 'Path [_1] no schema specified', args => [ $path ] )
-      unless ($schema = $self->schema);
+   $element or $self->throw( error => 'Path [_1] no element specified',
+                             args  => [ $path ] );
 
-   $self->throw( error => 'Path [_1] no element specified', args => [ $path ] )
-      unless ($elem = $schema->element);
-
-   return $elem;
+   return;
 }
 
 # Private methods
 
+sub _cache {
+   return shift->schema->cache;
+}
+
+sub _debug {
+   return shift->schema->debug;
+}
+
 sub _delete {
    my ($self, $path, $element_obj) = @_;
 
-   my $name = $element_obj->{name};
-   my $elem = $self->validate_params( $path );
-   my $data = $self->_read_file( $path, TRUE );
+   my $element = $element_obj->_resultset->source->name;
 
-   if (exists $data->{ $elem } and exists $data->{ $elem }->{ $name }) {
-      delete $data->{ $elem }->{ $name };
-      delete $data->{ $elem } unless (scalar keys %{ $data->{ $elem } });
+   $self->validate_params( $path, $element );
+
+   my $data = $self->_read_file( $path, TRUE );
+   my $name = $element_obj->{name};
+
+   if (exists $data->{ $element } and exists $data->{ $element }->{ $name }) {
+      delete $data->{ $element }->{ $name };
+      scalar keys %{ $data->{ $element } } or delete $data->{ $element };
       $self->_write_file( $path, $data );
       return TRUE;
    }
 
-   $self->lock->reset( k => $path->pathname );
+   $self->_lock->reset( k => $path->pathname );
    return FALSE;
 }
 
 sub _load {
    my ($self, @paths) = @_;
-   my ($data, $stale) = $self->cache->get_by_paths( \@paths );
 
-   return $data if ($data and not $stale);
+   my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
 
-   return $self->_read_file( $paths[0], FALSE ) || {} if (scalar @paths == 1);
+   my $cache_mtime = $self->_meta_unpack( $meta );
+
+   my $stale = $newest == 0 || $cache_mtime < $newest ? TRUE : FALSE;
+
+   $data and not $stale and return $data;
+
+   scalar @paths == 1 and return $self->_read_file( $paths[0], FALSE ) || {};
 
    my $red; $data = {};
 
    for my $path (@paths) {
-      next unless ($red = $self->_read_file( $path, FALSE ));
+      $red = $self->_read_file( $path, FALSE ) or next;
 
       for (keys %{ $red }) {
          $data->{ $_ } = exists $data->{ $_ }
@@ -124,9 +151,17 @@ sub _load {
       }
    }
 
-   $self->cache->set_by_paths( \@paths, $data );
+   $self->_cache->set_by_paths( \@paths, $data, $self->_meta_pack( $newest ) );
 
    return $data;
+}
+
+sub _lock {
+   return shift->schema->lock;
+}
+
+sub _log {
+   return shift->schema->log;
 }
 
 sub _meta_pack {
@@ -142,26 +177,24 @@ sub _meta_unpack {
 sub _read_file {
    my ($self, $path, $for_update) = @_;
 
-   my $pathname = $path->pathname;
-
-   $self->lock->set( k => $pathname );
+   $self->_lock->set( k => $path );
 
    my $path_mtime    = $path->stat->{mtime};
-   my ($data, $meta) = $self->cache->get( $pathname );
+   my ($data, $meta) = $self->_cache->get( $path );
    my $cache_mtime   = $self->_meta_unpack( $meta );
 
    if (not $data or $cache_mtime < $path_mtime) {
-      try        { $data = inner( $path->lock ) }
-      catch ($e) { $self->lock->reset( k => $pathname ); $self->throw( $e ) }
+      try        { $data = inner( $path->_lock ) }
+      catch ($e) { $self->_lock->reset( k => $path ); $self->throw( $e ) }
 
-      $self->cache->set( $pathname, $data, $self->_meta_pack( $path_mtime ) );
-      $self->log->debug( "Read file  $pathname" ) if ($self->debug);
+      $self->_cache->set( $path, $data, $self->_meta_pack( $path_mtime ) );
+      $self->_log->debug( "Read file  $path" ) if ($self->_debug);
    }
    else {
-      $self->log->debug( "Read cache $pathname" ) if ($self->debug);
+      $self->_log->debug( "Read cache $path" ) if ($self->_debug);
    }
 
-   $self->lock->reset( k => $pathname ) unless ($for_update);
+   $for_update or $self->_lock->reset( k => $path );
 
    return $data;
 }
@@ -169,21 +202,24 @@ sub _read_file {
 sub _update {
    my ($self, $path, $element_obj, $overwrite, $condition) = @_;
 
-   my $name = $element_obj->{name};
-   my $elem = $self->validate_params( $path );
-   my $data = $self->_read_file( $path, TRUE );
+   my $element = $element_obj->_resultset->source->name;
 
-   if (not $overwrite and exists $data->{ $elem }->{ $name }) {
-      $self->lock->reset( k => $path->pathname );
+   $self->validate_params( $path, $element );
+
+   my $data = $self->_read_file( $path, TRUE );
+   my $name = $element_obj->{name};
+
+   if (not $overwrite and exists $data->{ $element }->{ $name }) {
+      $self->_lock->reset( k => $path );
       $self->throw( error => 'File [_1] element [_2] already exists',
-                    args  => [ $path->pathname, $name ] );
+                    args  => [ $path, $name ] );
    }
 
    my $updated = File::DataClass::HashMerge->merge
-      ( $element_obj, \$data->{ $elem }->{ $name }, $condition );
+      ( $element_obj, \$data->{ $element }->{ $name }, $condition );
 
    if ($updated) { $self->_write_file( $path, $data ) }
-   else { $self->lock->reset( k => $path->pathname ) }
+   else { $self->_lock->reset( k => $path ) }
 
    return $updated;
 }
@@ -191,21 +227,18 @@ sub _update {
 sub _write_file {
    my ($self, $path, $data, $create) = @_;
 
-   my $pathname = $path->pathname;
+   $create or $path->is_file or
+      $self->throw( error => 'File [_1] not found', args => [ $path ] );
 
-   unless ($create or $path->is_file) {
-      $self->throw( error => 'File [_1] not found', args => [ $pathname ] );
-   }
-
-   my $wtr = $path->perms( $self->schema->source->perms )->atomic;
+   my $wtr = $path->perms( $self->schema->perms )->atomic;
 
    try        { $data = inner( $wtr->lock, $data ) }
-   catch ($e) { $wtr->delete; $self->lock->reset( k => $pathname );
+   catch ($e) { $wtr->delete; $self->_lock->reset( k => $path );
                 $self->throw( $e ) }
 
    $wtr->close;
-   $self->cache->remove( $pathname );
-   $self->lock->reset( k => $pathname );
+   $self->_cache->remove( $path );
+   $self->_lock->reset( k => $path );
    return $data;
 }
 
@@ -269,6 +302,10 @@ it returns. Paths are instances of L<File::DataClass::IO>
 
 Returns a hash ref containing all the elements of the type specified in the
 schema. Path is an instance of L<File::DataClass::IO>
+
+=head2 txn_do
+
+Executes the supplied coderef wrapped in lock on the pathname
 
 =head2 update
 

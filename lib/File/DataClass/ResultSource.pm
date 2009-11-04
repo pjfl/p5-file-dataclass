@@ -6,56 +6,34 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use File::DataClass::Constants;
 use Moose;
 
-use File::DataClass::Constants;
 use File::DataClass::ResultSet;
-use File::DataClass::Schema;
 
 with qw(File::DataClass::Util);
 
-has 'path'  => is => 'rw', isa => 'Maybe[Str]';
-has 'perms' => is => 'rw', isa => 'Num', default => PERMS;
-
-has 'resultset_attributes' =>
-   is => 'ro', isa => 'HashRef',   default => sub { return {} };
-has 'resultset_class' =>
-   is => 'ro', isa => 'ClassName', default => q(File::DataClass::ResultSet);
-
-has 'schema_attributes' =>
-   is => 'ro', isa => 'HashRef',   default => sub { return {} };
-has 'schema_class' =>
-   is => 'ro', isa => 'ClassName', default => q(File::DataClass::Schema);
-has 'schema' =>
-   is => 'ro', isa => 'Object',    lazy_build => TRUE, init_arg => undef,
-   handles => [ qw(load) ];
-
-sub dump {
-   # Moose bug. Cannot delegate to a method called dump
-   my ($self, $args) = @_; return $self->schema->dump( $args );
-}
+has 'attributes'           => is => 'rw', isa => 'ArrayRef[Str]',
+   default                 => sub { return [] };
+has 'defaults'             => is => 'rw', isa => 'HashRef',
+   default                 => sub { return {} };
+has 'name'                 => is => 'rw', isa => 'Str',
+   default                 => NUL;
+has 'label_attr'           => is => 'rw', isa => 'Str',
+   default                 => NUL;
+has 'resultset_attributes' => is => 'ro', isa => 'HashRef',
+   default                 => sub { return {} };
+has 'resultset_class'      => is => 'ro', isa => 'ClassName',
+   default                 => q(File::DataClass::ResultSet);
+has 'schema'               => is => 'ro', isa => 'Object',
+   required                => TRUE, weak_ref => TRUE;
 
 sub resultset {
-   my ($self, $path) = @_; $path ||= $self->path;
-
-   $path = $self->io( $path ) if ($path and not blessed $path);
-
-   $self->throw( 'No file path specified' ) unless ($path);
-
-   my $attrs = { %{ $self->resultset_attributes },
-                 path => $path, schema => $self->schema };
-
-   return $self->resultset_class->new( $attrs );
-}
-
-# Private methods
-
-sub _build_schema {
    my $self = shift;
 
-   my $attrs = { %{ $self->schema_attributes }, source => $self };
+   my $attrs = { %{ $self->resultset_attributes }, source => $self };
 
-   return $self->schema_class->new( $attrs );
+   return $self->resultset_class->new( $attrs );
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -8,22 +8,24 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use Moose;
-use TryCatch;
 
+use File::DataClass::Element;
 use File::DataClass::List;
 
 with qw(File::DataClass::Util);
 
-has 'path'       => is => 'ro', isa => 'F_DC_Path', required   => TRUE;
-has 'schema'     => is => 'ro', isa => 'Object',    required   => TRUE,
-   weak_ref      => TRUE;
-has 'list_class' => is => 'ro', isa => 'ClassName',
-   default       => q(File::DataClass::List);
-has '_elements'  => is => 'rw', isa => 'ArrayRef',  init_arg   => undef,
-   default       => sub { return [] };
-has '_iterator'  => is => 'rw', isa => 'Int',       init_arg   => undef,
-   default       => 0;
-has '_operators' => is => 'ro', isa => 'HashRef',   lazy_build => TRUE;
+has 'element_class' => is => 'ro', isa => 'ClassName',
+   default          => q(File::DataClass::Element);
+has 'list_class'    => is => 'ro', isa => 'ClassName',
+   default          => q(File::DataClass::List);
+has 'source'        => is => 'ro', isa => 'Object',
+   required         => TRUE, weak_ref => TRUE;
+has '_elements'     => is => 'rw', isa => 'ArrayRef',
+   default          => sub { return [] }, init_arg => undef;
+has '_iterator'     => is => 'rw', isa => 'Int',
+   default          => 0, init_arg => undef;
+has '_operators'    => is => 'ro', isa => 'HashRef',
+   lazy_build       => TRUE;
 
 sub all {
    my $self = shift; return @{ $self->_elements };
@@ -34,8 +36,8 @@ sub create {
 
    my $name    = $self->_get_element_name( $args );
    my $attrs   = { %{ $args->{fields} || {} }, name => $name };
-   my $updated = $self->schema->txn_do( $self->path, sub {
-      $self->schema->create_element( $self->path, $attrs )->insert;
+   my $updated = $self->_txn_do( sub {
+      $self->_create_element( $attrs )->insert;
    } );
 
    return $updated ? $name : undef;
@@ -44,19 +46,17 @@ sub create {
 sub delete {
    my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
 
-   $self->schema->txn_do( $self->path, sub {
+   $self->_txn_do( sub {
       my ($element, $error);
 
       unless ($element = $self->_find( $name )) {
          $error = 'File [_1] element [_2] does not exist';
-         $args  = [ $self->path->pathname, $name ];
-         $self->throw( error => $error, args => $args );
+         $self->throw( error => $error, args => [ $self->_path, $name ] );
       }
 
       unless ($element->delete) {
          $error = 'File [_1] element [_2] not deleted';
-         $args  = [ $self->path->pathname, $name ];
-         $self->throw( error => $error, args => $args );
+         $self->throw( error => $error, args => [ $self->_path, $name ] );
       }
    } );
 
@@ -66,7 +66,7 @@ sub delete {
 sub find {
    my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
 
-   return $self->schema->txn_do( $self->path, sub { $self->_find( $name ) } );
+   return $self->_txn_do( sub { $self->_find( $name ) } );
 }
 
 sub first {
@@ -80,9 +80,7 @@ sub last {
 sub list {
    my ($self, $args) = @_;
 
-   return $self->schema->txn_do( $self->path, sub {
-      $self->_list( $args->{name} );
-   } );
+   return $self->_txn_do( sub { $self->_list( $args->{name} ) } );
 }
 
 sub next {
@@ -98,13 +96,13 @@ sub push {
 
    my $name = $self->_get_element_name( $args );
 
-   $self->throw( 'No list name specified' ) unless ($list = $args->{list});
+   $list = $args->{list} or $self->throw( 'No list name specified' );
 
    my $items = $args->{items} || [];
 
-   $self->throw( 'List contains no items' ) unless ($items->[0]);
+   $items->[0] or $self->throw( 'List contains no items' );
 
-   my $res = $self->schema->txn_do( $self->path, sub {
+   my $res = $self->_txn_do( sub {
       ($attrs, $added) = $self->_push( $name, $list, $items );
       $self->_find_and_update( $name, $attrs );
    } );
@@ -119,9 +117,7 @@ sub reset {
 sub search {
    my ($self, $args) = @_;
 
-   return $self->schema->txn_do( $self->path, sub {
-      $self->_search( $args->{where} );
-   } );
+   return $self->_txn_do( sub { $self->_search( $args->{where} ) } );
 }
 
 sub splice {
@@ -129,13 +125,13 @@ sub splice {
 
    my $name = $self->_get_element_name( $args );
 
-   $self->throw( 'No list name specified' ) unless ($list = $args->{list});
+   $list = $args->{list} or $self->throw( 'No list name specified' );
 
    my $items = $args->{items} || [];
 
-   $self->throw( 'List contains no items' ) unless ($items->[0]);
+   $items->[0] or $self->throw( 'List contains no items' );
 
-   my $res = $self->schema->txn_do( $self->path, sub {
+   my $res = $self->_txn_do( sub {
       ($attrs, $removed) = $self->_splice( $name, $list, $items );
       $self->_find_and_update( $name, $attrs );
    } );
@@ -146,33 +142,42 @@ sub splice {
 sub update {
    my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
 
-   my $res = $self->schema->txn_do( $self->path, sub {
+   my $res = $self->_txn_do( sub {
       $self->_find_and_update( $name, $args->{fields} || {} );
    } );
 
    return $res ? $name : undef;
 }
 
+sub update_attributes {
+   my ($self, $element, $attrs) = @_;
+
+   for my $attr (grep { exists $attrs->{ $_ } }
+                 @{ $self->source->attributes }) {
+      $element->$attr( $attrs->{ $attr } );
+   }
+
+   return;
+}
+
 # Private methods
 
 sub _assert_clause {
-   my ($self, $clause, $lhs) = @_; my $state;
+   my ($self, $clause, $lhs) = @_;
 
    if (ref $clause eq HASH) {
-      $state = ref $lhs eq ARRAY
-             ? FALSE : $self->_eval_clause( $clause, $lhs );
-   }
-   elsif (ref $clause eq ARRAY) {
-      $state = ref $lhs eq ARRAY
-             ? FALSE : $self->is_member( $lhs, @{ $clause } );
-    }
-   else {
-      $state = ref $lhs eq ARRAY
-             ? $self->is_member( $clause, @{ $lhs } )
-             : $clause eq $lhs ? TRUE : FALSE;
+      return ref $lhs eq ARRAY
+           ? FALSE : $self->_eval_clause( $clause, $lhs );
    }
 
-   return $state;
+   if (ref $clause eq ARRAY) {
+      return ref $lhs eq ARRAY
+           ? FALSE : $self->is_member( $lhs, @{ $clause } );
+   }
+
+   return ref $lhs eq ARRAY
+        ? $self->is_member( $clause, @{ $lhs } )
+        : $clause eq $lhs ? TRUE : FALSE;
 }
 
 sub _build__operators {
@@ -188,6 +193,16 @@ sub _build__operators {
       q(=~) => sub { return $_[0] =~ $_[1] },
       q(!~) => sub { return $_[0] !~ $_[1] },
    };
+}
+
+sub _create_element {
+   my ($self, $attrs) = @_;
+
+   $attrs = { %{ $self->source->defaults }, %{ $attrs } };
+
+   $attrs->{_resultset} = $self;
+
+   return $self->element_class->new( $attrs );
 }
 
 sub _eval_criteria {
@@ -219,29 +234,29 @@ sub _eval_clause {
 sub _find {
    my ($self, $name) = @_;
 
-   my $elements = $self->schema->select( $self->path );
+   my $elements = $self->_storage->select( $self->_path, $self->source->name );
 
    return unless ($name and exists $elements->{ $name });
 
    my $attrs = { %{ $elements->{ $name } }, name => $name };
 
-   return $self->schema->create_element( $self->path, $attrs );
+   return $self->_create_element( $attrs );
 }
 
 sub _find_and_update {
-   my ($self, $name, $attrs) = @_; my $element;
+   my ($self, $name, $attrs) = @_;
 
-   return unless ($element = $self->_find( $name ));
+   my $element = $self->_find( $name ) or return;
 
-   $self->schema->update_attributes( $element, $attrs );
+   $self->update_attributes( $element, $attrs );
 
    return $element->update;
 }
 
 sub _get_element_name {
-   my ($self, $args) = @_; $args ||= {}; my $name;
+   my ($self, $args) = @_; $args ||= {};
 
-   $self->throw( 'No element name specified' ) unless ($name = $args->{name});
+   my $name = $args->{name} or $self->throw( 'No element name specified' );
 
    return $name;
 }
@@ -249,39 +264,41 @@ sub _get_element_name {
 sub _list {
    my ($self, $name) = @_; my ($attr, $attrs);
 
-   my $schema   = $self->schema;
    my $new      = $self->list_class->new;
-   my $elements = $schema->select( $self->path );
+   my $elements = $self->_storage->select( $self->_path, $self->source->name );
 
    $new->list( [ sort keys %{ $elements } ] );
 
-   if ($attr = $schema->label_attr) {
-      $new->labels
-         ( { map { $_ => $elements->{ $_ }->{ $attr } } @{ $new->list } } );
+   if ($attr = $self->source->label_attr) {
+      my %labs = { map { $_ => $elements->{ $_ }->{ $attr } } @{ $new->list }};
+
+      $new->labels( \%labs );
    }
 
-   if ($name && exists $elements->{ $name }) {
+   if ($name and exists $elements->{ $name }) {
       $attrs = { %{ $elements->{ $name } }, name => $name };
       $new->found( TRUE );
    }
    else { $attrs = { name => $name } }
 
-   $new->element( $schema->create_element( $self->path, $attrs ) );
+   $new->element( $self->_create_element( $attrs ) );
 
    return $new;
+}
+
+sub _path {
+   return shift->source->schema->path;
 }
 
 sub _push {
    my ($self, $name, $attr, $items) = @_;
 
-   my $elements = $self->schema->select( $self->path );
+   my $elements = $self->_storage->select( $self->_path, $self->source->name );
    my $attrs    = { %{ $elements->{ $name } } };
    my $list     = [ @{ $attrs->{ $attr } || [] } ];
    my $in       = [];
 
-   for my $item (@{ $items }) {
-      next if ($self->is_member( $item, @{ $list } ));
-
+   for my $item (grep { not $self->is_member( $_, @{ $list } ) } @{ $items }) {
       CORE::push @{ $list }, $item;
       CORE::push @{ $in   }, $item;
    }
@@ -298,14 +315,13 @@ sub _search {
    }
 
    if (not defined $elements->[0]) {
-      $elements = $self->schema->select( $self->path );
+      $elements = $self->_storage->select( $self->_path, $self->source->name );
 
       for my $name (keys %{ $elements }) {
          my $attrs = { %{ $elements->{ $name } }, name => $name };
 
          if (not $where or $self->_eval_criteria( $where, $attrs )) {
-            CORE::push @{ $self->_elements },
-               $self->schema->create_element( $self->path, $attrs );
+            CORE::push @{ $self->_elements }, $self->_create_element( $attrs );
          }
       }
    }
@@ -323,7 +339,7 @@ sub _search {
 sub _splice {
    my ($self, $name, $attr, $items) = @_;
 
-   my $elements = $self->schema->select( $self->path ) || {};
+   my $elements = $self->_storage->select( $self->_path, $self->source->name );
    my $attrs    = { %{ $elements->{ $name } } };
    my $list     = [ @{ $attrs->{ $attr } || [] } ];
    my $out      = [];
@@ -342,6 +358,16 @@ sub _splice {
 
    $attrs->{ $attr } = $list;
    return ($attrs, $out);
+}
+
+sub _storage {
+   return shift->source->schema->storage;
+}
+
+sub _txn_do {
+   my ($self, $coderef) = @_;
+
+   return $self->_storage->txn_do( $self->_path, $coderef );
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -443,6 +469,8 @@ Returns the last element object that is the result of the search call
 
 Iterate over the elements returned by the search call
 
+=head2 path
+
 =head2 push
 
    $added = $rs->push( { name => $name, list => $list, items => $items } );
@@ -482,11 +510,17 @@ Removes items from the attribute list
 
 Updates the named element
 
+=head2 update_attributes
+
 =head2 _find_and_update
 
    $updated_element_name = $rs->_find_and_update( $name, $attrs );
 
 Finds the named element object and updates it's attributes
+
+=head2 _txn_do
+
+Calls L<File::DataClass::Storage/txn_do>
 
 =head1 Diagnostics
 

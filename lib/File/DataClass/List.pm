@@ -8,7 +8,7 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 
-has 'element' => is => 'rw', isa => 'Object';
+has 'element' => is => 'rw', isa => 'Maybe[Object]';
 has 'found'   => is => 'rw', isa => 'Bool',     default => 0;
 has 'labels'  => is => 'rw', isa => 'HashRef',  default => sub { return {} };
 has 'list'    => is => 'rw', isa => 'ArrayRef', default => sub { return [] };

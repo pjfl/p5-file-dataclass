@@ -6,54 +6,61 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use Class::Null;
 use File::DataClass::Constants;
+use File::Spec;
 use Moose;
-use TryCatch;
 
-use File::DataClass::Element;
+use File::DataClass::Cache;
+use File::DataClass::ResultSource;
+use File::DataClass::Storage;
+use IPC::SRLock;
 
-with qw(File::DataClass::Util);
+extends qw(File::DataClass);
+with    qw(File::DataClass::Util);
 
-has 'attributes' =>
-   is => 'rw', isa => 'ArrayRef',  default => sub { return [] };
-has 'defaults'   =>
-   is => 'rw', isa => 'HashRef',   default => sub { return {} };
-has 'element'    =>
-   is => 'rw', isa => 'Str',       default => NUL;
-has 'label_attr' =>
-   is => 'rw', isa => 'Str',       default => NUL;
-
-has 'source' =>
-   is => 'ro', isa => 'Object',    required => TRUE, weak_ref => TRUE;
-
-has 'element_class' =>
-   is => 'ro', isa => 'ClassName', default => q(File::DataClass::Element);
-
-has 'storage_attributes' =>
-   is => 'ro', isa => 'HashRef',   default => sub { return {} };
-has 'storage_base' =>
-   is => 'ro', isa => 'Str',       default => q(File::DataClass::Storage);
-has 'storage_class' =>
-   is => 'ro', isa => 'Str',       default => q(XML::Simple);
-has 'storage' =>
-   is => 'rw', isa => 'Object',    lazy_build => TRUE,
-   handles => [ qw(select) ];
-
-sub create_element {
-   my ($self, $path, $attrs) = @_;
-
-   $attrs = { %{ $self->defaults }, %{ $attrs } };
-
-   $attrs->{_path  } = $path || $self->source->path;
-   $attrs->{_schema} = $self;
-
-   return $self->element_class->new( $attrs );
-}
+has 'cache'                    => is => 'ro', isa => 'F_DC_Cache',
+   lazy_build                  => TRUE;
+has 'cache_attributes'         => is => 'ro', isa => 'HashRef',
+   default                     => sub { return {} };
+has 'debug'                    => is => 'ro', isa => 'Bool',
+   default                     => FALSE;
+has 'lock'                     => is => 'ro', isa => 'F_DC_Lock',
+   lazy_build                  => TRUE;
+has 'lock_attributes'          => is => 'ro', isa => 'HashRef',
+   default                     => sub { return {} };
+has 'lock_class'               => is => 'ro', isa => 'ClassName',
+   default                     => q(IPC::SRLock);
+has 'log'                      => is => 'ro', isa => 'Object',
+   default                     => sub { Class::Null->new };
+has 'path'                     => is => 'ro', isa => 'F_DC_Path',
+   coerce                      => TRUE, required => TRUE;
+has 'perms'                    => is => 'rw', isa => 'Num',
+   default                     => PERMS;
+has 'result_source_attributes' => is => 'ro', isa => 'HashRef',
+   default                     => sub { return {} };
+has 'result_source_class'      => is => 'ro', isa => 'ClassName',
+   default                     => q(File::DataClass::ResultSource);
+has 'source_registrations'     => is => 'ro', isa => 'HashRef[Object]',
+   lazy_build                  => TRUE;
+has 'storage_attributes'       => is => 'ro', isa => 'HashRef',
+   default                     => sub { return {} };
+has 'storage_base'             => is => 'ro', isa => 'ClassName',
+   default                     => q(File::DataClass::Storage);
+has 'storage_class'            => is => 'ro', isa => 'Str',
+   default                     => q(XML::Simple);
+has 'storage'                  => is => 'rw', isa => 'Object',
+   lazy_build                  => TRUE;
+has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
+   default                     => sub { __PACKAGE__->io( File::Spec->tmpdir )},
+   coerce                      => TRUE;
 
 sub dump {
-   my ($self, $args) = @_; my $path = $args->{path} || $self->source->path;
+   my ($self, $args) = @_;
 
-   $path = $self->io( $path ) unless (blessed $path);
+   my $path = $args->{path} || $self->path;
+
+   blessed $path or $path = $self->io( $path );
 
    return $self->storage->dump( $path, $args->{data} || {} );
 }
@@ -61,44 +68,88 @@ sub dump {
 sub load {
    my ($self, @paths) = @_;
 
-   $paths[0] = $self->source->path unless ($paths[0]);
+   $paths[0] or $paths[0] = $self->path;
 
-   @paths    = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
+   @paths = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
 
    return $self->storage->load( @paths ) || {};
 }
 
-sub txn_do {
-   my ($self, $path, $code_ref) = @_; $path ||= $self->source->path;
-
-   $self->throw( 'No file path specified' ) unless ($path);
-
-   my $key = q(txn:).$path->pathname; my $wantarray = wantarray; my $res;
-
-   try {
-      $self->storage->lock->set( k => $key );
-
-      if ($wantarray) { @{ $res } = $code_ref->() }
-      else { $res = $code_ref->() }
-
-      $self->storage->lock->reset( k => $key );
-   }
-   catch ($e) { $self->storage->lock->reset( k => $key ); $self->throw( $e ) }
-
-   return $wantarray ? @{ $res } : $res;
+sub resultset {
+   my ($self, $moniker) = @_; return $self->source( $moniker )->resultset;
 }
 
-sub update_attributes {
-   my ($self, $element, $attrs) = @_;
+sub source {
+   my ($self, $moniker) = @_;
 
-   for my $attr (grep { exists $attrs->{ $_ } } @{ $self->attributes }) {
-      $element->$attr( $attrs->{ $attr } );
-   }
+   $moniker or $self->throw( 'No result source specified' );
 
+   my $source = $self->source_registrations->{ $moniker }
+      or $self->throw( error => 'Result source [_1] unknown',
+                       args  => [ $moniker ] );
+
+   return $source;
+}
+
+sub sources {
+   return keys %{ shift->source_registrations };
+}
+
+sub translate {
+   my ($self, $args) = @_;
+
+   my $class = blessed $self || $self;
+   my $attrs = { path => $args->{from}, storage_class => $args->{from_class} };
+   my $data  = $class->new( $attrs )->load;
+
+   $attrs = { path => $args->{to}, storage_class => $args->{to_class} };
+   $class->new( $attrs )->dump( { data => $data } );
    return;
 }
 
 # Private methods
+
+sub _build_cache {
+   my $self  = shift;
+
+   $self->Cache and return $self->Cache;
+
+   my $attrs = {}; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
+
+   $attrs->{cache_attributes}                 = $self->cache_attributes;
+   $attrs->{cache_attributes}->{cache_root} ||= $self->tempdir;
+   $attrs->{cache_attributes}->{namespace } ||= $ns;
+
+   return $self->Cache( File::DataClass::Cache->new( $attrs ) );
+}
+
+sub _build_lock {
+   my $self = shift;
+
+   $self->Lock and return $self->Lock;
+
+   my $attrs = $self->lock_attributes;
+
+   $attrs->{debug  } ||= $self->debug;
+   $attrs->{log    } ||= $self->log;
+   $attrs->{tempdir} ||= $self->tempdir;
+
+   return $self->Lock( $self->lock_class->new( $attrs ) );
+}
+
+sub _build_source_registrations {
+   my $self = shift; my $sources = {};
+
+   for my $moniker (keys %{ $self->result_source_attributes }) {
+      my $attrs = $self->result_source_attributes->{ $moniker };
+
+      $attrs->{name} = $moniker; $attrs->{schema} = $self;
+
+      $sources->{ $moniker } = $self->result_source_class->new( $attrs );
+   }
+
+   return $sources;
+}
 
 sub _build_storage {
    my $self = shift; my $class = $self->storage_class;
@@ -108,7 +159,7 @@ sub _build_storage {
 
    $self->ensure_class_loaded( $class );
 
-   return $class->new( { %{ $self->storage_attributes  }, schema => $self } );
+   return $class->new( { %{ $self->storage_attributes }, schema => $self } );
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -147,8 +198,6 @@ inherit from this
 
 =head1 Subroutines/Methods
 
-=head2 create_element
-
 =head2 dump
 
    $schema->dump( { path => $to_file, data => $data_hash } );
@@ -161,11 +210,13 @@ Dumps the data structure to a file
 
 Returns the merged data structure from the named files
 
-=head2 txn_do
+=head2 resultset
 
-Executes the supplied coderef wrapped in lock on the pathname
+=head2 source
 
-=head2 update_attributes
+=head2 sources
+
+=head2 translate
 
 =head1 Configuration and Environment
 
