@@ -270,7 +270,7 @@ sub _list {
    $new->list( [ sort keys %{ $elements } ] );
 
    if ($attr = $self->source->label_attr) {
-      my %labs = { map { $_ => $elements->{ $_ }->{ $attr } } @{ $new->list }};
+      my %labs = map { $_ => $elements->{ $_ }->{ $attr } } @{ $new->list };
 
       $new->labels( \%labs );
    }
