@@ -7,6 +7,7 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::Null;
+use File::Copy;
 use File::DataClass::Constants;
 use File::DataClass::HashMerge;
 use Hash::Merge qw(merge);
@@ -15,6 +16,7 @@ use TryCatch;
 
 with qw(File::DataClass::Util);
 
+has 'backup' => is => 'rw', isa => 'Str',    default  => NUL;
 has 'extn'   => is => 'rw', isa => 'Str',    default  => NUL;
 has 'schema' => is => 'ro', isa => 'Object', required => 1, weak_ref => TRUE;
 
@@ -230,13 +232,17 @@ sub _write_file {
    $create or $path->is_file or
       $self->throw( error => 'File [_1] not found', args => [ $path ] );
 
-   my $wtr = $path->perms( $self->schema->perms )->atomic;
+   $path->is_file or $path->perms( $self->schema->perms );
 
-   try        { $data = inner( $wtr->lock, $data ) }
-   catch ($e) { $wtr->delete; $self->_lock->reset( k => $path );
+   if ($self->backup and not $path->empty) {
+      copy( $path.NUL, $path.$self->backup );
+   }
+
+   try        { $data = inner( $path->atomic->lock, $data ) }
+   catch ($e) { $path->delete; $self->_lock->reset( k => $path );
                 $self->throw( $e ) }
 
-   $wtr->close;
+   $path->close;
    $self->_cache->remove( $path );
    $self->_lock->reset( k => $path );
    return $data;

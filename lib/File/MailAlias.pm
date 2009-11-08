@@ -43,10 +43,12 @@ has '+storage_class' =>
 around BUILDARGS => sub {
    my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
 
-   $car or return $attrs; ref $car eq HASH and return $car;
+   $car or return $attrs;
 
-   if (ref $car eq ARRAY) { $attrs->{path} = File::Spec->catfile( @{ $car } ) }
-   else { $attrs->{path} = $car }
+   if    (blessed $car)      { $attrs         = $car }
+   elsif (ref $car eq HASH)  { $attrs         = $car }
+   elsif (ref $car eq ARRAY) { $attrs->{path} = $class->catfile( @{ $car } ) }
+   else                      { $attrs->{path} = $car }
 
    $cdr[0] and $attrs->{system_aliases} = $cdr[0];
    $cdr[1] and $attrs->{newaliases    } = [ $cdr[1] ];
@@ -57,7 +59,7 @@ around BUILDARGS => sub {
 sub create {
    my ($self, $args) = @_;
 
-   my $name = $self->resultset( q(aliases) )->create( $args );
+   my $name = $self->resultset->create( $args );
    my $out  = $self->_run_update_cmd;
 
    return ($name, $out);
@@ -66,22 +68,24 @@ sub create {
 sub delete {
    my ($self, $args) = @_;
 
-   my $name = $self->resultset( q(aliases) )->delete( $args );
+   my $name = $self->resultset->delete( $args );
    my $out  = $self->_run_update_cmd;
 
    return ($name, $out);
 }
 
 sub list {
-   my ($self, @rest) = @_;
+   my ($self, @rest) = @_; return $self->resultset->list( @rest );
+}
 
-   return $self->resultset( q(aliases) )->list( @rest );
+sub resultset {
+   my $self = shift; return $self->next::method( q(aliases) );
 }
 
 sub update {
    my ($self, $args) = @_;
 
-   my $name = $self->resultset( q(aliases) )->update( $args );
+   my $name = $self->resultset->update( $args );
    my $out  = $self->_run_update_cmd;
 
    return ($name, $out);
@@ -219,6 +223,8 @@ the stash
 
 Returns an object containing a list of alias names and the fields pertaining
 to the requested alias if it exists
+
+=head2 resultset
 
 =head2 update
 
