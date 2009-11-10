@@ -6,6 +6,7 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use Date::Format;
 use File::DataClass::Constants;
 use Moose;
 use Text::Wrap;
@@ -80,7 +81,7 @@ sub _write_filter {
       my $alias = $aliases->{ $name }; my ($comment, $owner);
 
       if ($owner = $alias->{owner}) {
-         my $created = $alias->{created} || $self->stamp;
+         my $created = $alias->{created} || __stamp();
 
          push @{ $buf }, "# Created by $owner $created";
       }
@@ -110,6 +111,10 @@ sub __original_order {
    return -1 unless (exists $aliases->{ $rhs }->{_order_by});
 
    return $aliases->{ $lhs }->{_order_by} <=> $aliases->{ $rhs }->{_order_by};
+}
+
+sub __stamp {
+   return Date::Format::Generic->time2str( '%Y-%m-%d %H:%M:%S', time );
 }
 
 __PACKAGE__->meta->make_immutable;

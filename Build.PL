@@ -15,6 +15,7 @@ my $REQUIRES   = {
    'Class::Accessor::Grouped' => 0.08002,
    'Class::MOP'               => 0.84,
    'Class::Null'              => 1.09,
+   'Date::Format'             => 2.22,
    'Exception::Class'         => 1.23,
    'Hash::Merge'              => 0.08,
    'File::Path'               => 2.07,
