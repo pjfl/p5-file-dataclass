@@ -7,6 +7,7 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::Null;
+use English qw(-no_match_vars);
 use File::Copy;
 use File::DataClass::Constants;
 use File::DataClass::HashMerge;
@@ -235,7 +236,7 @@ sub _write_file {
    $path->is_file or $path->perms( $self->schema->perms );
 
    if ($self->backup and $path->is_file and not $path->empty) {
-      copy( $path.NUL, $path.$self->backup );
+      copy( $path.NUL, $path.$self->backup ) or $self->throw( $ERRNO );
    }
 
    try        { $data = inner( $path->atomic->lock, $data ) }
