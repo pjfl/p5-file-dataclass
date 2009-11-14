@@ -68,7 +68,7 @@ ok( !$diff, 'Load and dump roundtrips' );
 
 $e = test( $schema, q(resultset) );
 
-is( $e, 'No result source specified', 'No result source specified' );
+is( $e, 'Result source not specified', 'Result source not specified' );
 
 $e = test( $schema, q(resultset), q(globals) );
 

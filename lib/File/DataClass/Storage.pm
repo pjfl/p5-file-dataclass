@@ -229,12 +229,12 @@ sub _update {
 sub _write_file {
    my ($self, $path, $data, $create) = @_;
 
-   $create or $path->is_file or
-      $self->throw( error => 'File [_1] not found', args => [ $path ] );
+   $create or $path->is_file
+      or $self->throw( error => 'File [_1] not found', args => [ $path ] );
 
    $path->is_file or $path->perms( $self->schema->perms );
 
-   if ($self->backup and not $path->empty) {
+   if ($self->backup and $path->is_file and not $path->empty) {
       copy( $path.NUL, $path.$self->backup );
    }
 

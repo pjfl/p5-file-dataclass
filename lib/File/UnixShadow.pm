@@ -64,25 +64,9 @@ Sets these attributes:
 
 =head1 Subroutines/Methods
 
-=head2 BUILD
-
-=head2 create
-
-   $obj->create( $fields );
-
-=head2 delete
-
-   $obj->delete( $name );
-
-=head2 list
-
-   $response_obj = $obj->list( { name => $name } );
-
 =head2 resultset
 
-=head2 update
-
-   $obj->update( $fields );
+=head2 source
 
 =head1 Diagnostics
 

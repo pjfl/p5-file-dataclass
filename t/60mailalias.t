@@ -22,7 +22,7 @@ BEGIN {
    use_ok( q(File::MailAlias) );
 }
 
-my $args   = { path => q(t/aliases), tempdir => q(t) };
+my $args   = { path => [ qw(t aliases) ], tempdir => q(t) };
 my $schema = File::MailAlias->new( $args );
 
 isa_ok( $schema, q(File::MailAlias) );

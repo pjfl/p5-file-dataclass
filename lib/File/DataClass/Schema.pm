@@ -210,7 +210,7 @@ L<File::DataClass::Storage::XML::Simple>
 
 This class defined these attributes
 
-=over3
+=over 3
 
 =item B<cache>
 

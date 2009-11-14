@@ -8,5 +8,5 @@ postmaster: pjf
 
 # Created by pjf 2009-08-19 02:15
 # Testing mail aliases
-dummy: user1@example.com,user2@example.com
+dummy: user1@example.com, user2@example.com
 
