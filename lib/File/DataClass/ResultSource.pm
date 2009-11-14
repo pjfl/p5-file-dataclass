@@ -66,8 +66,11 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
 =head1 Description
 
-Provides new result sets for a given schema. Ideas robbed from
-L<DBIx::Class>
+Provides new result sources for a given schema
+
+If the result source is language dependent then an instance of
+L<File::DataClass::Combinator> is created as a proxy for the
+storage class
 
 =head1 Subroutines/Methods
 

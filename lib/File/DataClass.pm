@@ -33,74 +33,64 @@ File::DataClass - Read and write structured data files
 
 =head1 Synopsis
 
-   use File::DataClass;
+   use File::DataClass::Schema;
 
-   my $object = File::DataClass::Schema->new( tempdir => '/var/yourapp/tmp' );
+   $schema = File::DataClass::Schema->new
+      ( path    => [ qw(path to a file) ],
+        result_source_attributes => { fields => {}, },
+        tempdir => [ qw(path to a directory) ] );
+
+   $schema->source( q(fields) )->attributes( [ qw(list of attr names) ] );
+   $rs = $schema->resultset( q(fields) );
+   $result = $rs->find( { name => q(id of field element to find) } );
+   $result->$attr_name( $some_new_value );
+   $result->update;
+   @result = $rs->search( { where => { 'attr name' => q(some value) } } );
 
 =head1 Description
 
 Provides CRUD methods reading and writing files in different
-formats. For each schema a subclass is defined that inherits from
-the L<File::DataClass::Schema>
+formats
 
 =head1 Configuration and Environment
 
-This class defines these attributes
+This class defines these class attributes. They are set on first use by
+methods in L<File::DataClass::Schema>
 
 =over 3
 
-=item B<debug>
+=item Cache
 
-=item B<log>
+This is a Cache::Cache object which is used to cache the results of
+reading a file
 
-=item B<tempdir>
+=item Exception_Class
 
-=item B<cache_attributes>
+A classname that is expected to have a class method C<throw>
 
-=item B<cache>
+=item Lock
 
-=item B<lock_attributes>
-
-=item B<lock_class>
-
-=item B<lock>
-
-=item B<result_source_attributes>
-
-=item B<result_source_class>
-
-=item B<result_source>
+A lock object that has the methods C<set> and C<reset>
 
 =back
 
 =head1 Subroutines/Methods
 
-=head2 translate
-
-   $object->translate( { from => $source_path, to => $dest_path } );
-
-Reads a file in one format and writes it back out in another format
+None
 
 =head1 Diagnostics
 
-Setting the B<debug> attribute to true will cause the log object's
-debug method to be called with useful information
+None
 
 =head1 Dependencies
 
 =over 3
 
-=item L<Class::Null>
+=item L<namespace::autoclean>
 
-=item L<File::DataClass::Cache>
+=item L<File::DataClass::Exception>
 
-=item L<File::DataClass::Constants>
-
-=item L<File::DataClass::ResultSource>
-
-=item L<IPC::SRLock>
-
-=item L<Moose>
+=item L<MooseX::ClassAttribute>
 
 =back
 
@@ -113,6 +103,14 @@ There are no known incompatibilities in this module
 There are no known bugs in this module.
 Please report problems to the address below.
 Patches are welcome
+
+=head1 Acknowledgements
+
+Larry Wall - For the Perl programming language
+
+The class structure and API where taken from L<DBIx::Class>
+
+The API for the file IO was taken from L<IO::All>
 
 =head1 Author
 

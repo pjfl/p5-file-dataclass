@@ -82,7 +82,7 @@ sub resultset {
 sub source {
    my ($self, $moniker) = @_;
 
-   $moniker or $self->throw( 'No result source specified' );
+   $moniker or $self->throw( 'Result source not specified' );
 
    my $source = $self->source_registrations->{ $moniker }
       or $self->throw( error => 'Result source [_1] unknown',
@@ -182,19 +182,103 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Synopsis
 
-   use File::DataClass;
+   use File::DataClass::Schema;
 
-   $attrs = { result_source_attributes => { schema_attributes => { ... } } };
+   $schema = File::DataClass::Schema->new
+      ( path    => [ qw(path to a file) ],
+        result_source_attributes => { fields => {}, },
+        tempdir => [ qw(path to a directory) ] );
 
-   $result_source = File::DataClass->new( $attrs )->result_source;
-
-   $schema = $result_source->schema;
+   $schema->source( q(fields) )->attributes( [ qw(list of attr names) ] );
+   $rs = $schema->resultset( q(fields) );
+   $result = $rs->find( { name => q(id of field element to find) } );
+   $result->$attr_name( $some_new_value );
+   $result->update;
+   @result = $rs->search( { where => { 'attr name' => q(some value) } } );
 
 =head1 Description
 
 This is the base class for schema definitions. Each element in a data file
-requires a schema definition to define it's attributes that should
-inherit from this
+requires a result source to define it's attributes
+
+=head1 Configuration and Environment
+
+Registers all result sources defined by the result source attributes
+
+Creates a new instance of the storage class which defaults to
+L<File::DataClass::Storage::XML::Simple>
+
+This class defined these attributes
+
+=over3
+
+=item B<cache>
+
+Instantiates and returns the L<Cache|File::DataClass/Cache> class
+attribute. Built on demand
+
+=item B<cache_attributes>
+
+Passed to the L<Cache::Cache> constructor
+
+=item B<debug>
+
+Writes debug information to the log object if set to true
+
+=item B<lock>
+
+Instantiates and returns the L<Lock|File::DataClass/Lock> class
+attribute. Built on demand
+
+=item B<lock_attributes>
+
+Passed to the L<IPC::SRLock> constructor
+
+=item B<lock_class>
+
+Defaults to L<IPC::SRLock>
+
+=item B<log>
+
+Log object. Typically an instance of L<Log::Handler>
+
+=item B<path>
+
+Path to the file. This is a L<File::DataClass::IO> object that can be
+coerced from either a string or an array ref
+
+=item B<perms>
+
+Permissions to set on the file if it is created. Defaults to
+L<PERMS|File::DataClass::Constants/PERMS>
+
+=item B<source_registrations>
+
+A hash ref or resgistered result sources
+
+=item B<storage>
+
+An instance of a subclass of L<File::DataClass::Storage>
+
+=item B<storage_attributes>
+
+Attributes passed to the storage object's constructor
+
+=item B<storage_base>
+
+If the storage class is only a partial classname then this attribute is
+prepended to it
+
+=item B<storage_class>
+
+The name of the storage class to instantiate
+
+=item B<tempdir>
+
+Temporary directory used to store the cache and lock objects disk
+representation
+
+=back
 
 =head1 Subroutines/Methods
 
@@ -202,40 +286,72 @@ inherit from this
 
    $schema->dump( { path => $to_file, data => $data_hash } );
 
-Dumps the data structure to a file
+Dumps the data structure to a file. Path defaults to the one specified in
+the schema definition. Returns the data that was written to the file if
+successful
 
 =head2 load
 
-   $schema->load( @paths );
+   $data_hash = $schema->load( @paths );
 
-Returns the merged data structure from the named files
+Loads and returns the merged data structure from the named
+files. Paths defaults to the one specified in the schema
+definition. Data will be read from cache if available and not stale
 
 =head2 resultset
 
+   $rs = $schema->resultset( $source_name );
+
+Returns a resultset object which by default is an instance of
+L<File::DataClass::Resultset>
+
 =head2 source
+
+   $source = $schema->source( $source_name );
+
+Returns a result source object which by default is an instance of
+L<File::DataClass::ResultSource>
 
 =head2 sources
 
+   @sources = $schema->sources;
+
+Returns a list of all registered result source names
+
 =head2 translate
 
-=head1 Configuration and Environment
+   $schema->translate( $args );
 
-Creates a new instance of the storage class which defaults to
-L<File::DataClass::Storage::XML::Simple>
-
-If the schema is language dependent then an instance of
-L<File::DataClass::Combinator> is created as a proxy for the
-storage class
+Reads a file in one format and writes it back out in another format
 
 =head1 Diagnostics
 
-None
+Setting the B<debug> attribute to true will cause the log object's
+debug method to be called with useful information
 
 =head1 Dependencies
 
 =over 3
 
-=item L<File::DataClass::Element>
+=item L<namespace::autoclean>
+
+=item L<Class::Null>
+
+=item L<File::DataClass>
+
+=item L<File::DataClass::Cache>
+
+=item L<File::DataClass::Constants>
+
+=item L<File::DataClass::ResultSource>
+
+=item L<File::DataClass::Storage>
+
+=item L<File::DataClass::Util>
+
+=item L<IPC::SRLock>
+
+=item L<Moose>
 
 =back
 
@@ -248,6 +364,10 @@ There are no known incompatibilities in this module
 There are no known bugs in this module.
 Please report problems to the address below.
 Patches are welcome
+
+=head1 Acknowledgements
+
+Larry Wall - For the Perl programming language
 
 =head1 Author
 
