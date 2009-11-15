@@ -13,8 +13,12 @@ extends qw(File::DataClass::Schema);
 
 has '+result_source_attributes' =>
    default            => sub { return {
-      group           => {},
-      passwd          => {},
+      group           => {
+         attributes   => [ qw(password gid members) ],
+         defaults     => { password => q(x) }, },
+      passwd          => {
+         attributes   => [ qw(password id pgid gecos homedir shell) ],
+         defaults     => { password => q(x) }, },
       shadow          => {
          attributes   => [ qw(password pwlast pwnext pwafter
                               pwwarn pwexpires pwdisable reserved) ],

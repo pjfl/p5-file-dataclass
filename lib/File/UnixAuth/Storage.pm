@@ -31,7 +31,7 @@ sub _read_filter {
    my $fields = $self->_source->attributes; my $order = 0;
 
    for my $line (@{ $buf || [] }) {
-      my %attrs = (); my ($id, @rest) = split m{ : }mx, $line;
+      my ($id, @rest) = split m{ : }mx, $line; my %attrs = ();
 
       @attrs{ @{ $fields } } = @rest;
       $attrs{ _order_by } = $order++;
