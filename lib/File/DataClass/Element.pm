@@ -8,8 +8,7 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 
-extends qw(Moose::Object Class::Accessor::Grouped);
-with    qw(File::DataClass::Util);
+with qw(File::DataClass::Util);
 
 has 'name'       => is => 'rw', isa => 'Str',    required => 1;
 has '_resultset' => is => 'ro', isa => 'Object', required => 1, weak_ref => 1;
@@ -17,11 +16,18 @@ has '_resultset' => is => 'ro', isa => 'Object', required => 1, weak_ref => 1;
 sub BUILD {
    my ($self, $args) = @_; my $class = blessed $self;
 
-   my $attrs = $self->_resultset->source->attributes;
+   my %types = ( qw(SCALAR Str ARRAY ArrayRef HASH HashRef) );
 
-   $class->mk_group_accessors( q(simple), @{ $attrs } );
+   for (@{ $self->_resultset->source->attributes }) {
+      my $type = ref $args->{ $_ } || q(SCALAR);
 
-   $self->_resultset->update_attributes( $self, $args );
+      $class->meta->has_attribute( $_ )
+         or $class->meta->add_attribute
+            ( $_ => ( is => 'rw', isa => $types{ $type } ) );
+
+      defined $args->{ $_ } and $self->$_( $args->{ $_ } );
+   }
+
    return;
 }
 
@@ -46,8 +52,6 @@ sub _path {
 sub _storage {
    return shift->_resultset->source->schema->storage;
 }
-
-__PACKAGE__->meta->make_immutable;
 
 no Moose;
 
