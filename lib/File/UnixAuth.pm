@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package File::UnixShadow;
+package File::UnixAuth;
 
 use strict;
 use namespace::autoclean;
@@ -13,7 +13,9 @@ extends qw(File::DataClass::Schema);
 
 has '+result_source_attributes' =>
    default            => sub { return {
-      users           => {
+      group           => {},
+      passwd          => {},
+      shadow          => {
          attributes   => [ qw(password pwlast pwnext pwafter
                               pwwarn pwexpires pwdisable reserved) ],
          defaults     => { password => q(*),   pwlast => 0, pwnext    => 0,
@@ -22,15 +24,16 @@ has '+result_source_attributes' =>
 has '+storage_attributes' =>
    default            => sub { return { backup => q(.bak), } };
 has '+storage_class'  =>
-   default            => q(+File::UnixShadow::Storage);
+   default            => q(+File::UnixAuth::Storage);
+has 'source_name'     => is => 'ro', isa => 'Str', required => 1;
 
-sub resultset {
-   my $self = shift; return $self->next::method( q(users) );
-}
+around 'source' => sub {
+   my ($orig, $self) = @_; return $self->$orig( $self->source_name );
+};
 
-sub source {
-   my $self = shift; return $self->next::method( q(users) );
-}
+around 'resultset' => sub {
+   my ($orig, $self) = @_; return $self->$orig( $self->source_name );
+};
 
 1;
 
@@ -40,7 +43,7 @@ __END__
 
 =head1 Name
 
-File::UnixShadow - Manipulate the Unix shadow password file
+File::UnixAuth - Result source definitions for the Unix auth files
 
 =head1 Version
 
@@ -48,11 +51,7 @@ File::UnixShadow - Manipulate the Unix shadow password file
 
 =head1 Synopsis
 
-   use File::UnixShadow;
-
 =head1 Description
-
-Management model for the Unix shadow password file
 
 =head1 Configuration and Environment
 
@@ -64,9 +63,11 @@ Sets these attributes:
 
 =head1 Subroutines/Methods
 
-=head2 resultset
+=head2 group
 
-=head2 source
+=head2 passwd
+
+=head2 shadow
 
 =head1 Diagnostics
 

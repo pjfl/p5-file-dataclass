@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package File::UnixShadow::Storage;
+package File::UnixAuth::Storage;
 
 use strict;
 use namespace::autoclean;
@@ -26,34 +26,39 @@ augment '_write_file' => sub {
 # Private methods
 
 sub _read_filter {
-   my ($self, $buf) = @_; $buf ||= []; my $order = 0; my $users = {};
+   my ($self, $buf) = @_; my $hash = {};
 
-   my $fields = $self->schema->source( q(users) )->attributes;
+   my $fields = $self->_source->attributes; my $order = 0;
 
-   for my $line (@{ $buf }) {
-      my %attrs = (); my ($username, @rest) = split m{ : }mx, $line;
+   for my $line (@{ $buf || [] }) {
+      my %attrs = (); my ($id, @rest) = split m{ : }mx, $line;
 
       @attrs{ @{ $fields } } = @rest;
-      $attrs{ _order_by }    = $order++;
-      $users->{ $username }  = \%attrs;
+      $attrs{ _order_by } = $order++;
+      $hash->{ $id } = \%attrs;
    }
 
-   return { users => $users };
+   return $hash;
+}
+
+sub _source {
+   my $self = shift;
+
+   return $self->schema->source( $self->schema->source_name );
 }
 
 sub _write_filter {
-   my ($self, $data) = @_; my $users = $data->{users}; my $buf = [];
+   my ($self, $hash) = @_; my $buf = [];
 
-   my $fields = $self->schema->source( q(users) )->attributes;
+   my $fields = $self->_source->attributes;
 
-   for my $name (sort { __original_order( $users, $a, $b ) }
-                 keys %{ $users }) {
-      my $attrs = $users->{ $name }; delete $attrs->{_order_by};
+   for my $id (sort { __original_order( $hash, $a, $b ) } keys %{ $hash }) {
+      my $attrs = $hash->{ $id }; delete $attrs->{_order_by};
       my $line  = join q(:),
                   map  { defined $attrs->{ $_ } ? $attrs->{ $_ } : q() }
                   @{ $fields };
 
-      push @{ $buf }, $name.q(:).$line;
+      push @{ $buf }, $id.q(:).$line;
    }
 
    return $buf;
@@ -83,7 +88,7 @@ __END__
 
 =head1 Name
 
-File::UnixShadow::Storage - Storage class for the Unix shadow file
+File::UnixAuth::Storage - Unix authentication and authorization file storage
 
 =head1 Version
 
@@ -91,7 +96,7 @@ File::UnixShadow::Storage - Storage class for the Unix shadow file
 
 =head1 Synopsis
 
-   use File::UnixShadow::Storage;
+   use File::UnixAuth::Storage;
 
 =head1 Description
 

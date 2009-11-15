@@ -19,13 +19,15 @@ BEGIN {
    }
 
    plan tests => 4;
-   use_ok( q(File::UnixShadow ) );
+   use_ok( q(File::UnixAuth ) );
 }
 
-my $args   = { path => catfile( qw(t shadow) ), tempdir => q(t) };
-my $schema = File::UnixShadow->new( $args );
+my $args   = { path        => catfile( qw(t shadow) ),
+               source_name => q(shadow),
+               tempdir     => q(t) };
+my $schema = File::UnixAuth->new( $args );
 
-isa_ok( $schema, q(File::UnixShadow) );
+isa_ok( $schema, q(File::UnixAuth) );
 
 my $dumped = catfile( qw(t dumped.shadow) ); io( $dumped )->unlink;
 my $data   = $schema->load;
