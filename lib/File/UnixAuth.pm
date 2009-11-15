@@ -29,7 +29,7 @@ has '+storage_attributes' =>
    default            => sub { return { backup => q(.bak), } };
 has '+storage_class'  =>
    default            => q(+File::UnixAuth::Storage);
-has 'source_name'     => is => 'ro', isa => 'Str', required => 1;
+has 'source_name'     => is => 'ro', isa => 'Str', required => TRUE;
 
 around 'source' => sub {
    my ($orig, $self) = @_; return $self->$orig( $self->source_name );
