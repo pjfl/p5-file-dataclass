@@ -198,9 +198,7 @@ sub _build__operators {
 sub _create_element {
    my ($self, $attrs) = @_;
 
-   $attrs = { %{ $self->source->defaults }, %{ $attrs } };
-
-   $attrs->{_resultset} = $self;
+   $attrs = { %{ $self->source->defaults }, %{ $attrs }, _resultset => $self };
 
    return $self->element_class->new( $attrs );
 }
