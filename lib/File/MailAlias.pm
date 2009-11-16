@@ -36,7 +36,7 @@ has 'root_update_attrs' => is => 'ro', isa => 'ArrayRef',
 has '+result_source_attributes' =>
    default                      => sub { return {
       aliases => { attributes => [ qw(comment created owner recipients) ],
-                   defaults   => {} }, } };
+                   defaults   => { recipients => [] } }, } };
 has '+storage_class' =>
    default           => q(+File::MailAlias::Storage);
 

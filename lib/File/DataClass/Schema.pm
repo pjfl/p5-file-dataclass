@@ -55,6 +55,16 @@ has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
    default                     => sub { __PACKAGE__->io( File::Spec->tmpdir )},
    coerce                      => TRUE;
 
+sub connect {
+   my ($class, $args, $app) = @_; $args ||= {}; $app ||= Class::Null->new;
+
+   my @attrs = ( qw(debug exception_class lock log tempdir) );
+
+   $args->{ $_ } ||= $app->$_() for (grep { $app->can( $_ ) } @attrs);
+
+   return $class->new( $args );
+}
+
 sub dump {
    my ($self, $args) = @_;
 
@@ -281,6 +291,15 @@ representation
 =back
 
 =head1 Subroutines/Methods
+
+=head2 connect
+
+   $schema = YourSchemaClass->connect( $attributes_for_new, $object );
+
+Simplifies the call to the constructor if you have an object that
+provides these methods; C<debug>, C<exception_class>, C<lock>, C<log>,
+and C<tempdir>. Their values are or'ed with values in the attributes
+hash before being passed to the constructor
 
 =head2 dump
 
