@@ -26,9 +26,10 @@ augment '_write_file' => sub {
 # Private methods
 
 sub _read_filter {
-   my ($self, $buf) = @_; my $hash = {};
+   my ($self, $buf) = @_; my $hash = {}; my $order = 0;
 
-   my $fields = $self->_source->attributes; my $order = 0;
+   my $source_name = $self->schema->source_name;
+   my $fields      = $self->_source->attributes;
 
    for my $line (@{ $buf || [] }) {
       my ($id, @rest) = split m{ : }mx, $line; my %attrs = ();
@@ -38,7 +39,7 @@ sub _read_filter {
       $hash->{ $id } = \%attrs;
    }
 
-   return $hash;
+   return { $source_name => $hash };
 }
 
 sub _source {
@@ -48,9 +49,11 @@ sub _source {
 }
 
 sub _write_filter {
-   my ($self, $hash) = @_; my $buf = [];
+   my ($self, $data) = @_; my $buf = [];
 
-   my $fields = $self->_source->attributes;
+   my $source_name = $self->schema->source_name;
+   my $fields      = $self->_source->attributes;
+   my $hash        = $data->{ $source_name };
 
    for my $id (sort { __original_order( $hash, $a, $b ) } keys %{ $hash }) {
       my $attrs = $hash->{ $id }; delete $attrs->{_order_by};
