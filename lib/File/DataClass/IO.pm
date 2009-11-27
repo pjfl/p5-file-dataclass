@@ -570,7 +570,7 @@ sub _open_dir {
 sub _open_args {
    my ($self, $mode, $perms) = @_;
 
-   $self->name || $self->throw( 'No file path specified' );
+   $self->name || $self->throw( 'Path not specified' );
 
    my $pathname = $self->_atomic && !$self->is_reading
                 ? $self->_get_atomic_path : $self->name;
