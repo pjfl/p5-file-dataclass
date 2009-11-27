@@ -139,7 +139,7 @@ sub assert_dirpath {
 sub assert_filepath {
    my $self = shift; my $dir;
 
-   $self->name || $self->throw( 'No file path specified' );
+   $self->name || $self->throw( 'Path not specified' );
 
    (undef, $dir) = File::Spec->splitpath( $self->name );
 
@@ -699,11 +699,11 @@ sub set_binmode {
    if (my $encoding = $self->_encoding) {
       CORE::binmode( $self->io_handle, ":encoding($encoding)" );
    }
-   elsif ($self->_binary) {
-      CORE::binmode( $self->io_handle );
-   }
    elsif ($self->_binmode) {
       CORE::binmode( $self->io_handle, $self->_binmode );
+   }
+   elsif ($self->_binary) {
+      CORE::binmode( $self->io_handle );
    }
 
    return $self;
