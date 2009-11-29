@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Exposed more resultset methods
          - Added support for passwd and group files
 
 0.1.146  2009-11-04

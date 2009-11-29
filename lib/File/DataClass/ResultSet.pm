@@ -51,12 +51,12 @@ sub delete {
 
       unless ($element = $self->_find( $name )) {
          $error = 'File [_1] element [_2] does not exist';
-         $self->throw( error => $error, args => [ $self->_path, $name ] );
+         $self->throw( error => $error, args => [ $self->path, $name ] );
       }
 
       unless ($element->delete) {
          $error = 'File [_1] element [_2] not deleted';
-         $self->throw( error => $error, args => [ $self->_path, $name ] );
+         $self->throw( error => $error, args => [ $self->path, $name ] );
       }
    } );
 
@@ -67,6 +67,16 @@ sub find {
    my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
 
    return $self->_txn_do( sub { $self->_find( $name ) } );
+}
+
+sub find_and_update {
+   my ($self, $name, $attrs) = @_;
+
+   my $element = $self->_find( $name ) or return;
+
+   $self->update_attributes( $element, $attrs );
+
+   return $element->update;
 }
 
 sub first {
@@ -81,6 +91,10 @@ sub list {
    my ($self, $args) = @_;
 
    return $self->_txn_do( sub { $self->_list( $args->{name} ) } );
+}
+
+sub path {
+   return shift->source->schema->path;
 }
 
 sub next {
@@ -104,7 +118,7 @@ sub push {
 
    my $res = $self->_txn_do( sub {
       ($attrs, $added) = $self->_push( $name, $list, $items );
-      $self->_find_and_update( $name, $attrs );
+      $self->find_and_update( $name, $attrs );
    } );
 
    return $res ? $added : undef;
@@ -112,6 +126,12 @@ sub push {
 
 sub reset {
    my $self = shift; return $self->_iterator( 0 );
+}
+
+sub select {
+   my $self = shift;
+
+   return $self->storage->select( $self->path, $self->source->name );
 }
 
 sub search {
@@ -133,17 +153,21 @@ sub splice {
 
    my $res = $self->_txn_do( sub {
       ($attrs, $removed) = $self->_splice( $name, $list, $items );
-      $self->_find_and_update( $name, $attrs );
+      $self->find_and_update( $name, $attrs );
    } );
 
    return $res ? $removed : undef;
+}
+
+sub storage {
+   return shift->source->schema->storage;
 }
 
 sub update {
    my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
 
    my $res = $self->_txn_do( sub {
-      $self->_find_and_update( $name, $args->{fields} || {} );
+      $self->find_and_update( $name, $args->{fields} || {} );
    } );
 
    return $res ? $name : undef;
@@ -230,25 +254,13 @@ sub _eval_clause {
 }
 
 sub _find {
-   my ($self, $name) = @_;
-
-   my $elements = $self->_storage->select( $self->_path, $self->source->name );
+   my ($self, $name) = @_; my $elements = $self->select;
 
    return unless ($name and exists $elements->{ $name });
 
    my $attrs = { %{ $elements->{ $name } }, name => $name };
 
    return $self->_create_element( $attrs );
-}
-
-sub _find_and_update {
-   my ($self, $name, $attrs) = @_;
-
-   my $element = $self->_find( $name ) or return;
-
-   $self->update_attributes( $element, $attrs );
-
-   return $element->update;
 }
 
 sub _get_element_name {
@@ -262,8 +274,7 @@ sub _get_element_name {
 sub _list {
    my ($self, $name) = @_; my ($attr, $attrs);
 
-   my $new      = $self->list_class->new;
-   my $elements = $self->_storage->select( $self->_path, $self->source->name );
+   my $new = $self->list_class->new; my $elements = $self->select;
 
    $new->list( [ sort keys %{ $elements } ] );
 
@@ -284,17 +295,12 @@ sub _list {
    return $new;
 }
 
-sub _path {
-   return shift->source->schema->path;
-}
-
 sub _push {
    my ($self, $name, $attr, $items) = @_;
 
-   my $elements = $self->_storage->select( $self->_path, $self->source->name );
-   my $attrs    = { %{ $elements->{ $name } } };
-   my $list     = [ @{ $attrs->{ $attr } || [] } ];
-   my $in       = [];
+   my $attrs = { %{ $self->select->{ $name } || {} } };
+   my $list  = [ @{ $attrs->{ $attr } || [] } ];
+   my $in    = [];
 
    for my $item (grep { not $self->is_member( $_, @{ $list } ) } @{ $items }) {
       CORE::push @{ $list }, $item;
@@ -313,7 +319,7 @@ sub _search {
    }
 
    if (not defined $elements->[0]) {
-      $elements = $self->_storage->select( $self->_path, $self->source->name );
+      $elements = $self->select;
 
       for my $name (keys %{ $elements }) {
          my $attrs = { %{ $elements->{ $name } }, name => $name };
@@ -337,10 +343,9 @@ sub _search {
 sub _splice {
    my ($self, $name, $attr, $items) = @_;
 
-   my $elements = $self->_storage->select( $self->_path, $self->source->name );
-   my $attrs    = { %{ $elements->{ $name } } };
-   my $list     = [ @{ $attrs->{ $attr } || [] } ];
-   my $out      = [];
+   my $attrs = { %{ $self->select->{ $name } || {} } };
+   my $list  = [ @{ $attrs->{ $attr } || [] } ];
+   my $out   = [];
 
    for my $item (@{ $items }) {
       last unless (defined $list->[0]);
@@ -358,14 +363,10 @@ sub _splice {
    return ($attrs, $out);
 }
 
-sub _storage {
-   return shift->source->schema->storage;
-}
-
 sub _txn_do {
    my ($self, $coderef) = @_;
 
-   return $self->_storage->txn_do( $self->_path, $coderef );
+   return $self->storage->txn_do( $self->path, $coderef );
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -441,6 +442,13 @@ Deletes an element
 Finds the named element and returns an
 L<element|File::DataClass::Element> object for it
 
+=head2 find_and_update
+
+   $updated_element_name = $rs->_find_and_update( $name, $attrs );
+
+Finds the named element object and updates it's attributes. Does not wrap
+the find and update in a transaction
+
 =head2 first
 
    $element_object = $rs->search( { where => $where_clauses } )->first;
@@ -469,6 +477,10 @@ Iterate over the elements returned by the search call
 
 =head2 path
 
+   $path = $rs->path;
+
+Attribute L<File::DataClass::Schema/path>
+
 =head2 push
 
    $added = $rs->push( { name => $name, list => $list, items => $items } );
@@ -480,6 +492,8 @@ object and I<items> the field on the request object containing the
 list of new items
 
 =head2 reset
+
+   $rs->reset
 
 Resets the resultset's cursor, so you can iterate through the elements again
 
@@ -496,11 +510,23 @@ attribute values, e.g.
 
    $where = { 'some_element_attribute_name' => { '>=' => 0 } };
 
+=head2 select
+
+   $hash = $rs->select;
+
+Returns a hash ref of elements
+
 =head2 splice
 
    $removed = $rs->splice( { name => $name, list => $list, items => $items } );
 
 Removes items from the attribute list
+
+=head2 storage
+
+   $storage = $rs->storage;
+
+Attribute L<File::DataClass::Schema/storage>
 
 =head2 update
 
@@ -510,11 +536,9 @@ Updates the named element
 
 =head2 update_attributes
 
-=head2 _find_and_update
+   $rs->update_attributes( $element, $attributes );
 
-   $updated_element_name = $rs->_find_and_update( $name, $attrs );
-
-Finds the named element object and updates it's attributes
+Updates an elements attributes
 
 =head2 _txn_do
 
