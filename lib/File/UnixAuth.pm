@@ -7,29 +7,31 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
+use File::UnixAuth::ResultSet;
 use Moose;
 
 extends qw(File::DataClass::Schema);
 
 has '+result_source_attributes' =>
-   default            => sub { return {
-      group           => {
-         attributes   => [ qw(password gid members) ],
-         defaults     => { password => q(x) }, },
-      passwd          => {
-         attributes   => [ qw(password id pgid gecos homedir shell) ],
-         defaults     => { password => q(x) }, },
-      shadow          => {
-         attributes   => [ qw(password pwlast pwnext pwafter
-                              pwwarn pwexpires pwdisable reserved) ],
-         defaults     => { password => q(*),   pwlast => 0, pwnext    => 0,
-                           pwafter  => 99_999, pwwarn => 7, pwexpires => 90 },
-         }, } };
+   default                => sub { return {
+      group               => {
+         attributes       => [ qw(password gid members) ],
+         defaults         => { password => q(x) },
+         resultset_class  => q(File::UnixAuth::ResultSet) },
+      passwd              => {
+         attributes       => [ qw(password id pgid gecos homedir shell) ],
+         defaults         => { password => q(x) }, },
+      shadow              => {
+         attributes       => [ qw(password pwlast pwnext pwafter
+                                  pwwarn pwexpires pwdisable reserved) ],
+         defaults         => { password => q(*), pwlast    => 0,
+                               pwnext   => 0,    pwafter   => 99_999,
+                               pwwarn   => 7,    pwexpires => 90 }, }, } };
 has '+storage_attributes' =>
-   default            => sub { return { backup => q(.bak), } };
-has '+storage_class'  =>
-   default            => q(+File::UnixAuth::Storage);
-has 'source_name'     => is => 'ro', isa => 'Str', required => TRUE;
+   default                => sub { return { backup => q(.bak), } };
+has '+storage_class'      =>
+   default                => q(+File::UnixAuth::Storage);
+has 'source_name'         => is => 'ro', isa => 'Str', required => TRUE;
 
 around 'source' => sub {
    my ($orig, $self) = @_; return $self->$orig( $self->source_name );

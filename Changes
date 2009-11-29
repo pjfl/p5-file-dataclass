@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Added UnixAuth::Resultset
          - Exposed more resultset methods
          - Added support for passwd and group files
 

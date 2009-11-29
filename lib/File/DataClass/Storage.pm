@@ -142,10 +142,10 @@ sub _load {
 
    scalar @paths == 1 and return $self->_read_file( $paths[0], FALSE ) || {};
 
-   my $red; $data = {};
+   $data = {};
 
    for my $path (@paths) {
-      $red = $self->_read_file( $path, FALSE ) or next;
+      my $red = $self->_read_file( $path, FALSE ) or next;
 
       for (keys %{ $red }) {
          $data->{ $_ } = exists $data->{ $_ }
