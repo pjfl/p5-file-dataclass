@@ -74,7 +74,10 @@ sub find_and_update {
 
    my $element = $self->_find( $name ) or return;
 
-   $self->update_attributes( $element, $attrs );
+   for my $attr (grep { exists $attrs->{ $_ } }
+                 @{ $self->source->attributes }) {
+      $element->$attr( $attrs->{ $attr } );
+   }
 
    return $element->update;
 }
@@ -171,17 +174,6 @@ sub update {
    } );
 
    return $res ? $name : undef;
-}
-
-sub update_attributes {
-   my ($self, $element, $attrs) = @_;
-
-   for my $attr (grep { exists $attrs->{ $_ } }
-                 @{ $self->source->attributes }) {
-      $element->$attr( $attrs->{ $attr } );
-   }
-
-   return;
 }
 
 # Private methods
@@ -533,12 +525,6 @@ Attribute L<File::DataClass::Schema/storage>
    $rs->update( { name => $of_element, fields => $attr_hash } );
 
 Updates the named element
-
-=head2 update_attributes
-
-   $rs->update_attributes( $element, $attributes );
-
-Updates an elements attributes
 
 =head2 _txn_do
 

@@ -61,7 +61,7 @@ sub txn_do {
 
    $self->validate_params( $path, TRUE );
 
-   my $key = q(txn:).$path->pathname; my $wantarray = wantarray; my $res;
+   my $key = q(txn:).$path; my $wantarray = wantarray; my $res;
 
    try {
       $self->_lock->set( k => $key );

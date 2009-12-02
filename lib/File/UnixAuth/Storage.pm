@@ -6,6 +6,8 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use File::DataClass::Constants;
+use Lingua::EN::NameParse;
 use Moose;
 
 extends qw(File::DataClass::Storage);
@@ -25,9 +27,63 @@ augment '_write_file' => sub {
 
 # Private methods
 
+sub _deflate {
+   my ($self, $hash, $id) = @_; my $attrs = $hash->{ $id };
+
+   if (exists $attrs->{members}) {
+       $attrs->{members} = join q(,), @{ $attrs->{members} || [] };
+   }
+
+   if (exists $attrs->{first_name}) {
+      my $gecos = $attrs->{first_name} || NUL;
+
+      $gecos .= $attrs->{last_name} ? SPC.$attrs->{last_name} : NUL;
+
+      if ($attrs->{location} or $attrs->{work_phone} or $attrs->{home_phone}) {
+         $gecos .= q(,).($attrs->{location  } || q(?));
+         $gecos .= q(,).($attrs->{work_phone} || q(?));
+         $gecos .= q(,).($attrs->{home_phone} || q(?));
+      }
+
+      $attrs->{gecos} = $gecos;
+   }
+
+   return;
+}
+
+sub _inflate {
+   my ($self, $hash, $id, $name_parser) = @_; my $attrs = $hash->{ $id };
+
+   if (exists $attrs->{members}) {
+       $attrs->{members} = [ split m{ , }mx, $attrs->{members} || NUL ];
+   }
+
+   if (exists $attrs->{gecos}) {
+      my %names  = ( surname_1 => NUL, );
+      my @fields = qw(full_name location work_phone home_phone);
+
+      @{ $attrs }{ @fields } = split m{ , }mx, $attrs->{gecos} || NUL;
+
+      # Weird logic is correct from L::EN::NP POD
+      if ($attrs->{full_name}
+          and not $name_parser->parse( $attrs->{full_name} )) {
+         %names = $name_parser->components;
+      }
+      else { $names{given_name_1} = $attrs->{full_name} || $id }
+
+      $attrs->{first_name} = $names{given_name_1};
+      $attrs->{last_name } = $names{surname_1   };
+      delete $attrs->{full_name}; delete $attrs->{gecos};
+   }
+
+   return;
+}
+
 sub _read_filter {
    my ($self, $buf) = @_; my $hash = {}; my $order = 0;
 
+   my %args        = ( auto_clean => 1, force_case => 1, lc_prefix => 1 );
+   my $name_parser = Lingua::EN::NameParse->new( %args );
    my $source_name = $self->schema->source_name;
    my $fields      = $self->_source->attributes;
 
@@ -37,6 +93,7 @@ sub _read_filter {
       @attrs{ @{ $fields } } = @rest;
       $attrs{ _order_by } = $order++;
       $hash->{ $id } = \%attrs;
+      $self->_inflate( $hash, $id, $name_parser );
    }
 
    return { $source_name => $hash };
@@ -55,10 +112,14 @@ sub _write_filter {
    my $fields      = $self->_source->attributes;
    my $hash        = $data->{ $source_name };
 
+   $source_name eq q(passwd) and $fields = [ @{ $fields }[0..5] ];
+
    for my $id (sort { __original_order( $hash, $a, $b ) } keys %{ $hash }) {
+      $self->_deflate( $hash, $id );
+
       my $attrs = $hash->{ $id }; delete $attrs->{_order_by};
       my $line  = join q(:),
-                  map  { defined $attrs->{ $_ } ? $attrs->{ $_ } : q() }
+                  map  { defined $attrs->{ $_ } ? $attrs->{ $_ } : NUL }
                   @{ $fields };
 
       push @{ $buf }, $id.q(:).$line;

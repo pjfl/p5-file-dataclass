@@ -126,9 +126,10 @@ sub _build_cache {
 
    my $attrs = {}; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
 
-   $attrs->{cache_attributes}                 = $self->cache_attributes;
-   $attrs->{cache_attributes}->{cache_root} ||= $self->tempdir;
-   $attrs->{cache_attributes}->{namespace } ||= $ns;
+   $attrs->{cache_attributes}                = $self->cache_attributes;
+   $attrs->{cache_attributes}->{driver   } ||= q(FastMmap);
+   $attrs->{cache_attributes}->{root_dir } ||= NUL.$self->tempdir;
+   $attrs->{cache_attributes}->{namespace} ||= $ns;
 
    return $self->Cache( File::DataClass::Cache->new( $attrs ) );
 }

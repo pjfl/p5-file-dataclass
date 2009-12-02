@@ -15,14 +15,14 @@ sub add_user_to_group {
    my ($self, $group, $user) = @_;
 
    return $self->_change_group_members( $group, $user, TRUE, sub {
-      return join q(,), @{ $_[1] }, $_[0] } );
+      return [ @{ $_[1] }, $_[0] ] } );
 }
 
 sub remove_user_from_group {
    my ($self, $group, $user) = @_;
 
    return $self->_change_group_members( $group, $user, FALSE, sub {
-      return join q(,), grep { $_ ne $_[0] } @{ $_[1] } } );
+      return [ grep { $_ ne $_[0] } @{ $_[1] } ] } );
 }
 
 # Private methods
@@ -32,7 +32,7 @@ sub _change_group_members {
 
    return $self->_txn_do( sub {
       my $attrs = $self->select->{ $group } || {};
-      my $users = [ split m{ , }mx, $attrs->{members} || NUL ];
+      my $users = $attrs->{members};
 
       if ($exists xor $self->is_member( $user, @{ $users } )) {
          $attrs->{members} = $coderef->( $user, $users );

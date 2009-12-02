@@ -6,14 +6,14 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
-use Cache::FileCache;
+use CHI;
 use File::DataClass::Constants;
 use Moose;
 
 has 'cache_attributes' => is => 'ro', isa => 'HashRef',
    default             => sub { return {} };
 has 'cache_class'      => is => 'ro', isa => 'ClassName',
-   default             => q(Cache::FileCache);
+   default             => q(CHI);
 has 'cache'            => is => 'ro', isa => 'Object',
    lazy_build          => TRUE;
 
@@ -36,7 +36,7 @@ sub get_by_paths {
 }
 
 sub remove {
-   my ($self, $key) = @_; $key || return; $key .= NUL;
+   my ($self, $key) = @_; $key or return; $key .= NUL;
 
    my $mtimes = $self->cache->get( q(mtimes) ) || {};
 
@@ -80,7 +80,7 @@ sub _build_cache {
 
    my $class = delete $attrs->{cache_class} || $self->cache_class;
 
-   return $class->new( $attrs );
+   return $class->new( %{ $attrs } );
 }
 
 sub _get_key_and_newest {

@@ -19,14 +19,17 @@ has '+result_source_attributes' =>
          defaults         => { password => q(x) },
          resultset_class  => q(File::UnixAuth::ResultSet) },
       passwd              => {
-         attributes       => [ qw(password id pgid gecos homedir shell) ],
+         attributes       => [ qw(password id pgid gecos homedir shell
+                                  first_name last_name location work_phone
+                                  home_phone) ],
          defaults         => { password => q(x) }, },
       shadow              => {
          attributes       => [ qw(password pwlast pwnext pwafter
                                   pwwarn pwexpires pwdisable reserved) ],
          defaults         => { password => q(*), pwlast    => 0,
                                pwnext   => 0,    pwafter   => 99_999,
-                               pwwarn   => 7,    pwexpires => 90 }, }, } };
+                               pwwarn   => 7,    pwexpires => 90,
+                               reserved => NUL }, }, } };
 has '+storage_attributes' =>
    default                => sub { return { backup => q(.bak), } };
 has '+storage_class'      =>
