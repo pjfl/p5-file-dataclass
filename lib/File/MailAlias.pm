@@ -74,8 +74,12 @@ sub delete {
    return ($name, $out);
 }
 
+sub find {
+   my ($self, $name) = @_; return $self->resultset->find( { name => $name } );
+}
+
 sub list {
-   my ($self, @rest) = @_; return $self->resultset->list( @rest );
+   my ($self, $name) = @_; return $self->resultset->list( { name => $name } );
 }
 
 sub resultset {
