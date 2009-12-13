@@ -11,7 +11,7 @@ use Moose;
 with qw(File::DataClass::Util);
 
 has 'name'       => is => 'rw', isa => 'Str',    required => 1;
-has '_resultset' => is => 'ro', isa => 'Object', required => 1, weak_ref => 1;
+has '_resultset' => is => 'ro', isa => 'Object', required => 1;
 
 sub BUILD {
    my ($self, $args) = @_; my $class = blessed $self;
