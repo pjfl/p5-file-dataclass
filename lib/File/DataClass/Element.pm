@@ -46,11 +46,11 @@ sub update {
 # Private methods
 
 sub _path {
-   return shift->_resultset->source->schema->path;
+   return shift->_resultset->path;
 }
 
 sub _storage {
-   return shift->_resultset->source->schema->storage;
+   return shift->_resultset->storage;
 }
 
 no Moose;

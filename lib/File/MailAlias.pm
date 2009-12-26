@@ -221,9 +221,13 @@ Deletes the named mail alias. Calls L</update_as_root> via the C<suid>
 wrapper. Adds the text from the wrapper call to the results section on
 the stash
 
+=head2 find
+
+   $f_dc_element_obj = $alias_obj->list( $name );
+
 =head2 list
 
-   $response_obj = $alias_obj->list( { name => $name } );
+   $f_dc_list_obj = $alias_obj->list( $name );
 
 Returns an object containing a list of alias names and the fields pertaining
 to the requested alias if it exists

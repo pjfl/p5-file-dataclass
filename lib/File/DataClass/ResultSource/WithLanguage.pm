@@ -22,7 +22,7 @@ sub BUILD {
    if ($self->lang_dep) {
       my $attrs = { lang => $self->lang, storage => $self->schema->storage };
 
-      $self->schema->storage( File::DataClass::Combinator->new( $attrs ) );
+      $self->storage( File::DataClass::Combinator->new( $attrs ) );
    }
 
    return;
@@ -31,7 +31,7 @@ sub BUILD {
 sub _set_lang {
    my ($self, $lang, $old_lang) = @_;
 
-   return defined $old_lang ? $self->schema->storage->lang( $lang ) : undef;
+   return defined $old_lang ? $self->storage->lang( $lang ) : undef;
 }
 
 __PACKAGE__->meta->make_immutable;

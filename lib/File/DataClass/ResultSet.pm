@@ -19,7 +19,7 @@ has 'element_class' => is => 'ro', isa => 'ClassName',
 has 'list_class'    => is => 'ro', isa => 'ClassName',
    default          => q(File::DataClass::List);
 has 'source'        => is => 'ro', isa => 'Object',
-   required         => TRUE, weak_ref => TRUE;
+   required         => TRUE, weak_ref => TRUE, handles => [ qw(path storage) ];
 has '_elements'     => is => 'rw', isa => 'ArrayRef',
    default          => sub { return [] }, init_arg => undef;
 has '_iterator'     => is => 'rw', isa => 'Int',
@@ -96,10 +96,6 @@ sub list {
    return $self->_txn_do( sub { $self->_list( $args->{name} ) } );
 }
 
-sub path {
-   return shift->source->schema->path;
-}
-
 sub next {
    my $self  = shift;
 
@@ -160,10 +156,6 @@ sub splice {
    } );
 
    return $res ? $removed : undef;
-}
-
-sub storage {
-   return shift->source->schema->storage;
 }
 
 sub update {

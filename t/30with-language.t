@@ -89,7 +89,7 @@ ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
 
 $source->lang( q(de) );
 
-is( $schema->storage->lang, q(de), 'Triggers storage language change' );
+is( $source->storage->lang, q(de), 'Triggers storage language change' );
 
 # Cleanup
 

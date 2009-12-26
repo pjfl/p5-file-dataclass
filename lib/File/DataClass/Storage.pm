@@ -19,7 +19,9 @@ with qw(File::DataClass::Util);
 
 has 'backup' => is => 'rw', isa => 'Str',    default  => NUL;
 has 'extn'   => is => 'rw', isa => 'Str',    default  => NUL;
-has 'schema' => is => 'ro', isa => 'Object', required => 1, weak_ref => TRUE;
+has 'schema' => is => 'ro', isa => 'Object', required => 1, weak_ref => TRUE,
+   handles => { _cache => q(cache), _debug => q(debug), _lock => q(lock),
+                _log   => q(log),   _perms => q(perms) };
 
 sub delete {
    my ($self, $path, $element_obj) = @_;
@@ -100,14 +102,6 @@ sub validate_params {
 
 # Private methods
 
-sub _cache {
-   return shift->schema->cache;
-}
-
-sub _debug {
-   return shift->schema->debug;
-}
-
 sub _delete {
    my ($self, $path, $element_obj) = @_;
 
@@ -157,14 +151,6 @@ sub _load {
    $self->_cache->set_by_paths( \@paths, $data, $self->_meta_pack( $newest ) );
 
    return $data;
-}
-
-sub _lock {
-   return shift->schema->lock;
-}
-
-sub _log {
-   return shift->schema->log;
 }
 
 sub _meta_pack {
@@ -233,7 +219,7 @@ sub _write_file {
    $create or $path->is_file
       or $self->throw( error => 'File [_1] not found', args => [ $path ] );
 
-   $path->is_file or $path->perms( $self->schema->perms );
+   $path->is_file or $path->perms( $self->_perms );
 
    if ($self->backup and $path->is_file and not $path->empty) {
       copy( $path.NUL, $path.$self->backup ) or $self->throw( $ERRNO );

@@ -153,10 +153,12 @@ sub _build_source_registrations {
 
    for my $moniker (keys %{ $self->result_source_attributes }) {
       my $attrs = $self->result_source_attributes->{ $moniker };
+      my $class = delete $attrs->{result_source_class}
+               || $self->result_source_class;
 
       $attrs->{name} = $moniker; $attrs->{schema} = $self;
 
-      $sources->{ $moniker } = $self->result_source_class->new( $attrs );
+      $sources->{ $moniker } = $class->new( $attrs );
    }
 
    return $sources;

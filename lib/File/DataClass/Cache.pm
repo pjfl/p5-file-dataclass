@@ -91,11 +91,12 @@ sub _get_key_and_newest {
    for my $path (map { NUL.$_ } grep { $_->pathname } @{ $paths }) {
       $key .= $key ? q(~).$path : $path;
 
-      my $mtime = $mtimes->{ $path } || 0;
+      my $mtime = $mtimes->{ $path }; not $mtime and $newest = undef;
 
-      $newest = $mtime if ($mtime > $newest);
+      $mtime and defined $newest and $mtime > $newest and $newest = $mtime;
    }
 
+   not defined $newest and $newest = 0;
    return ($key, $newest);
 }
 

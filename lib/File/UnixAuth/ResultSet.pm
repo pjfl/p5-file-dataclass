@@ -69,6 +69,10 @@ File::UnixAuth::ResultSet - Unix authentication and authorization file custom re
 
 =head1 Subroutines/Methods
 
+=head2 add_user_to_group
+
+=head2 remove_user_from_group
+
 =head1 Diagnostics
 
 =head1 Dependencies

@@ -26,7 +26,8 @@ has 'resultset_attributes' => is => 'ro', isa => 'HashRef',
 has 'resultset_class'      => is => 'ro', isa => 'ClassName',
    default                 => q(File::DataClass::ResultSet);
 has 'schema'               => is => 'ro', isa => 'Object',
-   required                => TRUE, weak_ref => TRUE;
+   required                => TRUE, weak_ref => TRUE, handles => [ qw(path) ];
+has 'storage'              => is => 'rw', isa => 'Object', lazy_build => TRUE;
 
 sub resultset {
    my $self = shift;
@@ -34,6 +35,10 @@ sub resultset {
    my $attrs = { %{ $self->resultset_attributes }, source => $self };
 
    return $self->resultset_class->new( $attrs );
+}
+
+sub _build_storage {
+   my $self = shift; return $self->schema->storage;
 }
 
 __PACKAGE__->meta->make_immutable;
