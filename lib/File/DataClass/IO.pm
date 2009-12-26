@@ -20,6 +20,7 @@ use IO::Dir;
 use IO::File;
 use Moose;
 use Moose::Util::TypeConstraints;
+use Scalar::Util qw( blessed );
 
 use Sub::Exporter -setup => {
    exports => [ qw(io) ], groups => { default => [ qw(io) ], },
@@ -52,7 +53,7 @@ has '_filter'          => is => 'rw', isa => 'Maybe[CodeRef]'                ;
 has '_lock'            => is => 'rw', isa => 'Bool',      default    => FALSE;
 has '_lock_obj'        => is => 'rw', isa => 'Maybe[Object]',
    writer              => 'lock_obj';
-has '_perms'           => is => 'rw', isa => 'Num',       default    => 0    ;
+has '_perms'           => is => 'rw', isa => 'Num',       default    => PERMS;
 has '_separator'       => is => 'rw', isa => 'Str',       default    => $RS  ;
 has '_umask'           => is => 'rw', isa => 'ArrayRef[Num]',
    default             => sub { return [] }                                  ;
@@ -61,11 +62,11 @@ has '_utf8'            => is => 'rw', isa => 'Bool',      default    => FALSE;
 around BUILDARGS => sub {
    my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
 
-   $car or return $attrs; ref $car eq HASH and return $car;
+   $car or return $attrs; blessed $car and return $car;
 
-   if (ref $car eq ARRAY) { $attrs->{name} = File::Spec->catfile( @{ $car } ) }
-   else { $attrs->{name} = $car }
+   my $type = ref $car; $type eq HASH and return $car;
 
+   $attrs->{name} = $type eq ARRAY ? File::Spec->catfile( @{ $car } ) : $car;
    $cdr[0] and $attrs->{mode  } = $cdr[0];
    $cdr[1] and $attrs->{_perms} = $cdr[1];
 
@@ -83,7 +84,7 @@ sub absolute {
 sub all {
    my ($self, $level) = @_;
 
-   $self->is_dir && return $self->_find( TRUE, TRUE, $level );
+   $self->is_dir and return $self->_find( TRUE, TRUE, $level );
 
    return $self->_all_file_contents;
 }
@@ -101,7 +102,7 @@ sub _all_file_contents {
 
    local $RS = undef; my $all = $self->io_handle->getline;
 
-   $self->error_check; $self->autoclose && $self->close;
+   $self->error_check; $self->autoclose and $self->close;
 
    return $all;
 }
@@ -125,13 +126,13 @@ sub assert {
 sub assert_dirpath {
    my ($self, $dir_name) = @_;
 
-   $dir_name || return; -d $dir_name && return $dir_name;
+   $dir_name or return; -d $dir_name and return $dir_name;
 
    $self->_umask_push( $self->_dir_perms );
    CORE::mkdir( $dir_name ) or File::Path::mkpath( $dir_name );
    $self->_umask_pop;
 
-   -d $dir_name || $self->throw( error => 'Path [_1] cannot create',
+   -d $dir_name or $self->throw( error => 'Path [_1] cannot create',
                                  args  => [ $dir_name ] );
    return $dir_name;
 }
@@ -139,7 +140,7 @@ sub assert_dirpath {
 sub assert_filepath {
    my $self = shift; my $dir;
 
-   $self->name || $self->throw( 'Path not specified' );
+   $self->name or $self->throw( 'Path not specified' );
 
    (undef, $dir) = File::Spec->splitpath( $self->name );
 
@@ -149,8 +150,7 @@ sub assert_filepath {
 sub assert_open {
    my ($self, @rest) = @_;
 
-   $self->is_open && return $self;
-   $self->type || $self->file;
+   $self->is_open and return $self; $self->type or $self->file;
 
    return $self->open( @rest );
 }
@@ -164,7 +164,7 @@ sub atomic_prefix {
 }
 
 sub basename {
-   my ($self, @suffixes ) = @_; $self->name || return;
+   my ($self, @suffixes ) = @_; $self->name or return;
 
    return File::Basename::basename( $self->name, @suffixes );
 }
@@ -172,8 +172,8 @@ sub basename {
 sub binary {
    my $self = shift;
 
-   $self->is_open && CORE::binmode( $self->io_handle ); $self->_binary( TRUE );
-
+   $self->is_open and CORE::binmode( $self->io_handle );
+   $self->_binary( TRUE );
    return $self;
 }
 
@@ -204,7 +204,7 @@ sub buffer {
       return $self;
    }
 
-   exists $self->{buffer} || ($self->{buffer} = do { my $x = NUL; \$x });
+   exists $self->{buffer} or $self->{buffer} = do { my $x = NUL; \$x };
 
    return $self->{buffer};
 }
@@ -250,8 +250,8 @@ sub clear {
 sub close {
    my $self = shift;
 
-   $self->is_dir  && return $self->_close_dir;
-   $self->is_file && return $self->_close_file;
+   $self->is_dir  and return $self->_close_dir;
+   $self->is_file and return $self->_close_file;
 
    return $self;
 }
@@ -259,7 +259,7 @@ sub close {
 sub _close {
    my $self = shift;
 
-   $self->io_handle && $self->io_handle->close;
+   $self->io_handle and $self->io_handle->close;
    $self->io_handle( undef );
    $self->is_open  ( FALSE );
    $self->mode     ( q(r)  );
@@ -280,8 +280,8 @@ sub _close_file {
                           args  => [ $path, $self->name ] );
    }
 
-   $self->is_open || return $self;
-   $self->unlock;
+   $self->is_open or return $self; $self->unlock;
+
    return $self->_close;
 }
 
@@ -296,7 +296,7 @@ sub deep {
 sub delete {
    my $self = shift; my $path = $self->_get_atomic_path;
 
-   $self->_atomic && -f $path && unlink $path;
+   $self->_atomic and -f $path and unlink $path;
 
    return $self->_close_file;
 }
@@ -307,7 +307,7 @@ sub delete_tmp_files {
    $tmplt ||= q(%6.6d....); my $pat = sprintf $tmplt, $PID;
 
    while (my $entry = $self->next) {
-      unlink $entry->pathname if ($entry->filename =~ m{ \A $pat \z }mx);
+      $entry->filename =~ m{ \A $pat \z }mx and unlink $entry->pathname;
    }
 
    return $self->_close_dir;
@@ -316,8 +316,7 @@ sub delete_tmp_files {
 sub DEMOLISH {
    my $self = shift;
 
-   $self->_atomic && $self->delete;
-   $self->is_open && $self->close;
+   $self->_atomic and $self->delete; $self->is_open and $self->close;
 
    return;
 }
@@ -327,13 +326,13 @@ sub dir {
 }
 
 sub _dir_perms {
-   my ($self, $perms) = @_; $perms ||= $self->_perms || PERMS;
+   my ($self, $perms) = @_; $perms ||= $self->_perms;
 
    return (($perms & oct q(0444)) >> 2) | $perms;
 }
 
 sub dirname {
-   my $self = shift; $self->name || return;
+   my $self = shift; $self->name or return;
 
    return File::Basename::dirname( $self->name );
 }
@@ -341,9 +340,9 @@ sub dirname {
 sub empty {
    my $self = shift;
 
-   $self->is_file && return -z $self->name;
-   $self->is_dir  || $self->throw( error => 'Path [_1] not found',
-                                   args  => [ $self->name ] );
+   $self->is_file and return -z $self->name;
+   $self->is_dir  or  $self->throw( error => 'Path [_1] not found',
+                                    args  => [ $self->name ] );
 
    return $self->next ? FALSE : TRUE;
 }
@@ -351,9 +350,9 @@ sub empty {
 sub encoding {
    my ($self, $encoding) = @_;
 
-   $encoding ||
+   $encoding or
       $self->throw( 'No encoding value passed to '.__PACKAGE__.'::encoding' );
-   $self->is_open && CORE::binmode( $self->io_handle, ":$encoding" );
+   $self->is_open and CORE::binmode( $self->io_handle, ":$encoding" );
    $self->_encoding( $encoding );
    return $self;
 }
@@ -361,8 +360,8 @@ sub encoding {
 sub error_check {
    my $self = shift;
 
-   $self->io_handle->can( q(error) ) || return;
-   $self->io_handle->error || return;
+   $self->io_handle->can( q(error) ) or return;
+   $self->io_handle->error or return;
    $self->throw( error => 'IO error [_1]', args => [ $ERRNO ] );
    return;
 }
@@ -398,7 +397,7 @@ sub _find {
 
    my $filter = $self->_filter; my (@all, $io);
 
-   defined $level || ($level = $self->_deep ? 0 : 1);
+   defined $level or $level = $self->_deep ? 0 : 1;
 
    while ($io = $self->next) {
       if (not defined $filter or map { $filter->() } ($io)) {
@@ -430,12 +429,12 @@ sub getline {
 
    {  local $RS = $separator || $self->_separator;
       $line = $self->io_handle->getline;
-      $self->_chomp && defined $line && CORE::chomp $line;
+      $self->_chomp and defined $line and CORE::chomp $line;
    }
 
    $self->error_check;
-   defined $line && return $line;
-   $self->autoclose && $self->close;
+   defined $line and return $line;
+   $self->autoclose and $self->close;
    return;
 }
 
@@ -451,8 +450,8 @@ sub getlines {
    }
 
    $self->error_check;
-   scalar @lines && return (@lines);
-   $self->autoclose && $self->close;
+   scalar @lines and return (@lines);
+   $self->autoclose and $self->close;
    return ();
 }
 
@@ -481,7 +480,7 @@ sub is_absolute {
 sub is_dir {
    my $self = shift;
 
-   $self->type && return $self->type eq q(dir) ? TRUE : FALSE;
+   $self->type and return $self->type eq q(dir) ? TRUE : FALSE;
 
    return $self->name && -d $self->name ? TRUE : FALSE;
 }
@@ -493,7 +492,7 @@ sub is_executable {
 sub is_file {
    my $self = shift;
 
-   $self->type && return $self->type eq q(file) ? TRUE : FALSE;
+   $self->type and return $self->type eq q(file) ? TRUE : FALSE;
 
    return $self->name && -f $self->name ? TRUE : FALSE;
 }
@@ -537,11 +536,11 @@ sub mkpath {
 sub next {
    my $self = shift; my $name;
 
-   defined ($name = $self->read_dir) || return;
+   defined ($name = $self->read_dir) or return;
 
    my $io = $self->_constructor( File::Spec->catfile( $self->name, $name ) );
 
-   defined $self->_filter && $io->filter( $self->_filter );
+   defined $self->_filter and $io->filter( $self->_filter );
 
    return $io;
 }
@@ -549,20 +548,9 @@ sub next {
 sub open {
    my ($self, @rest) = @_;
 
-   $self->is_dir  && return $self->_open_dir(  @rest );
-   $self->is_file && return $self->_open_file( @rest );
-
-   return $self;
-}
-
-sub _open_dir {
-   my ($self, @rest) = @_; my $io;
-
-   $self->is_open && return $self;
-   $self->_assert && $self->assert_dirpath( $self->name );
-   $self->io_handle( IO::Dir->new( $self->name ) ) && $self->is_open( TRUE );
-   $self->is_open || $self->throw( error => 'Directory [_1] cannot open',
-                                   args  => [ $self->name ] );
+   $self->is_open and return $self;
+   $self->is_dir  and return $self->_open_dir(  @rest );
+   $self->is_file and return $self->_open_file( @rest );
 
    return $self;
 }
@@ -570,31 +558,41 @@ sub _open_dir {
 sub _open_args {
    my ($self, $mode, $perms) = @_;
 
-   $self->name || $self->throw( 'Path not specified' );
+   $self->name or $self->throw( 'Path not specified' );
 
    my $pathname = $self->_atomic && !$self->is_reading
                 ? $self->_get_atomic_path : $self->name;
    my @args     = ( $pathname, $self->mode( $mode || $self->mode ) );
 
    if ($self->exists) { $perms = $self->stat->{mode} & oct q(07777) }
-   else { $perms ||= $self->_perms || PERMS }
+   else { $perms ||= $self->_perms }
 
    $self->_umask_push( $self->_perms( $perms ) );
 
    return @args;
 }
 
+sub _open_dir {
+   my ($self, @rest) = @_; my $io;
+
+   $self->_assert and $self->assert_dirpath( $self->name );
+   $self->io_handle( IO::Dir->new( $self->name ) ) and $self->is_open( TRUE );
+   $self->is_open or $self->throw( error => 'Directory [_1] cannot open',
+                                   args  => [ $self->name ] );
+
+   return $self;
+}
+
 sub _open_file {
    my ($self, @rest) = @_;
 
-   $self->is_open && return $self;
-   $self->_assert && $self->assert_filepath;
+   $self->_assert and $self->assert_filepath;
 
    my @args = $self->_open_args( @rest );
 
-   $self->io_handle( IO::File->new( @args ) ) && $self->is_open( TRUE );
+   $self->io_handle( IO::File->new( @args ) ) and $self->is_open( TRUE );
    $self->_umask_pop;
-   $self->is_open || $self->throw( error => 'File [_1] cannot open',
+   $self->is_open or $self->throw( error => 'File [_1] cannot open',
                                    args  => [ $args[0] ] );
    $self->set_binmode;
    $self->set_lock;
@@ -629,7 +627,7 @@ sub println {
 sub read {
    my ($self, @rest) = @_; $self->assert_open( q(r) );
 
-   my $length = (@rest or $self->is_dir)
+   my $length = @rest || $self->is_dir
               ? $self->io_handle->read( @rest )
               : $self->io_handle->read( ${ $self->buffer },
                                         $self->_block_size, $self->length );
@@ -642,7 +640,7 @@ sub read {
 sub read_dir {
    my $self = shift; my $dir_pat = $self->_dir_pattern; my $name;
 
-   $self->type || $self->dir; $self->assert_open;
+   $self->type or $self->dir; $self->assert_open;
 
    if (wantarray) {
       my @names = grep { $_ !~ $dir_pat } $self->io_handle->read;
@@ -710,9 +708,9 @@ sub set_binmode {
 }
 
 sub set_lock {
-   my $self = shift; $self->_lock || return;
+   my $self = shift; $self->_lock or return;
 
-   $self->_lock_obj && return $self->_lock_obj->set( k => $self->name );
+   $self->_lock_obj and return $self->_lock_obj->set( k => $self->name );
 
    flock $self->io_handle, $self->mode eq q(r) ? LOCK_SH : LOCK_EX;
 
@@ -722,9 +720,9 @@ sub set_lock {
 sub slurp {
    my $self = shift; my $slurp = $self->all;
 
-   wantarray || return $slurp; local $RS = $self->_separator;
+   wantarray or return $slurp; local $RS = $self->_separator;
 
-   $self->_chomp || return split m{ (?<=\Q$RS\E) }mx, $slurp;
+   $self->_chomp or return split m{ (?<=\Q$RS\E) }mx, $slurp;
 
    return map { CORE::chomp; $_ } split m{ (?<=\Q$RS\E) }mx, $slurp;
 }
@@ -738,7 +736,7 @@ sub splitpath {
 }
 
 sub stat {
-   my $self = shift; $self->name || return {};
+   my $self = shift; $self->name or return {};
 
    my %stat_hash = ( id => $self->filename );
 
@@ -755,8 +753,8 @@ sub tempfile {
    }
 
    $tmplt ||= q(%6.6dXXXX);
-   $tmpfh   = File::Temp->new( DIR      => $tempdir,
-                               TEMPLATE => (sprintf $tmplt, $PID) );
+   $tmpfh   = File::Temp->new
+      ( DIR => $tempdir, TEMPLATE => (sprintf $tmplt, $PID) );
    $self->_init( q(file), $tmpfh->filename );
    $self->io_handle( $tmpfh );
    $self->is_open( TRUE );
@@ -772,7 +770,7 @@ sub throw {
 }
 
 sub touch {
-   my ($self, @rest) = @_; $self->name || return;
+   my ($self, @rest) = @_; $self->name or return;
 
    if (-e $self->name) { my $now = time; utime $now, $now, $self->name }
    else { $self->_open_file( q(w) )->close }
@@ -783,7 +781,7 @@ sub touch {
 sub _umask_pop {
    my $self = shift; my $perms = $self->_umask->[-1];
 
-   ($perms && $perms != NO_UMASK_STACK) || return umask;
+   ($perms and $perms != NO_UMASK_STACK) or return umask;
    umask pop @{ $self->_umask };
    return $perms;
 }
@@ -791,7 +789,7 @@ sub _umask_pop {
 sub _umask_push {
    my ($self, $perms) = @_; my $first = $self->_umask->[0];
 
-   $first && $first == NO_UMASK_STACK && return umask;
+   $first and $first == NO_UMASK_STACK and return umask;
    $perms ^= oct q(0777); push @{ $self->_umask }, umask $perms;
    return $perms;
 }
@@ -801,7 +799,7 @@ sub unlink {
 }
 
 sub unlock {
-   my $self = shift; $self->_lock || return;
+   my $self = shift; $self->_lock or return;
 
    if ($self->_lock_obj) { $self->_lock_obj->reset( k => $self->name ) }
    else { flock $self->io_handle, LOCK_UN }
@@ -825,7 +823,7 @@ sub write {
               : $self->io_handle->write( ${ $self->buffer }, $self->length );
 
    $self->error_check;
-   scalar @rest || $self->clear;
+   scalar @rest or $self->clear;
    return $length;
 }
 

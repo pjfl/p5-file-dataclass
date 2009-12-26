@@ -148,7 +148,7 @@ __END__
 
 =head1 Name
 
-File::MailAlias - Manipulate the mail aliases file
+File::MailAlias - Domain model for the system mail aliases file
 
 =head1 Version
 
@@ -160,7 +160,7 @@ File::MailAlias - Manipulate the mail aliases file
 
 =head1 Description
 
-Management model file the system mail alias file
+Domain model for the system mail aliases file
 
 =head1 Configuration and Environment
 
@@ -206,7 +206,7 @@ access to the real mail alias file
 
 =head2 create
 
-   $alias_obj->create( $fields );
+   $alias_obj->create( { name => $name, fields => $fields } );
 
 Create a new mail alias. Passes the fields to the C<suid> root
 wrapper on the command line. The wrapper calls the L</update_as_root> method
@@ -215,7 +215,7 @@ section on the stash
 
 =head2 delete
 
-   $alias_obj->delete( $name );
+   $alias_obj->delete( { name => $name } );
 
 Deletes the named mail alias. Calls L</update_as_root> via the C<suid>
 wrapper. Adds the text from the wrapper call to the results section on
@@ -225,35 +225,7 @@ the stash
 
    $f_dc_element_obj = $alias_obj->list( $name );
 
-=head2 list
-
-   $f_dc_list_obj = $alias_obj->list( $name );
-
-Returns an object containing a list of alias names and the fields pertaining
-to the requested alias if it exists
-
-=head2 resultset
-
-=head2 update
-
-   $alias_obj->update( $fields );
-
-Update an existing mail alias. Calls L</update_as_root> via the
-C<suid> wrapper
-
-=head2 update_as_root
-
-   $alias_obj->update_as_root( $alias, $recipients, $owner, $comment );
-
-Called from the C<suid> root wrapper this method updates the local copy
-of the alias file as required and then copies the changed file to the
-real system alias file. It will also run the C<newaliases> program and
-commit the changes to a source code control system if one is being used
-
-=head2 _init
-
-Initialises these attributes in the object returned by
-L<CatalystX::Usul::File/find>
+Initialises these attributes in the returned object
 
 =over 3
 
@@ -278,6 +250,33 @@ Who created the selected alias
 List of recipients for the selected owner
 
 =back
+
+=head2 list
+
+   $f_dc_list_obj = $alias_obj->list( $name );
+
+Returns an object containing a list of alias names and the fields pertaining
+to the requested alias if it exists
+
+=head2 resultset
+
+   $rs = $alias_obj->resultset
+
+=head2 update
+
+   $alias_obj->update( { name => $name, fields => $fields } );
+
+Update an existing mail alias. Calls L</update_as_root> via the
+C<suid> wrapper
+
+=head2 update_as_root
+
+   $alias_obj->update_as_root( $alias, $recipients, $owner, $comment );
+
+Called from the C<suid> root wrapper this method updates the local copy
+of the alias file as required and then copies the changed file to the
+real system alias file. It will also run the C<newaliases> program and
+commit the changes to a source code control system if one is being used
 
 =head1 Diagnostics
 

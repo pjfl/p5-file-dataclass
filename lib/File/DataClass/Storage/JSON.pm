@@ -16,13 +16,13 @@ has '+extn' => default => q(.json);
 augment '_read_file' => sub {
    my ($self, $rdr) = @_;
 
-   return $rdr->empty ? {} : JSON::PP->new->decode( $rdr->all );
+   return $rdr->empty ? {} : JSON::PP->new->canonical->decode( $rdr->all );
 };
 
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_;
 
-   $wtr->print( JSON::PP->new->pretty->encode( $data ) );
+   $wtr->print( JSON::PP->new->pretty->canonical->encode( $data ) );
    return $data;
 };
 

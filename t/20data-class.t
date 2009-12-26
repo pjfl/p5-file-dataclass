@@ -177,7 +177,7 @@ io( $dumped    )->unlink;
 io( $translate )->unlink;
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
-io( catdir ( qw(t file-dataclass-schema) ) )->rmtree;
+io( catfile( qw(t file-dataclass-schema.dat) ) )->unlink;
 
 # Local Variables:
 # mode: perl

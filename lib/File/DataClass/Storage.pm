@@ -53,7 +53,7 @@ sub select {
 
    $self->validate_params( $path, $element );
 
-   my $data = $self->_read_file( $path, FALSE );
+   my ($data) = $self->_read_file( $path, FALSE );
 
    return exists $data->{ $element } ? $data->{ $element } : {};
 }
@@ -109,8 +109,8 @@ sub _delete {
 
    $self->validate_params( $path, $element );
 
-   my $data = $self->_read_file( $path, TRUE );
-   my $name = $element_obj->{name};
+   my ($data) = $self->_read_file( $path, TRUE );
+   my $name   = $element_obj->{name};
 
    if (exists $data->{ $element } and exists $data->{ $element }->{ $name }) {
       delete $data->{ $element }->{ $name };
@@ -127,19 +127,18 @@ sub _load {
    my ($self, @paths) = @_;
 
    my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
-
    my $cache_mtime = $self->_meta_unpack( $meta );
-
    my $stale = $newest == 0 || $cache_mtime < $newest ? TRUE : FALSE;
 
    $data and not $stale and return $data;
-
-   scalar @paths == 1 and return $self->_read_file( $paths[0], FALSE ) || {};
-
-   $data = {};
+   scalar @paths == 1
+      and return ($self->_read_file( $paths[0], FALSE ))[0] || {};
+   $data = {}; $newest = 0;
 
    for my $path (@paths) {
-      my $red = $self->_read_file( $path, FALSE ) or next;
+      my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
+
+      $red or next; $path_mtime > $newest and $newest = $path_mtime;
 
       for (keys %{ $red }) {
          $data->{ $_ } = exists $data->{ $_ }
@@ -185,7 +184,7 @@ sub _read_file {
 
    $for_update or $self->_lock->reset( k => $path );
 
-   return $data;
+   return ($data, $path_mtime);
 }
 
 sub _update {
@@ -195,8 +194,8 @@ sub _update {
 
    $self->validate_params( $path, $element );
 
-   my $data = $self->_read_file( $path, TRUE );
-   my $name = $element_obj->{name};
+   my ($data) = $self->_read_file( $path, TRUE );
+   my $name   = $element_obj->{name};
 
    if (not $overwrite and exists $data->{ $element }->{ $name }) {
       $self->_lock->reset( k => $path );
