@@ -6,7 +6,7 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
-use JSON::PP qw();
+use JSON qw();
 use Moose;
 
 extends qw(File::DataClass::Storage);
@@ -16,13 +16,13 @@ has '+extn' => default => q(.json);
 augment '_read_file' => sub {
    my ($self, $rdr) = @_;
 
-   return $rdr->empty ? {} : JSON::PP->new->canonical->decode( $rdr->all );
+   return $rdr->empty ? {} : JSON->new->canonical->decode( $rdr->all );
 };
 
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_;
 
-   $wtr->print( JSON::PP->new->pretty->canonical->encode( $data ) );
+   $wtr->print( JSON->new->pretty->canonical->encode( $data ) );
    return $data;
 };
 
