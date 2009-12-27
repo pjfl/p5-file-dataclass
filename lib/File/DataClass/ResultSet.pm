@@ -19,7 +19,8 @@ has 'element_class' => is => 'ro', isa => 'ClassName',
 has 'list_class'    => is => 'ro', isa => 'ClassName',
    default          => q(File::DataClass::List);
 has 'source'        => is => 'ro', isa => 'Object',
-   required         => TRUE, weak_ref => TRUE, handles => [ qw(path storage) ];
+   required         => TRUE, weak_ref => TRUE,
+   handles          => [ qw(attributes defaults label_attr path storage) ];
 has '_elements'     => is => 'rw', isa => 'ArrayRef',
    default          => sub { return [] }, init_arg => undef;
 has '_iterator'     => is => 'rw', isa => 'Int',
@@ -74,9 +75,8 @@ sub find_and_update {
 
    my $element = $self->_find( $name ) or return;
 
-   for my $attr (grep { exists $attrs->{ $_ } }
-                 @{ $self->source->attributes }) {
-      $element->$attr( $attrs->{ $attr } );
+   for (grep { exists $attrs->{ $_ } } @{ $self->attributes }) {
+      $element->$_( $attrs->{ $_ } );
    }
 
    return $element->update;
@@ -170,24 +170,6 @@ sub update {
 
 # Private methods
 
-sub _assert_clause {
-   my ($self, $clause, $lhs) = @_;
-
-   if (ref $clause eq HASH) {
-      return ref $lhs eq ARRAY
-           ? FALSE : $self->_eval_clause( $clause, $lhs );
-   }
-
-   if (ref $clause eq ARRAY) {
-      return ref $lhs eq ARRAY
-           ? FALSE : $self->is_member( $lhs, @{ $clause } );
-   }
-
-   return ref $lhs eq ARRAY
-        ? $self->is_member( $clause, @{ $lhs } )
-        : $clause eq $lhs ? TRUE : FALSE;
-}
-
 sub _build__operators {
    return {
       q(eq) => sub { return $_[0] eq $_[1] },
@@ -206,33 +188,49 @@ sub _build__operators {
 sub _create_element {
    my ($self, $attrs) = @_;
 
-   $attrs = { %{ $self->source->defaults }, %{ $attrs }, _resultset => $self };
+   $attrs = { %{ $self->defaults }, %{ $attrs }, _resultset => $self };
 
    return $self->element_class->new( $attrs );
+}
+
+sub _eval_clause {
+   my ($self, $clause, $lhs) = @_; my $type = ref $clause;
+
+   if ($type eq HASH) {
+      for (keys %{ $clause }) {
+         $self->_eval_op( $lhs, $_, $clause->{ $_ } ) or return FALSE;
+      }
+
+      return TRUE;
+   }
+
+   # TODO: Handle case of 2 arrays
+   $type eq ARRAY and return ref $lhs eq ARRAY
+                           ? FALSE : $self->is_member( $lhs, @{ $clause } );
+
+   return ref $lhs eq ARRAY
+        ? $self->is_member( $clause, @{ $lhs } )
+        : $clause eq $lhs ? TRUE : FALSE;
 }
 
 sub _eval_criteria {
    my ($self, $criteria, $attrs) = @_; my $lhs;
 
-   for my $where_key (keys %{ $criteria }) {
-      unless (defined ($lhs = $attrs->{ $where_key } )
-              and $self->_assert_clause( $criteria->{ $where_key }, $lhs)) {
-         return FALSE;
-      }
+   for (keys %{ $criteria }) {
+      defined ($lhs = $attrs->{ $_ } ) or return FALSE;
+      $self->_eval_clause( $criteria->{ $_ }, $lhs ) or return FALSE;
    }
 
    return TRUE;
 }
 
-sub _eval_clause {
-   my ($self, $clause, $lhs) = @_;
+sub _eval_op {
+   my ($self, $lhs, $op, $rhs) = @_;
 
-   for my $op (keys %{ $clause }) {
-      my $subr = $self->_operators->{ $op } or return FALSE;
+   my $subr = $self->_operators->{ $op } or return FALSE;
 
-      $_ || return FALSE for (map { $subr->( $_, $clause->{ $op } ) }
-                              ref $lhs eq ARRAY ? @{ $lhs } : ( $lhs ));
-   }
+   $_ or return FALSE for (map { $subr->( $_, $rhs ) }
+                           ref $lhs eq ARRAY ? @{ $lhs } : ( $lhs ));
 
    return TRUE;
 }
@@ -262,10 +260,10 @@ sub _list {
 
    $new->list( [ sort keys %{ $elements } ] );
 
-   if ($attr = $self->source->label_attr) {
-      my %labs = map { $_ => $elements->{ $_ }->{ $attr } } @{ $new->list };
+   if ($attr = $self->label_attr) {
+      my %labels = map { $_ => $elements->{ $_ }->{ $attr } } @{ $new->list };
 
-      $new->labels( \%labs );
+      $new->labels( \%labels );
    }
 
    if ($name and exists $elements->{ $name }) {
@@ -298,15 +296,13 @@ sub _push {
 sub _search {
    my ($self, $where) = @_; my $elements = $self->_elements; my @tmp;
 
-   unless ($self->_elements) {
-      $self->_elements( [] ); $self->_iterator( 0 );
-   }
+   unless ($elements) { $self->_elements( [] ); $self->_iterator( 0 ) }
 
    if (not defined $elements->[0]) {
       $elements = $self->select;
 
-      for my $name (keys %{ $elements }) {
-         my $attrs = { %{ $elements->{ $name } }, name => $name };
+      for (keys %{ $elements }) {
+         my $attrs = { %{ $elements->{ $_ } }, name => $_ };
 
          if (not $where or $self->_eval_criteria( $where, $attrs )) {
             CORE::push @{ $self->_elements }, $self->_create_element( $attrs );
@@ -314,8 +310,8 @@ sub _search {
       }
    }
    elsif ($where and defined $elements->[0]) {
-      for my $attrs (@{ $elements }) {
-         CORE::push @tmp, $attrs if ($self->_eval_criteria( $where, $attrs ));
+      for (@{ $elements }) {
+         $self->_eval_criteria( $where, $_ ) and CORE::push @tmp, $_;
       }
 
       $self->_elements( \@tmp );
