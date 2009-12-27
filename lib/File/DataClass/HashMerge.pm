@@ -12,7 +12,7 @@ use Carp;
 sub merge {
    my ($self, $src, $dest_ref, $condition) = @_; my $updated = FALSE;
 
-   croak 'No destination reference specified' unless ($dest_ref);
+   $dest_ref or croak 'No destination reference specified';
 
    $src ||= {}; ${ $dest_ref } ||= {}; $condition ||= sub { return TRUE };
 

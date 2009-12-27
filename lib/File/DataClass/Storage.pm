@@ -26,7 +26,22 @@ has 'schema' => is => 'ro', isa => 'Object', required => 1, weak_ref => TRUE,
 sub delete {
    my ($self, $path, $element_obj) = @_;
 
-   return $self->_delete( $path, $element_obj );
+   my $element = $element_obj->_resultset->source->name;
+
+   $self->validate_params( $path, $element );
+
+   my ($data) = $self->_read_file( $path, TRUE );
+   my $name   = $element_obj->{name};
+
+   if (exists $data->{ $element } and exists $data->{ $element }->{ $name }) {
+      delete $data->{ $element }->{ $name };
+      scalar keys %{ $data->{ $element } } or delete $data->{ $element };
+      $self->_write_file( $path, $data );
+      return TRUE;
+   }
+
+   $self->_lock->reset( k => $path->pathname );
+   return FALSE;
 }
 
 sub dump {
@@ -45,7 +60,32 @@ sub insert {
 }
 
 sub load {
-   my ($self, @paths) = @_; return $paths[0] ? $self->_load( @paths ) : {};
+   my ($self, @paths) = @_; $paths[0] or return {};
+
+   my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
+   my $cache_mtime = $self->_meta_unpack( $meta );
+   my $stale = $newest == 0 || $cache_mtime < $newest ? TRUE : FALSE;
+
+   $data and not $stale and return $data;
+   scalar @paths == 1
+      and return ($self->_read_file( $paths[0], FALSE ))[0] || {};
+   $data = {}; $newest = 0;
+
+   for my $path (@paths) {
+      my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
+
+      $red or next; $path_mtime > $newest and $newest = $path_mtime;
+
+      for (keys %{ $red }) {
+         $data->{ $_ } = exists $data->{ $_ }
+                       ? merge( $data->{ $_ }, $red->{ $_ } )
+                       : $red->{ $_ };
+      }
+   }
+
+   $self->_cache->set_by_paths( \@paths, $data, $self->_meta_pack( $newest ) );
+
+   return $data;
 }
 
 sub select {
@@ -102,56 +142,6 @@ sub validate_params {
 
 # Private methods
 
-sub _delete {
-   my ($self, $path, $element_obj) = @_;
-
-   my $element = $element_obj->_resultset->source->name;
-
-   $self->validate_params( $path, $element );
-
-   my ($data) = $self->_read_file( $path, TRUE );
-   my $name   = $element_obj->{name};
-
-   if (exists $data->{ $element } and exists $data->{ $element }->{ $name }) {
-      delete $data->{ $element }->{ $name };
-      scalar keys %{ $data->{ $element } } or delete $data->{ $element };
-      $self->_write_file( $path, $data );
-      return TRUE;
-   }
-
-   $self->_lock->reset( k => $path->pathname );
-   return FALSE;
-}
-
-sub _load {
-   my ($self, @paths) = @_;
-
-   my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
-   my $cache_mtime = $self->_meta_unpack( $meta );
-   my $stale = $newest == 0 || $cache_mtime < $newest ? TRUE : FALSE;
-
-   $data and not $stale and return $data;
-   scalar @paths == 1
-      and return ($self->_read_file( $paths[0], FALSE ))[0] || {};
-   $data = {}; $newest = 0;
-
-   for my $path (@paths) {
-      my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
-
-      $red or next; $path_mtime > $newest and $newest = $path_mtime;
-
-      for (keys %{ $red }) {
-         $data->{ $_ } = exists $data->{ $_ }
-                       ? merge( $data->{ $_ }, $red->{ $_ } )
-                       : $red->{ $_ };
-      }
-   }
-
-   $self->_cache->set_by_paths( \@paths, $data, $self->_meta_pack( $newest ) );
-
-   return $data;
-}
-
 sub _meta_pack {
    # Can be modified in a subclass
    my ($self, $mtime) = @_; return { mtime => $mtime };
@@ -176,10 +166,10 @@ sub _read_file {
       catch ($e) { $self->_lock->reset( k => $path ); $self->throw( $e ) }
 
       $self->_cache->set( $path, $data, $self->_meta_pack( $path_mtime ) );
-      $self->_log->debug( "Read file  $path" ) if ($self->_debug);
+      $self->_debug and $self->_log->debug( "Read file  $path" );
    }
    else {
-      $self->_log->debug( "Read cache $path" ) if ($self->_debug);
+      $self->_debug and $self->_log->debug( "Read cache $path" );
    }
 
    $for_update or $self->_lock->reset( k => $path );
