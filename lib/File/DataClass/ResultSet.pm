@@ -186,9 +186,12 @@ sub _build__operators {
 }
 
 sub _create_element {
-   my ($self, $attrs) = @_;
+   my ($self, $args) = @_;
 
-   $attrs = { %{ $self->defaults }, %{ $attrs }, _resultset => $self };
+   my $attrs = { %{ $self->defaults }, _resultset => $self };
+
+   $attrs->{ $_ } = $args->{ $_ }
+      for (grep { defined $args->{ $_ } } keys %{ $args });
 
    return $self->element_class->new( $attrs );
 }

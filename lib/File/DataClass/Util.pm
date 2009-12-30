@@ -37,11 +37,11 @@ subtype 'F_DC_Path' => as 'Object' =>
 
 subtype 'F_DC_Directory' => as 'F_DC_Path' =>
    where   { $_->is_dir  } =>
-   message { "Path $_ is not a directory" };
+   message { 'Path '.($_ ? $_.' is not a directory' : 'not specified') };
 
 subtype 'F_DC_File'      => as 'F_DC_Path' =>
    where   { $_->is_file } =>
-   message { "Path $_ is not a file" };
+   message { 'Path '.($_ ? $_.' is not a file' : 'not specified') };
 
 coerce 'F_DC_Path'      => from 'ArrayRef' => via { __PACKAGE__->io( $_ ) };
 coerce 'F_DC_Directory' => from 'ArrayRef' => via { __PACKAGE__->io( $_ ) };
