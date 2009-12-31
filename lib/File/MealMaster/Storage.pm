@@ -3,9 +3,10 @@
 package File::MealMaster::Storage;
 
 use strict;
-use namespace::autoclean;
+use namespace::clean -except => 'meta';
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use Data::Section -setup;
 use File::DataClass::Constants;
 use MealMaster;
 use Moose;
@@ -14,10 +15,9 @@ use Template::Stash;
 
 extends qw(File::DataClass::Storage);
 
-has '+extn'           => default => q(.mmf);
-has 'template'        => is => 'ro', isa => 'Object', lazy_build => TRUE;
-has 'render_template' => is => 'ro', isa => 'Str', default => q(recipe.tt);
-has 'write_template'  => is => 'ro', isa => 'Str', default => q(mealMaster.tt);
+has '+extn'          => default => q(.mmf);
+has 'template'       => is => 'ro', isa => 'Object', lazy_build => TRUE;
+has 'write_template' => is => 'ro', isa => 'Str',    lazy_build => TRUE;
 
 augment '_read_file' => sub {
    my ($self, $rdr) = @_; return $self->_read_filter( $rdr );
@@ -26,14 +26,6 @@ augment '_read_file' => sub {
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_; return $self->_write_filter( $wtr, $data );
 };
-
-sub load_template {
-   my ($self, $file) = @_;
-
-   my $path = $self->catfile( $self->schema->template_dir, $file );
-
-   return $self->io( $path )->all;
-}
 
 sub make_key {
    my ($self, $title) = @_; my $key = $title || NUL;
@@ -64,7 +56,7 @@ sub _write_filter {
    my ($self, $wtr, $data) = @_; $data ||= {};
 
    my $recipes       = $data->{ $self->schema->source_name } || {};
-   my $template_data = $self->load_template( $self->write_template );
+   my $template_data = $self->write_template;
    my $output        = NUL;
 
    for (sort { __original_order( $recipes, $a, $b ) } keys %{ $recipes }) {
@@ -93,6 +85,10 @@ sub _build_template {
    return $new;
 }
 
+sub _build_write_template {
+   return ${ __PACKAGE__->section_data( q(write_template) ) };
+}
+
 # Private subroutines
 
 sub __original_order {
@@ -110,8 +106,6 @@ __PACKAGE__->meta->make_immutable;
 no Moose;
 
 1;
-
-__END__
 
 =pod
 
@@ -174,3 +168,21 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 # mode: perl
 # tab-width: 3
 # End:
+
+__DATA__
+__[ write_template ]__
+MMMMM----- Recipe via Meal-Master (tm) v8.05
+
+      Title: [% title %]
+ Categories: [% categories.sort.join(', ') %]
+      Yield: [% yield %]
+
+[% FOREACH ingredient IN ingredients -%]
+[% ingredient.quantity.sprintf('%7.7s') -%]
+ [% ingredient.measure.sprintf('%-2.2s') -%]
+ [% ingredient.product.sprintf('%-29.29s') %]
+[% END -%]
+
+[% directions %]
+
+MMMMM

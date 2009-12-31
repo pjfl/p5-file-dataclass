@@ -3,13 +3,16 @@
 package File::MealMaster::ResultSet;
 
 use strict;
-use namespace::autoclean;
+use namespace::clean -except => 'meta';
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use Data::Section -setup;
 use File::DataClass::Constants;
 use Moose;
 
 extends qw(File::DataClass::ResultSet);
+
+has 'render_template' => is => 'ro', isa => 'Str', lazy_build => TRUE;
 
 sub make_key {
    my ($self, $title) = @_; return $self->storage->make_key( $title );
@@ -19,7 +22,7 @@ sub render {
    my ($self, $recipe) = @_;
 
    my $storage       = $self->storage;
-   my $template_data = $storage->load_template( $storage->render_template );
+   my $template_data = $self->render_template;
    my $buffer        = NUL;
 
    $storage->template->process( \$template_data, $recipe, \$buffer )
@@ -30,13 +33,15 @@ sub render {
 
 # Private methods
 
+sub _build_render_template {
+   return ${ __PACKAGE__->section_data( q(render_template) ) };
+}
+
 __PACKAGE__->meta->make_immutable;
 
 no Moose;
 
 1;
-
-__END__
 
 =pod
 
@@ -103,3 +108,20 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 # mode: perl
 # tab-width: 3
 # End:
+
+__DATA__
+__[ render_template ]__
+<table class="recipe">
+   <tr><td class="label">Title</td><td>[% title %]</td></tr>
+   <tr><td class="label">Categories</td><td>
+	   [% FOREACH category IN categories %][% category %] | [% END %]</td></tr>
+   <tr><td class="label">Yield</td><td>[% yield %]</td></tr>
+	<tr><td class="label">Ingredients</td><td><table class="recipe">
+   [% FOREACH ingredient IN ingredients %]
+     <tr><td nowrap="1" width="1%">[% ingredient.quantity %]</td>
+         <td width="1%">[% ingredient.measure %]</td>
+        <td>[% ingredient.product %]</td></tr>
+   [% END %]</table></td></tr>
+   <tr><td class="label">Directions</td>
+     <td>[% directions | html_line_break %]</td></tr>
+</table>
