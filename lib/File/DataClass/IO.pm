@@ -29,35 +29,35 @@ use Sub::Exporter -setup => {
 enum 'F_DC_IO_Mode'    => qw(a a+ r r+ w w+);
 enum 'F_DC_IO_Type'    => qw(dir file);
 
-has 'autoclose'        => is => 'rw', isa => 'Bool',      default    => TRUE ;
-has 'io_handle'        => is => 'rw', isa => 'Maybe[Object]'                 ;
-has 'is_open'          => is => 'rw', isa => 'Bool',      default    => FALSE;
-has 'mode'             => is => 'rw', isa => 'F_DC_IO_Mode', default => q(r) ;
-has 'name'             => is => 'rw', isa => 'Str',       default    => NUL  ;
-has 'sort'             => is => 'rw', isa => 'Bool',      default    => TRUE ;
-has 'type'             => is => 'rw', isa => 'Maybe[F_DC_IO_Type]'           ;
-has '_assert'          => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_atomic'          => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_atomic_prefix'   => is => 'rw', isa => 'Str',       default    => q(B_);
-has '_binary'          => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_binmode'         => is => 'rw', isa => 'Str',       default    => NUL  ;
-has '_block_size'      => is => 'rw', isa => 'Int',       default    => 1024 ;
-has '_chomp'           => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_deep'            => is => 'rw', isa => 'Bool',      default    => FALSE;
-has '_dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE ;
-has '_encoding'        => is => 'rw', isa => 'Str',       default    => NUL  ;
+has 'autoclose'        => is => 'rw', isa => 'Bool',      default    => TRUE  ;
+has 'io_handle'        => is => 'rw', isa => 'Maybe[Object]'                  ;
+has 'is_open'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has 'mode'             => is => 'rw', isa => 'F_DC_IO_Mode', default => q(r)  ;
+has 'name'             => is => 'rw', isa => 'Str',       default    => NUL   ;
+has 'sort'             => is => 'rw', isa => 'Bool',      default    => TRUE  ;
+has 'type'             => is => 'rw', isa => 'Maybe[F_DC_IO_Type]'            ;
+has '_assert'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has '_atomic'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has '_atomic_infix'    => is => 'rw', isa => 'Str',       default    => q(B_*);
+has '_binary'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has '_binmode'         => is => 'rw', isa => 'Str',       default    => NUL   ;
+has '_block_size'      => is => 'rw', isa => 'Int',       default    => 1024  ;
+has '_chomp'           => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has '_deep'            => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has '_dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE  ;
+has '_encoding'        => is => 'rw', isa => 'Str',       default    => NUL   ;
 has '_exception_class' => is => 'rw', isa => 'ClassName',
    default             => q(File::DataClass::Exception),
    writer              => 'exception_class';
-has '_filter'          => is => 'rw', isa => 'Maybe[CodeRef]'                ;
-has '_lock'            => is => 'rw', isa => 'Bool',      default    => FALSE;
+has '_filter'          => is => 'rw', isa => 'Maybe[CodeRef]'                 ;
+has '_lock'            => is => 'rw', isa => 'Bool',      default    => FALSE ;
 has '_lock_obj'        => is => 'rw', isa => 'Maybe[Object]',
    writer              => 'lock_obj';
-has '_perms'           => is => 'rw', isa => 'Num',       default    => PERMS;
-has '_separator'       => is => 'rw', isa => 'Str',       default    => $RS  ;
+has '_perms'           => is => 'rw', isa => 'Num',       default    => PERMS ;
+has '_separator'       => is => 'rw', isa => 'Str',       default    => $RS   ;
 has '_umask'           => is => 'rw', isa => 'ArrayRef[Num]',
-   default             => sub { return [] }                                  ;
-has '_utf8'            => is => 'rw', isa => 'Bool',      default    => FALSE;
+   default             => sub { return [] }                                   ;
+has '_utf8'            => is => 'rw', isa => 'Bool',      default    => FALSE ;
 
 around BUILDARGS => sub {
    my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
@@ -159,8 +159,8 @@ sub atomic {
    my $self = shift; $self->_atomic( TRUE ); return $self;
 }
 
-sub atomic_prefix {
-   my ($self, $prefix) = @_; $self->_atomic_prefix( $prefix ); return $self;
+sub atomic_infix {
+   my ($self, $value) = @_; $self->_atomic_infix( $value ); return $self;
 }
 
 sub basename {
@@ -415,9 +415,14 @@ sub _find {
 }
 
 sub _get_atomic_path {
-   my $self = shift; my $path = $self->filepath;
+   my $self = shift; my $path = $self->filepath; my $file;
 
-   my $file = $self->_atomic_prefix.$self->filename;
+   if ($self->_atomic_infix =~ m{ \* }mx) {
+      my $name = $self->filename;
+
+      ($file = $self->_atomic_infix) =~ s{ \* }{$name}mx;
+   }
+   else { $file = $self->filename.$self->_atomic_infix }
 
    return $path ? File::Spec->catfile( $path, $file ) : $file;
 }
@@ -549,7 +554,7 @@ sub open {
    my ($self, @rest) = @_;
 
    $self->is_open and return $self;
-   $self->is_dir  and return $self->_open_dir(  @rest );
+   $self->is_dir  and return $self->_open_dir;
    $self->is_file and return $self->_open_file( @rest );
 
    return $self;
@@ -559,21 +564,19 @@ sub _open_args {
    my ($self, $mode, $perms) = @_;
 
    $self->name or $self->throw( 'Path not specified' );
+   $self->mode( $mode || $self->mode );
 
    my $pathname = $self->_atomic && !$self->is_reading
                 ? $self->_get_atomic_path : $self->name;
-   my @args     = ( $pathname, $self->mode( $mode || $self->mode ) );
 
-   if ($self->exists) { $perms = $self->stat->{mode} & oct q(07777) }
-   else { $perms ||= $self->_perms }
+   $self->_perms( $self->exists ? $self->stat->{mode} & oct q(07777)
+                                : $perms || $self->_perms );
 
-   $self->_umask_push( $self->_perms( $perms ) );
-
-   return @args;
+   return [ $pathname, $self->mode, $self->_perms ];
 }
 
 sub _open_dir {
-   my ($self, @rest) = @_; my $io;
+   my $self = shift;
 
    $self->_assert and $self->assert_dirpath( $self->name );
    $self->io_handle( IO::Dir->new( $self->name ) ) and $self->is_open( TRUE );
@@ -588,12 +591,13 @@ sub _open_file {
 
    $self->_assert and $self->assert_filepath;
 
-   my @args = $self->_open_args( @rest );
+   my $args = $self->_open_args( @rest );
 
-   $self->io_handle( IO::File->new( @args ) ) and $self->is_open( TRUE );
+   $self->_umask_push( pop @{ $args } );
+   $self->io_handle( IO::File->new( @{ $args } ) ) and $self->is_open( TRUE );
    $self->_umask_pop;
    $self->is_open or $self->throw( error => 'File [_1] cannot open',
-                                   args  => [ $args[0] ] );
+                                   args  => [ $args->[0] ] );
    $self->set_binmode;
    $self->set_lock;
    return $self;
@@ -978,12 +982,14 @@ calls L</open> passing in the optional arguments
 
 Implements atomic file updates by writing to a temporary file and then
 renaming it on closure. This method stores the temporary pathname in the
-B<_atomic> attribute
+B<_atomic_infix> attribute
 
-=head2 atomic_prefix
+=head2 atomic_infix
 
-Defaults to I<B_>. It is prepended to the filename to create a
-temporary file for atomic updates. Attribute name I<_atomic_prefix>
+Defaults to I<B_*>. The I<*> is replaced by the filename to create a
+temporary file for atomic updates. If the value does not contain a
+I<*> then it is appended to the filename instead. Attribute name
+I<_atomic_infix>
 
 =head2 basename
 

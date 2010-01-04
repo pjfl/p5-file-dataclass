@@ -127,6 +127,8 @@ File::MealMaster::Storage - MealMaster food recipe file storage
 
 =head1 Subroutines/Methods
 
+=head2 make_key
+
 =head1 Diagnostics
 
 =head1 Dependencies
