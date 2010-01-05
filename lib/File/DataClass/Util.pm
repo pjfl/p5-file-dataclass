@@ -26,7 +26,8 @@ subtype 'F_DC_Exception' => as 'ClassName' =>
    message { "Class $_ is not loaded or has no throw method" };
 
 subtype 'F_DC_Lock' => as 'Object' =>
-   where   { $_->can( q(set) ) and $_->can( q(reset) ) } =>
+   where   { $_->isa( q(Class::Null) )
+                or ($_->can( q(set) ) and $_->can( q(reset) ) ) } =>
    message { 'Object '.(blessed $_ || $_).' is missing set or reset methods' };
 
 subtype 'F_DC_Path' => as 'Object' =>
