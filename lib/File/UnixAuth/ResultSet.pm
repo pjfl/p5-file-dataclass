@@ -36,7 +36,8 @@ sub _change_group_members {
 
       if ($exists xor $self->is_member( $user, @{ $users } )) {
          $attrs->{members} = $coderef->( $user, $users );
-         $self->find_and_update( $group, $attrs );
+         $attrs->{name   } = $group;
+         $self->find_and_update( $attrs );
       }
    } );
 }

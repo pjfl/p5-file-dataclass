@@ -35,17 +35,14 @@ sub all {
 sub create {
    my ($self, $args) = @_;
 
-   my $name    = $self->_get_element_name( $args );
-   my $attrs   = { %{ $args->{fields} || {} }, name => $name };
-   my $updated = $self->_txn_do( sub {
-      $self->_create_element( $attrs )->insert;
-   } );
+   my $name = $self->_validate_params( $args );
+   my $res  = $self->_txn_do( sub { $self->_create_element( $args )->insert });
 
-   return $updated ? $name : undef;
+   return $res ? $name : undef;
 }
 
 sub delete {
-   my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
    $self->_txn_do( sub {
       my ($element, $error);
@@ -65,14 +62,15 @@ sub delete {
 }
 
 sub find {
-   my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
    return $self->_txn_do( sub { $self->_find( $name ) } );
 }
 
 sub find_and_update {
-   my ($self, $name, $attrs) = @_;
+   my ($self, $attrs) = @_;
 
+   my $name    = $attrs->{name} or return;
    my $element = $self->_find( $name ) or return;
 
    for (grep { exists $attrs->{ $_ } } @{ $self->attributes }) {
@@ -105,19 +103,17 @@ sub next {
 }
 
 sub push {
-   my ($self, $args) = @_; my ($added, $attrs, $list);
+   my ($self, $args) = @_; my ($added, $attrs);
 
-   my $name = $self->_get_element_name( $args );
-
-   $list = $args->{list} or $self->throw( 'No list name specified' );
-
+   my $name  = $self->_validate_params( $args );
+   my $list  = $args->{list} or $self->throw( 'No list name specified' );
    my $items = $args->{items} || [];
 
    $items->[0] or $self->throw( 'List contains no items' );
 
    my $res = $self->_txn_do( sub {
       ($attrs, $added) = $self->_push( $name, $list, $items );
-      $self->find_and_update( $name, $attrs );
+      $self->find_and_update( $attrs );
    } );
 
    return $res ? $added : undef;
@@ -136,34 +132,30 @@ sub select {
 sub search {
    my ($self, $args) = @_;
 
-   return $self->_txn_do( sub { $self->_search( $args->{where} ) } );
+   return $self->_txn_do( sub { $self->_search( $args ) } );
 }
 
 sub splice {
-   my ($self, $args) = @_; my ($attrs, $list, $removed);
+   my ($self, $args) = @_; my ($attrs, $removed);
 
-   my $name = $self->_get_element_name( $args );
-
-   $list = $args->{list} or $self->throw( 'No list name specified' );
-
+   my $name  = $self->_validate_params( $args );
+   my $list  = $args->{list} or $self->throw( 'No list name specified' );
    my $items = $args->{items} || [];
 
    $items->[0] or $self->throw( 'List contains no items' );
 
    my $res = $self->_txn_do( sub {
       ($attrs, $removed) = $self->_splice( $name, $list, $items );
-      $self->find_and_update( $name, $attrs );
+      $self->find_and_update( $attrs );
    } );
 
    return $res ? $removed : undef;
 }
 
 sub update {
-   my ($self, $args) = @_; my $name = $self->_get_element_name( $args );
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $res = $self->_txn_do( sub {
-      $self->find_and_update( $name, $args->{fields} || {} );
-   } );
+   my $res = $self->_txn_do( sub { $self->find_and_update( $args ) } );
 
    return $res ? $name : undef;
 }
@@ -248,14 +240,6 @@ sub _find {
    return $self->_create_element( $attrs );
 }
 
-sub _get_element_name {
-   my ($self, $args) = @_; $args ||= {};
-
-   my $name = $args->{name} or $self->throw( 'No element name specified' );
-
-   return $name;
-}
-
 sub _list {
    my ($self, $name) = @_; my ($attr, $attrs);
 
@@ -283,7 +267,7 @@ sub _list {
 sub _push {
    my ($self, $name, $attr, $items) = @_;
 
-   my $attrs = { %{ $self->select->{ $name } || {} } };
+   my $attrs = { %{ $self->select->{ $name } || {} }, name => $name };
    my $list  = [ @{ $attrs->{ $attr } || [] } ];
    my $in    = [];
 
@@ -326,7 +310,7 @@ sub _search {
 sub _splice {
    my ($self, $name, $attr, $items) = @_;
 
-   my $attrs = { %{ $self->select->{ $name } || {} } };
+   my $attrs = { %{ $self->select->{ $name } || {} }, name => $name };
    my $list  = [ @{ $attrs->{ $attr } || [] } ];
    my $out   = [];
 
@@ -350,6 +334,14 @@ sub _txn_do {
    my ($self, $coderef) = @_;
 
    return $self->storage->txn_do( $self->path, $coderef );
+}
+
+sub _validate_params {
+   my ($self, $args) = @_; $args ||= {};
+
+   my $name = $args->{name} or $self->throw( 'No element name specified' );
+
+   return $name;
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -56,22 +56,24 @@ is( $source->lang, q(en), 'Has language attribute' );
 
 my $rs = $source->resultset; my $args = {};
 
-$args->{name  } = q(dummy);
-$args->{fields}->{columns} = 3;
-$args->{fields}->{heading} = q(This is a heading);
+$args->{name  }  = q(dummy);
+$args->{columns} = 3;
+$args->{heading} = q(This is a heading);
 
 my $res = test( $rs, q(create), $args );
 
 is( $res, q(dummy), 'Creates dummy element and inserts' );
 
-$args->{fields}->{columns} = q(2);
-$args->{fields}->{heading} = q(This is a heading also);
+$args->{columns} = q(2);
+$args->{heading} = q(This is a heading also);
 
 $res = test( $rs, q(update), $args );
 
 is( $res, q(dummy), 'Can update' );
 
-delete $args->{fields}; $res = test( $rs, q(find), $args );
+delete $args->{columns};
+delete $args->{heading};
+$res = test( $rs, q(find), $args );
 
 is( $res->columns, 2, 'Can find' );
 

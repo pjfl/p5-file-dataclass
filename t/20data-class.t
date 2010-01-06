@@ -93,19 +93,19 @@ ok( !defined $res, 'Creates dummy element but does not insert' );
 
 my $source = $schema->source( q(globals) );
 
-$source->attributes( [ qw(text) ] ); $args->{fields}->{text} = q(value1);
+$source->attributes( [ qw(text) ] ); $args->{text} = q(value1);
 
 $res = test( $rs, q(create), $args );
 
 is( $res, q(dummy), 'Creates dummy element and inserts' );
 
-$args->{fields}->{text} = q(value2);
+$args->{text} = q(value2);
 
 $res = test( $rs, q(update), $args );
 
 is( $res, q(dummy), 'Can update' );
 
-delete $args->{fields}; $res = test( $rs, q(find), $args );
+delete $args->{text}; $res = test( $rs, q(find), $args );
 
 is( $res->text, q(value2), 'Can find' );
 
@@ -147,7 +147,7 @@ $res  = test( $rs, q(push), $args );
 ok( $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
     'Can push' );
 
-$args = { where => { acl => q(@support) } };
+$args = { acl => q(@support) };
 
 my @res = test( $rs, q(search), $args );
 
