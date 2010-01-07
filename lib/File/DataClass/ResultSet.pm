@@ -68,13 +68,13 @@ sub find {
 }
 
 sub find_and_update {
-   my ($self, $attrs) = @_;
+   my ($self, $args) = @_;
 
-   my $name    = $attrs->{name} or return;
+   my $name    = $args->{name} or return;
    my $element = $self->_find( $name ) or return;
 
-   for (grep { exists $attrs->{ $_ } } @{ $self->attributes }) {
-      $element->$_( $attrs->{ $_ } );
+   for (grep { exists $args->{ $_ } } @{ $self->attributes }) {
+      $element->$_( $args->{ $_ } );
    }
 
    return $element->update;
