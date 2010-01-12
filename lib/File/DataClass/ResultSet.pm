@@ -14,29 +14,29 @@ use File::DataClass::Result;
 
 with qw(File::DataClass::Util);
 
-has 'result_class' => is => 'ro', isa => 'ClassName',
-   default         => q(File::DataClass::Result);
 has 'list_class'   => is => 'ro', isa => 'ClassName',
    default         => q(File::DataClass::List);
+has 'result_class' => is => 'ro', isa => 'ClassName',
+   default         => q(File::DataClass::Result);
 has 'source'       => is => 'ro', isa => 'Object',
    required        => TRUE, weak_ref => TRUE,
    handles         => [ qw(attributes defaults label_attr path storage) ];
-has '_elements'    => is => 'rw', isa => 'ArrayRef',
-   default         => sub { return [] }, init_arg => undef;
 has '_iterator'    => is => 'rw', isa => 'Int',
    default         => 0, init_arg => undef;
 has '_operators'   => is => 'ro', isa => 'HashRef',
    lazy_build      => TRUE;
+has '_results'     => is => 'rw', isa => 'ArrayRef',
+   default         => sub { return [] }, init_arg => undef;
 
 sub all {
-   my $self = shift; return @{ $self->_elements };
+   my $self = shift; return @{ $self->_results };
 }
 
 sub create {
    my ($self, $args) = @_;
 
    my $name = $self->_validate_params( $args );
-   my $res  = $self->_txn_do( sub { $self->_create_result( $args )->insert });
+   my $res  = $self->_txn_do( sub { $self->_create_result( $args )->insert } );
 
    return $res ? $name : undef;
 }
@@ -45,14 +45,14 @@ sub delete {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
    $self->_txn_do( sub {
-      my ($element, $error);
+      my ($result, $error);
 
-      unless ($element = $self->_find( $name )) {
+      unless ($result = $self->_find( $name )) {
          $error = 'File [_1] element [_2] does not exist';
          $self->throw( error => $error, args => [ $self->path, $name ] );
       }
 
-      unless ($element->delete) {
+      unless ($result->delete) {
          $error = 'File [_1] element [_2] not deleted';
          $self->throw( error => $error, args => [ $self->path, $name ] );
       }
@@ -70,22 +70,22 @@ sub find {
 sub find_and_update {
    my ($self, $args) = @_;
 
-   my $name    = $args->{name} or return;
-   my $element = $self->_find( $name ) or return;
+   my $name   = $args->{name} or return;
+   my $result = $self->_find( $name ) or return;
 
    for (grep { exists $args->{ $_ } } @{ $self->attributes }) {
-      $element->$_( $args->{ $_ } );
+      $result->$_( $args->{ $_ } );
    }
 
-   return $element->update;
+   return $result->update;
 }
 
 sub first {
-   my $self = shift; return $self->_elements ? $self->_elements->[0] : undef;
+   my $self = shift; return $self->_results ? $self->_results->[0] : undef;
 }
 
 sub last {
-   my $self = shift; return $self->_elements ? $self->_elements->[-1] : undef;
+   my $self = shift; return $self->_results ? $self->_results->[-1] : undef;
 }
 
 sub list {
@@ -95,11 +95,11 @@ sub list {
 }
 
 sub next {
-   my $self  = shift;
+   my $self = shift; my $index = $self->_iterator || 0;
 
-   my $index = $self->_iterator || 0; $self->_iterator( $index + 1 );
+   $self->_results and $self->_iterator( $index + 1 );
 
-   return $self->_elements ? $self->_elements->[ $index ] : undef;
+   return $self->_results ? $self->_results->[ $index ] : undef;
 }
 
 sub push {
@@ -231,11 +231,11 @@ sub _eval_op {
 }
 
 sub _find {
-   my ($self, $name) = @_; my $elements = $self->select;
+   my ($self, $name) = @_; my $results = $self->select;
 
-   return unless ($name and exists $elements->{ $name });
+   return unless ($name and exists $results->{ $name });
 
-   my $attrs = { %{ $elements->{ $name } }, name => $name };
+   my $attrs = { %{ $results->{ $name } }, name => $name };
 
    return $self->_create_result( $attrs );
 }
@@ -243,18 +243,18 @@ sub _find {
 sub _list {
    my ($self, $name) = @_; my ($attr, $attrs);
 
-   my $new = $self->list_class->new; my $elements = $self->select;
+   my $new = $self->list_class->new; my $results = $self->select;
 
-   $new->list( [ sort keys %{ $elements } ] );
+   $new->list( [ sort keys %{ $results } ] );
 
    if ($attr = $self->label_attr) {
-      my %labels = map { $_ => $elements->{ $_ }->{ $attr } } @{ $new->list };
+      my %labels = map { $_ => $results->{ $_ }->{ $attr } } @{ $new->list };
 
       $new->labels( \%labels );
    }
 
-   if ($name and exists $elements->{ $name }) {
-      $attrs = { %{ $elements->{ $name } }, name => $name };
+   if ($name and exists $results->{ $name }) {
+      $attrs = { %{ $results->{ $name } }, name => $name };
       $new->found( TRUE );
    }
    else { $attrs = { name => $name } }
@@ -281,27 +281,27 @@ sub _push {
 }
 
 sub _search {
-   my ($self, $where) = @_; my $elements = $self->_elements; my @tmp;
+   my ($self, $where) = @_; my $results = $self->_results; my @tmp;
 
-   unless ($elements) { $self->_elements( [] ); $self->_iterator( 0 ) }
+   unless ($results) { $self->_results( [] ); $self->_iterator( 0 ) }
 
-   if (not defined $elements->[0]) {
-      $elements = $self->select;
+   if (not defined $results->[0]) {
+      $results = $self->select;
 
-      for (keys %{ $elements }) {
-         my $attrs = { %{ $elements->{ $_ } }, name => $_ };
+      for (keys %{ $results }) {
+         my $attrs = { %{ $results->{ $_ } }, name => $_ };
 
          if (not $where or $self->_eval_criteria( $where, $attrs )) {
-            CORE::push @{ $self->_elements }, $self->_create_result( $attrs );
+            CORE::push @{ $self->_results }, $self->_create_result( $attrs );
          }
       }
    }
-   elsif ($where and defined $elements->[0]) {
-      for (@{ $elements }) {
+   elsif ($where and defined $results->[0]) {
+      for (@{ $results }) {
          $self->_eval_criteria( $where, $_ ) and CORE::push @tmp, $_;
       }
 
-      $self->_elements( \@tmp );
+      $self->_results( \@tmp );
    }
 
    return wantarray ? $self->all : $self;
@@ -374,7 +374,7 @@ File::DataClass::ResultSet - Core element methods
 
    $result = $rs->search( { where => $hash_ref_of_where_clauses } );
 
-   for $element_object ($result->next) {
+   for $result_object ($result->next) {
       # Do something with the element object
    }
 
@@ -412,7 +412,7 @@ Deletes an element
 
 =head2 find
 
-   $element_object = $rs->find( { name => $of_element_to_find } );
+   $result_object = $rs->find( { name => $of_element_to_find } );
 
 Finds the named element and returns an
 L<element|File::DataClass::Result> object for it
@@ -426,7 +426,7 @@ the find and update in a transaction
 
 =head2 first
 
-   $element_object = $rs->search( { where => $where_clauses } )->first;
+   $result_object = $rs->search( { where => $where_clauses } )->first;
 
 Returns the first element object that is the result of the search call
 
@@ -440,13 +440,13 @@ Retrieves the named element and a list of elements
 
 =head2 last
 
-   $element_object = $rs->search( { where => $where } )->last;
+   $result_object = $rs->search( { where => $where } )->last;
 
 Returns the last element object that is the result of the search call
 
 =head2 next
 
-   $element_object = $rs->search( { where => $where } )->next;
+   $result_object = $rs->search( { where => $where } )->next;
 
 Iterate over the elements returned by the search call
 
