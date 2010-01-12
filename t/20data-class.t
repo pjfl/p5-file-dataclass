@@ -131,7 +131,7 @@ $rs   = $schema->resultset( q(fields) );
 $args = { name => q(feedback.body) };
 $res  = test( $rs, q(list), $args );
 
-ok( $res->element->width == 72 && scalar @{ $res->list } == 3, 'Can list' );
+ok( $res->result->width == 72 && scalar @{ $res->list } == 3, 'Can list' );
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw(t default.xml) ],

@@ -36,7 +36,7 @@ sub create {
    my ($self, $args) = @_;
 
    my $name = $self->_validate_params( $args );
-   my $res  = $self->_txn_do( sub { $self->_create_element( $args )->insert });
+   my $res  = $self->_txn_do( sub { $self->_create_result( $args )->insert });
 
    return $res ? $name : undef;
 }
@@ -177,7 +177,7 @@ sub _build__operators {
    };
 }
 
-sub _create_element {
+sub _create_result {
    my ($self, $args) = @_;
 
    my $attrs = { %{ $self->defaults }, _resultset => $self };
@@ -237,7 +237,7 @@ sub _find {
 
    my $attrs = { %{ $elements->{ $name } }, name => $name };
 
-   return $self->_create_element( $attrs );
+   return $self->_create_result( $attrs );
 }
 
 sub _list {
@@ -259,7 +259,7 @@ sub _list {
    }
    else { $attrs = { name => $name } }
 
-   $new->element( $self->_create_element( $attrs ) );
+   $new->result( $self->_create_result( $attrs ) );
 
    return $new;
 }
@@ -292,7 +292,7 @@ sub _search {
          my $attrs = { %{ $elements->{ $_ } }, name => $_ };
 
          if (not $where or $self->_eval_criteria( $where, $attrs )) {
-            CORE::push @{ $self->_elements }, $self->_create_element( $attrs );
+            CORE::push @{ $self->_elements }, $self->_create_result( $attrs );
          }
       }
    }

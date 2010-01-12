@@ -35,6 +35,11 @@ subtype 'F_DC_Path' => as 'Object' =>
    message {
       'Object '.(blessed $_ || $_).' is not of class File::DataClass::IO' };
 
+subtype 'F_DC_Result' => as 'Object' =>
+   where   { $_->isa( q(File::DataClass::Result) ) } =>
+   message {
+      'Object '.(blessed $_ || $_).' is not of class File::DataClass::Result'
+   };
 
 subtype 'F_DC_Directory' => as 'F_DC_Path' =>
    where   { $_->is_dir  } =>
