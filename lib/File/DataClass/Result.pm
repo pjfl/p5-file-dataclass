@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package File::DataClass::Element;
+package File::DataClass::Result;
 
 use strict;
 use namespace::clean -except => 'meta';
@@ -63,7 +63,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Element - Element object definition
+File::DataClass::Result - Result object definition
 
 =head1 Version
 
@@ -73,7 +73,7 @@ File::DataClass::Element - Element object definition
 
 =head1 Description
 
-This is analogous to the row object in L<DBIx::Class>
+This is analogous to the result object in L<DBIx::Class>
 
 =head1 Subroutines/Methods
 
@@ -106,7 +106,7 @@ None
 
 =over 3
 
-=item L<File::DataClass::Base>
+=item L<File::DataClass::Util>
 
 =back
 

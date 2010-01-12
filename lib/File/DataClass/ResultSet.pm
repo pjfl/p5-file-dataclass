@@ -9,24 +9,24 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 use File::DataClass::Constants;
 use Moose;
 
-use File::DataClass::Element;
 use File::DataClass::List;
+use File::DataClass::Result;
 
 with qw(File::DataClass::Util);
 
-has 'element_class' => is => 'ro', isa => 'ClassName',
-   default          => q(File::DataClass::Element);
-has 'list_class'    => is => 'ro', isa => 'ClassName',
-   default          => q(File::DataClass::List);
-has 'source'        => is => 'ro', isa => 'Object',
-   required         => TRUE, weak_ref => TRUE,
-   handles          => [ qw(attributes defaults label_attr path storage) ];
-has '_elements'     => is => 'rw', isa => 'ArrayRef',
-   default          => sub { return [] }, init_arg => undef;
-has '_iterator'     => is => 'rw', isa => 'Int',
-   default          => 0, init_arg => undef;
-has '_operators'    => is => 'ro', isa => 'HashRef',
-   lazy_build       => TRUE;
+has 'result_class' => is => 'ro', isa => 'ClassName',
+   default         => q(File::DataClass::Result);
+has 'list_class'   => is => 'ro', isa => 'ClassName',
+   default         => q(File::DataClass::List);
+has 'source'       => is => 'ro', isa => 'Object',
+   required        => TRUE, weak_ref => TRUE,
+   handles         => [ qw(attributes defaults label_attr path storage) ];
+has '_elements'    => is => 'rw', isa => 'ArrayRef',
+   default         => sub { return [] }, init_arg => undef;
+has '_iterator'    => is => 'rw', isa => 'Int',
+   default         => 0, init_arg => undef;
+has '_operators'   => is => 'ro', isa => 'HashRef',
+   lazy_build      => TRUE;
 
 sub all {
    my $self = shift; return @{ $self->_elements };
@@ -185,7 +185,7 @@ sub _create_element {
    $attrs->{ $_ } = $args->{ $_ }
       for (grep { defined $args->{ $_ } } keys %{ $args });
 
-   return $self->element_class->new( $attrs );
+   return $self->result_class->new( $attrs );
 }
 
 sub _eval_clause {
@@ -415,7 +415,7 @@ Deletes an element
    $element_object = $rs->find( { name => $of_element_to_find } );
 
 Finds the named element and returns an
-L<element|File::DataClass::Element> object for it
+L<element|File::DataClass::Result> object for it
 
 =head2 find_and_update
 
@@ -521,9 +521,9 @@ None
 
 =over 3
 
-=item L<File::DataClass::Base>
+=item L<File::DataClass::Util>
 
-=item L<File::DataClass::Element>
+=item L<File::DataClass::Result>
 
 =item L<File::DataClass::List>
 
