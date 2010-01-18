@@ -162,7 +162,7 @@ sub _read_file {
    my $cache_mtime   = $self->_meta_unpack( $meta );
 
    if (not $data or $cache_mtime < $path_mtime) {
-      try        { $data = inner( $path->_lock ); $path->close }
+      try        { $data = inner( $path->lock ); $path->close }
       catch ($e) { $self->_lock->reset( k => $path ); $self->throw( $e ) }
 
       $self->_cache->set( $path, $data, $self->_meta_pack( $path_mtime ) );
