@@ -12,49 +12,7 @@ use File::DataClass::IO ();
 use File::Spec;
 use List::Util qw(first);
 use Moose::Role;
-use Moose::Util::TypeConstraints;
-use Scalar::Util qw(blessed);
 use TryCatch;
-
-subtype 'F_DC_Cache' => as 'Object' =>
-   where   { $_->isa( q(File::DataClass::Cache) ) } =>
-   message {
-      'Object '.(blessed $_ || $_).' is not of class File::DataClass::Cache' };
-
-subtype 'F_DC_Exception' => as 'ClassName' =>
-   where   { $_->can( q(throw) ) } =>
-   message { "Class $_ is not loaded or has no throw method" };
-
-subtype 'F_DC_Lock' => as 'Object' =>
-   where   { $_->isa( q(Class::Null) )
-                or ($_->can( q(set) ) and $_->can( q(reset) ) ) } =>
-   message { 'Object '.(blessed $_ || $_).' is missing set or reset methods' };
-
-subtype 'F_DC_Path' => as 'Object' =>
-   where   { $_->isa( q(File::DataClass::IO) ) } =>
-   message {
-      'Object '.(blessed $_ || $_).' is not of class File::DataClass::IO' };
-
-subtype 'F_DC_Result' => as 'Object' =>
-   where   { $_->isa( q(File::DataClass::Result) ) } =>
-   message {
-      'Object '.(blessed $_ || $_).' is not of class File::DataClass::Result'
-   };
-
-subtype 'F_DC_Directory' => as 'F_DC_Path' =>
-   where   { $_->is_dir  } =>
-   message { 'Path '.($_ ? $_.' is not a directory' : 'not specified') };
-
-subtype 'F_DC_File'      => as 'F_DC_Path' =>
-   where   { $_->is_file } =>
-   message { 'Path '.($_ ? $_.' is not a file' : 'not specified') };
-
-coerce 'F_DC_Path'      => from 'ArrayRef' => via { __PACKAGE__->io( $_ ) };
-coerce 'F_DC_Directory' => from 'ArrayRef' => via { __PACKAGE__->io( $_ ) };
-coerce 'F_DC_File'      => from 'ArrayRef' => via { __PACKAGE__->io( $_ ) };
-coerce 'F_DC_Path'      => from 'Str'      => via { __PACKAGE__->io( $_ ) };
-coerce 'F_DC_Directory' => from 'Str'      => via { __PACKAGE__->io( $_ ) };
-coerce 'F_DC_File'      => from 'Str'      => via { __PACKAGE__->io( $_ ) };
 
 sub basename {
    my ($self, $path, @suffixes) = @_;
@@ -112,7 +70,6 @@ sub throw {
    return File::DataClass->Exception_Class->throw( @rest );
 }
 
-no Moose::Util::TypeConstraints;
 no Moose::Role;
 
 1;

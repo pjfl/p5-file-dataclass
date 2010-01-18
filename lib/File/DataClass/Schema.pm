@@ -17,7 +17,7 @@ use File::DataClass::Storage;
 use IPC::SRLock;
 
 extends qw(File::DataClass);
-with    qw(File::DataClass::Util);
+with    qw(File::DataClass::Constraints File::DataClass::Util);
 
 has 'cache'                    => is => 'ro', isa => 'F_DC_Cache',
    lazy_build                  => TRUE;

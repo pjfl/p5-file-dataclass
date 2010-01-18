@@ -8,7 +8,7 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 
-with qw(File::DataClass::Util);
+with qw(File::DataClass::Constraints);
 
 has 'result' => is => 'rw', isa => 'Maybe[F_DC_Result]';
 has 'found'  => is => 'rw', isa => 'Bool',     default => 0;
