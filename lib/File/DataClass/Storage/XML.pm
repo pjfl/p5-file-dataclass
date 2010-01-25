@@ -37,7 +37,7 @@ around '_meta_unpack' => sub {
 sub _dtd_parse {
    my ($self, $data) = @_;
 
-   $self->_dtd_parse_reset;
+   $self->_dtd->[0] and $self->_dtd_parse_reset;
 
    return unless ($data);
 
