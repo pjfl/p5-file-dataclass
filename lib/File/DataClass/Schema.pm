@@ -199,19 +199,19 @@ File::DataClass::Schema - Base class for schema definitions
 
    $schema = File::DataClass::Schema->new
       ( path    => [ qw(path to a file) ],
-        result_source_attributes => { fields => {}, },
+        result_source_attributes => { source_name => {}, },
         tempdir => [ qw(path to a directory) ] );
 
-   $schema->source( q(fields) )->attributes( [ qw(list of attr names) ] );
-   $rs = $schema->resultset( q(fields) );
+   $schema->source( q(source_name) )->attributes( [ qw(list of attr names) ] );
+   $rs = $schema->resultset( q(source_name) );
    $result = $rs->find( { name => q(id of field element to find) } );
    $result->$attr_name( $some_new_value );
    $result->update;
-   @result = $rs->search( { where => { 'attr name' => q(some value) } } );
+   @result = $rs->search( { 'attr name' => q(some value) } );
 
 =head1 Description
 
-This is the base class for schema definitions. Each element in a data file
+Base class for schema definitions. Each element in a data file
 requires a result source to define it's attributes
 
 =head1 Configuration and Environment
@@ -221,7 +221,7 @@ Registers all result sources defined by the result source attributes
 Creates a new instance of the storage class which defaults to
 L<File::DataClass::Storage::XML::Simple>
 
-This class defined these attributes
+Defines these attributes
 
 =over 3
 
@@ -265,9 +265,20 @@ coerced from either a string or an array ref
 Permissions to set on the file if it is created. Defaults to
 L<PERMS|File::DataClass::Constants/PERMS>
 
+=item B<result_source_attributes>
+
+A hash ref of result sources. See L<File::DataClass::ResultSource>
+
+=item B<result_source_class>
+
+The class name used to create result sources when the source registration
+attribute is instantiated. Acts as a schema wide default of not overridden
+in the B<result_source_attributes>
+
 =item B<source_registrations>
 
-A hash ref or resgistered result sources
+A hash ref or resgistered result sources, i.e. the keys of the
+B<result_source_attributes> hash
 
 =item B<storage>
 
@@ -397,7 +408,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

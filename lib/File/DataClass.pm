@@ -39,40 +39,44 @@ File::DataClass - Read and write structured data files
 
    $schema = File::DataClass::Schema->new
       ( path    => [ qw(path to a file) ],
-        result_source_attributes => { fields => {}, },
+        result_source_attributes => { source_name => {}, },
         tempdir => [ qw(path to a directory) ] );
 
-   $schema->source( q(fields) )->attributes( [ qw(list of attr names) ] );
-   $rs = $schema->resultset( q(fields) );
+   $schema->source( q(source_name) )->attributes( [ qw(list of attr names) ] );
+   $rs = $schema->resultset( q(source_name) );
    $result = $rs->find( { name => q(id of field element to find) } );
    $result->$attr_name( $some_new_value );
    $result->update;
-   @result = $rs->search( { where => { 'attr name' => q(some value) } } );
+   @result = $rs->search( { 'attr name' => q(some value) } );
 
 =head1 Description
 
-Provides CRUD methods reading and writing files in different
-formats
+Provides CRUD methods for structured data stored in files of different formats
+
+The documentation for this distribution start in the class
+L<File::DataClass::Schema>
 
 =head1 Configuration and Environment
 
-This class defines these class attributes. They are set on first use by
+Defines these class attributes. They are set on first use by
 methods in L<File::DataClass::Schema>
 
 =over 3
 
-=item Cache
+=item B<Cache>
 
-This is a Cache::Cache object which is used to cache the results of
-reading a file
+This is a L<Cache::Cache> object which is used to cache the results of
+reading a file. Maybe of type C<F_DC_Cache>
 
-=item Exception_Class
+=item B<Exception_Class>
 
-A classname that is expected to have a class method C<throw>
+A classname that is expected to have a class method C<throw>. Defaults to
+L<File::DataClass::Exception> and is of type C<F_DC_Exception>
 
-=item Lock
+=item B<Lock>
 
-A lock object that has the methods C<set> and C<reset>
+A lock object that has the methods C<set> and C<reset>. Maybe of type
+C<F_DC_Lock>
 
 =back
 
@@ -120,7 +124,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

@@ -61,21 +61,31 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
 =head1 Synopsis
 
-   use File:DataClass;
+   use File::DataClass::Schema;
 
-   $attrs = { result_source_attributes => { schema_attributes => { ... } } };
+   $schema = File::DataClass::Schema->new
+      ( path    => [ qw(path to a file) ],
+        result_source_attributes => { source_name => {}, },
+        tempdir => [ qw(path to a directory) ] );
 
-   $result_source = File::DataClass->new( $attrs )->result_source;
-
-   $rs = $result_source->resultset( { path => q(path_to_data_file) } );
+   $schema->source( q(source_name) )->attributes( [ qw(list of attr names) ] );
+   $rs = $schema->resultset( q(source_name) );
+   $result = $rs->find( { name => q(id of field element to find) } );
+   $result->$attr_name( $some_new_value );
+   $result->update;
+   @result = $rs->search( { 'attr name' => q(some value) } );
 
 =head1 Description
 
 Provides new result sources for a given schema
 
-If the result source is language dependent then an instance of
-L<File::DataClass::Combinator> is created as a proxy for the
-storage class
+This is the base class for schema definitions. Each element in a data file
+requires a schema definition to define it's attributes that should
+inherit from this
+
+=head1 Configuration and Environment
+
+None
 
 =head1 Subroutines/Methods
 
@@ -90,10 +100,6 @@ parameters. Creates and returns a new
 L<File::DataClass::Resultset> object
 
 =head1 Diagnostics
-
-None
-
-=head1 Configuration and Environment
 
 None
 

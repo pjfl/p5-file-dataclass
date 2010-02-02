@@ -56,9 +56,9 @@ File::DataClass::ResultSource::WithLanguage - Result source localisation
 
 =head1 Description
 
-This is the base class for schema definitions. Each element in a data file
-requires a schema definition to define it's attributes that should
-inherit from this
+If the result source is language dependent then an instance of
+L<File::DataClass::Combinator> is created as a proxy for the
+storage class
 
 =head1 Subroutines/Methods
 
