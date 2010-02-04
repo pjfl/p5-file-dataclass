@@ -55,15 +55,23 @@ has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
    default                     => sub { __PACKAGE__->io( File::Spec->tmpdir )},
    coerce                      => TRUE;
 
-sub connect {
-   my ($class, $args, $app) = @_; $args ||= {}; $app ||= Class::Null->new;
+around BUILDARGS => sub {
+   my ($orig, $class, @args) = @_; my $app;
 
-   my @attrs = ( qw(debug exception_class lock log tempdir) );
+   blessed $args[0] and $app = shift @args;
 
-   $args->{ $_ } ||= $app->$_() for (grep { $app->can( $_ ) } @attrs);
+   my $attrs = $class->$orig( @args );
 
-   return $class->new( $args );
-}
+   if ($app) {
+      my @attrs = ( qw(debug exception_class lock log tempdir) );
+
+      $attrs->{ $_ } ||= $app->$_() for (grep { $app->can( $_ ) } @attrs);
+
+      $app->can( q(config) ) and $attrs->{tempdir} ||= $app->config->{tempdir};
+   }
+
+   return $attrs;
+};
 
 sub dump {
    my ($self, $args) = @_;
@@ -304,16 +312,12 @@ representation
 
 =back
 
-=head1 Subroutines/Methods
-
-=head2 connect
-
-   $schema = YourSchemaClass->connect( $attributes_for_new, $object );
-
-Simplifies the call to the constructor if you have an object that
+If the constructor is passed an object as it's first arg, and that
 provides these methods; C<debug>, C<exception_class>, C<lock>, C<log>,
-and C<tempdir>. Their values are or'ed with values in the attributes
+and C<tempdir>, then their values are or'ed with values in the attributes
 hash before being passed to the constructor
+
+=head1 Subroutines/Methods
 
 =head2 dump
 

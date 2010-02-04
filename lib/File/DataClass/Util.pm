@@ -53,7 +53,7 @@ sub ensure_class_loaded {
 sub io {
    my ($self, @rest) = @_; my $io = File::DataClass::IO->new( @rest );
 
-   $io->exception_class( File::DataClass->Exception_Class );
+   $io->exception_class( File::DataClass->exception_class );
 
    return $io;
 }
@@ -67,7 +67,7 @@ sub is_member {
 sub throw {
    my ($self, @rest) = @_;
 
-   return File::DataClass->Exception_Class->throw( @rest );
+   return File::DataClass->exception_class->throw( @rest );
 }
 
 no Moose::Role;

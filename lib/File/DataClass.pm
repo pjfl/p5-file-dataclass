@@ -10,10 +10,11 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 use File::DataClass::Exception;
 use MooseX::ClassAttribute;
 
-class_has 'Cache'           => is => 'rw', isa => 'Maybe[F_DC_Cache]';
-class_has 'Exception_Class' => is => 'rw', isa => 'F_DC_Exception',
+class_has 'Cache' => is => 'rw', isa => 'Maybe[F_DC_Cache]';
+class_has 'Lock'  => is => 'rw', isa => 'Maybe[F_DC_Lock]';
+
+class_has 'exception_class' => is => 'rw', isa => 'F_DC_Exception',
    default                  => q(File::DataClass::Exception);
-class_has 'Lock'            => is => 'rw', isa => 'Maybe[F_DC_Lock]';
 
 __PACKAGE__->meta->make_immutable;
 
@@ -68,15 +69,15 @@ methods in L<File::DataClass::Schema>
 This is a L<Cache::Cache> object which is used to cache the results of
 reading a file. Maybe of type C<F_DC_Cache>
 
-=item B<Exception_Class>
-
-A classname that is expected to have a class method C<throw>. Defaults to
-L<File::DataClass::Exception> and is of type C<F_DC_Exception>
-
 =item B<Lock>
 
 A lock object that has the methods C<set> and C<reset>. Maybe of type
 C<F_DC_Lock>
+
+=item B<exception_class>
+
+A classname that is expected to have a class method C<throw>. Defaults to
+L<File::DataClass::Exception> and is of type C<F_DC_Exception>
 
 =back
 
