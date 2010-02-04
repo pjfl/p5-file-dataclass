@@ -128,7 +128,7 @@ sub assert_dirpath {
 
    $dir_name or return; -d $dir_name and return $dir_name;
 
-   $self->_umask_push( $self->_dir_perms );
+   $self->_umask_push;
    CORE::mkdir( $dir_name ) or File::Path::mkpath( $dir_name );
    $self->_umask_pop;
 
@@ -325,12 +325,6 @@ sub dir {
    my ($self, @rest) = @_; return $self->_init( q(dir), @rest );
 }
 
-sub _dir_perms {
-   my ($self, $perms) = @_; $perms ||= $self->_perms;
-
-   return (($perms & oct q(0444)) >> 2) | $perms;
-}
-
 sub dirname {
    my $self = shift; $self->name or return;
 
@@ -507,7 +501,9 @@ sub is_readable {
 }
 
 sub is_reading {
-   my $self = shift; return first { $_ eq $self->mode } qw(r r+);
+   my ($self, $mode) = @_; $mode ||= $self->mode;
+
+   return first { $_ eq $mode } qw(r r+);
 }
 
 sub is_writable {
@@ -523,7 +519,7 @@ sub lock {
 }
 
 sub mkdir {
-   my ($self, $perms) = @_; $self->_umask_push( $perms || $self->_dir_perms );
+   my ($self, $perms) = @_; $self->_umask_push( $perms );
 
    my $result = CORE::mkdir( $self->name ); $self->_umask_pop;
 
@@ -531,7 +527,7 @@ sub mkdir {
 }
 
 sub mkpath {
-   my ($self, $perms) = @_; $self->_umask_push( $perms || $self->_dir_perms );
+   my ($self, $perms) = @_; $self->_umask_push( $perms );
 
    my $result = File::Path::mkpath( $self->name ); $self->_umask_pop;
 
@@ -554,50 +550,44 @@ sub open {
    my ($self, @rest) = @_;
 
    $self->is_open and return $self;
-   $self->is_dir  and return $self->_open_dir;
-   $self->is_file and return $self->_open_file( @rest );
+   $self->is_dir  and return $self->_open_dir ( $self->_open_args( @rest ) );
+   $self->is_file and return $self->_open_file( $self->_open_args( @rest ) );
 
    return $self;
 }
 
 sub _open_args {
-   my ($self, $mode, $perms) = @_;
+   my ($self, $mode, $perms) = @_; $mode ||= $self->mode;
 
    $self->name or $self->throw( 'Path not specified' );
-   $self->mode( $mode || $self->mode );
 
-   my $pathname = $self->_atomic && !$self->is_reading
+   my $pathname = $self->_atomic && !$self->is_reading( $mode )
                 ? $self->_get_atomic_path : $self->name;
 
-   $self->_perms( $self->exists ? $self->stat->{mode} & oct q(07777)
-                                : $perms || $self->_perms );
+   $perms = $self->exists ? $self->stat->{mode} & oct q(07777)
+                          : $perms || $self->_perms;
 
-   return [ $pathname, $self->mode, $self->_perms ];
+   return ($pathname, $self->mode( $mode ), $self->_perms( $perms ));
 }
 
 sub _open_dir {
-   my $self = shift;
+   my ($self, @args) = @_;
 
-   $self->_assert and $self->assert_dirpath( $self->name );
-   $self->io_handle( IO::Dir->new( $self->name ) ) and $self->is_open( TRUE );
-   $self->is_open or $self->throw( error => 'Directory [_1] cannot open',
-                                   args  => [ $self->name ] );
-
+   $self->_assert and $self->assert_dirpath( $args[0] );
+   $self->io_handle( IO::Dir->new( $args[0] ) )
+      or $self->throw( error => 'Directory [_1] cannot open',
+                       args  => [ $args[0] ] );
+   $self->is_open( TRUE );
    return $self;
 }
 
 sub _open_file {
-   my ($self, @rest) = @_;
+   my ($self, @args) = @_;
 
    $self->_assert and $self->assert_filepath;
-
-   my $args = $self->_open_args( @rest );
-
-   $self->_umask_push( pop @{ $args } );
-   $self->io_handle( IO::File->new( @{ $args } ) ) and $self->is_open( TRUE );
-   $self->_umask_pop;
-   $self->is_open or $self->throw( error => 'File [_1] cannot open',
-                                   args  => [ $args->[0] ] );
+   $self->io_handle( IO::File->new( @args ) )
+      or $self->throw( error => 'File [_1] cannot open', args => [ $args[0] ]);
+   $self->is_open( TRUE );
    $self->set_binmode;
    $self->set_lock;
    return $self;
@@ -777,7 +767,7 @@ sub touch {
    my ($self, @rest) = @_; $self->name or return;
 
    if (-e $self->name) { my $now = time; utime $now, $now, $self->name }
-   else { $self->_open_file( q(w) )->close }
+   else { $self->_open_file( $self->_open_args( q(w) ) )->close }
 
    return $self;
 }
@@ -794,6 +784,11 @@ sub _umask_push {
    my ($self, $perms) = @_; my $first = $self->_umask->[0];
 
    $first and $first == NO_UMASK_STACK and return umask;
+
+   unless ($perms) {
+      $perms = $self->_perms; $perms = (($perms & oct q(0444)) >> 2) | $perms;
+   }
+
    $perms ^= oct q(0777); push @{ $self->_umask }, umask $perms;
    return $perms;
 }
