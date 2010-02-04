@@ -7,7 +7,7 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
-use File::UnixAuth::ResultSet;
+use File::UnixAuth::Result;
 use Moose;
 
 extends qw(File::DataClass::Schema);
@@ -17,7 +17,8 @@ has '+result_source_attributes' =>
       group               => {
          attributes       => [ qw(password gid members) ],
          defaults         => { password => q(x) },
-         resultset_class  => q(File::UnixAuth::ResultSet) },
+         resultset_attributes => {
+            result_class  => q(File::UnixAuth::Result), }, },
       passwd              => {
          attributes       => [ qw(password id pgid gecos homedir shell
                                   first_name last_name location work_phone

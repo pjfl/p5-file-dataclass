@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package File::UnixAuth::ResultSet;
+package File::UnixAuth::Result;
 
 use strict;
 use namespace::autoclean;
@@ -9,40 +9,32 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 use File::DataClass::Constants;
 use Moose;
 
-extends qw(File::DataClass::ResultSet);
+extends qw(File::DataClass::Result);
 
 sub add_user_to_group {
-   my ($self, $group, $user) = @_;
+   my ($self, $user) = @_;
 
-   return $self->_change_group_members( $group, $user, TRUE, sub {
+   return $self->_change_group_members( $user, TRUE, sub {
       return [ @{ $_[1] }, $_[0] ] } );
 }
 
 sub remove_user_from_group {
-   my ($self, $group, $user) = @_;
+   my ($self, $user) = @_;
 
-   return $self->_change_group_members( $group, $user, FALSE, sub {
+   return $self->_change_group_members( $user, FALSE, sub {
       return [ grep { $_ ne $_[0] } @{ $_[1] } ] } );
 }
 
 # Private methods
 
 sub _change_group_members {
-   my ($self, $group, $user, $exists, $coderef) = @_;
+   my ($self, $user, $exists, $coderef) = @_; my $users = $self->members;
 
-   return $self->_txn_do( sub {
-      my $attrs = $self->select->{ $group } || {};
-      my $users = $attrs->{members};
+   return unless ($exists xor $self->is_member( $user, @{ $users } ));
 
-      if ($exists xor $self->is_member( $user, @{ $users } )) {
-         $attrs->{members} = $coderef->( $user, $users );
-         $attrs->{name   } = $group;
-         $self->find_and_update( $attrs );
-      }
-   } );
+   $self->members( $coderef->( $user, $users ) );
+   return $self->update;
 }
-
-__PACKAGE__->meta->make_immutable;
 
 no Moose;
 
@@ -54,7 +46,7 @@ __END__
 
 =head1 Name
 
-File::UnixAuth::ResultSet - Unix authentication and authorization file custom results
+File::UnixAuth::Result - Unix authentication and authorization file custom results
 
 =head1 Version
 
@@ -62,7 +54,7 @@ File::UnixAuth::ResultSet - Unix authentication and authorization file custom re
 
 =head1 Synopsis
 
-   use File::UnixAuth::ResultSet;
+   use File::UnixAuth::Result;
 
 =head1 Description
 
@@ -80,7 +72,7 @@ File::UnixAuth::ResultSet - Unix authentication and authorization file custom re
 
 =over 3
 
-=item L<File::DataClass::ResultSet>
+=item L<File::DataClass::Result>
 
 =back
 
