@@ -62,7 +62,10 @@ has '_utf8'            => is => 'rw', isa => 'Bool',      default    => FALSE ;
 around BUILDARGS => sub {
    my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
 
-   $car or return $attrs; blessed $car and return $car;
+   $car or return $attrs; my $is_blessed = blessed $car;
+
+   $is_blessed and $car->isa( __PACKAGE__ ) and return $car;
+   $is_blessed and $car .= NUL; # Stringify path object
 
    my $type = ref $car; $type eq HASH and return $car;
 
@@ -158,6 +161,8 @@ sub assert_open {
 sub atomic {
    my $self = shift; $self->_atomic( TRUE ); return $self;
 }
+
+*atomic_suffix = \&atomic_infix;
 
 sub atomic_infix {
    my ($self, $value) = @_; $self->_atomic_infix( $value ); return $self;
@@ -846,18 +851,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Synopsis
 
-   use YourExceptionClass;
    use File::DataClass::IO;
-
-   sub io {
-      my ($self, @rest) = @_;
-
-      my $io = File::DataClass::IO->new( @rest );
-
-      $io->exception_class( q(YourExceptionClass) );
-
-      return $io;
-   }
 
    # Read the first line of a file and chomp the result
    my $line = io( q(path_name) )->chomp->getline;
@@ -882,14 +876,26 @@ be called from outside this package
 
 =head2 new
 
-   $io = File::DataClass::IO->new( { name => $pathname, ... } );
-   $io = File::DataClass::IO->new( $pathname, [ $mode, $perms ] );
+The constructor can be called with these method signatures:
 
-Called with either a single hash ref containing a list of key value
-pairs which are the object's attributes (where I<name> is the
-pathname) or a list of values which are taken as the pathname, mode and
-permissions. Returns the value from the call to L</_init> which it
-makes without any options
+=over 3
+
+=item $io = File::DataClass::IO->new( { name => $pathname, ... } )
+
+A hash ref containing a list of key value pairs which are the object's
+attributes (where I<name> is the pathname)
+
+=item $io = File::DataClass::IO->new( $pathname, [ $mode, $perms ] )
+
+A list of values which are taken as the pathname, mode and
+permissions. The pathname can be an array ref, a scalar, or an object
+that stringifies to a scalar path
+
+=item $io = File::DataClass::IO->new( $obj )
+
+An object which is a L<File::DataClass::IO>
+
+=back
 
 =head2 abs2rel
 
@@ -976,15 +982,19 @@ calls L</open> passing in the optional arguments
    $io = io( q(path_to_file) )->atomic;
 
 Implements atomic file updates by writing to a temporary file and then
-renaming it on closure. This method stores the temporary pathname in the
-B<_atomic_infix> attribute
+renaming it on closure. This method uses the pattern in the
+I<_atomic_infix> attribute to compute the temporary pathname
+
+=head2 atomic_suffix
+
+Syntatic sugar. See L</atomix_infix>
 
 =head2 atomic_infix
 
-Defaults to I<B_*>. The I<*> is replaced by the filename to create a
-temporary file for atomic updates. If the value does not contain a
-I<*> then it is appended to the filename instead. Attribute name
-I<_atomic_infix>
+Defaults to I<B_*> (prefix). The I<*> is replaced by the filename to
+create a temporary file for atomic updates. If the value does not
+contain a I<*> then it is appended to the filename instead
+(suffix). Attribute name I<_atomic_infix>
 
 =head2 basename
 
@@ -1186,7 +1196,7 @@ the I<type> attribute is false
 
 =head2 io
 
-Subroutine exported by default. Return a new IO object
+Subroutine exported by default. Returns a new IO object
 
 =head2 is_absolute
 
@@ -1462,7 +1472,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
