@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package File::MealMaster::ResultSet;
+package File::MealMaster::Result;
 
 use strict;
 use namespace::clean -except => 'meta';
@@ -10,22 +10,17 @@ use Data::Section -setup;
 use File::DataClass::Constants;
 use Moose;
 
-extends qw(File::DataClass::ResultSet);
+extends qw(File::DataClass::Result);
 
-has 'render_template' => is => 'ro', isa => 'Str', lazy_build => TRUE;
-
-sub make_key {
-   my ($self, $title) = @_; return $self->storage->make_key( $title );
-}
+has '_render_template' => is => 'rw', isa => 'Str', lazy_build => TRUE;
 
 sub render {
-   my ($self, $recipe) = @_;
-
-   my $storage       = $self->storage;
-   my $template_data = $self->render_template;
+   my $self          = shift;
+   my $storage       = $self->_storage;
+   my $template_data = $self->_render_template;
    my $buffer        = NUL;
 
-   $storage->template->process( \$template_data, $recipe, \$buffer )
+   $storage->template->process( \$template_data, $self, \$buffer )
       or $buffer = $storage->template->error;
 
    return $buffer;
@@ -33,11 +28,9 @@ sub render {
 
 # Private methods
 
-sub _build_render_template {
+sub _build__render_template {
    return ${ __PACKAGE__->section_data( q(render_template) ) };
 }
-
-__PACKAGE__->meta->make_immutable;
 
 no Moose;
 
@@ -47,7 +40,7 @@ no Moose;
 
 =head1 Name
 
-File::MealMaster::ResultSet - MealMaster food recipes custom result set
+File::MealMaster::Result - MealMaster food recipes custom methods
 
 =head1 Version
 
@@ -55,15 +48,13 @@ File::MealMaster::ResultSet - MealMaster food recipes custom result set
 
 =head1 Synopsis
 
-   use File::MealMaster::ResultSet;
+   use File::MealMaster::Result;
 
 =head1 Description
 
 =head1 Configuration and Environment
 
 =head1 Subroutines/Methods
-
-=head2 make_key
 
 =head2 render
 
@@ -73,7 +64,7 @@ File::MealMaster::ResultSet - MealMaster food recipes custom result set
 
 =over 3
 
-=item L<File::DataClass::ResultSet>
+=item L<File::DataClass::Result>
 
 =back
 

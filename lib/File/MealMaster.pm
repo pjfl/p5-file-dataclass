@@ -7,7 +7,7 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
-use File::MealMaster::ResultSet;
+use File::MealMaster::Result;
 use Moose;
 
 extends qw(File::DataClass::Schema);
@@ -18,7 +18,8 @@ has '+result_source_attributes' =>
          attributes       => [ qw(categories directions
                                   ingredients title yield) ],
          defaults         => { categories => [], ingredients => [] },
-         resultset_class  => q(File::MealMaster::ResultSet), },
+         resultset_attributes => {
+            result_class  => q(File::MealMaster::Result), }, },
    } };
 has '+storage_class'      =>
    default                => q(+File::MealMaster::Storage);
@@ -33,6 +34,11 @@ around 'source' => sub {
 around 'resultset' => sub {
    my ($orig, $self) = @_; return $self->$orig( $self->source_name );
 };
+
+sub make_key {
+   my ($self, $title) = @_; return $self->source->storage->make_key( $title );
+}
+
 
 1;
 
@@ -62,11 +68,7 @@ Sets these attributes:
 
 =head1 Subroutines/Methods
 
-=head2 group
-
-=head2 passwd
-
-=head2 shadow
+=head2 make_key
 
 =head1 Diagnostics
 

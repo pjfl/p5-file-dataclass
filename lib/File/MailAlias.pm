@@ -43,12 +43,12 @@ has '+storage_class' =>
 around BUILDARGS => sub {
    my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
 
-   $car or return $attrs;
+   $car or return $class->$orig();
 
-   if    (blessed $car)      { $attrs         = $car }
+   if    (blessed $car)      { return $class->$orig( $car, @cdr ) }
    elsif (ref $car eq HASH)  { $attrs         = $car }
    elsif (ref $car eq ARRAY) { $attrs->{path} = $class->catfile( @{ $car } ) }
-   else                      { $attrs->{path} = $car }
+   else                      { $attrs->{path} = $car.NUL }
 
    $cdr[0] and $attrs->{system_aliases} = $cdr[0];
    $cdr[1] and $attrs->{newaliases    } = [ $cdr[1] ];
