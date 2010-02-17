@@ -95,20 +95,22 @@ File::DataClass::Exception - Exception base class
 
 =head1 Synopsis
 
-   use parent qw(File::DataClass::Base);
+   use Moose;
+   use TryCatch;
+
+   extend qw(File::DataClass::Schema);
 
    sub some_method {
       my $self = shift;
 
-      eval { this_will_fail }
-
-      $self->throw_on_error;
+      try        { this_will_fail }
+      catch ($e) { $self->throw( $e ) }
    }
 
 =head1 Description
 
-Implements try (by way of an eval), throw, and catch error
-semantics. Inherits from L<Exception::Class>
+An exception class that inherits from a custom subclass of
+L<Exception::Class>
 
 =head1 Subroutines/Methods
 
@@ -118,6 +120,8 @@ Create an exception object. You probably do not want to call this directly,
 but indirectly through L</catch> and L</throw>
 
 =head2 catch
+
+   $e = File::DataClass::Exception->catch( $error );
 
 Catches and returns a thrown exception or generates a new exception if
 I<EVAL_ERROR> has been set
@@ -130,6 +134,8 @@ Return the stack trace
 
 =head2 throw
 
+   File::DataClass::Exception->throw( $error );
+
 Create (or re-throw) an exception to be caught by the catch above. If
 the passed parameter is a reference it is re-thrown. If a single scalar
 is passed it is taken to be an error message code, a new exception is
@@ -140,9 +146,13 @@ in this case
 
 =head2 throw_on_error
 
+   File::DataClass::Exception->throw_on_error( $error );
+
 Calls L</catch> and if the was an exception L</throw>s it
 
 =head2 to_string
+
+   $printable_string = $e->to_string
 
 What an instance of this class stringifies to
 
@@ -185,7 +195,7 @@ Peter Flanigan C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

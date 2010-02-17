@@ -108,7 +108,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Cache - Adds extra methods to the Cache::Cache API
+File::DataClass::Cache - Adds extra methods to the CHI API
 
 =head1 Version
 
@@ -116,31 +116,106 @@ File::DataClass::Cache - Adds extra methods to the Cache::Cache API
 
 =head1 Synopsis
 
+   package File::DataClass::Schema;
+
    use File::DataClass::Cache;
+   use Moose;
+
+   extends qw(File::DataClass);
+   with    qw(File::DataClass::Constraints);
+
+   has 'cache'            => is => 'ro', isa => 'F_DC_Cache',
+      lazy_build          => TRUE;
+
+   has 'cache_attributes' => is => 'ro', isa => 'HashRef',
+      default             => sub { return {} };
+
+   sub _build_cache {
+      my $self  = shift;
+
+      $self->Cache and return $self->Cache;
+
+      my $attrs = {}; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
+
+      $attrs->{cache_attributes}                = $self->cache_attributes;
+      $attrs->{cache_attributes}->{driver   } ||= q(FastMmap);
+      $attrs->{cache_attributes}->{root_dir } ||= NUL.$self->tempdir;
+      $attrs->{cache_attributes}->{namespace} ||= $ns;
+
+      return $self->Cache( File::DataClass::Cache->new( $attrs ) );
+   }
 
 =head1 Description
 
+Adds meta data and compound keys to the L<CHI> caching API. In instance of
+this class is created by L<File::DataClass::Schema>
+
 =head1 Configuration and Environment
+
+The class defines these attributes
+
+=over 3
+
+=item B<cache>
+
+An instance of the L<CHI> cache object
+
+=item B<cache_attributes>
+
+A hash ref passed to the L<CHI> constructor
+
+=item B<cache_class>
+
+The class name of the cache object, defaults to L<CHI>
+
+=back
 
 =head1 Subroutines/Methods
 
 =head2 get
 
+   ($data, $meta) = $schema->cache->get( $key );
+
+Returns the data and metadata associated with the given key. If no cache
+entry exists the data returned is C<undef> and the metadata is a hash ref
+with a key of C<mtime> and a value of C<0>
+
 =head2 get_by_paths
+
+   ($data, $meta, $newest) = $schema->cache->get_by_paths( $paths );
+
+The paths passed in the array ref are concatenated to form a compound key.
+The L<CHI> cache entry is fetched and the data and meta data returned along
+with the modification time of the newest file in the list of paths
 
 =head2 remove
 
+   $schema->cache->remove( $key );
+
+Removes the L<CHI> cache entry for the given key
+
 =head2 set
+
+   ($data, $meta) = $schema->cache->set( $key, $data, $meta );
+
+Sets the L<CHI> cache entry for the given key
 
 =head2 set_by_paths
 
+   ($data, $meta) = $schema->cache->set_by_paths( $paths, $data, $meta );
+
+Set the L<CHI> cache entry for the compound key formed from the array ref
+C<$paths>
+
 =head1 Diagnostics
+
+None
 
 =head1 Dependencies
 
 =over 3
 
-=item L<Cache::FileCache>
+=item L<CHI>
 
 =back
 
@@ -164,7 +239,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

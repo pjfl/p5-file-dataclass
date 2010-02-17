@@ -60,6 +60,25 @@ If the result source is language dependent then an instance of
 L<File::DataClass::Combinator> is created as a proxy for the
 storage class
 
+=head1 Configuration and Environment
+
+Defines these attributes
+
+=over 3
+
+=item B<lang>
+
+The two character language code, e.g. de. The setting this attribute
+is propagated via a trigger to the attribute of the same name in the
+L<File::DataClass::Combinator> storage instance
+
+=item B<lang_dep>
+
+Is a hash ref of language dependent attributes names. The values a just set
+to C<TRUE>
+
+=back
+
 =head1 Subroutines/Methods
 
 =head2 BUILD
@@ -72,21 +91,13 @@ storage class
 
 None
 
-=head1 Configuration and Environment
-
-None
-
 =head1 Dependencies
 
 =over 3
 
-=item L<File::DataClass::Base>
-
 =item L<File::DataClass::Combinator>
 
-=item L<File::DataClass::Storage>
-
-=item L<Scalar::Util>
+=item L<File::DataClass::ResultSource>
 
 =back
 
@@ -106,7 +117,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

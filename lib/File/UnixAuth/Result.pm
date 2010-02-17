@@ -12,27 +12,22 @@ use Moose;
 extends qw(File::DataClass::Result);
 
 sub add_user_to_group {
-   my ($self, $user) = @_;
+   my ($self, $user) = @_; my $users = $self->members;
 
-   return $self->_change_group_members( $user, TRUE, sub {
-      return [ @{ $_[1] }, $_[0] ] } );
+   $self->is_member( $user, @{ $users } ) and return FALSE;
+
+   $self->members( [ @{ $users }, $user ] );
+
+   return $self->update;
 }
 
 sub remove_user_from_group {
-   my ($self, $user) = @_;
+   my ($self, $user) = @_; my $users = $self->members;
 
-   return $self->_change_group_members( $user, FALSE, sub {
-      return [ grep { $_ ne $_[0] } @{ $_[1] } ] } );
-}
+   $self->is_member( $user, @{ $users } ) or return FALSE;
 
-# Private methods
+   $self->members( [ grep { $_ ne $user } @{ $users } ] );
 
-sub _change_group_members {
-   my ($self, $user, $exists, $coderef) = @_; my $users = $self->members;
-
-   return unless ($exists xor $self->is_member( $user, @{ $users } ));
-
-   $self->members( $coderef->( $user, $users ) );
    return $self->update;
 }
 

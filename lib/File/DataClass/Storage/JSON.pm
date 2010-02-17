@@ -46,11 +46,25 @@ File::DataClass::Storage::JSON - Read/write JSON data storage model
 
 =head1 Synopsis
 
+   use Moose;
+
+   extends qw(File::DataClass::Schema);
+
+   has '+storage_class' => default => q(JSON);
+
 =head1 Description
 
-Uses L<JSON::PP> to read and write JSON files
+Uses L<JSON> to read and write JSON files
 
 =head1 Subroutines/Methods
+
+=head2 _read_file
+
+Calls L<JSON/decode> to parse the input
+
+=head2 _write_file
+
+Calls L<JSON/encode> to generate the output
 
 =head1 Diagnostics
 

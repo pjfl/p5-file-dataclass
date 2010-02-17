@@ -26,7 +26,7 @@ has '_iterator'    => is => 'rw', isa => 'Int',
 has '_operators'   => is => 'ro', isa => 'HashRef',
    lazy_build      => TRUE;
 has '_results'     => is => 'rw', isa => 'ArrayRef',
-   default         => sub { return [] }, init_arg => undef;
+   default         => sub { [] }, init_arg => undef;
 
 sub all {
    my $self = shift; return @{ $self->_results };

@@ -10,10 +10,10 @@ use Moose;
 
 with qw(File::DataClass::Constraints);
 
-has 'result' => is => 'rw', isa => 'Maybe[F_DC_Result]';
 has 'found'  => is => 'rw', isa => 'Bool',     default => 0;
 has 'labels' => is => 'rw', isa => 'HashRef',  default => sub { return {} };
 has 'list'   => is => 'rw', isa => 'ArrayRef', default => sub { return [] };
+has 'result' => is => 'rw', isa => 'Maybe[F_DC_Result]';
 
 __PACKAGE__->meta->make_immutable;
 
@@ -43,17 +43,34 @@ File::DataClass::List - List response class
 
 List object returned by L<File::DataClass::ResultSet/list>
 
+=head1 Configuration and Environment
+
+Defines these attributes
+
+=over 3
+
+=item B<found>
+
+True if the requested element was found
+
+=item B<labels>
+
+A hash ref keyed by element attribute name, where the values are the
+descriptive labels for each attribute
+
+=item B<list>
+
+An array ref of element names
+
+=item B<result>
+
+Maybe an C<F_DC_Result> if the requested element was found
+
 =head1 Subroutines/Methods
-
-=head2 new
-
-Defines four attributes; I<element>, I<found>, I<labels>, and I<list>
-
-=head1 Diagnostics
 
 None
 
-=head1 Configuration and Environment
+=head1 Diagnostics
 
 None
 
@@ -61,7 +78,7 @@ None
 
 =over 3
 
-=item L<File::DataClass::Base>
+=item L<File::DataClass::Constraints>
 
 =back
 
@@ -81,7 +98,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

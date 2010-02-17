@@ -13,7 +13,7 @@ with qw(File::DataClass::Util);
 
 has 'lang'    => is => 'rw', isa => 'Str',    required => TRUE;
 has 'storage' => is => 'ro', isa => 'Object', required => TRUE,
-   handles => [ qw(load txn_do validate_params) ];
+   handles    => [ qw(load txn_do validate_params) ];
 
 sub delete {
    my ($self, $path, $element_obj) = @_;
@@ -116,52 +116,61 @@ File::DataClass::Combinator - Split/merge language dependent data
 
 =head1 Description
 
+This is a proxy for the storage class. In general, for each call made to a
+storage method this class makes two instead. The "second" call handles
+attributes stored in the language dependent file
+
 =head1 Configuration and Environment
+
+Defines the attributes
+
+=over 3
+
+=item B<lang>
+
+Two character language code
+
+=item B<storage>
+
+Instance of L<File::DataClass::Storage>
+
+=back
 
 =head1 Subroutines/Methods
 
-=head2 new
-
 =head2 delete
 
-   $bool = $self->delete( $element_obj );
+   $bool = $self->delete( $path, $element_obj );
 
 Deletes the specified element object returning true if successful. Throws
 an error otherwise
 
 =head2 dump
 
+   $data = $self->dump( $path, $data );
+
+Exposes L<File::DataClass::Storage/dump> in the storage class
+
 =head2 insert
 
-   $bool = $self->insert( $element_obj );
+   $bool = $self->insert( $path, $element_obj );
 
 Inserts the specified element object returning true if successful. Throws
 an error otherwise
 
-=head2 load
-
-   $hash_ref = $self->load( @paths );
-
-Loads each of the specified files merging the resultant hash ref which
-it returns. Paths are instances of L<File::DataClass::IO>
-
-=head2 path
-
 =head2 select
 
-   $hash_ref = $self->select;
+   $hash_ref = $self->select( $element );
 
 Returns a hash ref containing all the elements of the type specified in the
 result source
 
 =head2 update
 
-   $bool = $self->update( $element_obj );
+   $bool = $self->update( $path, $element_obj );
 
 Updates the specified element object returning true if successful. Throws
 an error otherwise
-
-=head2 validate_params
 
 =head1 Diagnostics
 
@@ -169,11 +178,9 @@ None
 
 =head1 Dependencies
 
-None
-
 =over 3
 
-=item L<File::DataClass::Base>
+=item L<File::DataClass::Util>
 
 =back
 
@@ -193,7 +200,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

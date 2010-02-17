@@ -54,7 +54,7 @@ File::DataClass - Read and write structured data files
 
 Provides CRUD methods for structured data stored in files of different formats
 
-The documentation for this distribution start in the class
+The documentation for this distribution starts in the class
 L<File::DataClass::Schema>
 
 =head1 Configuration and Environment

@@ -82,10 +82,10 @@ sub _inflate {
 sub _read_filter {
    my ($self, $buf) = @_; my $hash = {}; my $order = 0;
 
+   my $source_name = $self->schema->source_name;
+   my $fields      = $self->schema->source->attributes;
    my %args        = ( auto_clean => 1, force_case => 1, lc_prefix => 1 );
    my $name_parser = Lingua::EN::NameParse->new( %args );
-   my $source_name = $self->schema->source_name;
-   my $fields      = $self->_source->attributes;
 
    for my $line (@{ $buf || [] }) {
       my ($id, @rest) = split m{ : }mx, $line; my %attrs = ();
@@ -99,17 +99,11 @@ sub _read_filter {
    return { $source_name => $hash };
 }
 
-sub _source {
-   my $self = shift;
-
-   return $self->schema->source( $self->schema->source_name );
-}
-
 sub _write_filter {
    my ($self, $data) = @_; my $buf = [];
 
    my $source_name = $self->schema->source_name;
-   my $fields      = $self->_source->attributes;
+   my $fields      = $self->schema->source->attributes;
    my $hash        = $data->{ $source_name };
 
    $source_name eq q(passwd) and $fields = [ @{ $fields }[0..5] ];
@@ -134,9 +128,8 @@ sub __original_order {
    my ($hash, $lhs, $rhs) = @_;
 
    # New elements will be  added at the end
-   return  1 unless (exists $hash->{ $lhs }->{_order_by});
-   return -1 unless (exists $hash->{ $rhs }->{_order_by});
-
+   exists $hash->{ $lhs }->{_order_by} or return  1;
+   exists $hash->{ $rhs }->{_order_by} or return -1;
    return $hash->{ $lhs }->{_order_by} <=> $hash->{ $rhs }->{_order_by};
 }
 

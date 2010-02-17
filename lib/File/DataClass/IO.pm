@@ -169,7 +169,7 @@ sub atomic_infix {
 }
 
 sub basename {
-   my ($self, @suffixes ) = @_; $self->name or return;
+   my ($self, @suffixes) = @_; $self->name or return;
 
    return File::Basename::basename( $self->name, @suffixes );
 }

@@ -151,6 +151,12 @@ File::DataClass::Storage::XML::Bare - Read/write XML data storage model
 
 =head1 Synopsis
 
+   use Moose;
+
+   extends qw(File::DataClass::Schema);
+
+   has '+storage_class' => default => q(XML::Bare);
+
 =head1 Description
 
 Uses L<XML::Bare> to read and write XML files

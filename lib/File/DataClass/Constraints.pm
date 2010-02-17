@@ -76,17 +76,64 @@ File::DataClass::Constraints - Role defining package constraints
 
 =head1 Description
 
+Defines the constraints used in this distribution
+
 =head1 Configuration and Environment
+
+Defines these subtypes
+
+=over 3
+
+=item B<F_DC_Cache>
+
+Is a L<File::DataClass::Cache>
+
+=item B<F_DC_Exception>
+
+Can C<throw>
+
+=item B<F_DC_Lock>
+
+Is a L<Class::Null> or can C<set> and C<reset>
+
+=item B<F_DC_Path>
+
+Is a L<File::DataClass::IO>. Can be coerced from either a string or
+an array ref
+
+=item B<F_DC_Result>
+
+Is a L<File::DataClass::Result>
+
+=item B<F_DC_Directory>
+
+Subtype of C<F_DC_Path> which is a directory. Can be coerced from
+either a string or an array ref
+
+=item B<F_DC_File>
+
+Subtype of C<F_DC_Path> which is a file. Can be coerced from either a
+string or an array ref
+
+=back
 
 =head1 Subroutines/Methods
 
+None
+
 =head1 Diagnostics
+
+None
 
 =head1 Dependencies
 
 =over 3
 
+=item L<File::DataClass::IO>
+
 =item L<Moose::Role>
+
+=item L<Moose::Util::TypeConstraints>
 
 =back
 

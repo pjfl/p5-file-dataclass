@@ -80,7 +80,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Base - <One-line description of module's purpose>
+File::DataClass::Util - Moose Role defining utility methods
 
 =head1 Version
 
@@ -88,11 +88,11 @@ File::DataClass::Base - <One-line description of module's purpose>
 
 =head1 Synopsis
 
-   use parent qw(File::DataClass::Base);
+   use Moose;
+
+   with qw(File::DataClass::Util);
 
 =head1 Description
-
-=head1 Configuration and Environment
 
 =head1 Subroutines/Methods
 
@@ -112,13 +112,27 @@ File::DataClass::Base - <One-line description of module's purpose>
 
 =head2 throw
 
+=head1 Configuration and Environment
+
+None
+
 =head1 Diagnostics
+
+None
 
 =head1 Dependencies
 
 =over 3
 
-=item L<Class::Accessor::Fast>
+=item L<Class::MOP>
+
+=item L<File::DataClass::IO>
+
+=item L<List::Util>
+
+=item L<Moose::Role>
+
+=item L<TryCatch>
 
 =back
 
@@ -138,7 +152,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

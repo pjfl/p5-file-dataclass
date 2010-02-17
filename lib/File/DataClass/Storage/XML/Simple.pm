@@ -54,6 +54,11 @@ File::DataClass::Storage::XML::Simple - Read/write XML data storage model
 
 =head1 Synopsis
 
+   use Moose;
+
+   extends qw(File::DataClass::Schema);
+
+   has '+storage_class' => default => q(XML::Simple);
 
 =head1 Description
 
