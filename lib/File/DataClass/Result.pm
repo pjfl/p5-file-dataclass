@@ -75,6 +75,24 @@ File::DataClass::Result - Result object definition
 
 This is analogous to the result object in L<DBIx::Class>
 
+=head1 Configuration and Environment
+
+Defines these attributes
+
+=over 3
+
+=item B<name>
+
+An additional attribute added to the result to store the underlying hash
+key
+
+=item B<_resultset>
+
+An object reference to the L<File::DataClass::ResultSet> instance that
+created this result object
+
+=back
+
 =head1 Subroutines/Methods
 
 =head2 BUILD
@@ -84,21 +102,23 @@ schema class
 
 =head2 delete
 
+   $result->delete;
+
 Calls the delete method in the storage class
 
 =head2 insert
+
+   $result->insert;
 
 Calls the insert method in the storage class
 
 =head2 update
 
+   $result->update;
+
 Calls the update method in the storage class
 
 =head1 Diagnostics
-
-None
-
-=head1 Configuration and Environment
 
 None
 

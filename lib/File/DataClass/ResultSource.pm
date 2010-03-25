@@ -85,19 +85,31 @@ inherit from this
 
 =head1 Configuration and Environment
 
-None
+=over 3
+
+=item B<attributes>
+
+=item B<defaults>
+
+=item B<name>
+
+=item B<label_attr>
+
+=item B<resultset_attributes>
+
+=item B<resultset_class>
+
+=item B<schema>
+
+=item B<storage>
+
+=back
 
 =head1 Subroutines/Methods
 
-=head2 dump
-
-Moose bug. Cannot delegate a method called dump so we have to do it instead
-
 =head2 resultset
 
-Sets the resultset's I<path> attribute from the optional
-parameters. Creates and returns a new
-L<File::DataClass::Resultset> object
+Creates and returns a new L<File::DataClass::ResultSet> object
 
 =head1 Diagnostics
 
@@ -107,9 +119,9 @@ None
 
 =over 3
 
-=item L<File::DataClass>
+=item L<File::DataClass::ResultSet>
 
-=item L<File::DataClass::Schema>
+=item L<File::DataClass::Util>
 
 =back
 

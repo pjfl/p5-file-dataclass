@@ -372,10 +372,10 @@ File::DataClass::ResultSet - Core element methods
 
    $rs = $result_source->resultset( { path => q(path_to_data_file) } );
 
-   $result = $rs->search( { where => $hash_ref_of_where_clauses } );
+   $result = $rs->search( $hash_ref_of_where_clauses );
 
    for $result_object ($result->next) {
-      # Do something with the element object
+      # Do something with the result object
    }
 
 =head1 Description
@@ -384,7 +384,34 @@ Find, search and update methods for element objects
 
 =head1 Configuration and Environment
 
-Constructor returns a result set object
+Defines these attributes
+
+=item B<list_class>
+
+List class name, defaults to L<File::DataClass::List>
+
+=item B<result_class>
+
+Result class name, defaults to L<File::DataClass::Result>
+
+=item B<source>
+
+An object reference to the L<File::DataClass::ResultSource> instance
+that created this result set
+
+=item B<_iterator>
+
+Contains the integer count of the position within the B<_results> hash.
+Incremented by each call to L</next>
+
+=item B<_operators>
+
+A hash ref of coderefs that implement the comparison operations performed
+by the L</search> method
+
+=item B<_results>
+
+An array of result objects. Produced by calling L</search>
 
 =head1 Subroutines/Methods
 
@@ -426,7 +453,7 @@ the find and update in a transaction
 
 =head2 first
 
-   $result_object = $rs->search( { where => $where_clauses } )->first;
+   $result_object = $rs->search( $where_clauses )->first;
 
 Returns the first element object that is the result of the search call
 
@@ -440,13 +467,13 @@ Retrieves the named element and a list of elements
 
 =head2 last
 
-   $result_object = $rs->search( { where => $where } )->last;
+   $result_object = $rs->search( $where_clauses )->last;
 
 Returns the last element object that is the result of the search call
 
 =head2 next
 
-   $result_object = $rs->search( { where => $where } )->next;
+   $result_object = $rs->search( $where_clauses )->next;
 
 Iterate over the elements returned by the search call
 
@@ -474,7 +501,7 @@ Resets the resultset's cursor, so you can iterate through the elements again
 
 =head2 search
 
-   $result = $rs->search( { where => $hash_ref_of_where_clauses } );
+   $result = $rs->search( $hash_ref_of_where_clauses );
 
 Search for elements that match the given criterion. The criterion is a hash
 ref whose keys are element attribute names. The criterion values are either
@@ -483,7 +510,7 @@ the corresponding element attribute values. Hash ref keys are treated as
 comparison operators, the hash ref values are compared with the element
 attribute values, e.g.
 
-   $where = { 'some_element_attribute_name' => { '>=' => 0 } };
+   { 'some_element_attribute_name' => { '>=' => 0 } }
 
 =head2 select
 
@@ -521,11 +548,11 @@ None
 
 =over 3
 
-=item L<File::DataClass::Util>
+=item L<File::DataClass::List>
 
 =item L<File::DataClass::Result>
 
-=item L<File::DataClass::List>
+=item L<File::DataClass::Util>
 
 =back
 
@@ -545,7 +572,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
