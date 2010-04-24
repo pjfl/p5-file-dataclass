@@ -13,7 +13,7 @@
 \bblibdirs$
 ^MANIFEST\.skip$
 ^MANIFEST\.SKIP$
-^Build.PL$
+^MYMETA.yml$
 ^SIGNATURE$
 ^Debian_CPANTS.txt$
 

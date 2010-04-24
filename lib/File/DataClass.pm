@@ -8,6 +8,7 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Exception;
+use Moose;
 use MooseX::ClassAttribute;
 
 class_has 'Cache' => is => 'rw', isa => 'Maybe[F_DC_Cache]';
@@ -18,6 +19,7 @@ class_has 'exception_class' => is => 'rw', isa => 'F_DC_Exception',
 
 __PACKAGE__->meta->make_immutable;
 
+no Moose;
 no MooseX::ClassAttribute;
 
 1;

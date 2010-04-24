@@ -386,6 +386,8 @@ Find, search and update methods for element objects
 
 Defines these attributes
 
+=over 3
+
 =item B<list_class>
 
 List class name, defaults to L<File::DataClass::List>
@@ -412,6 +414,8 @@ by the L</search> method
 =item B<_results>
 
 An array of result objects. Produced by calling L</search>
+
+=back
 
 =head1 Subroutines/Methods
 
