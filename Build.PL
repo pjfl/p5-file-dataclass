@@ -54,7 +54,7 @@ my $class_path = catfile( q(lib), split m{ :: }mx, $MODULE.q(.pm) );
 my $distname   = $MODULE; $distname =~ s{ :: }{-}gmx;
 my $resources  = { license => $LICENSE, bugtracker => $TRACKER.$distname, };
 
-$HOME_PAGE and $resources->{homepage  } = $HOME_PAGE;
+$HOME_PAGE and $resources->{homepage} = $HOME_PAGE;
 
 -f q(MANIFEST.SKIP) and $resources->{repository} = repository();
 
