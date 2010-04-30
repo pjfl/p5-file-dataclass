@@ -6,6 +6,8 @@ use strict;
 use namespace::clean -except => 'meta';
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use Sub::Exporter::ForMethods qw( method_installer );
+use Data::Section { installer => method_installer }, -setup;
 use Data::Section -setup;
 use File::DataClass::Constants;
 use Moose;
