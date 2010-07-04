@@ -3,7 +3,7 @@
 package File::DataClass::Exception;
 
 use Exception::Class
-   'File::DataClass::Exception::Base' => { fields => [ qw(args) ] };
+   'File::DataClass::Exception::Base' => { fields => [ qw(args rv) ] };
 
 use strict;
 use warnings;
