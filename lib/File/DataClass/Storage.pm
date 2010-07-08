@@ -62,13 +62,16 @@ sub insert {
 sub load {
    my ($self, @paths) = @_; $paths[0] or return {};
 
-   my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
-   my $cache_mtime = $self->_meta_unpack( $meta );
-   my $stale = $newest == 0 || $cache_mtime < $newest ? TRUE : FALSE;
-
-   $data and not $stale and return $data;
    scalar @paths == 1
       and return ($self->_read_file( $paths[0], FALSE ))[0] || {};
+
+   my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
+   my $cache_mtime = $self->_meta_unpack( $meta );
+   my $stale = ! defined $newest || ! defined $cache_mtime
+            || $newest > $cache_mtime
+             ? TRUE : FALSE;
+
+   defined $data and not $stale and return $data;
    $data = {}; $newest = 0;
 
    for my $path (@paths) {
@@ -157,11 +160,12 @@ sub _read_file {
 
    $self->_lock->set( k => $path );
 
-   my $path_mtime    = $path->stat->{mtime};
    my ($data, $meta) = $self->_cache->get( $path );
    my $cache_mtime   = $self->_meta_unpack( $meta );
+   my $path_mtime    = $path->stat->{mtime};
 
-   if (not $data or $cache_mtime < $path_mtime) {
+   if (not defined $data or not defined $cache_mtime
+       or $path_mtime > $cache_mtime) {
       try        { $data = inner( $path->lock ); $path->close }
       catch ($e) { $self->_lock->reset( k => $path ); $self->throw( $e ) }
 

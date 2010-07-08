@@ -10,6 +10,8 @@ use CHI;
 use File::DataClass::Constants;
 use Moose;
 
+with qw(File::DataClass::Util);
+
 has 'cache_attributes' => is => 'ro', isa => 'HashRef',
    default             => sub { return {} };
 has 'cache_class'      => is => 'ro', isa => 'ClassName',
@@ -17,12 +19,15 @@ has 'cache_class'      => is => 'ro', isa => 'ClassName',
 has 'cache'            => is => 'ro', isa => 'Object',
    lazy_build          => TRUE;
 
+has '_mtimes_key'      => is => 'ro', isa => 'Str',
+   default             => q(_mtimes);
+
 sub get {
    my ($self, $key) = @_; $key .= NUL;
 
    my $cached = $key    ? $self->cache->get( $key ) : FALSE;
    my $data   = $cached ? $cached->{data}           : undef;
-   my $meta   = $cached ? $cached->{meta}           : { mtime => 0 };
+   my $meta   = $cached ? $cached->{meta}           : { mtime => undef };
 
    return ($data, $meta);
 }
@@ -30,18 +35,17 @@ sub get {
 sub get_by_paths {
    my ($self, $paths) = @_;
    my ($key, $newest) = $self->_get_key_and_newest( $paths );
-   my ($data, $meta)  = $self->get( $key );
 
-   return ($data, $meta, $newest);
+   return ($self->get( $key ), $newest);
 }
 
 sub remove {
    my ($self, $key) = @_; $key or return; $key .= NUL;
 
-   my $mtimes = $self->cache->get( q(mtimes) ) || {};
+   my $mtimes = $self->cache->get( $self->_mtimes_key ) || {};
 
    delete $mtimes->{ $key };
-   $self->cache->set( q(mtimes), $mtimes );
+   $self->cache->set( $self->_mtimes_key, $mtimes );
    $self->cache->remove( $key );
    return;
 }
@@ -49,15 +53,20 @@ sub remove {
 sub set {
    my ($self, $key, $data, $meta) = @_;
 
-   $key .= NUL; $meta ||= {}; $meta->{mtime} ||= 0;
+   $key .= NUL; $meta ||= {}; $meta->{mtime} ||= undef;
+
+   my $mt_key = $self->_mtimes_key;
+
+   $key eq $mt_key and $self->throw( error => 'Cache key "[_1]" not allowed',
+                                     args  => [ $mt_key ] );
 
    if ($key and defined $data) {
       $self->cache->set( $key, { data => $data, meta => $meta } );
 
-      my $mtimes = $self->cache->get( q(mtimes) ) || {};
+      my $mtimes = $self->cache->get( $mt_key ) || {};
 
       $mtimes->{ $key } = $meta->{mtime};
-      $self->cache->set( q(mtimes), $mtimes );
+      $self->cache->set( $mt_key, $mtimes );
    }
 
    return ($data, $meta);
@@ -84,20 +93,18 @@ sub _build_cache {
 }
 
 sub _get_key_and_newest {
-   my ($self, $paths) = @_; my $key; my $newest = 0;
+   my ($self, $paths) = @_; my $key; my $newest = 0; my $valid = TRUE;
 
-   my $mtimes = $self->cache->get( q(mtimes) ) || {};
+   my $mtimes = $self->cache->get( $self->_mtimes_key ) || {};
 
    for my $path (map { NUL.$_ } grep { $_->pathname } @{ $paths }) {
-      $key .= $key ? q(~).$path : $path;
+      $key .= $key ? q(~).$path : $path; my $mtime;
 
-      my $mtime = $mtimes->{ $path }; not $mtime and $newest = undef;
-
-      $mtime and defined $newest and $mtime > $newest and $newest = $mtime;
+      if ($mtime = $mtimes->{ $path }) { $mtime > $newest and $newest = $mtime }
+      else { $valid = FALSE }
    }
 
-   not defined $newest and $newest = 0;
-   return ($key, $newest);
+   return ($key, $valid ? $newest : undef);
 }
 
 1;
