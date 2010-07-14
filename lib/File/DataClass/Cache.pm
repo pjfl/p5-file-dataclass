@@ -7,6 +7,7 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use CHI;
+use Class::Null;
 use File::DataClass::Constants;
 use Moose;
 
@@ -18,6 +19,9 @@ has 'cache_class'      => is => 'ro', isa => 'ClassName',
    default             => q(CHI);
 has 'cache'            => is => 'ro', isa => 'Object',
    lazy_build          => TRUE;
+has 'schema'           => is => 'ro', isa => 'Object',
+   required            => 1, weak_ref => TRUE,
+   handles             => { _debug => q(debug), _log => q(log), };
 
 has '_mtimes_key'      => is => 'ro', isa => 'Str',
    default             => q(_mtimes);
@@ -88,6 +92,10 @@ sub _build_cache {
    my $self = shift; my $attrs = $self->cache_attributes;
 
    my $class = delete $attrs->{cache_class} || $self->cache_class;
+
+   $class eq q(none) and return Class::Null->new;
+
+   $attrs->{on_set_error} = sub { $self->_log->error( $_[ 0 ] ) };
 
    return $class->new( %{ $attrs } );
 }

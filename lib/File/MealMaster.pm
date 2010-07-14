@@ -12,20 +12,27 @@ use Moose;
 
 extends qw(File::DataClass::Schema);
 
-has '+result_source_attributes' =>
-   default                => sub { return {
-      recipes             => {
-         attributes       => [ qw(categories directions
-                                  ingredients title yield) ],
-         defaults         => { categories => [], ingredients => [] },
-         resultset_attributes => {
-            result_class  => q(File::MealMaster::Result), }, },
-   } };
-has '+storage_class'      =>
-   default                => q(+File::MealMaster::Storage);
-has 'source_name'         => is => 'ro', isa => 'Str', default => q(recipes);
-has 'template_dir'        => is => 'ro', isa => 'F_DC_Directory',
-   coerce                 => TRUE, required => TRUE;
+has '+cache_attributes' => default => sub {
+   (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
+
+   return { cache_class => q(none), namespace => $ns, }
+};
+
+has '+result_source_attributes' => default => sub {
+   { recipes          => {
+      attributes      => [ qw(categories directions
+                              ingredients title yield) ],
+      defaults        => { categories => [], ingredients => [] },
+      resultset_attributes => {
+         result_class => q(File::MealMaster::Result), }, }, }
+};
+
+has '+storage_class'  => default => q(+File::MealMaster::Storage);
+
+has 'source_name'     => is => 'ro', isa => 'Str', default => q(recipes);
+
+has 'template_dir'    => is => 'ro', isa => 'F_DC_Directory',
+   coerce             => TRUE, required => TRUE;
 
 around 'source' => sub {
    my ($orig, $self) = @_; return $self->$orig( $self->source_name );

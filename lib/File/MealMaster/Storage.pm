@@ -8,7 +8,6 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Data::Section -setup;
 use File::DataClass::Constants;
-use MealMaster;
 use Moose;
 use Template;
 use Template::Stash;
@@ -20,7 +19,20 @@ has 'template'       => is => 'ro', isa => 'Object', lazy_build => TRUE;
 has 'write_template' => is => 'ro', isa => 'Str',    lazy_build => TRUE;
 
 augment '_read_file' => sub {
-   my ($self, $rdr) = @_; return $self->_read_filter( $rdr );
+   my ($self, $rdr) = @_; return $rdr->all;
+};
+
+around '_read_file' => sub {
+   my ($orig, $self, @args) = @_;
+
+   my ($data, $mtime) = $self->$orig( @args ); my $order = 0; my $recipes = {};
+
+   for my $recipe (MealMasterMashup->new()->parse( $data )) {
+      $recipe->{ _order_by } = $order++;
+      $recipes->{ $self->make_key( $recipe->title ) } = $recipe;
+   }
+
+   return ({ $self->schema->source_name => $recipes }, $mtime);
 };
 
 augment '_write_file' => sub {
@@ -40,17 +52,6 @@ sub make_key {
 }
 
 # Private methods
-
-sub _read_filter {
-   my ($self, $path) = @_; my $recipes = {}; my $order = 0;
-
-   for my $recipe (MealMaster->new()->parse( NUL.$path )) {
-      $recipe->{ _order_by } = $order++;
-      $recipes->{ $self->make_key( $recipe->title ) } = $recipe;
-   }
-
-   return { $self->schema->source_name => $recipes };
-}
 
 sub _write_filter {
    my ($self, $wtr, $data) = @_; $data ||= {};
@@ -104,6 +105,98 @@ sub __original_order {
 __PACKAGE__->meta->make_immutable;
 
 no Moose;
+
+package # Hide from indexer
+   MealMasterMashup;
+
+use parent q(MealMaster);
+
+sub parse {
+   # Copyright (C) 2005, Leon Brocard
+   # Needed a version that takes scalar data
+   my ($self, $file) = @_;
+
+   $file and $file =~ /^(MMMMM|-----).+Meal-Master/ or return;
+
+   my @parts = split /^(?:MMMMM|-----).+Meal-Master.+$/m, $file;
+   my @recipes;
+
+   foreach my $part (@parts) {
+      $part =~ s/^\s+//;
+      my $recipe = MealMaster::Recipe->new;
+      my $lines  = [ split /\n/, $part ];
+
+      my $line;
+
+      while (1) {
+         $line = $self->_newline($lines);
+         last unless defined $line;
+         last if $line =~ /Title:/;
+      }
+      next unless defined $line;
+
+      my ($title) = $line =~ /Title: (.+)$/;
+      next unless $title;
+      $title =~ s/^ +//;
+      $title =~ s/ +$//;
+      $recipe->title($title);
+
+      $line = $self->_newline($lines);
+      my ($categories) = $line =~ /Categories: (.+)$/;
+
+      my @categories;
+      @categories = split ', ', $categories if $categories;
+      $recipe->categories(\@categories);
+
+      $line = $self->_newline($lines);
+      my ($yield) = $line =~ /(?:Yield|Servings): +(.+)$/;
+      next unless $yield;
+      $recipe->yield($yield);
+
+      my $dflag = 0;
+      my $ingredients;
+      my $directions;
+
+      while (defined($line = $self->_newline($lines))) {
+         next unless $line;
+
+         last if (!defined $line);
+         next if (($dflag == 0) && ($line =~ m|^\s*$|));
+
+         if ($line =~ /^[M-]+$/) {
+            last;
+         } elsif ($line =~ m(^[M|-]{4,})) {
+            $line =~ s|^MMMMM||;
+            $line =~ s|^\-+||;
+            $line =~ s|\-+$||;
+            $line =~ s|^ +||;
+            $line =~ s|:$||;
+            $directions .= "$line\n";
+         } elsif ($line =~ m/^ *([A-Z ]+):$/) {
+            $directions .= "$line\n";
+         } elsif (length($line) > 12
+                  && (substr($line, 0, 7) =~ m|^[ 0-9\.\/]+$|)
+                  && (substr($line, 7, 4) =~ m|^ .. $|))
+         {
+            $ingredients .= "$line\n";
+         } else {
+            $line =~ s|^\s+||;
+            if ($line) {
+               $directions .= "$line\n";
+               $dflag = 1;
+            }
+         }
+      }
+
+      $ingredients = $self->_parse_ingredients($ingredients);
+
+      $recipe->ingredients($ingredients);
+      $recipe->directions($directions);
+
+      push @recipes, $recipe;
+   }
+   return @recipes;
+}
 
 1;
 

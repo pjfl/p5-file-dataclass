@@ -22,13 +22,13 @@ with    qw(File::DataClass::Constraints File::DataClass::Util);
 has 'cache'                    => is => 'ro', isa => 'F_DC_Cache',
    lazy_build                  => TRUE;
 has 'cache_attributes'         => is => 'ro', isa => 'HashRef',
-   default                     => sub { return {} };
+   default                     => sub { {} };
 has 'debug'                    => is => 'ro', isa => 'Bool',
    default                     => FALSE;
 has 'lock'                     => is => 'ro', isa => 'F_DC_Lock',
    lazy_build                  => TRUE;
 has 'lock_attributes'          => is => 'ro', isa => 'HashRef',
-   default                     => sub { return {} };
+   default                     => sub { {} };
 has 'lock_class'               => is => 'ro', isa => 'ClassName',
    default                     => q(IPC::SRLock);
 has 'log'                      => is => 'ro', isa => 'Object',
@@ -38,13 +38,13 @@ has 'path'                     => is => 'rw', isa => 'F_DC_Path',
 has 'perms'                    => is => 'rw', isa => 'Num',
    default                     => PERMS;
 has 'result_source_attributes' => is => 'ro', isa => 'HashRef',
-   default                     => sub { return {} };
+   default                     => sub { {} };
 has 'result_source_class'      => is => 'ro', isa => 'ClassName',
    default                     => q(File::DataClass::ResultSource);
 has 'source_registrations'     => is => 'ro', isa => 'HashRef[Object]',
    lazy_build                  => TRUE;
 has 'storage_attributes'       => is => 'ro', isa => 'HashRef',
-   default                     => sub { return {} };
+   default                     => sub { {} };
 has 'storage_base'             => is => 'ro', isa => 'ClassName',
    default                     => q(File::DataClass::Storage);
 has 'storage_class'            => is => 'ro', isa => 'Str',
@@ -52,7 +52,7 @@ has 'storage_class'            => is => 'ro', isa => 'Str',
 has 'storage'                  => is => 'rw', isa => 'Object',
    lazy_build                  => TRUE;
 has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
-   default                     => sub { __PACKAGE__->io( File::Spec->tmpdir )},
+   default                     => sub { __PACKAGE__->io( File::Spec->tmpdir ) },
    coerce                      => TRUE;
 
 around BUILDARGS => sub {
@@ -128,18 +128,19 @@ sub translate {
 # Private methods
 
 sub _build_cache {
-   my $self  = shift;
+   my $self = shift; my $attrs = { schema => $self };
 
-   $self->Cache and return $self->Cache;
+   (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
 
-   my $attrs = {}; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
+   $attrs->{cache_attributes} = $self->cache_attributes;
+   $ns = $attrs->{cache_attributes}->{namespace} ||= $ns;
 
-   $attrs->{cache_attributes}                = $self->cache_attributes;
-   $attrs->{cache_attributes}->{driver   } ||= q(FastMmap);
-   $attrs->{cache_attributes}->{root_dir } ||= NUL.$self->tempdir;
-   $attrs->{cache_attributes}->{namespace} ||= $ns;
+   $cache = $self->Cache and exists $cache->{ $ns } and return $cache->{ $ns };
 
-   return $self->Cache( File::DataClass::Cache->new( $attrs ) );
+   $attrs->{cache_attributes}->{driver  } ||= q(FastMmap);
+   $attrs->{cache_attributes}->{root_dir} ||= NUL.$self->tempdir;
+
+   return $self->Cache->{ $ns } = File::DataClass::Cache->new( $attrs );
 }
 
 sub _build_lock {

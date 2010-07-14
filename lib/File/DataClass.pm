@@ -11,7 +11,7 @@ use Moose;
 use MooseX::ClassAttribute;
 use File::DataClass::Exception;
 
-class_has 'Cache' => is => 'rw', isa => 'Maybe[F_DC_Cache]';
+class_has 'Cache' => is => 'rw', isa => 'HashRef', default => sub { {} };
 class_has 'Lock'  => is => 'rw', isa => 'Maybe[F_DC_Lock]';
 
 class_has 'exception_class' => is => 'rw', isa => 'F_DC_Exception',
