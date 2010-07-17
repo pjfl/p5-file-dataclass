@@ -105,16 +105,17 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 __DATA__
 __[ render_template ]__
 <table class="recipe">
-   <tr><td class="label">Title</td><td>[% title %]</td></tr>
+   <tr><td class="label">Title</td><td>[% title | html %]</td></tr>
    <tr><td class="label">Categories</td><td>
-	   [% FOREACH category IN categories %][% category %] | [% END %]</td></tr>
-   <tr><td class="label">Yield</td><td>[% yield %]</td></tr>
+	   [% FOREACH category IN categories %][% category | html %] | [% END %]
+   </td></tr>
+   <tr><td class="label">Yield</td><td>[% yield | html %]</td></tr>
 	<tr><td class="label">Ingredients</td><td><table class="recipe">
    [% FOREACH ingredient IN ingredients %]
-     <tr><td nowrap="1" width="1%">[% ingredient.quantity %]</td>
-         <td width="1%">[% ingredient.measure %]</td>
-        <td>[% ingredient.product %]</td></tr>
+     <tr><td class="nowrap" width="1%">[% ingredient.quantity | html %]</td>
+         <td width="1%">[% ingredient.measure | html %]</td>
+        <td>[% ingredient.product | html %]</td></tr>
    [% END %]</table></td></tr>
    <tr><td class="label">Directions</td>
-     <td>[% directions | html_line_break %]</td></tr>
+     <td>[% directions | html | html_line_break %]</td></tr>
 </table>
