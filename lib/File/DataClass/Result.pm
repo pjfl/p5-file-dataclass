@@ -16,7 +16,9 @@ has '_resultset' => is => 'ro', isa => 'Object', required => 1;
 sub BUILD {
    my ($self, $args) = @_; my $class = blessed $self;
 
-   my %types = ( qw(SCALAR Str ARRAY ArrayRef HASH HashRef) );
+   my %types = ( qw(SCALAR Maybe[Str]
+                    ARRAY  Maybe[ArrayRef]
+                    HASH   Maybe[HashRef]) );
 
    for (@{ $self->_resultset->source->attributes }) {
       my $type = ref $args->{ $_ } || q(SCALAR);
