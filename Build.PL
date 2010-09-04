@@ -38,6 +38,7 @@ my $REQUIRES  = {
    'Text::Wrap'                => 2005.082401,
    'TryCatch'                  => 1.002000,
    'XML::Bare'                 => 0.30,
+   'XML::DTD'                  => 0.09,
    'XML::Simple'               => 2.14,
 };
 my $TRACKER = q(http://rt.cpan.org/NoAuth/Bugs.html?Dist=);

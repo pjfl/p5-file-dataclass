@@ -7,19 +7,18 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
-use Moose;
 use XML::Simple;
+use Moose;
 
 extends qw(File::DataClass::Storage::XML);
 
 augment '_read_file' => sub {
    my ($self, $rdr) = @_;
 
-   my $data   = $self->_dtd_parse( $rdr->all );
-   my $arrays = [ keys %{ $self->_arrays } ];
-   my $xs     = XML::Simple->new( SuppressEmpty => TRUE );
+   my $data = $self->_dtd_parse( $rdr->all );
+   my $xs   = XML::Simple->new( SuppressEmpty => TRUE );
 
-   return $xs->xml_in( $data, ForceArray => $arrays );
+   return $xs->xml_in( $data, ForceArray => [ keys %{ $self->_arrays } ] );
 };
 
 augment '_write_file' => sub {

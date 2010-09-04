@@ -7,8 +7,8 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
-use Moose;
 use XML::Bare;
+use Moose;
 
 extends qw(File::DataClass::Storage::XML);
 
@@ -27,7 +27,7 @@ augment '_read_file' => sub {
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_;
 
-   $wtr->println( @{ $self->_dtd } ) if ($self->_dtd->[0]);
+   $self->_dtd->[0] and $wtr->println( @{ $self->_dtd } );
 
    $wtr->print( $self->_write_filter( 0, $self->root_name, $data ) );
    return $data;
@@ -45,8 +45,7 @@ sub _read_filter {
              and defined ($value = $data->[ $key ]->{value})
              and $value !~ m{ \A [\n\s]+ \z }mx) {
             # Coerce arrays from single scalars. Array list given by the DTD
-            if ($arrays->{ $key }) { $data->[ $key ] = [ $value ] }
-            else { $data->[ $key ] = $value }
+            $data->[ $key ] = $arrays->{ $key } ? [ $value ] : $value;
 
             next;
          }
@@ -60,8 +59,7 @@ sub _read_filter {
              and defined ($value = $data->{ $key }->{value})
              and $value !~ m{ \A [\n\s]+ \z }mx) {
             # Coerce arrays from single scalars. Array list given by the DTD
-            if ($arrays->{ $key }) { $data->{ $key } = [ $value ] }
-            else { $data->{ $key } = $value }
+            $data->{ $key } = $arrays->{ $key } ? [ $value ] : $value;
 
             next;
          }
@@ -83,11 +81,9 @@ sub _read_filter {
          }
       }
 
-      delete $data->{_pos} if (exists $data->{_pos});
-
-      if (exists $data->{value} && $data->{value} =~ m{ \A [\n\s]+ \z }mx) {
-         delete $data->{value};
-      }
+      exists $data->{_pos } and delete $data->{_pos};
+      exists $data->{value} and $data->{value} =~ m{ \A [\n\s]+ \z }mx
+         and delete $data->{value};
    }
 
    return;

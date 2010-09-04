@@ -7,6 +7,7 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
+use XML::DTD;
 use Moose;
 
 extends qw(File::DataClass::Storage);
@@ -19,7 +20,7 @@ has '_dtd'      => is => 'rw', isa => 'ArrayRef', default => sub { return [] };
 around '_meta_pack' => sub {
    my ($orig, $self, $args) = @_; my $packed = $self->$orig( $args );
 
-   $packed->{_dtd} = $self->_dtd if ($self->_dtd);
+   $self->_dtd and $packed->{_dtd} = $self->_dtd;
 
    return $packed;
 };
@@ -37,26 +38,18 @@ around '_meta_unpack' => sub {
 sub _dtd_parse {
    my ($self, $data) = @_;
 
-   $self->_dtd->[0] and $self->_dtd_parse_reset;
+   defined $self->_dtd->[ 0 ] and $self->_dtd_parse_reset; $data or return;
 
-   return unless ($data);
+   push @{ $self->_dtd }, $1 while ($data =~ s{ ( <! [^<>]+ > ) }{}msx);
 
-   while ($data =~ s{ ( <! [^<>]+ > ) }{}msx) {
-      push @{ $self->_dtd }, $1; $self->_dtd_parse_line( $1 );
+   my $dtd = XML::DTD->new; $dtd->sread( join NUL, @{ $self->_dtd } );
+
+   for my $el (map { $dtd->element( $_ ) } @{ $dtd->elementnames }) {
+      $el->{CMPNTTYPE} eq q(element) and $el->{CONTENTSPEC}->{eltname} eq ARRAY
+         and $self->_arrays->{ $el->{NAME} } = TRUE;
    }
 
    return $data;
-}
-
-sub _dtd_parse_line {
-   my ($self, $data) = @_;
-
-   if ($data =~ m{ \A <!ELEMENT \s+ (\w+) \s+ \(
-                      \s* ARRAY \s* \) \*? \s* > \z }imsx) {
-      $self->_arrays->{ $1 } = TRUE;
-   }
-
-   return;
 }
 
 sub _dtd_parse_reset {
