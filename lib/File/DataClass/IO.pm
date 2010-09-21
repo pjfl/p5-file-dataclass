@@ -70,8 +70,8 @@ around BUILDARGS => sub {
    my $type = ref $car; $type eq HASH and return $car;
 
    $attrs->{name} = $type eq ARRAY ? File::Spec->catfile( @{ $car } ) : $car;
-   $cdr[0] and $attrs->{mode  } = $cdr[0];
-   $cdr[1] and $attrs->{_perms} = $cdr[1];
+   $cdr[ 0 ] and $attrs->{mode  } = $cdr[ 0 ];
+   $cdr[ 1 ] and $attrs->{_perms} = $cdr[ 1 ];
 
    return $attrs;
 };
@@ -233,7 +233,7 @@ sub catdir {
 
    my @args = grep { defined and length } $self->name, @rest;
 
-   return $self->_constructor->dir( File::Spec->catdir( @args ) );
+   return $self->_constructor( \@args )->dir;
 }
 
 sub catfile {
@@ -241,7 +241,7 @@ sub catfile {
 
    my @args = grep { defined and length } $self->name, @rest;
 
-   return $self->_constructor->file( File::Spec->catfile( @args ) );
+   return $self->_constructor( \@args )->file;
 }
 
 sub chomp {
@@ -544,7 +544,7 @@ sub next {
 
    defined ($name = $self->read_dir) or return;
 
-   my $io = $self->_constructor( File::Spec->catfile( $self->name, $name ) );
+   my $io = $self->_constructor( [ $self->name, $name ] );
 
    defined $self->_filter and $io->filter( $self->_filter );
 
@@ -679,9 +679,7 @@ sub seek {
 
    $self->assert_open( $OSNAME eq EVIL ? q(r) : q(r+) );
 
-   my @sunk = $self->io_handle->seek( @rest );
-
-   $self->error_check;
+   my @sunk = $self->io_handle->seek( @rest ); $self->error_check;
 
    return wantarray ? @sunk : $sunk[0];
 }
