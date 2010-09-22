@@ -1,12 +1,8 @@
 Revision history for File::DataClass
 
+0.1
          - Renamed ::Element to ::Result
          - Added UnixAuth::Resultset
          - Exposed more resultset methods
          - Added support for passwd and group files
-
-0.1.146  2009-11-04
-         - Passes tests
-
-0.1.47   2009-10-16
          - Started this log
