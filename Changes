@@ -1,6 +1,6 @@
 Revision history for File::DataClass
 
-0.1
+0.1.217  2010-09-22 RC1
          - Renamed ::Element to ::Result
          - Added UnixAuth::Resultset
          - Exposed more resultset methods
