@@ -24,12 +24,11 @@ sub merge {
          $updated ||= $res;
       }
       elsif (exists ${ $dest_ref }->{ $attr }) {
-         delete ${ $dest_ref }->{ $attr };
-         $updated = TRUE;
+         delete ${ $dest_ref }->{ $attr }; $updated = TRUE;
       }
    }
 
-   ${ $dest_ref }->{name} = $src->{name} if ($updated);
+   $updated and ${ $dest_ref }->{name} = $src->{name};
 
    return $updated;
 }
@@ -62,15 +61,12 @@ sub _merge_attr_arrays {
          $updated ||= $res;
       }
       elsif ($to->[ $_ ]) {
-         splice @{ $to }, $_;
-         $updated = TRUE;
-         last;
+         splice @{ $to }, $_; $updated = TRUE; last;
       }
    }
 
    if (@{ $from } > @{ $to }) {
-      push @{ $to }, (splice @{ $from }, $#{ $to } + 1);
-      $updated = TRUE;
+      push @{ $to }, (splice @{ $from }, $#{ $to } + 1); $updated = TRUE;
    }
 
    return $updated;
@@ -86,16 +82,14 @@ sub _merge_attr_hashes {
          $updated ||= $res;
       }
       elsif ($to->{ $_ }) {
-         delete $to->{ $_ };
-         $updated = TRUE;
+         delete $to->{ $_ }; $updated = TRUE;
       }
    }
 
    if (keys %{ $from } > keys %{ $to }) {
       for (keys %{ $from }) {
          if ($from->{ $_ } and not exists $to->{ $_ }) {
-            $to->{ $_ } = $from->{ $_ };
-            $updated = TRUE;
+            $to->{ $_ } = $from->{ $_ }; $updated = TRUE;
          }
       }
    }

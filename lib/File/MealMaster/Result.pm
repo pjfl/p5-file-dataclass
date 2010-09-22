@@ -6,8 +6,6 @@ use strict;
 use namespace::clean -except => 'meta';
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
-use Sub::Exporter::ForMethods qw( method_installer );
-use Data::Section { installer => method_installer }, -setup;
 use Data::Section -setup;
 use File::DataClass::Constants;
 use Moose;
@@ -18,12 +16,12 @@ has '_render_template' => is => 'rw', isa => 'Str', lazy_build => TRUE;
 
 sub render {
    my $self          = shift;
-   my $storage       = $self->_storage;
+   my $template      = $self->_storage->template;
    my $template_data = $self->_render_template;
    my $buffer        = NUL;
 
-   $storage->template->process( \$template_data, $self, \$buffer )
-      or $buffer = $storage->template->error;
+   $template->process( \$template_data, $self, \$buffer )
+      or $buffer = $template->error;
 
    return $buffer;
 }
@@ -31,7 +29,7 @@ sub render {
 # Private methods
 
 sub _build__render_template {
-   return ${ __PACKAGE__->section_data( q(render_template) ) };
+   my $self = shift; return ${ $self->section_data( q(render_template) ) };
 }
 
 no Moose;
@@ -54,17 +52,26 @@ File::MealMaster::Result - MealMaster food recipes custom methods
 
 =head1 Description
 
+Adds custom methods to the recipe result class
+
 =head1 Configuration and Environment
 
 =head1 Subroutines/Methods
 
 =head2 render
 
+Return the HTML representation of this recipe. Uses the internal template
+in the data block at the end of this file
+
 =head1 Diagnostics
+
+None
 
 =head1 Dependencies
 
 =over 3
+
+=item L<Data::Section>
 
 =item L<File::DataClass::Result>
 
@@ -86,7 +93,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

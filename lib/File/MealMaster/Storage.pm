@@ -87,7 +87,7 @@ sub _build_template {
 }
 
 sub _build_write_template {
-   return ${ __PACKAGE__->section_data( q(write_template) ) };
+   my $self = shift; return ${ $self->section_data( q(write_template) ) };
 }
 
 # Private subroutines
@@ -114,11 +114,12 @@ use parent q(MealMaster);
 sub parse {
    # Copyright (C) 2005, Leon Brocard
    # Needed a version that takes scalar data
-   my ($self, $file) = @_;
+   # Also patched to handle whitespace better
+   my ($self, $data) = @_;
 
-   $file and $file =~ /^(MMMMM|-----).+Meal-Master/ or return;
+   $data and $data =~ /^(MMMMM|-----).+Meal-Master/ or return;
 
-   my @parts = split /^(?:MMMMM|-----).+Meal-Master.+$/m, $file;
+   my @parts = split /^(?:MMMMM|-----).+Meal-Master.+$/m, $data;
    my @recipes;
 
    foreach my $part (@parts) {
@@ -173,6 +174,7 @@ sub parse {
             $line =~ s|:$||;
             $directions .= "$line\n";
          } elsif ($line =~ m/^ *([A-Z ]+):$/) {
+            $line =~ s|^\s+||;
             $directions .= "$line\n";
          } elsif (length($line) > 12
                   && (substr($line, 0, 7) =~ m|^[ 0-9\.\/]+$|)
@@ -180,8 +182,8 @@ sub parse {
          {
             $ingredients .= "$line\n";
          } else {
-            $line =~ s|^\s+||;
             if ($line) {
+               $line =~ s|^\s+||;
                $directions .= "$line\n";
                $dflag = 1;
             }
@@ -197,6 +199,8 @@ sub parse {
    }
    return @recipes;
 }
+
+package File::MealMaster::Storage;
 
 1;
 
@@ -248,7 +252,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
@@ -267,17 +271,18 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 __DATA__
 __[ write_template ]__
 MMMMM----- Recipe via Meal-Master (tm) v8.05
-
+ 
       Title: [% title %]
- Categories: [% categories.sort.join(', ') %]
+ Categories: [% categories.join(', ') %]
       Yield: [% yield %]
-
+ 
 [% FOREACH ingredient IN ingredients -%]
 [% ingredient.quantity.sprintf('%7.7s') -%]
  [% ingredient.measure.sprintf('%-2.2s') -%]
- [% ingredient.product.sprintf('%-29.29s') %]
+ [% ingredient.product.sprintf('%-.29s') %]
 [% END -%]
-
-[% directions %]
-
+ 
+  [% directions.split('\n').join("\n  ") %]
+ 
 MMMMM
+ 

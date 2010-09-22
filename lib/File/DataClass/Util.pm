@@ -12,7 +12,7 @@ use File::DataClass::IO ();
 use File::Spec;
 use List::Util qw(first);
 use Moose::Role;
-use TryCatch;
+use Try::Tiny;
 
 sub basename {
    my ($self, $path, @suffixes) = @_;
@@ -37,17 +37,16 @@ sub ensure_class_loaded {
 
    my $package_defined = sub { Class::MOP::is_class_loaded( $class ) };
 
-   return TRUE if (not $opts->{ignore_loaded} and $package_defined->());
+   not $opts->{ignore_loaded} and $package_defined->() and return TRUE;
 
-   try        { Class::MOP::load_class( $class ) }
-   catch ($e) { $self->throw( $e ) }
+   try   { Class::MOP::load_class( $class ) }
+   catch { $self->throw( $_ ) };
 
-   return TRUE if ($package_defined->());
+   $package_defined->() and return TRUE;
 
-   my $e = 'Class [_1] loaded but package undefined';
-
-   $self->throw( error => $e, args => [ $class ] );
-   return;
+   $self->throw( error => 'Class [_1] loaded but package undefined',
+                 args  => [ $class ] );
+   return; # Not reached
 }
 
 sub io {
@@ -132,7 +131,7 @@ None
 
 =item L<Moose::Role>
 
-=item L<TryCatch>
+=item L<Try::Tiny>
 
 =back
 

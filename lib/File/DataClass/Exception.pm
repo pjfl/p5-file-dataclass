@@ -96,15 +96,15 @@ File::DataClass::Exception - Exception base class
 =head1 Synopsis
 
    use Moose;
-   use TryCatch;
+   use Try::Tiny;
 
    extend qw(File::DataClass::Schema);
 
    sub some_method {
       my $self = shift;
 
-      try        { this_will_fail }
-      catch ($e) { $self->throw( $e ) }
+      try   { this_will_fail }
+      catch { $self->throw( $_ ) };
    }
 
 =head1 Description

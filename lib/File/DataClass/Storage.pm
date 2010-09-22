@@ -13,7 +13,7 @@ use File::DataClass::Constants;
 use File::DataClass::HashMerge;
 use Hash::Merge qw(merge);
 use Moose;
-use TryCatch;
+use Try::Tiny;
 
 with qw(File::DataClass::Util);
 
@@ -116,7 +116,7 @@ sub txn_do {
 
       $self->_lock->reset( k => $key );
    }
-   catch ($e) { $self->_lock->reset( k => $key ); $self->throw( $e ) }
+   catch { $self->_lock->reset( k => $key ); $self->throw( $_ ) };
 
    return $wantarray ? @{ $res } : $res;
 }
@@ -166,8 +166,8 @@ sub _read_file {
 
    if (not defined $data or not defined $cache_mtime
        or $path_mtime > $cache_mtime) {
-      try        { $data = inner( $path->lock ); $path->close }
-      catch ($e) { $self->_lock->reset( k => $path ); $self->throw( $e ) }
+      try   { $data = inner( $path->lock ); $path->close }
+      catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
 
       $self->_cache->set( $path, $data, $self->_meta_pack( $path_mtime ) );
       $self->_debug and $self->_log->debug( "Read file  $path" );
@@ -218,9 +218,9 @@ sub _write_file {
       copy( $path.NUL, $path.$self->backup ) or $self->throw( $ERRNO );
    }
 
-   try        { $data = inner( $path->atomic->lock, $data ) }
-   catch ($e) { $path->delete; $self->_lock->reset( k => $path );
-                $self->throw( $e ) }
+   try   { $data = inner( $path->atomic->lock, $data ) }
+   catch { $path->delete; $self->_lock->reset( k => $path );
+           $self->throw( $_ ) };
 
    $path->close;
    $self->_cache->remove( $path );

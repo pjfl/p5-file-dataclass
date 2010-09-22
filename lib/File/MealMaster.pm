@@ -27,12 +27,9 @@ has '+result_source_attributes' => default => sub {
          result_class => q(File::MealMaster::Result), }, }, }
 };
 
-has '+storage_class'  => default => q(+File::MealMaster::Storage);
+has '+storage_class' => default => q(+File::MealMaster::Storage);
 
-has 'source_name'     => is => 'ro', isa => 'Str', default => q(recipes);
-
-has 'template_dir'    => is => 'ro', isa => 'F_DC_Directory',
-   coerce             => TRUE, required => TRUE;
+has 'source_name' => is => 'ro', isa => 'Str', default => q(recipes);
 
 around 'source' => sub {
    my ($orig, $self) = @_; return $self->$orig( $self->source_name );
