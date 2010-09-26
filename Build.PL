@@ -48,8 +48,15 @@ use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use English qw( -no_match_vars );
 use File::Spec::Functions;
 use Module::Build;
+
+sub whimper { my $text = shift; print {*STDOUT} $text."\n"; exit 0 }
+
+BEGIN {
+   eval { require 5.008; }; $EVAL_ERROR and whimper 'Perl minimum 5.8';
+}
 
 my $class_path = catfile( q(lib), split m{ :: }mx, $MODULE.q(.pm) );
 my $distname   = $MODULE; $distname =~ s{ :: }{-}gmx;
