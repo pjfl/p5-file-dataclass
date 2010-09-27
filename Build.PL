@@ -46,16 +46,28 @@ my $REQUIRES  = {
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use English qw( -no_match_vars );
-use File::Spec::Functions;
-use Module::Build;
 
-sub whimper { my $text = shift; print {*STDOUT} $text."\n"; exit 0 }
+sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN {
    eval { require 5.008; }; $EVAL_ERROR and whimper 'Perl minimum 5.8';
+}
+
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+
+use File::Spec::Functions;
+use Module::Build;
+
+sub repository {
+   # Accessor for the SVN repository information
+   require SVN::Class;
+
+   my $file = SVN::Class->svn_file( q(.svn) ) or return;
+   my $info = $file->info;
+
+   return $info && $info->root !~ m{ \A file: }mx ? $info->root : undef;
 }
 
 my $class_path = catfile( q(lib), split m{ :: }mx, $MODULE.q(.pm) );
@@ -73,28 +85,17 @@ Module::Build->new
      build_requires     => { 'Exception::Class' => 1.23,
                              'Test::More'       => 0.74,
                              'Text::Diff'       => 1.37, },
-     configure_requires => { 'version'          => 0.74 },
-     create_readme      => 1,
+     configure_requires => { 'Module::Build'    => 0.32,
+                             'version'          => 0.74, },
      create_packlist    => 0,
+     create_readme      => 1,
      dist_version_from  => $class_path,
      license            => $LICENSE,
      module_name        => $MODULE,
-     no_index           => { directory => [ q(t) ] },
+     no_index           => { directory => [ qw(t) ] },
      requires           => $REQUIRES,
      resources          => $resources,
      sign               => $SIGN, )->create_build_script; # Goal
-
-exit 0;
-
-sub repository {
-   # Accessor for the SVN repository information
-   require SVN::Class;
-
-   my $file = SVN::Class->svn_file( q(.svn) ) or return;
-   my $info = $file->info;
-
-   return $info && $info->root !~ m{ \A file: }mx ? $info->root : undef;
-}
 
 # Local Variables:
 # mode: perl
