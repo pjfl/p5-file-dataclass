@@ -2,11 +2,12 @@
 
 package File::DataClass::Exception;
 
+use strict;
+use warnings;
+
 use Exception::Class
    'File::DataClass::Exception::Base' => { fields => [ qw(args rv) ] };
 
-use strict;
-use warnings;
 use overload '""' => sub { shift->to_string }, fallback => 1;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 use base qw(File::DataClass::Exception::Base);

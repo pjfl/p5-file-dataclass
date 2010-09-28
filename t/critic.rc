@@ -38,6 +38,8 @@ allow = for if unless
 [-Variables::RequireLexicalLoopIterators]
 [-ValuesAndExpressions::RequireInterpolationOfMetachars]
 [-CodeLayout::RequireTidyCode]
+[-Subroutines::ProhibitBuiltinHomonyms]
+[-Subroutines::ProhibitSubroutinePrototypes]
 
 # For all other Policies, I accept the default severity,
 # so no additional configuration is required for them.
