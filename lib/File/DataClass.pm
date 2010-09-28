@@ -31,7 +31,7 @@ __END__
 
 =head1 Name
 
-File::DataClass - Read and write structured data files
+File::DataClass - Structured data file IO with OO paradigm
 
 =head1 Version
 
