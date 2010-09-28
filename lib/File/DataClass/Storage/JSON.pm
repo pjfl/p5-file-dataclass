@@ -14,15 +14,15 @@ extends qw(File::DataClass::Storage);
 has '+extn' => default => q(.json);
 
 augment '_read_file' => sub {
-   my ($self, $rdr) = @_;
+   my ($self, $rdr) = @_; my $json = JSON->new->canonical;
 
-   return $rdr->empty ? {} : JSON->new->canonical->decode( $rdr->all );
+   return $rdr->empty ? {} : $json->decode( $rdr->all );
 };
 
 augment '_write_file' => sub {
-   my ($self, $wtr, $data) = @_;
+   my ($self, $wtr, $data) = @_; my $json = JSON->new->canonical;
 
-   $wtr->print( JSON->new->pretty->canonical->encode( $data ) );
+   $wtr->print( $json->pretty->encode( $data ) );
    return $data;
 };
 
@@ -94,7 +94,7 @@ There are no known bugs in this module.
 Please report problems to the address below.
 Patches are welcome
 
-Using the module L<JSON::XS> causes the roundtrip test to fail
+Using the module L<JSON::XS> causes the round trip test to fail
 
 =head1 Author
 
@@ -102,7 +102,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2010 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

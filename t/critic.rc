@@ -5,8 +5,8 @@ severity = 1
 [TestingAndDebugging::RequireUseStrict]
 severity = 5
 
-[TestingAndDebugging::RequireUseWarnings]
-severity = 5
+[-TestingAndDebugging::RequireUseWarnings]
+#severity = 5
 
 # I think these are less important, so only load when asked
 
@@ -16,7 +16,7 @@ severity = 5
 # My custom configuration
 
 [Subroutines::ProhibitExcessComplexity]
-max_mccabe = 20
+max_mccabe = 30
 
 [ControlStructures::ProhibitPostfixControls]
 allow = for if unless

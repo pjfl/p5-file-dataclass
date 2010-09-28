@@ -40,7 +40,9 @@ sub _dtd_parse {
 
    defined $self->_dtd->[ 0 ] and $self->_dtd_parse_reset; $data or return;
 
-   push @{ $self->_dtd }, $1 while ($data =~ s{ ( <! [^<>]+ > ) }{}msx);
+   while ($data =~ s{ ( <! [^<>]+ > ) }{}msx) {
+      $1 and push @{ $self->_dtd }, $1;
+   }
 
    my $dtd = XML::DTD->new; $dtd->sread( join NUL, @{ $self->_dtd } );
 
