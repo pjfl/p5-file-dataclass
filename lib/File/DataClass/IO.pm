@@ -841,6 +841,7 @@ __END__
 =pod
 
 =head1 Name
+
 File::DataClass::IO - Better IO syntax
 
 =head1 Version
