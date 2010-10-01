@@ -8,17 +8,17 @@ use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
 
 use English qw(-no_match_vars);
+use Module::Build;
 use Test::More;
 
 BEGIN {
-   if ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
-       || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) {
-      plan skip_all => q(CPAN Testing stopped);
-   }
+   Module::Build->current->notes->{stop_tests}
+      and plan skip_all => q(CPAN Testing stopped);
 
    plan tests => 84;
-   use_ok( q(File::DataClass::IO) );
 }
+
+use_ok( q(File::DataClass::IO) );
 
 isa_ok( io( $PROGRAM_NAME ), q(File::DataClass::IO) );
 

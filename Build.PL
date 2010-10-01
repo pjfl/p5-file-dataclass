@@ -47,7 +47,20 @@ my $REQUIRES  = {
 use strict;
 use warnings;
 
-use English qw( -no_match_vars );
+use English qw(-no_match_vars);
+
+sub repository {
+   # Accessor for the SVN repository information
+   require SVN::Class;
+
+   my $file = SVN::Class->svn_file( q(.svn) ) or return;
+   my $info = $file->info;
+
+   return $info && $info->root !~ m{ \A file: }mx ? $info->root : undef;
+}
+
+sub testing { !! ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
+              || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) }
 
 sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
@@ -59,16 +72,6 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::Spec::Functions;
 use Module::Build;
-
-sub repository {
-   # Accessor for the SVN repository information
-   require SVN::Class;
-
-   my $file = SVN::Class->svn_file( q(.svn) ) or return;
-   my $info = $file->info;
-
-   return $info && $info->root !~ m{ \A file: }mx ? $info->root : undef;
-}
 
 my $class_path = catfile( q(lib), split m{ :: }mx, $MODULE.q(.pm) );
 my $distname   = $MODULE; $distname =~ s{ :: }{-}gmx;
@@ -87,12 +90,14 @@ Module::Build->new
                              'Text::Diff'       => 1.37, },
      configure_requires => { 'Module::Build'    => 0.32,
                              'version'          => 0.74, },
+     create_license     => 1,
      create_packlist    => 0,
      create_readme      => 1,
      dist_version_from  => $class_path,
      license            => $LICENSE,
      module_name        => $MODULE,
-     no_index           => { directory => [ qw(t) ] },
+     no_index           => { directory  => [ qw(t) ], },
+     notes              => { stop_tests => testing,   },
      requires           => $REQUIRES,
      resources          => $resources,
      sign               => $SIGN, )->create_build_script; # Goal

@@ -9,18 +9,18 @@ use lib catdir( $Bin, updir, q(lib) );
 
 use English qw(-no_match_vars);
 use File::DataClass::IO;
+use Module::Build;
 use Test::More;
 use Text::Diff;
 
 BEGIN {
-   if ($ENV{AUTOMATED_TESTING} || $ENV{PERL_CR_SMOKER_CURRENT}
-       || ($ENV{PERL5OPT} || q()) =~ m{ CPAN-Reporter }mx) {
-      plan skip_all => q(CPAN Testing stopped);
-   }
+   Module::Build->current->notes->{stop_tests}
+      and plan skip_all => q(CPAN Testing stopped);
 
    plan tests => 4;
-   use_ok( q(File::DataClass::Schema) );
 }
+
+use_ok( q(File::DataClass::Schema) );
 
 my $args   = { path           => q(t/default.json),
                storage_class  => q(JSON),
