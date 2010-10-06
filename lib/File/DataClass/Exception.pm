@@ -9,7 +9,7 @@ use Exception::Class
    'File::DataClass::Exception::Base' => { fields => [ qw(args rv) ] };
 
 use overload '""' => sub { shift->to_string }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 use base qw(File::DataClass::Exception::Base);
 
 use Carp;
@@ -92,7 +92,7 @@ File::DataClass::Exception - Exception base class
 
 =head1 Version
 
-0.1.$Revision$
+0.2.$Revision$
 
 =head1 Synopsis
 

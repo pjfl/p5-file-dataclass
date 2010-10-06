@@ -4,7 +4,7 @@ package File::DataClass::Storage;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::Null;
 use English qw(-no_match_vars);
@@ -244,7 +244,7 @@ File::DataClass::Storage - Storage base class
 
 =head1 Version
 
-0.1.$Revision$
+0.2.$Revision$
 
 =head1 Synopsis
 

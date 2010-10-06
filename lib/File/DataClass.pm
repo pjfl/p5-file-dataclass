@@ -5,7 +5,7 @@ package File::DataClass;
 use strict;
 use warnings;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
@@ -35,7 +35,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 =head1 Version
 
-0.1.$Revision$
+0.2.$Revision$
 
 =head1 Synopsis
 

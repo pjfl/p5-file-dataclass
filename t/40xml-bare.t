@@ -2,14 +2,14 @@
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
 
 use English qw(-no_match_vars);
 use File::DataClass::IO;
-use Module:Build;
+use Module::Build;
 use Test::More;
 use Text::Diff;
 

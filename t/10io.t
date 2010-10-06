@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -59,15 +59,15 @@ is( io( catdir( q(), qw(foo bar baz) ) )->abs2rel( catdir( q(), q(foo) ) ),
     f( catdir( qw(bar baz) ) ), 'Can abs2rel' );
 is( io( catdir( qw(foo bar baz) ) )->rel2abs( catdir( q(), q(moo) ) ),
     f( catdir( q(), qw(moo foo bar baz) ) ), 'Can rel2abs' );
-is( io->dir( catdir( qw(doo foo) ) )->catdir( qw(goo hoo) ),
+is( io()->dir( catdir( qw(doo foo) ) )->catdir( qw(goo hoo) ),
     f( catdir( qw(doo foo goo hoo) ) ), 'Catdir 1' );
-is( io->dir->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 2' );
-is( io->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 3' );
-is( io->file( catdir( qw(doo foo) ) )->catfile( qw(goo hoo) ),
+is( io()->dir->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 2' );
+is( io()->catdir( qw(goo hoo) ), f( catdir( qw(goo hoo) ) ), 'Catdir 3' );
+is( io()->file( catdir( qw(doo foo) ) )->catfile( qw(goo hoo) ),
     f( catfile( qw(doo foo goo hoo) ) ), 'Catfile 1' );
-is( io->file->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ),
+is( io()->file->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ),
     'Catfile 2' );
-is( io->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ), 'Catfile 3' );
+is( io()->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ), 'Catfile 3' );
 
 # Absolute/relative
 
