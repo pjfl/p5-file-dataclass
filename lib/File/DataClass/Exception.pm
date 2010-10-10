@@ -4,12 +4,11 @@ package File::DataClass::Exception;
 
 use strict;
 use warnings;
+use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 
 use Exception::Class
-   'File::DataClass::Exception::Base' => { fields => [ qw(args rv) ] };
+   'File::DataClass::Exception::Base' => { fields => [ qw(args out rv) ] };
 
-use overload '""' => sub { shift->to_string }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
 use base qw(File::DataClass::Exception::Base);
 
 use Carp;
@@ -26,6 +25,7 @@ sub new {
    return $self->next::method( args           => [],
                                error          => 'Error unknown',
                                ignore_package => $IGNORE,
+                               out            => NUL,
                                @rest );
 }
 
@@ -35,6 +35,19 @@ sub catch {
    $e and blessed $e and $e->isa( __PACKAGE__ ) and return $e;
 
    return $e ? $self->new( error => NUL.$e ) : undef;
+}
+
+sub full_message {
+   my $self = shift; my $text = $self->error or return;
+
+   # Expand positional parameters of the form [_<n>]
+   0 > index $text, LOCALIZE and return $text;
+
+   my @args = @{ $self->args }; push @args, map { NUL } 0 .. 10;
+
+   $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
+
+   return $text;
 }
 
 sub stacktrace {
@@ -65,19 +78,6 @@ sub throw_on_error {
    $e = $self->catch( @rest ) and $self->throw( $e );
 
    return;
-}
-
-sub to_string {
-   my $self = shift; my $text = $self->error or return;
-
-   # Expand positional parameters of the form [_<n>]
-   0 > index $text, LOCALIZE and return $text;
-
-   my @args = @{ $self->args }; push @args, map { NUL } 0 .. 10;
-
-   $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
-
-   return $text;
 }
 
 1;
@@ -127,6 +127,12 @@ but indirectly through L</catch> and L</throw>
 Catches and returns a thrown exception or generates a new exception if
 I<EVAL_ERROR> has been set
 
+=head2 full_message
+
+   $printable_string = $e->full_message
+
+What an instance of this class stringifies to
+
 =head2 stacktrace
 
    $lines = $e->stacktrace;
@@ -151,12 +157,6 @@ in this case
 
 Calls L</catch> and if the was an exception L</throw>s it
 
-=head2 to_string
-
-   $printable_string = $e->to_string
-
-What an instance of this class stringifies to
-
 =head1 Diagnostics
 
 None
@@ -170,9 +170,11 @@ should be suppressed in the stack trace output
 
 =over 3
 
-=item L<overload>
-
 =item L<Exception::Class>
+
+=item L<File::DataClass::Constants>
+
+=item L<MRO::Compat>
 
 =item L<Scalar::Util>
 

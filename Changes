@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.3
+         - Updated exception handling class
+
 0.2.234  2010-10-06
          - Fixed bare io keywords in tests after Moose 1.15
          - Added unlink_on_exit to cache default attributes
