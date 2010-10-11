@@ -51,17 +51,20 @@ sub full_message {
 }
 
 sub stacktrace {
-   my $self = shift; my ($frame, $l_no, %seen, $text); my $i = 1;
+   my ($self, $skip) = @_; my ($l_no, @lines, %seen, $subr);
 
-   while (defined ($frame = $self->trace->frame( $i++ ))) {
-      next if ($l_no = $seen{ $frame->package } and $l_no == $frame->line);
+   for my $frame (reverse $self->trace->frames) {
+      unless ($l_no = $seen{ $frame->package } and $l_no == $frame->line) {
+         $subr and push @lines, join SPC, $subr, 'line', $frame->line;
+         $seen{ $frame->package } = $frame->line;
+      }
 
-      $text .= $frame->package.' line '.$frame->line."\n";
-
-      $seen{ $frame->package } = $frame->line;
+      $subr = $frame->subroutine;
    }
 
-   return $text;
+   defined $skip or $skip = 1; pop @lines while ($skip--);
+
+   return (join "\n", reverse @lines)."\n";
 }
 
 sub throw {
@@ -135,9 +138,9 @@ What an instance of this class stringifies to
 
 =head2 stacktrace
 
-   $lines = $e->stacktrace;
+   $lines = $e->stacktrace( $num_lines_to_skip );
 
-Return the stack trace
+Return the stack trace. Defaults to skipping one (the first) line of output
 
 =head2 throw
 
