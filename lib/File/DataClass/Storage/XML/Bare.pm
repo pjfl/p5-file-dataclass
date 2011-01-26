@@ -4,7 +4,7 @@ package File::DataClass::Storage::XML::Bare;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use XML::Bare;
@@ -81,7 +81,9 @@ sub _read_filter {
          }
       }
 
+      exists $data->{_i   } and delete $data->{_i};
       exists $data->{_pos } and delete $data->{_pos};
+      exists $data->{_z   } and delete $data->{_z};
       exists $data->{value} and $data->{value} =~ m{ \A [\n\s]+ \z }mx
          and delete $data->{value};
    }
@@ -143,7 +145,7 @@ File::DataClass::Storage::XML::Bare - Read/write XML data storage model
 
 =head1 Version
 
-0.2.$Revision$
+0.3.$Revision$
 
 =head1 Synopsis
 

@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-0.3
+0.3.238  2011-01-26
+         - Removed extra unwanted attributes from XML::Bare read filter
          - Updated exception handling class
 
 0.2.234  2010-10-06

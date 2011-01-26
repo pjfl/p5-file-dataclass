@@ -4,7 +4,7 @@ package File::DataClass::Constants;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.2.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 
 my @constants;
 
@@ -78,7 +78,7 @@ File::DataClass::Constants - Definitions of constant values
 
 =head1 Version
 
-0.2.$Rev$
+0.3.$Rev$
 
 =head1 Synopsis
 
