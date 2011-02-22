@@ -66,6 +66,7 @@ sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN {
    eval { require 5.008; }; $EVAL_ERROR and whimper 'Perl minimum 5.8';
+   $ENV{PATH}   =~ m{ \A /home/sand }mx and whimper 'Stopped Konig';
 }
 
 use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );

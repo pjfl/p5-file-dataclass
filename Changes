@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.3.239  2011-02-22
+         - Suppressed Konig CPAN testing again
+
 0.3.238  2011-01-26
          - Removed extra unwanted attributes from XML::Bare read filter
          - Updated exception handling class
