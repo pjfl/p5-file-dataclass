@@ -22,7 +22,9 @@ with    qw(File::DataClass::Constraints File::DataClass::Util);
 has 'cache'                    => is => 'ro', isa => 'F_DC_Cache',
    lazy_build                  => TRUE;
 has 'cache_attributes'         => is => 'ro', isa => 'HashRef',
-   default                     => sub { { unlink_on_exit => TRUE } };
+   default                     => sub { {
+      driver                   => q(FastMmap),
+      unlink_on_exit           => TRUE, } };
 has 'debug'                    => is => 'ro', isa => 'Bool',
    default                     => FALSE;
 has 'lock'                     => is => 'ro', isa => 'F_DC_Lock',
@@ -128,16 +130,14 @@ sub translate {
 # Private methods
 
 sub _build_cache {
-   my $self = shift; my $attrs = { schema => $self };
+   my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
 
-   (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
+   my $attrs = { cache_attributes => $self->cache_attributes, schema => $self };
 
-   $attrs->{cache_attributes} = $self->cache_attributes;
    $ns = $attrs->{cache_attributes}->{namespace} ||= $ns;
 
    $cache = $self->Cache and exists $cache->{ $ns } and return $cache->{ $ns };
 
-   $attrs->{cache_attributes}->{driver  } ||= q(FastMmap);
    $attrs->{cache_attributes}->{root_dir} ||= NUL.$self->tempdir;
 
    return $self->Cache->{ $ns } = File::DataClass::Cache->new( $attrs );

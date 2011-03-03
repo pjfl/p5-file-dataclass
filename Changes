@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - Tweaked cache construction and tightend cache typing
+
 0.3.239  2011-02-22
          - Suppressed Konig CPAN testing again
 
