@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Moved boilerplate M::B subclass code to inc/Bob.pm
          - Upgraded Module::Build
          - Tweaked cache construction and tightend cache typing
 

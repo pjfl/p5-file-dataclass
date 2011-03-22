@@ -11,12 +11,12 @@
 \bMakeMaker-\d
 \bpm_to_blib$
 \bblibdirs$
+^Debian_CPANTS.txt$
 ^MANIFEST\.skip$
 ^MANIFEST\.SKIP$
-^MYMETA\.yml$
 ^MYMETA\.json$
+^MYMETA\.yml$
 ^SIGNATURE$
-^Debian_CPANTS.txt$
 
 # Avoid Module::Build generated and utility files.
 \bBuild$
