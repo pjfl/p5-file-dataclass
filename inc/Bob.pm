@@ -48,7 +48,8 @@ sub new {
         meta_merge         => { resources  => $resources, },
         module_name        => $module,
         no_index           => { directory  => [ qw(inc t) ], },
-        notes              => { stop_tests => _testing(), },
+        notes              => {
+           stop_tests      => $params->{stop_tests} ? _testing() : 0, },
         recommends         => $params->{recommends},
         requires           => $params->{requires},
         sign               => $params->{sign}, );
