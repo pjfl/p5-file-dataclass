@@ -25,7 +25,9 @@ sub new {
 
    my $module     = $params->{module};
    my $home_page  = $params->{home_page};
-   my $tracker    = $params->{bugtracker};
+   my $tracker    = defined $params->{bugtracker}
+                  ? $params->{bugtracker}
+                  : q(http://rt.cpan.org/NoAuth/Bugs.html?Dist=);
    my $distname   = $module; $distname =~ s{ :: }{-}gmx;
    my $class_path = catfile( q(lib), split m{ :: }mx, $module.q(.pm) );
    my $resources  = { license => q(http://dev.perl.org/licenses/) };
@@ -51,7 +53,7 @@ sub new {
         notes              => __set_notes( $params ),
         recommends         => $params->{recommends},
         requires           => $params->{requires},
-        sign               => $params->{sign}, );
+        sign               => defined $params->{sign} ? $params->{sign} : 1, );
 }
 
 # Private subroutines

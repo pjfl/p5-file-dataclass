@@ -6,12 +6,10 @@ use inc::Bob; # Module::Build subclass
 use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 Bob->new( {
-   sign       => 1,
    stop_tests => 1,
    license    => q(perl),
    module     => q(File::DataClass),
    home_page  => q(http://www.roxsoft.co.uk),
-   bugtracker => q(http://rt.cpan.org/NoAuth/Bugs.html?Dist=),
    requires   => {
       'perl'                   => 5.008,
       'namespace::autoclean'   => 0.09,
