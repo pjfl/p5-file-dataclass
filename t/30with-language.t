@@ -17,7 +17,7 @@ BEGIN {
    my $current = eval { Module::Build->current };
 
    $current and $current->notes->{stop_tests}
-            and plan skip_all => q(CPAN Testing stopped);
+            and plan skip_all => $current->notes->{stop_tests};
 
    plan tests => 11;
 }
