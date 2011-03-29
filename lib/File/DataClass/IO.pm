@@ -32,6 +32,7 @@ enum 'F_DC_IO_Type'    => qw(dir file);
 has 'autoclose'        => is => 'rw', isa => 'Bool',      default    => TRUE  ;
 has 'io_handle'        => is => 'rw', isa => 'Maybe[Object]'                  ;
 has 'is_open'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
+has 'is_utf8'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
 has 'mode'             => is => 'rw', isa => 'F_DC_IO_Mode', default => q(r)  ;
 has 'name'             => is => 'rw', isa => 'Str',       default    => NUL   ;
 has 'sort'             => is => 'rw', isa => 'Bool',      default    => TRUE  ;
@@ -57,7 +58,6 @@ has '_perms'           => is => 'rw', isa => 'Num',       default    => PERMS ;
 has '_separator'       => is => 'rw', isa => 'Str',       default    => $RS   ;
 has '_umask'           => is => 'rw', isa => 'ArrayRef[Num]',
    default             => sub { return [] }                                   ;
-has '_utf8'            => is => 'rw', isa => 'Bool',      default    => FALSE ;
 
 around BUILDARGS => sub {
    my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
@@ -353,6 +353,7 @@ sub encoding {
       $self->throw( 'No encoding value passed to '.__PACKAGE__.'::encoding' );
    $self->is_open and CORE::binmode( $self->io_handle, ":$encoding" );
    $self->_encoding( $encoding );
+   $self->is_utf8( $encoding eq q(utf8) ? TRUE : FALSE );
    return $self;
 }
 
@@ -810,11 +811,7 @@ sub unlock {
 }
 
 sub utf8 {
-   my $self = shift;
-
-   $self->encoding( q(utf8) ); $self->_utf8( TRUE );
-
-   return $self;
+   my $self = shift; $self->encoding( q(utf8) ); return $self;
 }
 
 sub write {
