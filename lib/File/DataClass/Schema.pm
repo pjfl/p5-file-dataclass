@@ -32,7 +32,8 @@ has 'lock'                     => is => 'ro', isa => 'F_DC_Lock',
    lazy_build                  => TRUE;
 has 'lock_attributes'          => is => 'ro', isa => 'HashRef',
    default                     => sub { {} };
-has 'lock_class'               => is => 'ro', isa => 'ClassName',
+has 'lock_class'               => is => 'ro',
+   isa                         => 'F_DC_DummyClass | ClassName',
    default                     => q(IPC::SRLock);
 has 'log'                      => is => 'ro', isa => 'Object',
    default                     => sub { Class::Null->new };
@@ -61,7 +62,7 @@ has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
 around BUILDARGS => sub {
    my ($orig, $class, @args) = @_; my $app;
 
-   blessed $args[0] and $app = shift @args;
+   blessed $args[ 0 ] and $app = shift @args;
 
    my $attrs = $class->$orig( @args );
 
@@ -71,6 +72,10 @@ around BUILDARGS => sub {
       $attrs->{ $_ } ||= $app->$_() for (grep { $app->can( $_ ) } @attrs);
 
       $app->can( q(config) ) and $attrs->{tempdir} ||= $app->config->{tempdir};
+   }
+
+   if (delete $attrs->{simple}) {
+      $attrs->{cache_class} = q(none); $attrs->{lock_class} = q(none);
    }
 
    return $attrs;
@@ -89,7 +94,7 @@ sub dump {
 sub load {
    my ($self, @paths) = @_;
 
-   $paths[0] or $paths[0] = $self->path;
+   $paths[ 0 ] or $paths[ 0 ] = $self->path;
 
    @paths = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
 
@@ -150,6 +155,8 @@ sub _build_lock {
    my $self = shift;
 
    $self->Lock and return $self->Lock;
+
+   $self->lock_class eq q(none) and return Class::Null->new;
 
    my $attrs = $self->lock_attributes;
 
