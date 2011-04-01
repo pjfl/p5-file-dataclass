@@ -43,7 +43,7 @@ my $path       = catfile( qw(t default.xml) );
 my $dumped     = catfile( qw(t dumped.xml) );
 my $cache_file = catfile( qw(t file-dataclass-schema.dat) );
 my $schema     = File::DataClass::Schema->new
-   ( cache_class => q(none), path => [ qw(t default.xml) ], tempdir => q(t) );
+   ( simple => 1, path => [ qw(t default.xml) ], tempdir => q(t) );
 
 isa_ok( $schema, q(File::DataClass::Schema) );
 ok( ! -f $cache_file, 'Cache file not created' );
