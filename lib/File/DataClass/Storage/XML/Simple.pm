@@ -27,8 +27,7 @@ augment '_write_file' => sub {
    my $xs = XML::Simple->new( NoAttr   => TRUE, SuppressEmpty => TRUE,
                               RootName => $self->root_name );
 
-   $wtr->println( @{ $self->_dtd } ) if ($self->_dtd->[0]);
-
+   $self->_dtd->[ 0 ] and $wtr->println( @{ $self->_dtd } );
    $wtr->append( $xs->xml_out( $data ) );
    return $data;
 };
