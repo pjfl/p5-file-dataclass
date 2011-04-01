@@ -16,6 +16,10 @@ subtype 'F_DC_Cache' => as 'Object' =>
    message {
       'Object '.(blessed $_ || $_).' is not of class File::DataClass::Cache' };
 
+subtype 'F_DC_DummyClass' => as 'Str' =>
+   where   { $_ eq q(none) } =>
+   message { "Class $_ is not 'none'" };
+
 subtype 'F_DC_Exception' => as 'ClassName' =>
    where   { $_->can( q(throw) ) } =>
    message { "Class $_ is not loaded or has no throw method" };

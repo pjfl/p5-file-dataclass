@@ -11,14 +11,14 @@ use Class::Null;
 use File::DataClass::Constants;
 use Moose;
 
-with qw(File::DataClass::Util);
+with qw(File::DataClass::Constraints File::DataClass::Util);
 
-has 'cache_attributes' => is => 'ro', isa => 'HashRef',
-   default             => sub { return {} };
-has 'cache_class'      => is => 'ro', isa => 'ClassName',
-   default             => q(CHI);
 has 'cache'            => is => 'ro', isa => 'Object',
    lazy_build          => TRUE;
+has 'cache_attributes' => is => 'ro', isa => 'HashRef',
+   default             => sub { return {} };
+has 'cache_class'      => is => 'ro', isa => 'F_DC_DummyClass | ClassName',
+   default             => q(CHI);
 has 'schema'           => is => 'ro', isa => 'Object',
    required            => 1, weak_ref => TRUE,
    handles             => { _debug => q(debug), _log => q(log), };

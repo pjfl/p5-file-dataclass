@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Added cache_class schema attribute. Set to 'none' to defeat cache
          - Changed _utf8 attribute to is_utf8 for sense and clarity
          - Moved boilerplate M::B subclass code to inc/Bob.pm
          - Upgraded Module::Build

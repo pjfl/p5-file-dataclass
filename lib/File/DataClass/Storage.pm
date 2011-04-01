@@ -152,7 +152,7 @@ sub _meta_pack {
 
 sub _meta_unpack {
    # Can be modified in a subclass
-   my ($self, $attrs) = @_; return $attrs->{mtime};
+   my ($self, $attrs) = @_; return $attrs ? $attrs->{mtime} : undef;
 }
 
 sub _read_file {

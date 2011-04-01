@@ -19,7 +19,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 22;
+   plan tests => 25;
 }
 
 sub test {
@@ -39,15 +39,23 @@ sub test {
 
 use_ok( q(File::DataClass::Schema) );
 
-my $path   = catfile( qw(t default.xml) );
-my $dumped = catfile( qw(t dumped.xml) );
-my $schema = File::DataClass::Schema->new
-   ( path => [ qw(t default.xml) ], tempdir => q(t) );
+my $path       = catfile( qw(t default.xml) );
+my $dumped     = catfile( qw(t dumped.xml) );
+my $cache_file = catfile( qw(t file-dataclass-schema.dat) );
+my $schema     = File::DataClass::Schema->new
+   ( cache_class => q(none), path => [ qw(t default.xml) ], tempdir => q(t) );
 
 isa_ok( $schema, q(File::DataClass::Schema) );
+ok( ! -f $cache_file, 'Cache file not created' );
+
+$schema = File::DataClass::Schema->new
+   ( path => [ qw(t default.xml) ], tempdir => q(t) );
+
+ok( ! -f $cache_file, 'Cache file not created too early' );
 
 my $e = test( $schema, qw(load nonexistant_file) );
 
+ok( -f $cache_file, 'Cache file found' );
 is( $e, 'File nonexistant_file cannot open', 'Cannot open nonexistant_file' );
 
 my $data = test( $schema, qw(load t/default.xml t/default_en.xml) );
@@ -175,11 +183,11 @@ ok( !$diff, 'Can translate from XML to JSON' );
 
 # Cleanup
 
-io( $dumped    )->unlink;
-io( $translate )->unlink;
+io( $dumped     )->unlink;
+io( $translate  )->unlink;
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
-io( catfile( qw(t file-dataclass-schema.dat) ) )->unlink;
+io( $cache_file )->unlink;
 
 # Local Variables:
 # mode: perl

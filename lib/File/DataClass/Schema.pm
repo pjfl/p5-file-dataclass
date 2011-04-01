@@ -25,6 +25,7 @@ has 'cache_attributes'         => is => 'ro', isa => 'HashRef',
    default                     => sub { {
       driver                   => q(FastMmap),
       unlink_on_exit           => TRUE, } };
+has 'cache_class'              => is => 'ro', isa => 'Str';
 has 'debug'                    => is => 'ro', isa => 'Bool',
    default                     => FALSE;
 has 'lock'                     => is => 'ro', isa => 'F_DC_Lock',
@@ -133,6 +134,8 @@ sub _build_cache {
    my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
 
    my $attrs = { cache_attributes => $self->cache_attributes, schema => $self };
+
+   $self->cache_class and $attrs->{cache_class} = $self->cache_class;
 
    $ns = $attrs->{cache_attributes}->{namespace} ||= $ns;
 
