@@ -7,7 +7,6 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 
 use CHI;
-use Class::Null;
 use File::DataClass::Constants;
 use Moose;
 
@@ -17,7 +16,7 @@ has 'cache'            => is => 'ro', isa => 'Object',
    lazy_build          => TRUE;
 has 'cache_attributes' => is => 'ro', isa => 'HashRef',
    default             => sub { return {} };
-has 'cache_class'      => is => 'ro', isa => 'F_DC_DummyClass | ClassName',
+has 'cache_class'      => is => 'ro', isa => 'ClassName',
    default             => q(CHI);
 has 'schema'           => is => 'ro', isa => 'Object',
    required            => 1, weak_ref => TRUE,
@@ -92,8 +91,6 @@ sub _build_cache {
    my $self = shift; my $attrs = $self->cache_attributes;
 
    my $class = delete $attrs->{cache_class} || $self->cache_class;
-
-   $class eq q(none) and return Class::Null->new;
 
    $attrs->{on_set_error} = sub { $self->_log->error( $_[ 0 ] ) };
 

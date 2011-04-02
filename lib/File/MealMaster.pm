@@ -13,10 +13,10 @@ use Moose;
 extends qw(File::DataClass::Schema);
 
 has '+cache_attributes' => default => sub {
-   (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
-
-   return { cache_class => q(none), namespace => $ns, }
+   (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; return { namespace => $ns, }
 };
+
+has '+cache_class' => default => q(none);
 
 has '+result_source_attributes' => default => sub {
    { recipes          => {
