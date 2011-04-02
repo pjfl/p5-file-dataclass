@@ -74,10 +74,6 @@ around BUILDARGS => sub {
       $app->can( q(config) ) and $attrs->{tempdir} ||= $app->config->{tempdir};
    }
 
-   if (delete $attrs->{simple}) {
-      $attrs->{cache_class} = q(none); $attrs->{lock_class} = q(none);
-   }
-
    return $attrs;
 };
 
