@@ -19,7 +19,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 4;
+   plan tests => 5;
 }
 
 sub test {
@@ -42,7 +42,7 @@ use_ok( q(File::DataClass::Schema) );
 my $path   = catfile( qw(t dtd_test.xml) );
 my $dumped = catfile( qw(t dumped.xml) );
 my $schema = File::DataClass::Schema->new
-   ( path => [ qw(t dtd_test.xml) ], tempdir => q(t) );
+   ( cache_class => q(none), path => [ qw(t dtd_test.xml) ], tempdir => q(t) );
 
 isa_ok( $schema, q(File::DataClass::Schema) );
 
@@ -52,6 +52,16 @@ ok( $data->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 1' );
 
 ok( ref $data->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays' );
+
+$schema = File::DataClass::Schema->new
+   ( cache_class        => q(none),
+     path               => [ qw(t dtd_test.xml) ],
+     storage_attributes => { force_array => [ qw(fields) ] },
+     tempdir            => q(t) );
+
+$data = $schema->load;
+
+ok( ref $data->{fields}->{ 'app_closed.passwd' } eq q(HASH), 'Force array' );
 
 # Cleanup
 

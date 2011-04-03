@@ -25,6 +25,8 @@ subtype 'F_DC_Exception' => as 'ClassName' =>
    where   { $_->can( q(throw) ) } =>
    message { "Class $_ is not loaded or has no throw method" };
 
+subtype 'F_DC_HashRefOfBools' => as 'HashRef';
+
 subtype 'F_DC_Lock' => as 'Object' =>
    where   { $_->isa( q(Class::Null) )
                 or ($_->can( q(set) ) and $_->can( q(reset) ) ) } =>
@@ -55,6 +57,9 @@ coerce 'F_DC_File'      => from 'ArrayRef' => via { io( $_ ) };
 coerce 'F_DC_Path'      => from 'Str'      => via { io( $_ ) };
 coerce 'F_DC_Directory' => from 'Str'      => via { io( $_ ) };
 coerce 'F_DC_File'      => from 'Str'      => via { io( $_ ) };
+
+coerce 'F_DC_HashRefOfBools' => from 'ArrayRef' =>
+   via { my %hash = map { $_ => 1 } @{ $_ }; return \%hash; };
 
 no Moose::Util::TypeConstraints;
 no Moose::Role;

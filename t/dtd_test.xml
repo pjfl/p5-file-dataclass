@@ -1,7 +1,6 @@
 <!ELEMENT acl         (ARRAY)*>
 <!ELEMENT buttons     (ARRAY)*>
 <!ELEMENT credentials (ARRAY)*>
-<!ELEMENT fields      (ARRAY)*>
 <!ELEMENT globals     (ARRAY)*>
 <!ELEMENT keys        (ARRAY)*>
 <!ELEMENT levels      (ARRAY)*>
@@ -15,18 +14,6 @@
     <name>app_closed.passwd</name>
     <clear>left</clear>
     <type>password</type>
-  </fields>
-  <fields>
-    <name>app_closed.user</name>
-    <width>20</width>
-  </fields>
-  <fields>
-    <name>feedback.body</name>
-    <height>24</height>
-    <palign>left</palign>
-    <sep>&amp;nbsp;&amp;nbsp;&amp;nbsp;</sep>
-    <type>textarea</type>
-    <width>72</width>
   </fields>
   <levels>
     <name>admin</name>

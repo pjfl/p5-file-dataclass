@@ -13,9 +13,11 @@ use Moose;
 extends qw(File::DataClass::Storage);
 
 has '+extn'     => default => q(.xml);
-has 'root_name' => is => 'ro', isa => 'Str',      default => q(config);
-has '_arrays'   => is => 'rw', isa => 'HashRef',  default => sub { return {} };
-has '_dtd'      => is => 'rw', isa => 'ArrayRef', default => sub { return [] };
+has 'root_name' => is => 'ro', isa => 'Str',      default  => q(config);
+has '_arrays'   => is => 'rw', isa => 'F_DC_HashRefOfBools',
+   coerce       => TRUE,  init_arg => 'force_array',
+   default      => sub { return {} };
+has '_dtd'      => is => 'rw', isa => 'ArrayRef', default  => sub { return [] };
 
 around '_meta_pack' => sub {
    my ($orig, $self, $args) = @_; my $packed = $self->$orig( $args );

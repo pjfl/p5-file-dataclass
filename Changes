@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - Added force_array to storage attributes so that arrays can
+           be specified through the constructor call
          - Set lock_class to 'none' to prevent the creation of a lock object
          - Added cache_class schema attribute. Set to 'none' to defeat cache
          - Changed _utf8 attribute to is_utf8 for sense and clarity
