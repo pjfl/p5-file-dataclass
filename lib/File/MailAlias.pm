@@ -8,6 +8,7 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
+use File::DataClass::IO ();
 use English  qw( -no_match_vars );
 use IPC::Cmd qw( can_run run );
 use File::Copy;
@@ -16,6 +17,8 @@ use Moose;
 
 extends qw(File::DataClass::Schema);
 
+has 'mail_domain'    => is => 'ro', isa => 'Str',
+   lazy_build        => TRUE;
 has 'newaliases'     => is => 'ro', isa => 'ArrayRef',
    default           => sub { return [ q(newaliases) ] };
 has 'system_aliases' => is => 'ro', isa => 'Str',
@@ -96,12 +99,10 @@ sub update {
 }
 
 sub update_as_root {
-   my $self = shift; my $cmd;
+   my $self = shift; my $cmd = join SPC, @{ $self->newaliases || [] };
 
-   unless ($self->newaliases and $cmd = can_run( $self->newaliases->[0] )) {
-      $cmd = join SPC, @{ $self->newaliases };
-      $self->throw( error => 'Path [_1] cannot execute', args => [ $cmd ] );
-   }
+   ($self->newaliases and $cmd = can_run( $self->newaliases->[0] ))
+      or $self->throw( error => 'Path [_1] cannot execute', args => [ $cmd ] );
 
    copy( NUL.$self->path, $self->catfile( $self->system_aliases ) )
       or $self->throw( $ERRNO );
@@ -110,6 +111,10 @@ sub update_as_root {
 }
 
 # Private methods
+
+sub _build_mail_domain {
+   return File::DataClass::IO->new( [ NUL, qw(etc mailname) ] )->getline;
+}
 
 sub _run_update_cmd {
    my $self = shift; my $out = NUL;

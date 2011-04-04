@@ -101,7 +101,7 @@ sub all_files {
 }
 
 sub _all_file_contents {
-   my $self = shift; $self->assert_open( q(r) );
+   my $self = shift; $self->assert_open;
 
    local $RS = undef; my $all = $self->io_handle->getline;
 
@@ -151,11 +151,13 @@ sub assert_filepath {
 }
 
 sub assert_open {
-   my ($self, @rest) = @_;
+   my ($self, $mode, $perms) = @_;
 
-   $self->is_open and return $self; $self->type or $self->file;
+   $self->type or $self->file; $mode ||= $self->mode;
 
-   return $self->open( @rest );
+   $self->is_open and $mode ne $self->mode and $self->close;
+
+   return $self->is_open ? $self : $self->open( $mode, $perms );
 }
 
 sub atomic {
@@ -430,7 +432,7 @@ sub _get_atomic_path {
 sub getline {
    my ($self, $separator) = @_; my ($line, $sep);
 
-   $self->assert_open( q(r) );
+   $self->assert_open;
 
    {  local $RS = $separator || $self->_separator;
       $line = $self->io_handle->getline;
@@ -446,7 +448,7 @@ sub getline {
 sub getlines {
    my ($self, $separator) = @_; my (@lines, $sep);
 
-   $self->assert_open( q(r) );
+   $self->assert_open;
 
    {  local $RS = $separator || $self->_separator;
       @lines = $self->io_handle->getlines;
@@ -553,11 +555,13 @@ sub next {
 }
 
 sub open {
-   my ($self, @rest) = @_;
+   my ($self, $mode, $perms) = @_; $mode ||= $self->mode;
 
-   $self->is_open and return $self;
-   $self->is_dir  and return $self->_open_dir ( $self->_open_args( @rest ) );
-   $self->is_file and return $self->_open_file( $self->_open_args( @rest ) );
+   $self->is_open and $mode eq $self->mode and return $self;
+   $self->is_dir
+      and return $self->_open_dir ( $self->_open_args( $mode, $perms ) );
+   $self->is_file
+      and return $self->_open_file( $self->_open_args( $mode, $perms ) );
 
    return $self;
 }
@@ -570,8 +574,7 @@ sub _open_args {
    my $pathname = $self->_atomic && !$self->is_reading( $mode )
                 ? $self->_get_atomic_path : $self->name;
 
-   $perms = $self->exists ? $self->stat->{mode} & oct q(07777)
-                          : $perms || $self->_perms;
+   $perms = $self->_untainted_perms || $perms || $self->_perms;
 
    return ($pathname, $self->mode( $mode ), $self->_perms( $perms ));
 }
@@ -588,11 +591,13 @@ sub _open_dir {
 }
 
 sub _open_file {
-   my ($self, @args) = @_;
+   my ($self, $path, $mode, $perms) = @_;
 
    $self->_assert and $self->assert_filepath;
-   $self->io_handle( IO::File->new( @args ) )
-      or $self->throw( error => 'File [_1] cannot open', args => [ $args[0] ]);
+   $self->_umask_push( $perms );
+   $self->io_handle( IO::File->new( $path, $mode, $perms ) )
+      or $self->throw( error => 'File [_1] cannot open', args => [ $path ] );
+   $self->_umask_pop;
    $self->is_open( TRUE );
    $self->set_binmode;
    $self->set_lock;
@@ -625,7 +630,7 @@ sub println {
 }
 
 sub read {
-   my ($self, @rest) = @_; $self->assert_open( q(r) );
+   my ($self, @rest) = @_; $self->assert_open;
 
    my $length = @rest || $self->is_dir
               ? $self->io_handle->read( @rest )
@@ -808,6 +813,15 @@ sub unlock {
    else { flock $self->io_handle, LOCK_UN }
 
    return $self;
+}
+
+sub _untainted_perms {
+   my $self = shift; $self->exists or return; my $perms = 0;
+
+   # Taint mode workaround
+   $self->stat->{mode} =~ m{ \A (.*) \z }mx and $perms = $1;
+
+   return $perms & oct q(07777);
 }
 
 sub utf8 {
@@ -1468,7 +1482,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2010 Peter Flanigan. All rights reserved
+Copyright (c) 2011 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
