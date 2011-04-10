@@ -10,7 +10,7 @@ use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 use File::DataClass::Constants;
 use File::DataClass::Exception;
 use English      qw( -no_match_vars );
-use Fcntl        qw( :flock );
+use Fcntl        qw( :flock :seek );
 use List::Util   qw( first );
 use File::Basename ();
 use File::Path     ();
@@ -111,15 +111,21 @@ sub _all_file_contents {
 }
 
 sub append {
-   my ($self, @rest) = @_; $self->assert_open( q(a) );
+   my ($self, @rest) = @_;
 
-   return $self->print( @rest );
+   if ($self->is_open and not $self->is_reading) { $self->seek( 0, SEEK_END ) }
+   else { $self->assert_open( q(a) ) }
+
+   return $self->_print( @rest );
 }
 
 sub appendln {
-   my ($self, @rest) = @_; $self->assert_open( q(a) );
+   my ($self, @rest) = @_;
 
-   return $self->println( @rest );
+   if ($self->is_open and not $self->is_reading) { $self->seek( 0, SEEK_END ) }
+   else { $self->assert_open( q(a) ) }
+
+   return $self->_println( @rest );
 }
 
 sub assert {
@@ -287,9 +293,9 @@ sub _close_file {
                           args  => [ $path, $self->name ] );
    }
 
-   $self->is_open or return $self; $self->unlock;
+   $self->is_open or return $self;
 
-   return $self->_close;
+   $self->unlock; return $self->_close;
 }
 
 sub _constructor {
@@ -430,9 +436,7 @@ sub _get_atomic_path {
 }
 
 sub getline {
-   my ($self, $separator) = @_; my ($line, $sep);
-
-   $self->assert_open;
+   my ($self, $separator) = @_; my $line; $self->assert_open;
 
    {  local $RS = $separator || $self->_separator;
       $line = $self->io_handle->getline;
@@ -446,9 +450,7 @@ sub getline {
 }
 
 sub getlines {
-   my ($self, $separator) = @_; my (@lines, $sep);
-
-   $self->assert_open;
+   my ($self, $separator) = @_; my @lines; $self->assert_open;
 
    {  local $RS = $separator || $self->_separator;
       @lines = $self->io_handle->getlines;
@@ -567,7 +569,7 @@ sub open {
 }
 
 sub _open_args {
-   my ($self, $mode, $perms) = @_; $mode ||= $self->mode;
+   my ($self, $mode, $perms) = @_;
 
    $self->name or $self->throw( 'Path not specified' );
 
@@ -580,12 +582,12 @@ sub _open_args {
 }
 
 sub _open_dir {
-   my ($self, @args) = @_;
+   my ($self, $path) = @_;
 
-   $self->_assert and $self->assert_dirpath( $args[0] );
-   $self->io_handle( IO::Dir->new( $args[0] ) )
+   $self->_assert and $self->assert_dirpath( $path );
+   $self->io_handle( IO::Dir->new( $path ) )
       or $self->throw( error => 'Directory [_1] cannot open',
-                       args  => [ $args[0] ] );
+                       args  => [ $path ] );
    $self->is_open( TRUE );
    return $self;
 }
@@ -615,6 +617,12 @@ sub perms {
 sub print {
    my ($self, @rest) = @_; $self->assert_open( q(w) );
 
+   return $self->_print( @rest );
+}
+
+sub _print {
+   my ($self, @rest) = @_;
+
    for (@rest) {
       print {$self->io_handle} $_
          or $self->throw( error => 'IO error [_1]', args  => [ $ERRNO ] );
@@ -624,9 +632,15 @@ sub print {
 }
 
 sub println {
+   my ($self, @rest) = @_; $self->assert_open( q(w) );
+
+   return $self->_println( @rest );
+}
+
+sub _println {
    my ($self, @rest) = @_;
 
-   return $self->print( map { m{ [\n] \z }mx ? ($_) : ($_, "\n") } @rest );
+   return $self->_print( map { m{ [\n] \z }mx ? ($_) : ($_, "\n") } @rest );
 }
 
 sub read {
@@ -650,14 +664,12 @@ sub read_dir {
    if (wantarray) {
       my @names = grep { $_ !~ $dir_pat } $self->io_handle->read;
 
-      $self->_close_dir;
-      return @names;
+      $self->_close_dir; return @names;
    }
 
    while (not $name or $name =~ $dir_pat) {
       unless (defined ($name = $self->io_handle->read)) {
-         $self->_close_dir;
-         return;
+         $self->_close_dir; return;
       }
    }
 
@@ -751,9 +763,7 @@ sub stat {
 sub tempfile {
    my ($self, $tmplt) = @_; my ($tempdir, $tmpfh);
 
-   unless ($tempdir = $self->name and -d $tempdir) {
-      $tempdir = File::Spec->tmpdir;
-   }
+   ($tempdir = $self->name and -d $tempdir) or $tempdir = File::Spec->tmpdir;
 
    $tmplt ||= q(%6.6dXXXX);
    $tmpfh   = File::Temp->new
@@ -767,8 +777,8 @@ sub tempfile {
 sub throw {
    my ($self, @rest) = @_;
 
-   eval { $self->unlock; };
-   $self->_exception_class->throw( @rest );
+   eval { $self->unlock; }; $self->_exception_class->throw( @rest );
+
    return; # Never reached
 }
 
