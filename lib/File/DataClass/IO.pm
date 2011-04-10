@@ -101,7 +101,7 @@ sub all_files {
 }
 
 sub _all_file_contents {
-   my $self = shift; $self->assert_open;
+   my $self = shift; $self->is_open or $self->assert_open;
 
    local $RS = undef; my $all = $self->io_handle->getline;
 
@@ -157,13 +157,9 @@ sub assert_filepath {
 }
 
 sub assert_open {
-   my ($self, $mode, $perms) = @_;
+   my ($self, $mode, $perms) = @_; $self->type or $self->file;
 
-   $self->type or $self->file; $mode ||= $self->mode;
-
-   $self->is_open and $mode ne $self->mode and $self->close;
-
-   return $self->is_open ? $self : $self->open( $mode, $perms );
+   return $self->open( $mode || q(r), $perms );
 }
 
 sub atomic {
@@ -560,6 +556,7 @@ sub open {
    my ($self, $mode, $perms) = @_; $mode ||= $self->mode;
 
    $self->is_open and $mode eq $self->mode and return $self;
+   $self->is_open and $self->close;
    $self->is_dir
       and return $self->_open_dir ( $self->_open_args( $mode, $perms ) );
    $self->is_file
@@ -695,7 +692,7 @@ sub rmtree {
 sub seek {
    my ($self, @rest) = @_;
 
-   $self->assert_open( $OSNAME eq EVIL ? q(r) : q(r+) );
+   $self->is_open or $self->assert_open( $OSNAME eq EVIL ? q(r) : q(r+) );
 
    my @sunk = $self->io_handle->seek( @rest ); $self->error_check;
 
@@ -771,6 +768,7 @@ sub tempfile {
    $self->_init( q(file), $tmpfh->filename );
    $self->io_handle( $tmpfh );
    $self->is_open( TRUE );
+   $self->mode( q(w) );
    return $self;
 }
 
