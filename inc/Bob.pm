@@ -5,12 +5,11 @@ package Bob;
 use strict;
 use warnings;
 
-use English qw(-no_match_vars);
-
 sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN {
-   eval { require 5.008; }; $EVAL_ERROR and whimper 'Perl minimum 5.8';
+   eval { require 5.008; };          $@ and whimper 'Perl minimum 5.8';
+   qx(uname -a) =~ m{ higgsboson    }mx and whimper 'Stopped dcollins';
    qx(uname -a) =~ m{ profvince.com }mx and whimper 'Stopped vpit';
    $ENV{PATH}   =~ m{ \A /home/sand }mx and whimper 'Stopped Konig';
 }
