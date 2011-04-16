@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - Chomped mail_domain attribute in MailAliases
+
 0.3.259  2011-04-12
          - Suppressed dcollins CPAN testing
          - Added force_array to storage attributes so that arrays can
