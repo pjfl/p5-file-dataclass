@@ -69,11 +69,13 @@ around BUILDARGS => sub {
    my $attrs = $class->$orig( @args );
 
    if ($app) {
-      my @attrs = ( qw(debug exception_class lock log tempdir) );
+      my @attrs = ( qw(debug lock log tempdir) );
 
       $attrs->{ $_ } ||= $app->$_() for (grep { $app->can( $_ ) } @attrs);
 
       $app->can( q(config) ) and $attrs->{tempdir} ||= $app->config->{tempdir};
+      $app->can( q(exception_class) )
+         and File::DataClass->Exception_Class( $app->exception_class );
    }
 
    return $attrs;

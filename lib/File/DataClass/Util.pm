@@ -21,11 +21,11 @@ sub basename {
 }
 
 sub catdir {
-   my ($self, @rest) = @_; return File::Spec->catdir( @rest );
+   my $self = shift; return File::Spec->catdir( @_ );
 }
 
 sub catfile {
-   my ($self, @rest) = @_; return File::Spec->catfile( @rest );
+   my $self = shift; return File::Spec->catfile( @_ );
 }
 
 sub dirname {
@@ -52,7 +52,7 @@ sub ensure_class_loaded {
 sub io {
    my ($self, @rest) = @_; my $io = File::DataClass::IO->new( @rest );
 
-   $io->exception_class( File::DataClass->exception_class );
+   $io->exception_class( File::DataClass->Exception_Class );
 
    return $io;
 }
@@ -64,9 +64,7 @@ sub is_member {
 }
 
 sub throw {
-   my ($self, @rest) = @_;
-
-   return File::DataClass->exception_class->throw( @rest );
+   my $self = shift; return File::DataClass->Exception_Class->throw( @_ );
 }
 
 no Moose::Role;

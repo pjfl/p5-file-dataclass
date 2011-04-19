@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Fixed casing on Exception_Class class attribute
          - Chomped mail_domain attribute in MailAliases
 
 0.3.259  2011-04-12
