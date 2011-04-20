@@ -19,7 +19,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 25;
+   plan tests => 28;
 }
 
 sub test {
@@ -58,6 +58,7 @@ my $e = test( $schema, qw(load nonexistant_file) );
 
 ok( -f $cache_file, 'Cache file found' );
 is( $e, 'File nonexistant_file cannot open', 'Cannot open nonexistant_file' );
+is( ref $e, 'File::DataClass::Exception', 'Default exception class' );
 
 my $data = test( $schema, qw(load t/default.xml t/default_en.xml) );
 
@@ -181,6 +182,29 @@ $e = test( $schema, q(translate), $args );
 $diff = diff catfile( qw(t default.json) ), $translate;
 
 ok( !$diff, 'Can translate from XML to JSON' );
+
+{  package Dummy;
+
+   use Exception::Class ( q(MyException) );
+
+   sub new {
+      return bless { exception_class => q(MyException) }, q(Dummy);
+   }
+
+   sub exception_class {
+      return $_[ 0 ]->{exception_class};
+   }
+}
+
+$schema = File::DataClass::Schema->new
+   ( Dummy->new, path => [ qw(t default.xml) ], tempdir => q(t) );
+
+is( ref $schema, q(File::DataClass::Schema),
+    q(File::DataClass::Schema - with inversion of control) );
+
+$e = test( $schema, qw(load nonexistant_file) );
+
+is( ref $e, q(MyException), 'Non default exception class' );
 
 # Cleanup
 

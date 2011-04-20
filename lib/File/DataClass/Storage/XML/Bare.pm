@@ -28,8 +28,7 @@ augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_;
 
    $self->_dtd->[0] and $wtr->println( @{ $self->_dtd } );
-
-   $wtr->print( $self->_write_filter( 0, $self->root_name, $data ) );
+   $wtr->append( $self->_write_filter( 0, $self->root_name, $data ) );
    return $data;
 };
 

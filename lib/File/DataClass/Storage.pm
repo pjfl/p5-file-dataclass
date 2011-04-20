@@ -15,7 +15,7 @@ use Hash::Merge qw(merge);
 use Moose;
 use Try::Tiny;
 
-with qw(File::DataClass::Util);
+extends qw(File::DataClass);
 
 has 'backup' => is => 'rw', isa => 'Str',    default  => NUL;
 has 'extn'   => is => 'rw', isa => 'Str',    default  => NUL;

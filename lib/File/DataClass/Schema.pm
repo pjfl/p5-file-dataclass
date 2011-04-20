@@ -17,7 +17,6 @@ use File::DataClass::Storage;
 use IPC::SRLock;
 
 extends qw(File::DataClass);
-with    qw(File::DataClass::Constraints File::DataClass::Util);
 
 has 'cache'                    => is => 'ro', isa => 'F_DC_Cache',
    lazy_build                  => TRUE;
@@ -62,21 +61,20 @@ has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
    coerce                      => TRUE;
 
 around BUILDARGS => sub {
-   my ($orig, $class, @args) = @_; my $app;
+   my ($orig, $class, @args) = @_;
 
-   blessed $args[ 0 ] and $app = shift @args;
+   my $app; blessed $args[ 0 ] and $app = shift @args;
 
-   my $attrs = $class->$orig( @args );
+   my $attrs = $class->$orig( @args ); $app or return $attrs;
 
-   if ($app) {
-      my @attrs = ( qw(debug lock log tempdir) );
+   my @attrs = ( qw(debug lock log tempdir) );
 
-      $attrs->{ $_ } ||= $app->$_() for (grep { $app->can( $_ ) } @attrs);
+   $attrs->{ $_ } ||= $app->$_() for (grep { $app->can( $_ ) } @attrs);
 
-      $app->can( q(config) ) and $attrs->{tempdir} ||= $app->config->{tempdir};
-      $app->can( q(exception_class) )
-         and File::DataClass->Exception_Class( $app->exception_class );
-   }
+   $app->can( q(config) ) and $attrs->{tempdir} ||= $app->config->{tempdir};
+
+   $app->can( q(exception_class) )
+      and $class->Exception_Class( $app->exception_class );
 
    return $attrs;
 };

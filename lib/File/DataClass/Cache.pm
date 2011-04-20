@@ -10,7 +10,7 @@ use CHI;
 use File::DataClass::Constants;
 use Moose;
 
-with qw(File::DataClass::Constraints File::DataClass::Util);
+extends qw(File::DataClass);
 
 has 'cache'            => is => 'ro', isa => 'Object',
    lazy_build          => TRUE;
@@ -134,7 +134,7 @@ File::DataClass::Cache - Adds extra methods to the CHI API
    use Moose;
 
    extends qw(File::DataClass);
-   with    qw(File::DataClass::Constraints);
+   with    qw(File::DataClass::Util);
 
    has 'cache'            => is => 'ro', isa => 'F_DC_Cache',
       lazy_build          => TRUE;

@@ -9,7 +9,7 @@ use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 use File::DataClass::Constants;
 use Moose;
 
-with qw(File::DataClass::Util);
+extends qw(File::DataClass);
 
 has 'lang'    => is => 'rw', isa => 'Str',    required => TRUE;
 has 'storage' => is => 'ro', isa => 'Object', required => TRUE,

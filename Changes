@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Added more exception handling tests
          - Fixed casing on Exception_Class class attribute
          - Chomped mail_domain attribute in MailAliases
 

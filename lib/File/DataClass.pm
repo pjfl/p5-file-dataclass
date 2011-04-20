@@ -3,7 +3,6 @@
 package File::DataClass;
 
 use strict;
-use warnings;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 
@@ -11,13 +10,17 @@ use Moose;
 use MooseX::ClassAttribute;
 use File::DataClass::Exception;
 
+with qw(File::DataClass::Constraints);
+
 class_has 'Cache' => is => 'rw', isa => 'HashRef[F_DC_Cache]',
    default        => sub { {} };
 
 class_has 'Exception_Class' => is => 'rw', isa => 'F_DC_Exception',
-   default                  => q(File::DataClass::Exception);
+   default                  => 'File::DataClass::Exception';
 
 class_has 'Lock'  => is => 'rw', isa => 'Maybe[F_DC_Lock]';
+
+with qw(File::DataClass::Util);
 
 __PACKAGE__->meta->make_immutable;
 

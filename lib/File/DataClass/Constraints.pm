@@ -13,7 +13,7 @@ use Scalar::Util qw(blessed);
 
 subtype 'F_DC_Cache' => as 'Object' =>
    where   { $_->isa( q(File::DataClass::Cache) )
-                || $_->isa( q(Class::Null) ) } =>
+          || $_->isa( q(Class::Null) ) } =>
    message {
       'Object '.(blessed $_ || $_).' is not of class File::DataClass::Cache' };
 

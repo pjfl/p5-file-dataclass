@@ -12,7 +12,7 @@ use Moose;
 use File::DataClass::List;
 use File::DataClass::Result;
 
-with qw(File::DataClass::Util);
+extends qw(File::DataClass);
 
 has 'list_class'   => is => 'ro', isa => 'ClassName',
    default         => q(File::DataClass::List);

@@ -26,6 +26,10 @@ use Sub::Exporter -setup => {
    exports => [ qw(io) ], groups => { default => [ qw(io) ], },
 };
 
+subtype 'F_DC_IO_Exception' => as 'ClassName' =>
+   where   { $_->can( q(throw) ) } =>
+   message { "Class $_ is not loaded or has no throw method" };
+
 enum 'F_DC_IO_Mode'    => qw(a a+ r r+ w w+);
 enum 'F_DC_IO_Type'    => qw(dir file);
 
@@ -47,7 +51,7 @@ has '_chomp'           => is => 'rw', isa => 'Bool',      default    => FALSE ;
 has '_deep'            => is => 'rw', isa => 'Bool',      default    => FALSE ;
 has '_dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE  ;
 has '_encoding'        => is => 'rw', isa => 'Str',       default    => NUL   ;
-has '_exception_class' => is => 'rw', isa => 'ClassName',
+has '_exception_class' => is => 'rw', isa => 'F_DC_IO_Exception',
    default             => q(File::DataClass::Exception),
    writer              => 'exception_class';
 has '_filter'          => is => 'rw', isa => 'Maybe[CodeRef]'                 ;
