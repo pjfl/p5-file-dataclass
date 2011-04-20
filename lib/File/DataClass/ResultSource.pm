@@ -11,8 +11,6 @@ use Moose;
 
 use File::DataClass::ResultSet;
 
-extends qw(File::DataClass);
-
 has 'attributes'           => is => 'rw', isa => 'ArrayRef[Str]',
    default                 => sub { return [] };
 has 'defaults'             => is => 'rw', isa => 'HashRef',

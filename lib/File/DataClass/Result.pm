@@ -8,8 +8,6 @@ use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 
-extends qw(File::DataClass);
-
 has 'name'       => is => 'rw', isa => 'Str',    required => 1;
 has '_resultset' => is => 'ro', isa => 'Object', required => 1;
 
