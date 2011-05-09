@@ -408,15 +408,14 @@ sub _find {
    defined $level or $level = $self->_deep ? 0 : 1;
 
    while ($io = $self->next) {
-      if (not defined $filter or map { $filter->() } ($io)) {
-         if (($files and $io->is_file) or ($dirs and $io->is_dir)) {
-            push @all, $io;
-         }
-      }
+      my $is_dir = $io->is_dir;
 
-      if ($io->is_dir and $level != 1) {
-         push @all, $io->_find( $files, $dirs, $level ? $level - 1 : 0 );
-      }
+      (($files and not $is_dir) or ($dirs and $is_dir))
+         and ((not defined $filter) or (map { $filter->() } ($io))[ 0 ])
+         and push @all, $io;
+
+      $is_dir and $level != 1
+         and push @all, $io->_find( $files, $dirs, $level ? $level - 1 : 0 );
    }
 
    return $self->sort ? sort { $a->name cmp $b->name } @all : @all;
