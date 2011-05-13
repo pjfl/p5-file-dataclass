@@ -17,7 +17,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 84;
+   plan tests => 85;
 }
 
 use_ok( q(File::DataClass::IO) );
@@ -246,6 +246,13 @@ ok( $output->close,  'Close output' );
 ok( -s $outfile,     'Exists output file' );
 
 ok( $input->stat->{size} == $output->stat->{size}, 'File sizes match' );
+
+# Substitution
+
+$io = io( catfile( qw(t output substitute) ) );
+$io->println( qw(line1 line2 line3) );
+$io->substitute( q(line2), q(changed) );
+is( ($io->chomp->getlines)[ 1 ], q(changed), 'Substitute values' );
 
 # Cleanup
 

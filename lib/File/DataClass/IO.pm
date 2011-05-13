@@ -760,6 +760,17 @@ sub stat {
    return \%stat_hash;
 }
 
+sub substitute {
+   my ($self, $this, $that) = @_; $this or return $self;
+
+   my $wtr = io( $self->name )->atomic; $that ||= NUL;
+
+   for ($self->getlines) { s{ $this }{$that}gmx; $wtr->print( $_ ) }
+
+   $self->close; $wtr->close;
+   return $self;
+}
+
 sub tempfile {
    my ($self, $tmplt) = @_; my ($tempdir, $tmpfh);
 
@@ -1399,6 +1410,13 @@ Proxy for L<File::Spec/splitpath>
 =head2 stat
 
 Returns a hash of the values returned by a L</stat> call on the pathname
+
+=head2 substitute
+
+   io( q(path_to_file) )->substitute( $this, $that );
+
+Substitutes C<$this> string for C<$that> string on each line of the
+given file
 
 =head2 tempfile
 

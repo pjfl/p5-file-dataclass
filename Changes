@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Added substitute method to IO
          - Fixed logic error in IO filter processing
          - Added more exception handling tests
          - Fixed casing on Exception_Class class attribute
