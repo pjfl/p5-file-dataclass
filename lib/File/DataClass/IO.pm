@@ -761,11 +761,11 @@ sub stat {
 }
 
 sub substitute {
-   my ($self, $this, $that) = @_; $this or return $self;
+   my ($self, $that, $this) = @_; $that or return $self;
 
-   my $wtr = io( $self->name )->atomic; $that ||= NUL;
+   my $wtr = io( $self->name )->atomic; $this ||= NUL;
 
-   for ($self->getlines) { s{ $this }{$that}gmx; $wtr->print( $_ ) }
+   for ($self->getlines) { s{ $that }{$this}gmx; $wtr->print( $_ ) }
 
    $self->close; $wtr->close;
    return $self;
@@ -1413,10 +1413,10 @@ Returns a hash of the values returned by a L</stat> call on the pathname
 
 =head2 substitute
 
-   io( q(path_to_file) )->substitute( $this, $that );
+   $io = io( q(path_to_file) )->substitute( $that, $this );
 
-Substitutes C<$this> string for C<$that> string on each line of the
-given file
+Substitutes C<$that> regular expression for C<$this> string on each
+line of the given file
 
 =head2 tempfile
 
