@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.4.268  2011-05-15
          - Added substitute method to IO
          - Fixed logic error in IO filter processing
          - Added more exception handling tests

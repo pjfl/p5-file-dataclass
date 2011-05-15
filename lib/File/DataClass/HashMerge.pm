@@ -4,7 +4,7 @@ package File::DataClass::HashMerge;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use Carp;
@@ -119,7 +119,7 @@ File::DataClass::HashMerge - Merge hashes with update flag
 
 =head1 Version
 
-0.3.$Revision$
+0.4.$Revision$
 
 =head1 Synopsis
 

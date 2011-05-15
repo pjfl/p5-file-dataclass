@@ -4,7 +4,7 @@ package File::DataClass::Storage::JSON;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.3.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
 use JSON qw();
 use Moose;
@@ -42,7 +42,7 @@ File::DataClass::Storage::JSON - Read/write JSON data storage model
 
 =head1 Version
 
-0.3.$Revision$
+0.4.$Revision$
 
 =head1 Synopsis
 
