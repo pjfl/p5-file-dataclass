@@ -113,7 +113,11 @@ sub update_as_root {
 # Private methods
 
 sub _build_mail_domain {
-   return File::DataClass::IO->new( [ NUL, qw(etc mailname) ] )->chomp->getline;
+   my $io = File::DataClass::IO->new( [ NUL, qw(etc mailname) ] );
+
+   my $domain; $io->is_file and $domain = $io->chomp->getline;
+
+   return $domain ? $domain : q(localhost);
 }
 
 sub _run_update_cmd {

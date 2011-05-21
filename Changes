@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+         - Can now pass dtd into Storage::XML
+         - Improved directory creation permission handling. Ignores umask
+         - Use File::Path::make_path not mkpath
+
 0.4.268  2011-05-15
          - Added substitute method to IO
          - Fixed logic error in IO filter processing

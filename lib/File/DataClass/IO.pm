@@ -141,8 +141,11 @@ sub assert_dirpath {
 
    $dir_name or return; -d $dir_name and return $dir_name;
 
-   $self->_umask_push;
-   CORE::mkdir( $dir_name ) or File::Path::mkpath( $dir_name );
+   $self->_umask_push( oct q(07777) ); my $perms = $self->_mkdir_perms;
+
+   CORE::mkdir( $dir_name, $perms )
+      or File::Path::make_path( $dir_name, { mode => $perms } );
+
    $self->_umask_pop;
 
    -d $dir_name or $self->throw( error => 'Path [_1] cannot create',
@@ -528,18 +531,30 @@ sub lock {
 }
 
 sub mkdir {
-   my ($self, $perms) = @_; $self->_umask_push( $perms );
+   my ($self, $perms) = @_; $perms ||= $self->_mkdir_perms;
 
-   my $result = CORE::mkdir( $self->name ); $self->_umask_pop;
+   $self->_umask_push( oct q(07777) );
 
+   my $result = CORE::mkdir( $self->name, $perms );
+
+   $self->_umask_pop;
    return $result;
 }
 
+sub _mkdir_perms {
+   my ($self, $perms) = @_; $perms ||= $self->_perms;
+
+   return (($perms & oct q(0444)) >> 2) | $perms;
+}
+
 sub mkpath {
-   my ($self, $perms) = @_; $self->_umask_push( $perms );
+   my ($self, $perms) = @_; $perms ||= $self->_mkdir_perms;
 
-   my $result = File::Path::mkpath( $self->name ); $self->_umask_pop;
+   $self->_umask_push( oct q(07777) );
 
+   my $result = File::Path::make_path( $self->name, { mode => $perms } );
+
+   $self->_umask_pop;
    return $result;
 }
 
@@ -804,7 +819,7 @@ sub touch {
 }
 
 sub _umask_pop {
-   my $self = shift; my $perms = $self->_umask->[-1];
+   my $self = shift; my $perms = $self->_umask->[ -1 ];
 
    ($perms and $perms != NO_UMASK_STACK) or return umask;
    umask pop @{ $self->_umask };
@@ -812,13 +827,11 @@ sub _umask_pop {
 }
 
 sub _umask_push {
-   my ($self, $perms) = @_; my $first = $self->_umask->[0];
+   my ($self, $perms) = @_; $perms or return umask;
+
+   my $first = $self->_umask->[ 0 ];
 
    $first and $first == NO_UMASK_STACK and return umask;
-
-   unless ($perms) {
-      $perms = $self->_perms; $perms = (($perms & oct q(0444)) >> 2) | $perms;
-   }
 
    $perms ^= oct q(0777); push @{ $self->_umask }, umask $perms;
    return $perms;

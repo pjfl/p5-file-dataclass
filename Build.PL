@@ -33,7 +33,7 @@ Bob->new( {
       'JSON'                   => 2.16,
       'MealMaster'             => 0.28,
       'Moose'                  => 0.92,
-      'MooseX::ClassAttribute' => 0.10,
+      'MooseX::ClassAttribute' => 0.21,
       'MRO::Compat'            => 0.09,
       'Scalar::Util'           => 1.19,
       'Sub::Exporter'          => 0.982,
