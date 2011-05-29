@@ -17,7 +17,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 85;
+   plan tests => 86;
 }
 
 use_ok( q(File::DataClass::IO) );
@@ -81,6 +81,11 @@ $io->relative;
 
 is( "$io", File::Spec->abs2rel( $PROGRAM_NAME ), 'Relative' );
 ok( io( q(t) )->absolute->next->is_absolute, 'Absolute directory paths' );
+
+my $tmp = File::Spec->tmpdir;
+
+is( io( $PROGRAM_NAME )->absolute( $tmp ),
+    File::Spec->rel2abs( $PROGRAM_NAME, $tmp ), 'Absolute with base' );
 
 # Stat
 

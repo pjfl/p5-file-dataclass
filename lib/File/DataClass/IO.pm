@@ -85,7 +85,7 @@ sub abs2rel {
 }
 
 sub absolute {
-   my $self = shift; $self->name( $self->rel2abs ); return $self;
+   my ($self, $base) = @_; $self->name( $self->rel2abs( $base ) ); return $self;
 }
 
 sub all {
@@ -944,13 +944,15 @@ An object which is a L<File::DataClass::IO>
 
 =head2 abs2rel
 
-   $io = io( q(relative_path_to_file) )->abs2rel( q(optional_base_path) );
+   $path = io( q(relative_path_to_file) )->abs2rel( q(optional_base_path) );
 
-Makes the pathname relative
+Makes the pathname relative. Returns a path
 
 =head2 absolute
 
-Calls L</rel2abs> without an optional base path
+   $io = io( q(relative_path_to_file) )->absolute( q(optional_base_path) );
+
+Calls L</rel2abs> without an optional base path. Returns io object
 
 =head2 all
 
@@ -1374,9 +1376,9 @@ context returns the first/next entry in the directory
 
 =head2 rel2abs
 
-   $io = io( q(relative_path_to_file) )->rel2abs( q(optional_base_path) );
+   $path = io( q(relative_path_to_file) )->rel2abs( q(optional_base_path) );
 
-Makes the pathname absolute
+Makes the pathname absolute. Returns a path
 
 =head2 relative
 
