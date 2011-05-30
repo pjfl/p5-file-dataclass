@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.5.271  2011-05-30
          - Fixed base path bug in IO::absolute
          - Can now pass dtd into Storage::XML
          - Improved directory creation permission handling. Ignores umask

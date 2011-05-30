@@ -4,7 +4,7 @@ package File::DataClass::Cache;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
 
 use CHI;
 use File::DataClass::Constants;
@@ -124,7 +124,7 @@ File::DataClass::Cache - Adds extra methods to the CHI API
 
 =head1 Version
 
-0.4.$Revision$
+0.5.$Revision$
 
 =head1 Synopsis
 

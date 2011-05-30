@@ -4,7 +4,7 @@ package File::DataClass::Constraints;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::IO;
 use Moose::Role;
@@ -76,7 +76,7 @@ File::DataClass::Constraints - Role defining package constraints
 
 =head1 Version
 
-0.4.$Revision$
+0.5.$Revision$
 
 =head1 Synopsis
 
