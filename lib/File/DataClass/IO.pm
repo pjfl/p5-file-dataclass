@@ -267,6 +267,13 @@ sub chomp {
    my $self = shift; $self->_chomp( TRUE ); return $self;
 }
 
+sub chown {
+   my ($self, $uid, $gid) = @_;
+
+   CORE::chown $uid, $gid, $self->name;
+   return $self;
+}
+
 sub clear {
    my $self = shift; ${ $self->buffer } = NUL; return $self;
 }
@@ -323,7 +330,7 @@ sub copy {
       or $self->throw( error => 'Cannot copy [_1] to [_2]',
                        args  => [ $self->name, $to->pathname ] );
 
-   return $self;
+   return $to;
 }
 
 sub deep {
@@ -1132,6 +1139,12 @@ can be eithe octal or string
 
 Causes input lines to be chomped when L</getline> or L</getlines> are called
 
+=head2 chown
+
+   $io = $io->chown( $uid, $gid );
+
+Changes user and group ownership
+
 =head2 clear
 
    $io->clear
@@ -1155,10 +1168,10 @@ filename. Unlocks the file if it was locked. Closes the file handle
 
 =head2 copy
 
-   $io = $io->copy( $destination_path_or_object );
+   $dest_obj = $io->copy( $destination_path_or_object );
 
 Copies the file to the destination. The destination can be either a path or
-and IO object
+and IO object. Returns the destination object
 
 =head2 deep
 

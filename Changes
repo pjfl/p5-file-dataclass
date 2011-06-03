@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Added chown
          - Stat->{mode} is now & 07777 so that the perms val roundtrips
          - Added chmod and copy methods
 
