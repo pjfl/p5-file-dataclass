@@ -13,6 +13,7 @@ use English      qw( -no_match_vars );
 use Fcntl        qw( :flock :seek );
 use List::Util   qw( first );
 use File::Basename ();
+use File::Copy     ();
 use File::Path     ();
 use File::Spec     ();
 use File::Temp     ();
@@ -148,8 +149,8 @@ sub assert_dirpath {
 
    $self->_umask_pop;
 
-   -d $dir_name or $self->throw( error => 'Path [_1] cannot create',
-                                 args  => [ $dir_name ] );
+   -d $dir_name or $self->throw( error => 'Path [_1] cannot create: [_2]',
+                                 args  => [ $dir_name, $ERRNO ] );
    return $dir_name;
 }
 
@@ -255,6 +256,13 @@ sub catfile {
    return $self->_constructor( \@args )->file;
 }
 
+sub chmod {
+   my ($self, $perms) = @_; $perms ||= $self->_perms;
+
+   CORE::chmod oct NUL.$perms, $self->name;
+   return $self;
+}
+
 sub chomp {
    my $self = shift; $self->_chomp( TRUE ); return $self;
 }
@@ -303,6 +311,19 @@ sub _close_file {
 
 sub _constructor {
    my ($self, @rest) = @_; return (blessed $self)->new( @rest );
+}
+
+sub copy {
+   my ($self, $to) = @_; $to or $self->throw( 'Copy requires two args' );
+
+   (blessed $to and $to->isa( __PACKAGE__ ))
+      or $to = $self->_constructor( NUL.$to );
+
+   File::Copy::copy( $self->name, $to->pathname )
+      or $self->throw( error => 'Cannot copy [_1] to [_2]',
+                       args  => [ $self->name, $to->pathname ] );
+
+   return $self;
 }
 
 sub deep {
@@ -535,10 +556,13 @@ sub mkdir {
 
    $self->_umask_push( oct q(07777) );
 
-   my $result = CORE::mkdir( $self->name, $perms );
+   CORE::mkdir( $self->name, $perms );
 
    $self->_umask_pop;
-   return $result;
+
+   -d $self->name or $self->throw( error => 'Path [_1] cannot create: [_2]',
+                                   args  => [ $self->name, $ERRNO ] );
+   return $self;
 }
 
 sub _mkdir_perms {
@@ -552,10 +576,13 @@ sub mkpath {
 
    $self->_umask_push( oct q(07777) );
 
-   my $result = File::Path::make_path( $self->name, { mode => $perms } );
+   File::Path::make_path( $self->name, { mode => $perms } );
 
    $self->_umask_pop;
-   return $result;
+
+   -d $self->name or $self->throw( error => 'Path [_1] cannot create: [_2]',
+                                   args  => [ $self->name, $ERRNO ] );
+   return $self;
 }
 
 sub next {
@@ -771,6 +798,8 @@ sub stat {
    my %stat_hash = ( id => $self->filename );
 
    @stat_hash{ STAT_FIELDS() } = stat $self->name;
+
+   $stat_hash{mode} = $stat_hash{mode} & 07777;
 
    return \%stat_hash;
 }
@@ -1090,6 +1119,13 @@ with the one that is supplied
 Create a new C<IO> file object by concatenating this objects pathname
 with the one that is supplied
 
+=head2 chmod
+
+   $io = $io->chmod( q(0644) );
+
+Changes the permission on the file to the selected value. Permission values
+can be eithe octal or string
+
 =head2 chomp
 
    $io = io( q(path_to_file) )->chomp;
@@ -1116,6 +1152,13 @@ Closes the open directory handle.
 
 If the temporary atomic file exists, renames it to the original
 filename. Unlocks the file if it was locked. Closes the file handle
+
+=head2 copy
+
+   $io = $io->copy( $destination_path_or_object );
+
+Copies the file to the destination. The destination can be either a path or
+and IO object
 
 =head2 deep
 

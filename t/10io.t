@@ -17,7 +17,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 86;
+   plan tests => 89;
 }
 
 use_ok( q(File::DataClass::IO) );
@@ -93,20 +93,20 @@ my ($device, $inode, $mode, $nlink, $uid, $gid, $device_id,
     $size, $atime, $mtime, $ctime, $blksize, $blocks) = stat( $PROGRAM_NAME );
 my $stat = $io->stat;
 
-is( $stat->{device},    $device,      'Stat device'      );
-is( $stat->{inode},     $inode,       'Stat inode'       );
-is( $stat->{mode},      $mode,        'Stat mode'        );
-is( $stat->{nlink},     $nlink,       'Stat nlink'       );
-is( $stat->{uid},       $uid,         'Stat uid'         );
-is( $stat->{gid},       $gid,         'Stat gid'         );
-is( $stat->{device_id}, $device_id,   'Stat device_id'   );
-is( $stat->{size},      $size,        'Stat size'        );
+is( $stat->{device},    $device,       'Stat device'      );
+is( $stat->{inode},     $inode,        'Stat inode'       );
+is( $stat->{mode},      $mode & 07777, 'Stat mode'        );
+is( $stat->{nlink},     $nlink,        'Stat nlink'       );
+is( $stat->{uid},       $uid,          'Stat uid'         );
+is( $stat->{gid},       $gid,          'Stat gid'         );
+is( $stat->{device_id}, $device_id,    'Stat device_id'   );
+is( $stat->{size},      $size,         'Stat size'        );
 ok( ($stat->{atime} ==  $atime)
- || ($stat->{atime} == ($atime + 1)), 'Stat access time' );
-is( $stat->{mtime},     $mtime,       'Stat modify time' );
-is( $stat->{ctime},     $ctime,       'Stat create time' );
-is( $stat->{blksize},   $blksize,     'Stat block size'  );
-is( $stat->{blocks},    $blocks,      'Stat blocks'      );
+ || ($stat->{atime} == ($atime + 1)),  'Stat access time' );
+is( $stat->{mtime},     $mtime,        'Stat modify time' );
+is( $stat->{ctime},     $ctime,        'Stat create time' );
+is( $stat->{blksize},   $blksize,      'Stat block size'  );
+is( $stat->{blocks},    $blocks,       'Stat blocks'      );
 
 # All
 
@@ -258,6 +258,22 @@ $io = io( catfile( qw(t output substitute) ) );
 $io->println( qw(line1 line2 line3) );
 $io->substitute( q(line2), q(changed) );
 is( ($io->chomp->getlines)[ 1 ], q(changed), 'Substitute values' );
+
+# Copy
+
+my $to = io( catfile( qw(t output copy) ) ); $io->close;
+
+$io->copy( $to );
+is( $io->all, $to->all, 'Copy file' );
+
+# Chmod
+
+$io->chmod( q(0777) );
+$stat = $io->stat;
+is( (sprintf "%o", $stat->{mode}), q(777), 'chmod1' );
+$io->chmod( q(0400) );
+$stat = $io->stat;
+is( (sprintf "%o", $stat->{mode}), q(400), 'chmod2' );
 
 # Cleanup
 

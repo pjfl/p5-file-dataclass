@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+         - Stat->{mode} is now & 07777 so that the perms val roundtrips
+         - Added chmod and copy methods
+
 0.5.271  2011-05-30
          - Fixed base path bug in IO::absolute
          - Can now pass dtd into Storage::XML
