@@ -317,7 +317,7 @@ sub copy {
    my ($self, $to) = @_; $to or $self->throw( 'Copy requires two args' );
 
    (blessed $to and $to->isa( __PACKAGE__ ))
-      or $to = $self->_constructor( NUL.$to );
+      or $to = $self->_constructor( $to );
 
    File::Copy::copy( $self->name, $to->pathname )
       or $self->throw( error => 'Cannot copy [_1] to [_2]',
