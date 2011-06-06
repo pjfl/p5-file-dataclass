@@ -259,7 +259,7 @@ sub catfile {
 sub chmod {
    my ($self, $perms) = @_; $perms ||= $self->_perms;
 
-   CORE::chmod oct NUL.$perms, $self->name;
+   CORE::chmod $perms, $self->name;
    return $self;
 }
 
@@ -646,7 +646,7 @@ sub _open_file {
 
    $self->_assert and $self->assert_filepath;
    $self->_umask_push( $perms );
-   $self->io_handle( IO::File->new( $path, $mode, $perms ) )
+   $self->io_handle( IO::File->new( $path, $mode ) )
       or $self->throw( error => 'File [_1] cannot open', args => [ $path ] );
    $self->_umask_pop;
    $self->is_open( TRUE );

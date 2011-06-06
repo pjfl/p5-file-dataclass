@@ -17,7 +17,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 89;
+   plan tests => 96;
 }
 
 use_ok( q(File::DataClass::IO) );
@@ -268,12 +268,42 @@ is( $io->all, $to->all, 'Copy file' );
 
 # Chmod
 
-$io->chmod( q(0777) );
+$io->chmod( 0777 );
 $stat = $io->stat;
 is( (sprintf "%o", $stat->{mode}), q(777), 'chmod1' );
-$io->chmod( q(0400) );
+$io->chmod( 0400 );
 $stat = $io->stat;
 is( (sprintf "%o", $stat->{mode}), q(400), 'chmod2' );
+
+# Permissions
+
+$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0400) )->println( 'x' );
+is( (sprintf "%o", $io->stat->{mode}), q(400), 'Create 400' );
+$io->unlink;
+
+$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0440) )->println( 'x' );
+is( (sprintf "%o", $io->stat->{mode}), q(440), 'Create 440' );
+$io->unlink;
+
+$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0600) )->println( 'x' );
+is( (sprintf "%o", $io->stat->{mode}), q(600), 'Create 600' );
+$io->unlink;
+
+$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0640) )->println( 'x' );
+is( (sprintf "%o", $io->stat->{mode}), q(640), 'Create 640' );
+$io->unlink;
+
+$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0644) )->println( 'x' );
+is( (sprintf "%o", $io->stat->{mode}), q(644), 'Create 644' );
+$io->unlink;
+
+$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0664) )->println( 'x' );
+is( (sprintf "%o", $io->stat->{mode}), q(664), 'Create 664' );
+$io->unlink;
+
+$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0666) )->println( 'x' );
+is( (sprintf "%o", $io->stat->{mode}), q(666), 'Create 666' );
+$io->unlink;
 
 # Cleanup
 

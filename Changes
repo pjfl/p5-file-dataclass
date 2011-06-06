@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - Stop sending perms to IO::File->new. Just use umask
+         - Fixed type error in chmod. Added more tests
          - Added chown
          - Stat->{mode} is now & 07777 so that the perms val roundtrips
          - Added chmod and copy methods
