@@ -165,7 +165,7 @@ sub assert_filepath {
 }
 
 sub assert_open {
-   my ($self, $mode, $perms) = @_; $self->type or $self->file;
+   my ($self, $mode, $perms) = @_;
 
    return $self->open( $mode || q(r), $perms );
 }
@@ -439,7 +439,7 @@ sub _find {
    defined $level or $level = $self->_deep ? 0 : 1;
 
    while ($io = $self->next) {
-      my $is_dir = $io->is_dir;
+      my $is_dir = $io->is_dir; defined $is_dir or next;
 
       (($files and not $is_dir) or ($dirs and $is_dir))
          and ((not defined $filter) or (map { $filter->() } ($io))[ 0 ])
@@ -517,11 +517,9 @@ sub is_absolute {
 }
 
 sub is_dir {
-   my $self = shift;
+   my $self = shift; $self->type or $self->_set_type;
 
-   $self->type and return $self->type eq q(dir) ? TRUE : FALSE;
-
-   return $self->name && -d $self->name ? TRUE : FALSE;
+   return $self->type && $self->type eq q(dir) ? TRUE : FALSE;
 }
 
 sub is_executable {
@@ -529,11 +527,9 @@ sub is_executable {
 }
 
 sub is_file {
-   my $self = shift;
+   my $self = shift; $self->type or $self->_set_type;
 
-   $self->type and return $self->type eq q(file) ? TRUE : FALSE;
-
-   return $self->name && -f $self->name ? TRUE : FALSE;
+   return $self->type && $self->type eq q(file) ? TRUE : FALSE;
 }
 
 sub is_readable {
@@ -608,6 +604,7 @@ sub open {
    my ($self, $mode, $perms) = @_; $mode ||= $self->mode;
 
    $self->is_open and $mode eq $self->mode and return $self;
+   $self->type or $self->_set_type; $self->type or $self->file;
    $self->is_open and $self->close;
    $self->is_dir
       and return $self->_open_dir ( $self->_open_args( $mode, $perms ) );
@@ -664,9 +661,7 @@ sub perms {
 }
 
 sub print {
-   my ($self, @rest) = @_; $self->assert_open( q(w) );
-
-   return $self->_print( @rest );
+   my ($self, @rest) = @_; return $self->assert_open( q(w) )->_print( @rest );
 }
 
 sub _print {
@@ -681,9 +676,7 @@ sub _print {
 }
 
 sub println {
-   my ($self, @rest) = @_; $self->assert_open( q(w) );
-
-   return $self->_println( @rest );
+   my ($self, @rest) = @_; return $self->assert_open( q(w) )->_println( @rest );
 }
 
 sub _println {
@@ -748,7 +741,7 @@ sub seek {
 
    my @sunk = $self->io_handle->seek( @rest ); $self->error_check;
 
-   return wantarray ? @sunk : $sunk[0];
+   return wantarray ? @sunk : $sunk[ 0 ];
 }
 
 sub separator {
@@ -779,6 +772,12 @@ sub set_lock {
    flock $self->io_handle, $self->mode eq q(r) ? LOCK_SH : LOCK_EX;
 
    return $self;
+}
+
+sub _set_type {
+   my $self = shift;
+
+   return -f $self->name ? $self->file : -d _ ? $self->dir : undef;
 }
 
 sub slurp {
