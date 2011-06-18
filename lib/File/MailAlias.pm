@@ -39,7 +39,8 @@ has 'root_update_attrs' => is => 'ro', isa => 'ArrayRef',
 has '+result_source_attributes' =>
    default                      => sub { return {
       aliases => { attributes => [ qw(comment created owner recipients) ],
-                   defaults   => { comment => [], recipients => [] } }, } };
+                   defaults   => { comment    => [ '-' ],
+                                   recipients => [] } }, } };
 has '+storage_class' =>
    default           => q(+File::MailAlias::Storage);
 
@@ -53,11 +54,24 @@ around BUILDARGS => sub {
    elsif (ref $car eq ARRAY) { $attrs->{path} = $class->catfile( @{ $car } ) }
    else                      { $attrs->{path} = $car.NUL }
 
-   $cdr[0] and $attrs->{system_aliases} = $cdr[0];
-   $cdr[1] and $attrs->{newaliases    } = [ $cdr[1] ];
+   $cdr[ 0 ] and $attrs->{system_aliases} =   $cdr[ 0 ];
+   $cdr[ 1 ] and $attrs->{newaliases    } = [ $cdr[ 1 ] ];
 
    return $attrs;
 };
+
+{  my $map = {}; my $mtime = 0;
+
+   sub aliases_map {
+      my $self = shift; my (undef, $meta) = $self->cache->get( $self->path );
+
+      ($meta and defined $meta->{mtime}) or $meta = { mtime => 1 };
+      $meta->{mtime} > $mtime and $mtime = $meta->{mtime}
+         and $map = { map { $_ => TRUE } @{ $self->list( 'nobody' )->list } };
+
+      return $map;
+   }
+}
 
 sub create {
    my ($self, $args) = @_;
@@ -101,7 +115,7 @@ sub update {
 sub update_as_root {
    my $self = shift; my $cmd = join SPC, @{ $self->newaliases || [] };
 
-   ($self->newaliases and $cmd = can_run( $self->newaliases->[0] ))
+   ($self->newaliases and $cmd = can_run( $self->newaliases->[ 0 ] ))
       or $self->throw( error => 'Path [_1] cannot execute', args => [ $cmd ] );
 
    copy( NUL.$self->path, $self->catfile( $self->system_aliases ) )
@@ -212,6 +226,13 @@ access to the real mail alias file
 =head1 Subroutines/Methods
 
 =head2 BUILD
+
+=head2 aliases_map
+
+   $alias_obj->aliases_map;
+
+Returns a hash ref of aliases. Caches the result and updates automatically
+by reading the cache mod time
 
 =head2 create
 
