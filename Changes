@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Improved is_file and is_dir logic
          - Stop sending perms to IO::File->new. Just use umask
          - Fixed type error in chmod. Added more tests
          - Added chown
