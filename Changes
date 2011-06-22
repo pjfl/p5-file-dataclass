@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - More breakage in IO::tempfile. Set mode to w+ and fix open_args
          - Fixed breakage in IO::stat. Which means val doesn't roundtrip
          - Added aliases_map to MailAlias. Caching hash ref of alias list
          - Improved is_file and is_dir logic

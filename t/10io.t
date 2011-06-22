@@ -222,7 +222,7 @@ my $temp  = io( q(t) )->tempfile;
 
 $temp->println( @lines ); $temp->seek( 0, 0 );
 
-my $text  = $temp->slurp;
+my $text  = $temp->slurp || q();
 
 ok( length $text == $size, 'Tempfile/seek' );
 

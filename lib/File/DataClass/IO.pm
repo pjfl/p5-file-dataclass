@@ -603,7 +603,14 @@ sub next {
 sub open {
    my ($self, $mode, $perms) = @_; $mode ||= $self->mode;
 
-   $self->is_open and $mode eq $self->mode and return $self;
+   $self->is_open
+      and (substr $mode, 0, 1) eq (substr $self->mode, 0, 1)
+      and return $self;
+   $self->is_open
+      and q(r) eq (substr $mode, 0, 1)
+      and q(+) eq (substr $self->mode, 1, 1) || NUL
+      and $self->seek( 0, 0 )
+      and return $self;
    $self->type or $self->_set_type; $self->type or $self->file;
    $self->is_open and $self->close;
    $self->is_dir
@@ -830,7 +837,7 @@ sub tempfile {
    $self->_init( q(file), $tmpfh->filename );
    $self->io_handle( $tmpfh );
    $self->is_open( TRUE );
-   $self->mode( q(w) );
+   $self->mode( q(w+) );
    return $self;
 }
 
