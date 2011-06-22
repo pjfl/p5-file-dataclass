@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Fixed breakage in IO::stat. Which means val doesn't roundtrip
          - Added aliases_map to MailAlias. Caching hash ref of alias list
          - Improved is_file and is_dir logic
          - Stop sending perms to IO::File->new. Just use umask

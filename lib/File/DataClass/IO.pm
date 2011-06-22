@@ -805,8 +805,6 @@ sub stat {
 
    @stat_hash{ STAT_FIELDS() } = stat $self->name;
 
-   defined $stat_hash{mode} and $stat_hash{mode} = $stat_hash{mode} & 07777;
-
    return \%stat_hash;
 }
 
