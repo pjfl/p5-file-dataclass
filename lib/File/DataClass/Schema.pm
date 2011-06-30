@@ -63,7 +63,7 @@ has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
 around BUILDARGS => sub {
    my ($orig, $class, @args) = @_;
 
-   my $app; blessed $args[ 0 ] and $app = shift @args;
+   my $app; blessed $args[ -1 ] and $app = pop @args;
 
    my $attrs = $class->$orig( @args ); $app or return $attrs;
 

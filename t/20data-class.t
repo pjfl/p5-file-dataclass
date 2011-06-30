@@ -197,7 +197,7 @@ ok( !$diff, 'Can translate from XML to JSON' );
 }
 
 $schema = File::DataClass::Schema->new
-   ( Dummy->new, path => [ qw(t default.xml) ], tempdir => q(t) );
+   ( path => [ qw(t default.xml) ], tempdir => q(t), Dummy->new );
 
 is( ref $schema, q(File::DataClass::Schema),
     q(File::DataClass::Schema - with inversion of control) );
