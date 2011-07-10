@@ -61,20 +61,19 @@ has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
    coerce                      => TRUE;
 
 around BUILDARGS => sub {
-   my ($orig, $class, @args) = @_;
+   my ($orig, $class, @args) = @_; my $attrs = $class->$orig( @args );
 
-   my $app; blessed $args[ -1 ] and $app = pop @args;
+   exists $attrs->{ioc_obj} or return $attrs;
 
-   my $attrs = $class->$orig( @args ); $app or return $attrs;
-
+   my $ioc   = delete $attrs->{ioc_obj};
    my @attrs = ( qw(debug lock log tempdir) );
 
-   $attrs->{ $_ } ||= $app->$_() for (grep { $app->can( $_ ) } @attrs);
+   $attrs->{ $_ } ||= $ioc->$_() for (grep { $ioc->can( $_ ) } @attrs);
 
-   $app->can( q(config) ) and $attrs->{tempdir} ||= $app->config->{tempdir};
+   $ioc->can( q(config) ) and $attrs->{tempdir} ||= $ioc->config->{tempdir};
 
-   $app->can( q(exception_class) )
-      and $class->Exception_Class( $app->exception_class );
+   $ioc->can( q(exception_class) )
+      and $class->Exception_Class( $ioc->exception_class );
 
    return $attrs;
 };
@@ -255,6 +254,13 @@ Passed to the L<Cache::Cache> constructor
 
 Writes debug information to the log object if set to true
 
+=item B<ioc_obj>
+
+An optional object that provides these methods; C<debug>,
+C<exception_class>, C<lock>, C<log>, and C<tempdir>. Their values are
+or'ed with values in the attributes hash before being passed to the
+constructor
+
 =item B<lock>
 
 Instantiates and returns the L<Lock|File::DataClass/Lock> class
@@ -320,11 +326,6 @@ Temporary directory used to store the cache and lock objects disk
 representation
 
 =back
-
-If the constructor is passed an object as it's first arg, and that
-provides these methods; C<debug>, C<exception_class>, C<lock>, C<log>,
-and C<tempdir>, then their values are or'ed with values in the attributes
-hash before being passed to the constructor
 
 =head1 Subroutines/Methods
 

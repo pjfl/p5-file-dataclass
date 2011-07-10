@@ -197,7 +197,7 @@ ok( !$diff, 'Can translate from XML to JSON' );
 }
 
 $schema = File::DataClass::Schema->new
-   ( path => [ qw(t default.xml) ], tempdir => q(t), Dummy->new );
+   ( ioc_obj => Dummy->new, path => [ qw(t default.xml) ], tempdir => q(t) );
 
 is( ref $schema, q(File::DataClass::Schema),
     q(File::DataClass::Schema - with inversion of control) );
