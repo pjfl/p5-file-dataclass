@@ -4,7 +4,7 @@ package File::DataClass::Util;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::MOP;
 use File::DataClass::Constants;
@@ -83,7 +83,7 @@ File::DataClass::Util - Moose Role defining utility methods
 
 =head1 Version
 
-0.5.$Revision$
+0.6.$Revision$
 
 =head1 Synopsis
 

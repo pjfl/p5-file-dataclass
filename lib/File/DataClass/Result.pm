@@ -4,7 +4,7 @@ package File::DataClass::Result;
 
 use strict;
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 
@@ -67,7 +67,7 @@ File::DataClass::Result - Result object definition
 
 =head1 Version
 
-0.5.$Revision$
+0.6.$Revision$
 
 =head1 Synopsis
 

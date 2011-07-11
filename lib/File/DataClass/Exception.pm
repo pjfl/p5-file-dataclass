@@ -4,7 +4,7 @@ package File::DataClass::Exception;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 use Exception::Class
    'File::DataClass::Exception::Base' => { fields => [ qw(args out rv) ] };
@@ -95,7 +95,7 @@ File::DataClass::Exception - Exception base class
 
 =head1 Version
 
-0.5.$Revision$
+0.6.$Revision$
 
 =head1 Synopsis
 

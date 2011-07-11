@@ -4,7 +4,7 @@ package File::DataClass::ResultSource::WithLanguage;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.5.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Combinator;
 use File::DataClass::Constants;
@@ -50,7 +50,7 @@ File::DataClass::ResultSource::WithLanguage - Result source localisation
 
 =head1 Version
 
-0.5.$Revision$
+0.6.$Revision$
 
 =head1 Synopsis
 
