@@ -1,6 +1,6 @@
 Revision history for File::DataClass
 
-0.6.285  2011-07-11
+0.6.286  2011-07-11
          - Changed F::DC API. Made ioc_obj an attribute not a parameter
          - More breakage in IO::tempfile. Set mode to w+ and fix open_args
          - Fixed breakage in IO::stat. Which means val doesn't roundtrip
