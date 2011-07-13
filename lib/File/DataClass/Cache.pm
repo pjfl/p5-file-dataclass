@@ -20,10 +20,14 @@ has 'cache_class'      => is => 'ro', isa => 'ClassName',
    default             => q(CHI);
 has 'schema'           => is => 'ro', isa => 'Object',
    required            => 1, weak_ref => TRUE,
-   handles             => { _debug => q(debug), _log => q(log), };
+   handles             => { _debug          => q(debug),
+                            exception_class => q(exception_class),
+                            _log            => q(log), };
 
 has '_mtimes_key'      => is => 'ro', isa => 'Str',
    default             => q(_mtimes);
+
+with qw(File::DataClass::Util);
 
 sub get {
    my ($self, $key) = @_; $key .= NUL;

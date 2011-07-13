@@ -6,8 +6,8 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
-use File::DataClass::Constants;
 use Moose;
+use File::DataClass::Constants;
 
 use File::DataClass::ResultSet;
 
@@ -24,7 +24,8 @@ has 'resultset_attributes' => is => 'ro', isa => 'HashRef',
 has 'resultset_class'      => is => 'ro', isa => 'ClassName',
    default                 => q(File::DataClass::ResultSet);
 has 'schema'               => is => 'ro', isa => 'Object',
-   required                => TRUE, weak_ref => TRUE, handles => [ qw(path) ];
+   required                => TRUE, weak_ref => TRUE,
+   handles                 => [ qw(exception_class path) ];
 has 'storage'              => is => 'rw', isa => 'Object', lazy_build => TRUE;
 
 sub resultset {

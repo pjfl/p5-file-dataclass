@@ -20,8 +20,11 @@ extends qw(File::DataClass);
 has 'backup' => is => 'rw', isa => 'Str',    default  => NUL;
 has 'extn'   => is => 'rw', isa => 'Str',    default  => NUL;
 has 'schema' => is => 'ro', isa => 'Object', required => 1, weak_ref => TRUE,
-   handles => { _cache => q(cache), _debug => q(debug), _lock => q(lock),
-                _log   => q(log),   _perms => q(perms) };
+   handles => { _cache          => q(cache),           _debug => q(debug),
+                exception_class => q(exception_class), _lock  => q(lock),
+                _log            => q(log),             _perms => q(perms) };
+
+with qw(File::DataClass::Util);
 
 sub delete {
    my ($self, $path, $element_obj) = @_;

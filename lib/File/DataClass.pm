@@ -20,8 +20,6 @@ class_has 'Exception_Class' => is => 'rw', isa => 'F_DC_Exception',
 
 class_has 'Lock'  => is => 'rw', isa => 'Maybe[F_DC_Lock]';
 
-with qw(File::DataClass::Util);
-
 __PACKAGE__->meta->make_immutable;
 
 no MooseX::ClassAttribute;

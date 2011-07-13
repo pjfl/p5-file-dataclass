@@ -13,7 +13,9 @@ extends qw(File::DataClass);
 
 has 'lang'    => is => 'rw', isa => 'Str',    required => TRUE;
 has 'storage' => is => 'ro', isa => 'Object', required => TRUE,
-   handles    => [ qw(load txn_do validate_params) ];
+   handles    => [ qw(exception_class load txn_do validate_params) ];
+
+with qw(File::DataClass::Util);
 
 sub delete {
    my ($self, $path, $element_obj) = @_;

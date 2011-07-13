@@ -14,7 +14,7 @@ use List::Util qw(first);
 use Moose::Role;
 use Try::Tiny;
 
-requires qw(Exception_Class);
+requires qw(exception_class);
 
 sub basename {
    my ($self, $path, @suffixes) = @_;
@@ -54,7 +54,7 @@ sub ensure_class_loaded {
 sub io {
    my ($self, @rest) = @_; my $io = File::DataClass::IO->new( @rest );
 
-   $io->exception_class( $self->Exception_Class );
+   $io->exception_class( $self->exception_class );
 
    return $io;
 }
@@ -66,7 +66,7 @@ sub is_member {
 }
 
 sub throw {
-   my $self = shift; return $self->Exception_Class->throw( @_ );
+   my $self = shift; return $self->exception_class->throw( @_ );
 }
 
 no Moose::Role;

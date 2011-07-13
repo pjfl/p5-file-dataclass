@@ -29,6 +29,8 @@ has 'cache_class'              => is => 'ro',
    default                     => q(File::DataClass::Cache);
 has 'debug'                    => is => 'ro', isa => 'Bool',
    default                     => FALSE;
+has 'exception_class'          => is => 'rw', isa => 'F_DC_Exception',
+   default                     => File::DataClass->Exception_Class;
 has 'lock'                     => is => 'ro', isa => 'F_DC_Lock',
    lazy_build                  => TRUE;
 has 'lock_attributes'          => is => 'ro', isa => 'HashRef',
@@ -57,8 +59,10 @@ has 'storage_class'            => is => 'ro', isa => 'Str',
 has 'storage'                  => is => 'rw', isa => 'Object',
    lazy_build                  => TRUE;
 has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
-   default                     => sub { __PACKAGE__->io( File::Spec->tmpdir ) },
+   default                     => File::Spec->tmpdir,
    coerce                      => TRUE;
+
+with qw(File::DataClass::Util);
 
 around BUILDARGS => sub {
    my ($orig, $class, @args) = @_; my $attrs = $class->$orig( @args );
@@ -66,14 +70,11 @@ around BUILDARGS => sub {
    exists $attrs->{ioc_obj} or return $attrs;
 
    my $ioc   = delete $attrs->{ioc_obj};
-   my @attrs = ( qw(debug lock log tempdir) );
+   my @attrs = ( qw(debug exception_class lock log tempdir) );
 
    $attrs->{ $_ } ||= $ioc->$_() for (grep { $ioc->can( $_ ) } @attrs);
 
    $ioc->can( q(config) ) and $attrs->{tempdir} ||= $ioc->config->{tempdir};
-
-   $ioc->can( q(exception_class) )
-      and $class->Exception_Class( $ioc->exception_class );
 
    return $attrs;
 };
