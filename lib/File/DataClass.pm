@@ -8,15 +8,11 @@ use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
-use File::DataClass::Exception;
 
 with qw(File::DataClass::Constraints);
 
 class_has 'Cache' => is => 'rw', isa => 'HashRef[F_DC_Cache]',
    default        => sub { {} };
-
-class_has 'Exception_Class' => is => 'rw', isa => 'F_DC_Exception',
-   default                  => 'File::DataClass::Exception';
 
 class_has 'Lock'  => is => 'rw', isa => 'Maybe[F_DC_Lock]';
 
@@ -64,8 +60,8 @@ L<File::DataClass::Schema>
 
 =head1 Configuration and Environment
 
-Defines these class attributes. They are set on first use by
-methods in L<File::DataClass::Schema>
+Defines these class attributes. They are set on first use when an instance
+of L<File::DataClass::Schema> is created
 
 =over 3
 
@@ -73,11 +69,6 @@ methods in L<File::DataClass::Schema>
 
 This is a L<Cache::Cache> object which is used to cache the results of
 reading a file. Maybe of type C<F_DC_Cache>
-
-=item B<Exception_Class>
-
-A classname that is expected to have a class method C<throw>. Defaults to
-L<File::DataClass::Exception> and is of type C<F_DC_Exception>
 
 =item B<Lock>
 
@@ -99,8 +90,6 @@ None
 =over 3
 
 =item L<namespace::autoclean>
-
-=item L<File::DataClass::Exception>
 
 =item L<MooseX::ClassAttribute>
 

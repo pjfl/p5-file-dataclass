@@ -12,6 +12,7 @@ use File::Spec;
 use Moose;
 
 use File::DataClass::Cache;
+use File::DataClass::Exception;
 use File::DataClass::ResultSource;
 use File::DataClass::Storage;
 use IPC::SRLock;
@@ -29,8 +30,8 @@ has 'cache_class'              => is => 'ro',
    default                     => q(File::DataClass::Cache);
 has 'debug'                    => is => 'ro', isa => 'Bool',
    default                     => FALSE;
-has 'exception_class'          => is => 'rw', isa => 'F_DC_Exception',
-   default                     => File::DataClass->Exception_Class;
+has 'exception_class'          => is => 'ro', isa => 'F_DC_Exception',
+   default                     => q(File::DataClass::Exception);
 has 'lock'                     => is => 'ro', isa => 'F_DC_Lock',
    lazy_build                  => TRUE;
 has 'lock_attributes'          => is => 'ro', isa => 'HashRef',
@@ -255,6 +256,11 @@ Passed to the L<Cache::Cache> constructor
 
 Writes debug information to the log object if set to true
 
+=item B<exception_class>
+
+A classname that is expected to have a class method C<throw>. Defaults to
+L<File::DataClass::Exception> and is of type C<F_DC_Exception>
+
 =item B<ioc_obj>
 
 An optional object that provides these methods; C<debug>,
@@ -390,6 +396,8 @@ debug method to be called with useful information
 =item L<File::DataClass::Cache>
 
 =item L<File::DataClass::Constants>
+
+=item L<File::DataClass::Exception>
 
 =item L<File::DataClass::ResultSource>
 

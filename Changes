@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Eliminated Exception_Class class attribute
          - Exception_class now an obj attribute defaulting to class attribute
 
 0.6.286  2011-07-11
