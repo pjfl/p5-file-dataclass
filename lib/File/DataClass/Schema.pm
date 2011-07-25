@@ -19,6 +19,11 @@ use IPC::SRLock;
 
 extends qw(File::DataClass);
 
+has 'exception_class' => is => 'ro', isa => 'F_DC_Exception',
+   default            => q(File::DataClass::Exception);
+
+with qw(File::DataClass::Util);
+
 has 'cache'                    => is => 'ro', isa => 'F_DC_Cache',
    lazy_build                  => TRUE;
 has 'cache_attributes'         => is => 'ro', isa => 'HashRef',
@@ -30,8 +35,6 @@ has 'cache_class'              => is => 'ro',
    default                     => q(File::DataClass::Cache);
 has 'debug'                    => is => 'ro', isa => 'Bool',
    default                     => FALSE;
-has 'exception_class'          => is => 'ro', isa => 'F_DC_Exception',
-   default                     => q(File::DataClass::Exception);
 has 'lock'                     => is => 'ro', isa => 'F_DC_Lock',
    lazy_build                  => TRUE;
 has 'lock_attributes'          => is => 'ro', isa => 'HashRef',
@@ -62,8 +65,6 @@ has 'storage'                  => is => 'rw', isa => 'Object',
 has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
    default                     => File::Spec->tmpdir,
    coerce                      => TRUE;
-
-with qw(File::DataClass::Util);
 
 around BUILDARGS => sub {
    my ($orig, $class, @args) = @_; my $attrs = $class->$orig( @args );
@@ -159,9 +160,7 @@ sub _build_lock {
 
    my $attrs = $self->lock_attributes;
 
-   $attrs->{debug  } ||= $self->debug;
-   $attrs->{log    } ||= $self->log;
-   $attrs->{tempdir} ||= $self->tempdir;
+   $attrs->{ $_ } ||= $self->$_() for (qw(debug log tempdir));
 
    return $self->Lock( $self->lock_class->new( $attrs ) );
 }
