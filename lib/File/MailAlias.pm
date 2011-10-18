@@ -44,6 +44,8 @@ has '+result_source_attributes' =>
 has '+storage_class' =>
    default           => q(+File::MailAlias::Storage);
 
+has 'source_name' => is => 'ro', isa => 'Str', default => q(aliases);
+
 around BUILDARGS => sub {
    my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
 
@@ -58,6 +60,10 @@ around BUILDARGS => sub {
    $cdr[ 1 ] and $attrs->{newaliases    } = [ $cdr[ 1 ] ];
 
    return $attrs;
+};
+
+around 'resultset' => sub {
+   my ($orig, $self) = @_; return $self->$orig( $self->source_name );
 };
 
 {  my $map = {}; my $mtime = 0;
@@ -97,10 +103,6 @@ sub find {
 
 sub list {
    my ($self, $name) = @_; return $self->resultset->list( { name => $name } );
-}
-
-sub resultset {
-   my $self = shift; return $self->next::method( q(aliases) );
 }
 
 sub update {
@@ -287,10 +289,6 @@ List of recipients for the selected owner
 
 Returns an object containing a list of alias names and the fields pertaining
 to the requested alias if it exists
-
-=head2 resultset
-
-   $rs = $alias_obj->resultset
 
 =head2 update
 
