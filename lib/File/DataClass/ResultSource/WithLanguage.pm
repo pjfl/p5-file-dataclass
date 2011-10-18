@@ -20,7 +20,7 @@ sub BUILD {
    my $self = shift;
 
    if ($self->lang_dep) {
-      my $attrs = { lang => $self->lang, storage => $self->schema->storage };
+      my $attrs = { lang => $self->lang, storage => $self->storage };
 
       $self->storage( File::DataClass::Combinator->new( $attrs ) );
    }
