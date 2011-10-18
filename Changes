@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - Fixed the way ResultSource::WithLanguage patches in storage object
+         - Added Gettext for po files
          - Eliminated Exception_Class class attribute
          - Exception_class now an obj attribute defaulting to class attribute
 
