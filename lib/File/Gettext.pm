@@ -8,11 +8,15 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use Moose;
+use Moose::Util::TypeConstraints;
 
 extends qw(File::DataClass::Schema);
 
 has '+result_source_attributes' =>
    default           => sub { return {
+      mo             => {
+         attributes  => [ qw(msgid_plural msgstr) ],
+         defaults    => { msgstr => [], }, },
       po             => {
          attributes  =>
             [ qw(translator-comment extracted-comment reference flags
@@ -21,10 +25,11 @@ has '+result_source_attributes' =>
             'translator-comment' => [], 'extracted-comment' => [],
             'flags'              => [], 'previous'          => [],
             'msgstr'             => [], },
-         }, } };
+      }, } };
 
-has '+storage_class' => default => q(+File::Gettext::Storage);
-has 'source_name'    => is => 'ro', isa => 'Str', default => q(po);
+has '+storage_class' => default => q(+File::Gettext::Storage::PO);
+has 'source_name'    => is => 'ro', isa => enum( [ qw(mo po) ] ),
+   default           => q(po), trigger => \&_set_storage_class;
 
 around 'source' => sub {
    my ($orig, $self) = @_; return $self->$orig( $self->source_name );
@@ -33,6 +38,17 @@ around 'source' => sub {
 around 'resultset' => sub {
    my ($orig, $self) = @_; return $self->$orig( $self->source_name );
 };
+
+# Private methods
+
+sub _set_storage_class {
+   my $self = shift;
+
+   $self->source_name eq q(mo)
+      and $self->storage_class( q(+File::Gettext::Storage::MO) );
+
+   return;
+}
 
 __PACKAGE__->meta->make_immutable;
 

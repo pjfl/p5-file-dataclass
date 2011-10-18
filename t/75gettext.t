@@ -19,7 +19,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 5;
+   plan tests => 6;
 }
 
 use_ok q(File::Gettext );
@@ -47,7 +47,14 @@ $orig   = catfile( qw(t existing.po) );
 $schema = File::Gettext->new( { path => $orig, tempdir => q(t) } );
 $data   = $schema->load;
 
-ok $data->{po}->{January}->{msgstr}->[ 0 ] eq q(Januar), 'Message lookup';
+ok $data->{po}->{January}->{msgstr}->[ 0 ] eq q(Januar), 'PO message lookup';
+
+$orig   = catfile( qw(t existing.mo) );
+$schema = File::Gettext->new( {
+   path => $orig, source_name => q(mo), tempdir => q(t) } );
+$data   = $schema->load;
+
+ok $data->{mo}->{January}->{msgstr}->[ 0 ] eq q(Januar), 'MO message lookup';
 
 # Cleanup
 

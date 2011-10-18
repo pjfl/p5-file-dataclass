@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package File::Gettext::Storage;
+package File::Gettext::Storage::PO;
 
 use strict;
 use namespace::autoclean;
@@ -221,7 +221,7 @@ __END__
 
 =head1 Name
 
-File::Gettext::Storage - Storage class for GNU gettext file format
+File::Gettext::Storage::PO - Storage class for GNU gettext portable object format
 
 =head1 Version
 
