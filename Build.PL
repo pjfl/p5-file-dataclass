@@ -23,6 +23,7 @@ Bob->new( {
       'Class::Null'            => 1.09,
       'Data::Section'          => 0.093410,
       'Date::Format'           => 2.22,
+      'Encode'                 => 2.42,
       'Exception::Class'       => 1.23,
       'Hash::Merge'            => 0.08,
       'File::Path'             => 2.07,
@@ -48,7 +49,8 @@ Bob->new( {
       'XML::Simple'            => 2.14, },
    configure_requires => { 'Module::Build'    => 0.32,
                            'version'          => 0.74, },
-   build_requires     => { 'Exception::Class' => 1.23,
+   build_requires     => { 'utf8'             => 1.07,
+                           'Exception::Class' => 1.23,
                            'Test::More'       => 0.74,
                            'Text::Diff'       => 1.37, },
 } )->create_build_script; # Goal!
