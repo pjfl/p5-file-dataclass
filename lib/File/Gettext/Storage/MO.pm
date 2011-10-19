@@ -79,7 +79,7 @@ sub _read_filter {
                                             msgstr       => [ @trans ] };
    }
 
-   my $po_header = {}; my $null_entry;
+   my $header = {}; my $null_entry;
 
    # Try to find po header information.
    if ($null_entry = $messages->{ q() }->{msgstr}->[ 0 ]) {
@@ -87,29 +87,29 @@ sub _read_filter {
          my ($k, $v) = split m{ [:] }msx, $line, 2;
 
          $k =~ s{ [-] }{_}gmsx; $v =~ s{ \A \s+ }{}msx;
-         $po_header->{ lc $k } = $v;
+         $header->{ lc $k } = $v;
       }
    }
 
-   my $code = $po_header->{plural_forms} || NUL;
+   my $code = $header->{plural_forms} || NUL;
    my $s    = '[ \t\r\n\013\014]'; # Whitespace, locale-independent.
 
    # Untaint the plural header. Keep line breaks as is Perl 5_005 compatibility
    if ($code =~ m{ \A ($s* nplurals $s* = $s* [0-9]+ $s* ; $s*
                        plural $s* = $s*
                        (?:$s|[-\?\|\&=!<>+*/\%:;a-zA-Z0-9_\(\)])+ ) }msx) {
-      $po_header->{plural_forms} = $1;
+      $header->{plural_forms} = $1;
    }
-   else { $po_header->{plural_forms} = NUL }
+   else { $header->{plural_forms} = NUL }
 
-   if (exists $po_header->{content_type}) {
-      my $content_type = $po_header->{content_type};
+   if (exists $header->{content_type}) {
+      my $content_type = $header->{content_type};
 
-      $content_type =~ s{ .* = }{}msx and $po_header->{charset} = $content_type;
+      $content_type =~ s{ .* = }{}msx and $header->{charset} = $content_type;
    }
 
-   my $charset = exists $po_header->{charset}
-               ? $po_header->{charset} : $self->schema->charset;
+   my $charset = exists $header->{charset}
+               ? $header->{charset} : $self->schema->charset;
    my $tmp     = $messages; $messages = {};
 
    for my $id (grep { $_ } keys %{ $tmp }) {
@@ -121,7 +121,7 @@ sub _read_filter {
                                   @{ $msg->{msgstr} } ] };
    }
 
-   return { meta => \%meta, mo => $messages, po_header => $po_header };
+   return { meta => \%meta, mo => $messages, po_header => $header };
 }
 
 # Private functions

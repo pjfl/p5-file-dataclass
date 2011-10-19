@@ -9,8 +9,7 @@ use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 my @constants;
 
 BEGIN {
-   @constants =
-      ( qw(CONTEXT_SEP DIRECTORIES MAGIC_N MAGIC_V PLURAL_SEP) );
+   @constants = ( qw(CONTEXT_SEP DIRECTORIES MAGIC_N MAGIC_V PLURAL_SEP) );
 }
 
 use Sub::Exporter -setup => {
