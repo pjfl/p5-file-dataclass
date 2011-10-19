@@ -41,12 +41,14 @@ around 'resultset' => sub {
 };
 
 around 'load' => sub {
+   my ($orig, $self, @rest) = @_;
+
+   my $data = $self->$orig( @rest ); my $plural_func;
+
+   my $po_header = exists $data->{po_header} ? $data->{po_header} : {};
+
    # Determine plural rules. The leading and trailing space is necessary
    # to be able to match against word boundaries.
-   my ($orig, $self) = @_; my $domain = $self->$orig(); my $plural_func;
-
-   my $po_header = exists $domain->{po_header} ? $domain->{po_header} : {};
-
    if (exists $po_header->{plural_forms}) {
       my $code = SPC.$po_header->{plural_forms}.SPC;
 
@@ -64,9 +66,9 @@ around 'load' => sub {
    }
 
    # Default is Germanic plural (which is incorrect for French).
-   $domain->{plural_func} = $plural_func || sub { (2, shift > 1) };
+   $data->{plural_func} = $plural_func || sub { (2, shift > 1) };
 
-   return $domain;
+   return $data;
 };
 
 # Private methods

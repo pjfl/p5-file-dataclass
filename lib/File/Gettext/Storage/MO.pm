@@ -14,9 +14,7 @@ use Moose;
 extends qw(File::DataClass::Storage);
 
 augment '_read_file' => sub {
-   my ($self, $rdr) = @_;
-
-   return $self->_read_filter( $rdr->pathname, $rdr->all );
+   my ($self, $rdr) = @_; return $self->_read_filter( $rdr );
 };
 
 augment '_write_file' => sub {
@@ -26,10 +24,11 @@ augment '_write_file' => sub {
 # Private methods
 
 sub _read_filter {
-   my ($self, $path, $raw) = @_; my %meta = (); my $unpack = q(N);
+   my ($self, $rdr) = @_; my $path = $rdr->pathname; my $raw = $rdr->all;
 
    my $size = length $raw; $size < 28
       and $self->throw( error => 'Path [_1] corrupted', args => [ $path ] );
+   my %meta = (); my $unpack = q(N);
 
    $meta{magic} = unpack $unpack, substr $raw, 0, 4;
 
@@ -123,8 +122,6 @@ sub _read_filter {
 
    return { meta => \%meta, mo => $messages, po_header => $header };
 }
-
-# Private functions
 
 __PACKAGE__->meta->make_immutable;
 
