@@ -6,6 +6,7 @@ use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
+use utf8;
 
 use English qw(-no_match_vars);
 use File::DataClass::IO;
@@ -19,7 +20,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 6;
+   plan tests => 7;
 }
 
 use_ok q(File::Gettext );
@@ -47,14 +48,15 @@ $orig   = catfile( qw(t existing.po) );
 $schema = File::Gettext->new( { path => $orig, tempdir => q(t) } );
 $data   = $schema->load;
 
-ok $data->{po}->{January}->{msgstr}->[ 0 ] eq q(Januar), 'PO message lookup';
+ok $data->{po}->{January}->{msgstr}->[ 0 ] eq 'Januar', 'PO message lookup';
 
 $orig   = catfile( qw(t existing.mo) );
 $schema = File::Gettext->new( {
    path => $orig, source_name => q(mo), tempdir => q(t) } );
 $data   = $schema->load;
 
-ok $data->{mo}->{January}->{msgstr}->[ 0 ] eq q(Januar), 'MO message lookup';
+ok $data->{mo}->{January}->{msgstr}->[ 0 ] eq 'Januar', 'MO message lookup';
+ok $data->{mo}->{March}->{msgstr}->[ 0 ] eq 'März', 'MO charset decode';
 
 # Cleanup
 
@@ -64,6 +66,7 @@ io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
 io( catfile( qw(t file-dataclass-schema.dat) ) )->unlink;
 
 # Local Variables:
+# coding: utf-8
 # mode: perl
 # tab-width: 3
 # End:

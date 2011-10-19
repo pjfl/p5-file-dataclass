@@ -6,12 +6,14 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use English qw(-no_match_vars);
 use File::DataClass::Constants;
 use Moose;
 use Moose::Util::TypeConstraints;
 
 extends qw(File::DataClass::Schema);
 
+has 'charset'        => is => 'ro', isa => 'Str', default => q(iso-8859-1);
 has '+result_source_attributes' =>
    default           => sub { return {
       mo             => {
@@ -26,7 +28,6 @@ has '+result_source_attributes' =>
             'flags'              => [], 'previous'          => [],
             'msgstr'             => [], },
       }, } };
-
 has '+storage_class' => default => q(+File::Gettext::Storage::PO);
 has 'source_name'    => is => 'ro', isa => enum( [ qw(mo po) ] ),
    default           => q(po), trigger => \&_set_storage_class;
@@ -37,6 +38,35 @@ around 'source' => sub {
 
 around 'resultset' => sub {
    my ($orig, $self) = @_; return $self->$orig( $self->source_name );
+};
+
+around 'load' => sub {
+   # Determine plural rules. The leading and trailing space is necessary
+   # to be able to match against word boundaries.
+   my ($orig, $self) = @_; my $domain = $self->$orig(); my $plural_func;
+
+   my $po_header = exists $domain->{po_header} ? $domain->{po_header} : {};
+
+   if (exists $po_header->{plural_forms}) {
+      my $code = SPC.$po_header->{plural_forms}.SPC;
+
+      $code =~ s{ ([^_a-zA-Z0-9] | \A) ([_a-z][_A-Za-z0-9]*)
+                     ([^_a-zA-Z0-9]) }{$1\$$2$3}gmsx;
+      $code = "sub { my \$n = shift; my (\$plural, \$nplurals);
+                     $code;
+                     return (\$nplurals, \$plural ? \$plural : 0); }";
+
+      # Now try to evaluate the code. There is no need to run the code in
+      # a Safe compartment. The above substitutions should have destroyed
+      # all evil code. Corrections are welcome!
+      $plural_func = eval $code; ## no critic
+      $EVAL_ERROR and $plural_func = undef;
+   }
+
+   # Default is Germanic plural (which is incorrect for French).
+   $domain->{plural_func} = $plural_func || sub { (2, shift > 1) };
+
+   return $domain;
 };
 
 # Private methods

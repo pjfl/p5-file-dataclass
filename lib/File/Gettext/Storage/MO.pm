@@ -6,6 +6,7 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use Encode qw(decode);
 use File::DataClass::Constants;
 use File::Gettext::Constants;
 use Moose;
@@ -90,12 +91,6 @@ sub _read_filter {
       }
    }
 
-   if (exists $po_header->{content_type}) {
-      my $content_type = $po_header->{content_type};
-
-      $content_type =~ s{ .* = }{}msx and $po_header->{charset} = $content_type;
-   }
-
    my $code = $po_header->{plural_forms} || NUL;
    my $s    = '[ \t\r\n\013\014]'; # Whitespace, locale-independent.
 
@@ -106,6 +101,25 @@ sub _read_filter {
       $po_header->{plural_forms} = $1;
    }
    else { $po_header->{plural_forms} = NUL }
+
+   if (exists $po_header->{content_type}) {
+      my $content_type = $po_header->{content_type};
+
+      $content_type =~ s{ .* = }{}msx and $po_header->{charset} = $content_type;
+   }
+
+   my $charset = exists $po_header->{charset}
+               ? $po_header->{charset} : $self->schema->charset;
+   my $tmp     = $messages; $messages = {};
+
+   for my $id (grep { $_ } keys %{ $tmp }) {
+      my $msg = $tmp->{ $id };
+
+      $messages->{ decode( $charset, $id ) }
+         = { msgid_plural => decode( $charset, $msg->{msgid_plural} ),
+             msgstr       => [ map { decode( $charset, $_ ) }
+                                  @{ $msg->{msgstr} } ] };
+   }
 
    return { meta => \%meta, mo => $messages, po_header => $po_header };
 }

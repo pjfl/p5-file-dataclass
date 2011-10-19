@@ -52,7 +52,7 @@ __END__
 
 =head1 Name
 
-File::UnixAuth - Result source definitions for the Unix auth files
+File::MealMaster - OO access to the MealMaster recipe files
 
 =head1 Version
 
@@ -102,7 +102,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2009 Peter Flanigan. All rights reserved
+Copyright (c) 2011 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
