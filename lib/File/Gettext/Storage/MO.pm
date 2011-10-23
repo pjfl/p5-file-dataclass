@@ -85,24 +85,12 @@ sub _read_filter {
       for my $line (split m{ [\n] }msx, $null_entry) {
          my ($k, $v) = split m{ [:] }msx, $line, 2;
 
-         $k =~ s{ [-] }{_}gmsx; $v =~ s{ \A \s+ }{}msx;
-         $header->{ lc $k } = $v;
+         $v =~ s{ \A \s+ }{}msx; $header->{ $k } = $v;
       }
    }
 
-   my $code = $header->{plural_forms} || NUL;
-   my $s    = '[ \t\r\n\013\014]'; # Whitespace, locale-independent.
-
-   # Untaint the plural header. Keep line breaks as is Perl 5_005 compatibility
-   if ($code =~ m{ \A ($s* nplurals $s* = $s* [0-9]+ $s* ; $s*
-                       plural $s* = $s*
-                       (?:$s|[-\?\|\&=!<>+*/\%:;a-zA-Z0-9_\(\)])+ ) }msx) {
-      $header->{plural_forms} = $1;
-   }
-   else { $header->{plural_forms} = NUL }
-
-   if (exists $header->{content_type}) {
-      my $content_type = $header->{content_type};
+   if (exists $header->{ 'Content-Type' }) {
+      my $content_type = $header->{ 'Content-Type' };
 
       $content_type =~ s{ .* = }{}msx and $header->{charset} = $content_type;
    }
@@ -111,16 +99,40 @@ sub _read_filter {
                ? $header->{charset} : $self->schema->charset;
    my $tmp     = $messages; $messages = {};
 
-   for my $id (grep { $_ } keys %{ $tmp }) {
-      my $msg = $tmp->{ $id };
+   for my $key (grep { $_ } keys %{ $tmp }) {
+      my $msg = $tmp->{ $key }; my $id = __decode( $charset, $key );
 
-      $messages->{ decode( $charset, $id ) }
-         = { msgid_plural => decode( $charset, $msg->{msgid_plural} ),
-             msgstr       => [ map { decode( $charset, $_ ) }
-                                  @{ $msg->{msgstr} } ] };
+      $messages->{ $id } = { msgstr => [ map { __decode( $charset, $_ ) }
+                                            @{ $msg->{msgstr} } ] };
+      defined $msg->{msgid_plural}
+         and $messages->{ $id }->{msgid_plural}
+            = __decode( $charset, $msg->{msgid_plural} );
    }
 
-   return { meta => \%meta, mo => $messages, po_header => $header };
+   my $code = $header->{ 'Plural-Forms' } || NUL;
+   my $s    = '[ \t\r\n\013\014]'; # Whitespace, locale-independent.
+
+   # Untaint the plural header. Keep line breaks as is Perl 5_005 compatibility
+   if ($code =~ m{ \A ($s* nplurals $s* = $s* [0-9]+ $s* ; $s*
+                       plural $s* = $s*
+                       (?:$s|[-\?\|\&=!<>+*/\%:;a-zA-Z0-9_\(\)])+ ) }msx) {
+      $header->{ 'Plural-Forms' } = $1;
+   }
+   else { $header->{ 'Plural-Forms' } = NUL }
+
+   return { meta      => \%meta,
+            mo        => $messages,
+            po_header => { msgid => q(), msgstr => $header } };
+}
+
+# Private subroutines
+
+sub __decode {
+   my ($charset, $text) = @_; defined $text or return;
+
+   $text = decode( $charset, $text );
+   $text =~ s{ [\\][\'] }{\'}gmsx; $text =~ s{ [\\][\"] }{\"}gmsx;
+   return $text;
 }
 
 __PACKAGE__->meta->make_immutable;

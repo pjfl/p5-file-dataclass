@@ -45,12 +45,13 @@ around 'load' => sub {
 
    my $data = $self->$orig( @rest ); my $plural_func;
 
-   my $po_header = exists $data->{po_header} ? $data->{po_header} : {};
+   my $po_header = exists $data->{po_header}
+                 ? $data->{po_header}->{msgstr} || {} : {};
 
    # Determine plural rules. The leading and trailing space is necessary
    # to be able to match against word boundaries.
-   if (exists $po_header->{plural_forms}) {
-      my $code = SPC.$po_header->{plural_forms}.SPC;
+   if (exists $po_header->{ 'Plural-Forms' }) {
+      my $code = SPC.$po_header->{ 'Plural-Forms' }.SPC;
 
       $code =~ s{ ([^_a-zA-Z0-9] | \A) ([_a-z][_A-Za-z0-9]*)
                      ([^_a-zA-Z0-9]) }{$1\$$2$3}gmsx;

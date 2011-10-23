@@ -27,7 +27,8 @@ use_ok q(File::Gettext );
 
 my $orig   = catfile( qw(t messages.po) );
 my $dumped = io( [ qw(t dumped.messages) ] ); $dumped->unlink;
-my $schema = File::Gettext->new( { path => $orig, tempdir => q(t) } );
+my $schema = File::Gettext->new( { charset => 'UTF-8',
+                                   path => $orig, tempdir => q(t) } );
 
 isa_ok $schema, q(File::Gettext);
 
@@ -60,7 +61,7 @@ ok $data->{mo}->{March}->{msgstr}->[ 0 ] eq 'März', 'MO charset decode';
 
 # Cleanup
 
-$dumped->unlink;
+#$dumped->unlink;
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
 io( catfile( qw(t file-dataclass-schema.dat) ) )->unlink;
