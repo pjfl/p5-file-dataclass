@@ -28,108 +28,91 @@ augment '_write_file' => sub {
 # Private read methods
 
 sub _read_filter {
-   my ($self, $buf) = @_; my $charset = $self->schema->charset;
+   my ($self, $buf) = @_; $buf ||= [];
 
-   my ($data, $order, $rec, $key, $last) = ({}, 0, {}); $buf ||= [];
+   my ($data, $order, $rec, $key, $last) = ({}, 0, {});
 
    for my $line (grep { defined } @{ $buf }) {
+      # Lines beginning with a hash are comments
       if ('#' eq substr $line, 0, 1) {
          my $field = __comment_field( substr $line, 0, 2 );
 
-         $field and $self->_store_comment( $rec, $line, $field );
+         $field and __store_comment( $rec, $line, $field );
       }
+      # Field names all begin with the prefix msg
       elsif (q(msg) eq substr $line, 0, 3) {
-         $key = $self->_store_msgtext( $rec, $line, \$last );
+         $key = __store_msgtext( $rec, $line, \$last );
       }
+      # Match any continuation lines
       elsif ($line =~ m{ \A \s* [\"] (.+) [\"] \z }msx and defined $key) {
-         if (ref $rec->{ $key } eq ARRAY) {
-            $rec->{ $key }->[ $last || 0 ] .= decode( $charset, $1 );
-         }
-         else { $rec->{ $key } .= decode( $charset, $1 ) }
+         if (ref $rec->{ $key } ne ARRAY) { $rec->{ $key } .= $1 }
+         else { $rec->{ $key }->[ $last || 0 ] .= $1 }
       }
+      # A blank lines ends the record
       elsif ($line =~ m{ \A \s* \z }msx) {
          __store_record( $data, $rec, \$order );
          $key = undef; $last = undef; $rec = {};
       }
    }
 
-   __store_record( $data, $rec, \$order );
+   __store_record( $data, $rec, \$order ); # If the last line isn't blank
 
-   return { po => $data, po_header => __extract_header( $data ) };
+   return $self->_inflate_and_decode( $data );
 }
 
-sub _store_comment {
-   my ($self, $rec, $line, $attr) = @_; my $charset = $self->schema->charset;
+sub _inflate_and_decode {
+   my ($self, $data) = @_;
 
-   my $value = length $line > 1 ? substr $line, 2 : NUL;
+   my $po_header = __header_inflate( $data );
+   my $charset   = $self->_get_charset( $po_header );
+   my $tmp       = $data; $data = {};
 
-   $rec->{ $attr } ||= [];
+   # Decode all keys and values using the charset from the header
+   for my $k (grep { $_ and defined $tmp->{ $_ } } keys %{ $tmp }) {
+      my $rec = $tmp->{ $k }; my $id = decode( $charset, $k );
 
-   if ($attr eq q(flags)) {
-      my @values = map { s{ \s+ }{}msx; $_ } split m{ [,] }msx, $value;
-
-      push @{ $rec->{ $attr } }, map { decode( $charset, $_ ) } @values;
-   }
-   else { push @{ $rec->{ $attr } }, decode( $charset, $value ) }
-
-   return;
-}
-
-sub _store_msgtext {
-   my ($self, $rec, $line, $last_ref) = @_; my $key;
-
-   $line = decode( $self->schema->charset, $line );
-
-   if ($line =~ m{ \A msgctxt \s+ [\"] (.*) [\"] \z }msx) {
-      $key = q(msgctxt); $rec->{ $key } = $1;
-   }
-   elsif ($line =~ m{ \A msgid \s+ [\"] (.*) [\"] \z }msx) {
-      $key = q(msgid); $rec->{ $key } = $1;
-   }
-   elsif ($line =~ m{ \A msgid_plural \s+ [\"] (.*) [\"] \z }msx) {
-      $key = q(msgid_plural); $rec->{ $key } = $1;
-   }
-   elsif ($line =~ m{ \A msgstr \s+ [\"] (.*) [\"] \z }msx) {
-      $key = q(msgstr); $rec->{ $key } ||= [];
-      $rec->{ $key }->[ ${ $last_ref } = 0 ] .= $1;
-   }
-   elsif ($line =~ m{ \A msgstr\[\s*(\d+)\s*\] \s+ [\"](.*)[\"] \z }msx) {
-      $key = q(msgstr); $rec->{ $key } ||= [];
-      $rec->{ $key }->[ ${ $last_ref } = $1 ] .= $2;
+      $data->{ $id } = __decode_hash( $charset, $rec );
    }
 
-   return $key;
+   return { po => $data, po_header => __decode_hash( $charset, $po_header ), };
 }
 
 # Private write methods
 
 sub _write_filter {
-   my ($self, $data) = @_; my $header = $data->{po_header};
+   my ($self, $data) = @_; my $buf ||= [];
 
-   $data = $data->{po}; $data->{ q() } = __fold_header( $header );
+   my $po        = $data->{po       } || {};
+   my $po_header = $data->{po_header} || {};
+   my $charset   = $self->_get_charset( $po_header );
+   my $attrs     = $self->schema->source->attributes;
 
-   my $attrs = $self->schema->source->attributes; my $buf ||= [];
+   $po->{ NUL() } = __header_deflate( $po_header );
 
-   for my $rec (map  { $data->{ $_ } }
-                sort { __original_order( $data, $a, $b ) } keys %{ $data }) {
+   for my $rec (map  { $po->{ $_ } }
+                sort { __original_order( $po, $a, $b ) } keys %{ $po }) {
       for my $attr_name (grep { exists $rec->{ $_ } } @{ $attrs }) {
-         my $values = $rec->{ $attr_name }; defined $values or next; my $cpref;
+         my $values = $rec->{ $attr_name }; defined $values or next;
+
+         my ($cpref, $lines);
 
          if ($cpref = __comment_prefix( $attr_name )) {
             $attr_name eq q(flags)
                and $values = [ SPC.(join q(, ), @{ $values }) ];
 
-            $self->_push_comment( $buf, $cpref, $values );
+            $lines = $self->_push_comment( $cpref, $values );
          }
          elsif (ref $values eq ARRAY) {
             if (@{ $values } > 1) {
-               $self->_array_push_split_on_nl( $buf, $attr_name, $values );
+               $lines = $self->_array_push_split_on_nl( $attr_name, $values );
             }
             else {
-               $self->_push_split_on_nl( $buf, $attr_name, $values->[ 0 ] );
+               $lines = $self->_push_split_on_nl( $attr_name, $values->[ 0 ] );
             }
          }
-         else { $self->_push_split_on_nl( $buf, $attr_name, $values ) }
+         else { $lines = $self->_push_split_on_nl( $attr_name, $values ) }
+
+         push @{ $buf }, map { encode( $charset, $_ ) } @{ $lines };
       }
 
       push @{ $buf }, NUL;
@@ -140,49 +123,62 @@ sub _write_filter {
 }
 
 sub _array_push_split_on_nl {
-   my ($self, $buf, $attr, $values) = @_; my $index = 0;
+   my ($self, $attr, $values) = @_; my $index = 0; my $lines = [];
 
-   for my $lines (@{ $values }) {
-      $self->_push_split_on_nl( $buf, "${attr}[${index}]", $lines ); $index++;
+   for my $value (@{ $values }) {
+      push @{ $lines },
+           @{ $self->_push_split_on_nl( "${attr}[${index}]", $value ) };
+      $index++;
    }
 
-   return;
+   return $lines;
 }
 
 sub _push_comment {
-   my ($self, $buf, $prefix, $values) = @_;
+   my ($self, $prefix, $values) = @_; my $lines = [];
 
-   my $charset = $self->schema->charset;
+   for my $value (@{ $values || [] }) {
+      my $line = $prefix.$value;
 
-   for my $value (@{ $values }) {
-      my $line = $prefix.$value; 2 == length $line and $line =~ s{ \s \z }{}msx;
-
-      push @{ $buf }, encode( $charset, $line );
+      2 == length $line and $line =~ s{ \s \z }{}msx;
+      push @{ $lines }, $line;
    }
 
-   return;
+   return $lines;
 }
 
 sub _push_split_on_nl {
-   my ($self, $buf, $prefix, $lines) = @_;
+   my ($self, $prefix, $value) = @_; my $lines = [];
 
-   $lines =~ s{ [\n] \s+ }{\\\n}gmsx;
+   $value =~ s{ [\n] \s+ }{\\\n}gmsx;
 
-   my $charset = $self->schema->charset;
-   my @lines   = split m{ [\\][n] }msx, $lines;
+   my @lines = split m{ [\\][n] }msx, $value;
 
    if (@lines < 2) {
-      push @{ $buf }, $prefix.' "'.__encode_line( $charset, $lines ).'"';
+      push @{ $lines }, $prefix.' "'.__quote_string( $value ).'"';
    }
    else {
-      push @{ $buf }, "${prefix} \"\"";
+      push @{ $lines }, "${prefix} \"\"";
 
-      for my $line (map { __encode_line( $charset, $_ ) } @lines) {
-         push @{ $buf }, "\"${line}\\n\"\n";
+      for my $line (map { __quote_string( $_ ) } @lines) {
+         push @{ $lines }, "\"${line}\\n\"\n";
       }
    }
 
-   return;
+   return $lines;
+}
+
+# Private common methods
+
+sub _get_charset {
+   my ($self, $po_header) = @_; my $charset = $self->schema->charset;
+
+   my $msgstr       = $po_header->{msgstr} || {};
+   my $content_type = $msgstr->{content_type} || NUL;
+
+   $content_type =~ s{ .* = }{}msx and $charset = $content_type;
+
+   return $charset;
 }
 
 # Private functions
@@ -204,47 +200,77 @@ sub __comment_prefix {
             'previous'           => '#|', }->{ $_[ 0 ] };
 }
 
-sub __encode_line {
-   my ($charset, $line) = @_;
+sub __decode_hash {
+   my ($charset, $in) = @_; my $out = {};
 
-   $line =~ s{ \A [\"] }{\\\"}msx; $line =~ s{ ([^\\])[\"] }{$1\\\"}gmsx;
+   for my $k (grep { defined } keys %{ $in }) {
+      my $values = $in->{ $k }; defined $values or next;
 
-   return encode( $charset, $line );
-}
-
-sub __extract_header {
-   my $data = shift; my $header = (delete $data->{ q() }) || { msgstr => [] };
-
-   my $null_entry = $header->{msgstr}->[ 0 ]; $header->{msgstr} = {};
-
-   if ($null_entry) {
-      for my $line (split m{ [\\][n] }msx, $null_entry) {
-         my ($k, $v) = split m{ [:] }msx, $line, 2;
-
-         $v =~ s{ \A \s+ }{}msx; $header->{msgstr}->{ $k } = $v;
+      if (ref $values eq HASH) {
+         $out->{ $k } = __decode_hash( $charset, $values );
       }
+      elsif (ref $values eq ARRAY) {
+         $out->{ $k } = [ map { decode( $charset, $_ ) } @{ $values } ];
+      }
+      else { $out->{ $k } = decode( $charset, $values ) }
    }
 
-   return $header;
+   return $out;
 }
 
-sub __fold_header {
-   my $original = shift; my $header = { %{ $original || {} } };
+sub __get_po_header_key {
+   my $k    = shift;
+   my $hash = {
+      project_id_version        => [ 0,  q(Project-Id-Version)        ],
+      report_msgid_bugs_to      => [ 1,  q(Report-Msgid-Bugs-To)      ],
+      pot_creation_date         => [ 2,  q(POT-Creation-Date)         ],
+      po_revision_date          => [ 3,  q(PO-Revision-Date)          ],
+      last_translator           => [ 4,  q(Last-Translator)           ],
+      language_team             => [ 5,  q(Language-Team)             ],
+      language                  => [ 6,  q(Language)                  ],
+      mime_version              => [ 7,  q(MIME-Version)              ],
+      content_type              => [ 8,  q(Content-Type)              ],
+      content_transfer_encoding => [ 9,  q(Content-Transfer-Encoding) ],
+      plural_forms              => [ 10, q(Plural-Forms)              ], };
 
-   my $msgstr_ref = $original->{msgstr} || {}; my $msgstr;
+   defined $hash->{ $k } and return $hash->{ $k };
 
-   my @header_keys = ( qw(Project-Id-Version Report-Msgid-Bugs-To
-                          POT-Creation-Date PO-Revision-Date Last-Translator
-                          Language-Team Language MIME-Version Content-Type
-                          Content-Transfer-Encoding Plural-Forms) );
+   my $po_key = join q(-), map { ucfirst $_ } split m{ [_] }msx, $k;
 
-   for my $key (@header_keys) {
-      $msgstr .= $key.': '.($msgstr_ref->{ $key } || q()).'\\n';
+   return [ 1 + keys %{ $hash }, $po_key ];
+}
+
+sub __header_deflate {
+   my $po_header = shift; my $msgstr_ref = $po_header->{msgstr} || {};
+
+   my $header = { %{ $po_header || {} } }; my $msgstr;
+
+   for my $k (sort { __get_po_header_key( $a )->[ 0 ]
+                 <=> __get_po_header_key( $b )->[ 0 ] } keys %{ $msgstr_ref }) {
+      $msgstr .= __get_po_header_key( $k )->[ 1 ];
+      $msgstr .= ': '.($msgstr_ref->{ $k } || NUL).'\\n';
    }
 
    $header->{_order} = 0;
-   $header->{msgid } = q();
+   $header->{msgid } = NUL;
    $header->{msgstr} = [ $msgstr ];
+   return $header;
+}
+
+sub __header_inflate {
+   my $data = shift; my $header = (delete $data->{ NUL() }) || { msgstr => [] };
+
+   my $null_entry = $header->{msgstr}->[ 0 ]; $header->{msgstr} = {};
+
+   $null_entry or return $header;
+
+   for my $line (split m{ [\\][n] }msx, $null_entry) {
+      my ($k, $v) = split m{ [:] }msx, $line, 2;
+
+      $k =~ s{ [-] }{_}gmsx; $v =~ s{ \A \s+ }{}msx;
+      $header->{msgstr}->{ lc $k } = $v;
+   }
+
    return $header;
 }
 
@@ -258,10 +284,56 @@ sub __original_order {
    my ($hash, $lhs, $rhs) = @_;
 
    # New elements will be  added at the end
-   return  1 unless (exists $hash->{ $lhs }->{_order});
-   return -1 unless (exists $hash->{ $rhs }->{_order});
-
+   exists $hash->{ $lhs }->{_order} or return  1;
+   exists $hash->{ $rhs }->{_order} or return -1;
    return $hash->{ $lhs }->{_order} <=> $hash->{ $rhs }->{_order};
+}
+
+sub __quote_string {
+   my $line = shift;
+
+   $line =~ s{ \A [\"] }{\\\"}msx; $line =~ s{ ([^\\])[\"] }{$1\\\"}gmsx;
+
+   return $line;
+}
+
+sub __store_comment {
+   my ($rec, $line, $attr) = @_; $rec->{ $attr } ||= [];
+
+   my $value = length $line > 1 ? substr $line, 2 : NUL;
+
+   if ($attr eq q(flags)) {
+      my @values = map { s{ \s+ }{}msx; $_ } split m{ [,] }msx, $value;
+
+      push @{ $rec->{ $attr } }, @values;
+   }
+   else { push @{ $rec->{ $attr } }, $value }
+
+   return;
+}
+
+sub __store_msgtext {
+   my ($rec, $line, $last_ref) = @_; my $key;
+
+   if ($line =~ m{ \A msgctxt \s+ [\"] (.*) [\"] \z }msx) {
+      $key = q(msgctxt); $rec->{ $key } = $1;
+   }
+   elsif ($line =~ m{ \A msgid \s+ [\"] (.*) [\"] \z }msx) {
+      $key = q(msgid); $rec->{ $key } = $1;
+   }
+   elsif ($line =~ m{ \A msgid_plural \s+ [\"] (.*) [\"] \z }msx) {
+      $key = q(msgid_plural); $rec->{ $key } = $1;
+   }
+   elsif ($line =~ m{ \A msgstr \s+ [\"] (.*) [\"] \z }msx) {
+      $key = q(msgstr); $rec->{ $key } ||= [];
+      $rec->{ $key }->[ ${ $last_ref } = 0 ] .= $1;
+   }
+   elsif ($line =~ m{ \A msgstr\[\s*(\d+)\s*\] \s+ [\"](.*)[\"] \z }msx) {
+      $key = q(msgstr); $rec->{ $key } ||= [];
+      $rec->{ $key }->[ ${ $last_ref } = $1 ] .= $2;
+   }
+
+   return $key;
 }
 
 sub __store_record {

@@ -85,12 +85,13 @@ sub _read_filter {
       for my $line (split m{ [\n] }msx, $null_entry) {
          my ($k, $v) = split m{ [:] }msx, $line, 2;
 
-         $v =~ s{ \A \s+ }{}msx; $header->{ $k } = $v;
+         $k =~ s{ [-] }{_}gmsx; $v =~ s{ \A \s+ }{}msx;
+         $header->{ lc $k } = $v;
       }
    }
 
-   if (exists $header->{ 'Content-Type' }) {
-      my $content_type = $header->{ 'Content-Type' };
+   if (exists $header->{content_type}) {
+      my $content_type = $header->{content_type};
 
       $content_type =~ s{ .* = }{}msx and $header->{charset} = $content_type;
    }
@@ -103,22 +104,22 @@ sub _read_filter {
       my $msg = $tmp->{ $key }; my $id = __decode( $charset, $key );
 
       $messages->{ $id } = { msgstr => [ map { __decode( $charset, $_ ) }
-                                            @{ $msg->{msgstr} } ] };
+                                            @{ $msg->{msgstr} || [] } ] };
       defined $msg->{msgid_plural}
          and $messages->{ $id }->{msgid_plural}
             = __decode( $charset, $msg->{msgid_plural} );
    }
 
-   my $code = $header->{ 'Plural-Forms' } || NUL;
+   my $code = $header->{plural_forms} || NUL;
    my $s    = '[ \t\r\n\013\014]'; # Whitespace, locale-independent.
 
    # Untaint the plural header. Keep line breaks as is Perl 5_005 compatibility
    if ($code =~ m{ \A ($s* nplurals $s* = $s* [0-9]+ $s* ; $s*
                        plural $s* = $s*
                        (?:$s|[-\?\|\&=!<>+*/\%:;a-zA-Z0-9_\(\)])+ ) }msx) {
-      $header->{ 'Plural-Forms' } = $1;
+      $header->{plural_forms} = $1;
    }
-   else { $header->{ 'Plural-Forms' } = NUL }
+   else { $header->{plural_forms} = NUL }
 
    return { meta      => \%meta,
             mo        => $messages,

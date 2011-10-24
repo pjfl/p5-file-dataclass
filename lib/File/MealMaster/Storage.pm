@@ -96,9 +96,8 @@ sub __original_order {
    my ($hash, $lhs, $rhs) = @_;
 
    # New elements will be  added at the end
-   return  1 unless (exists $hash->{ $lhs }->{_order_by});
-   return -1 unless (exists $hash->{ $rhs }->{_order_by});
-
+   exists $hash->{ $lhs }->{_order_by} or return  1;
+   exists $hash->{ $rhs }->{_order_by} or return -1;
    return $hash->{ $lhs }->{_order_by} <=> $hash->{ $rhs }->{_order_by};
 }
 

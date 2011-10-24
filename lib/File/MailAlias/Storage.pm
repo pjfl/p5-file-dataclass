@@ -104,13 +104,12 @@ sub _write_filter {
 # Private subroutines
 
 sub __original_order {
-   my ($aliases, $lhs, $rhs) = @_;
+   my ($hash, $lhs, $rhs) = @_;
 
    # New elements will be  added at the end
-   return  1 unless (exists $aliases->{ $lhs }->{_order_by});
-   return -1 unless (exists $aliases->{ $rhs }->{_order_by});
-
-   return $aliases->{ $lhs }->{_order_by} <=> $aliases->{ $rhs }->{_order_by};
+   exists $hash->{ $lhs }->{_order_by} or return  1;
+   exists $hash->{ $rhs }->{_order_by} or return -1;
+   return $hash->{ $lhs }->{_order_by} <=> $hash->{ $rhs }->{_order_by};
 }
 
 sub __stamp {
