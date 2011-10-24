@@ -87,32 +87,15 @@ sub _write_filter {
    my $charset   = $self->_get_charset( $po_header );
    my $attrs     = $self->schema->source->attributes;
 
-   $po->{ NUL() } = __header_deflate( $po_header );
+   $po->{ NUL() } = $self->_header_deflate( $po_header );
 
    for my $rec (map  { $po->{ $_ } }
                 sort { __original_order( $po, $a, $b ) } keys %{ $po }) {
       for my $attr_name (grep { exists $rec->{ $_ } } @{ $attrs }) {
          my $values = $rec->{ $attr_name }; defined $values or next;
 
-         my ($cpref, $lines);
-
-         if ($cpref = __comment_prefix( $attr_name )) {
-            $attr_name eq q(flags)
-               and $values = [ SPC.(join q(, ), @{ $values }) ];
-
-            $lines = $self->_push_comment( $cpref, $values );
-         }
-         elsif (ref $values eq ARRAY) {
-            if (@{ $values } > 1) {
-               $lines = $self->_array_push_split_on_nl( $attr_name, $values );
-            }
-            else {
-               $lines = $self->_push_split_on_nl( $attr_name, $values->[ 0 ] );
-            }
-         }
-         else { $lines = $self->_push_split_on_nl( $attr_name, $values ) }
-
-         push @{ $buf }, map { encode( $charset, $_ ) } @{ $lines };
+         push @{ $buf }, map { encode( $charset, $_ ) }
+                            @{ $self->_get_lines( $attr_name, $values ) };
       }
 
       push @{ $buf }, NUL;
@@ -122,19 +105,19 @@ sub _write_filter {
    return $buf;
 }
 
-sub _array_push_split_on_nl {
+sub _array_split_on_nl {
    my ($self, $attr, $values) = @_; my $index = 0; my $lines = [];
 
    for my $value (@{ $values }) {
       push @{ $lines },
-           @{ $self->_push_split_on_nl( "${attr}[${index}]", $value ) };
+           @{ $self->_split_on_nl( "${attr}[${index}]", $value ) };
       $index++;
    }
 
    return $lines;
 }
 
-sub _push_comment {
+sub _get_comment_lines {
    my ($self, $prefix, $values) = @_; my $lines = [];
 
    for my $value (@{ $values || [] }) {
@@ -147,7 +130,54 @@ sub _push_comment {
    return $lines;
 }
 
-sub _push_split_on_nl {
+sub _get_lines {
+   my ($self, $attr_name, $values) = @_; my ($cpref, $lines);
+
+   if ($cpref = __comment_prefix( $attr_name )) {
+      $attr_name eq q(flags) and $values = [ SPC.(join q(, ), @{ $values }) ];
+
+      $lines = $self->_get_comment_lines( $cpref, $values );
+   }
+   elsif (ref $values eq ARRAY) {
+      if (@{ $values } > 1) {
+         $lines = $self->_array_split_on_nl( $attr_name, $values );
+      }
+      else { $lines = $self->_split_on_nl( $attr_name, $values->[ 0 ] ) }
+   }
+   else { $lines = $self->_split_on_nl( $attr_name, $values ) }
+
+   return $lines;
+}
+
+sub _get_po_header_key {
+   my ($self, $k) = @_; my $key_table = $self->schema->header_key_table;
+
+   defined $key_table->{ $k } and return $key_table->{ $k };
+
+   my $po_key = join q(-), map { ucfirst $_ } split m{ [_] }msx, $k;
+
+   return [ 1 + keys %{ $key_table }, $po_key ];
+}
+
+sub _header_deflate {
+   my ($self, $po_header) = @_; my $msgstr_ref = $po_header->{msgstr} || {};
+
+   my $header = { %{ $po_header || {} } }; my $msgstr;
+
+   for my $k (sort  { $self->_get_po_header_key( $a )->[ 0 ]
+                  <=> $self->_get_po_header_key( $b )->[ 0 ] }
+              keys %{ $msgstr_ref }) {
+      $msgstr .= $self->_get_po_header_key( $k )->[ 1 ];
+      $msgstr .= ': '.($msgstr_ref->{ $k } || NUL).'\\n';
+   }
+
+   $header->{_order} = 0;
+   $header->{msgid } = NUL;
+   $header->{msgstr} = [ $msgstr ];
+   return $header;
+}
+
+sub _split_on_nl {
    my ($self, $prefix, $value) = @_; my $lines = [];
 
    $value =~ s{ [\n] \s+ }{\\\n}gmsx;
@@ -216,45 +246,6 @@ sub __decode_hash {
    }
 
    return $out;
-}
-
-sub __get_po_header_key {
-   my $k    = shift;
-   my $hash = {
-      project_id_version        => [ 0,  q(Project-Id-Version)        ],
-      report_msgid_bugs_to      => [ 1,  q(Report-Msgid-Bugs-To)      ],
-      pot_creation_date         => [ 2,  q(POT-Creation-Date)         ],
-      po_revision_date          => [ 3,  q(PO-Revision-Date)          ],
-      last_translator           => [ 4,  q(Last-Translator)           ],
-      language_team             => [ 5,  q(Language-Team)             ],
-      language                  => [ 6,  q(Language)                  ],
-      mime_version              => [ 7,  q(MIME-Version)              ],
-      content_type              => [ 8,  q(Content-Type)              ],
-      content_transfer_encoding => [ 9,  q(Content-Transfer-Encoding) ],
-      plural_forms              => [ 10, q(Plural-Forms)              ], };
-
-   defined $hash->{ $k } and return $hash->{ $k };
-
-   my $po_key = join q(-), map { ucfirst $_ } split m{ [_] }msx, $k;
-
-   return [ 1 + keys %{ $hash }, $po_key ];
-}
-
-sub __header_deflate {
-   my $po_header = shift; my $msgstr_ref = $po_header->{msgstr} || {};
-
-   my $header = { %{ $po_header || {} } }; my $msgstr;
-
-   for my $k (sort { __get_po_header_key( $a )->[ 0 ]
-                 <=> __get_po_header_key( $b )->[ 0 ] } keys %{ $msgstr_ref }) {
-      $msgstr .= __get_po_header_key( $k )->[ 1 ];
-      $msgstr .= ': '.($msgstr_ref->{ $k } || NUL).'\\n';
-   }
-
-   $header->{_order} = 0;
-   $header->{msgid } = NUL;
-   $header->{msgstr} = [ $msgstr ];
-   return $header;
 }
 
 sub __header_inflate {

@@ -13,7 +13,20 @@ use Moose::Util::TypeConstraints;
 
 extends qw(File::DataClass::Schema);
 
-has 'charset'        => is => 'ro', isa => 'Str', default => q(iso-8859-1);
+has 'charset'          => is => 'ro', isa => 'Str', default => q(iso-8859-1);
+has 'header_key_table' => is => 'ro', isa => 'HashRef',
+   default             => sub { {
+      project_id_version        => [ 0,  q(Project-Id-Version)        ],
+      report_msgid_bugs_to      => [ 1,  q(Report-Msgid-Bugs-To)      ],
+      pot_creation_date         => [ 2,  q(POT-Creation-Date)         ],
+      po_revision_date          => [ 3,  q(PO-Revision-Date)          ],
+      last_translator           => [ 4,  q(Last-Translator)           ],
+      language_team             => [ 5,  q(Language-Team)             ],
+      language                  => [ 6,  q(Language)                  ],
+      mime_version              => [ 7,  q(MIME-Version)              ],
+      content_type              => [ 8,  q(Content-Type)              ],
+      content_transfer_encoding => [ 9,  q(Content-Transfer-Encoding) ],
+      plural_forms              => [ 10, q(Plural-Forms)              ], } };
 has '+result_source_attributes' =>
    default           => sub { return {
       mo             => {
@@ -48,6 +61,7 @@ around 'load' => sub {
    my $po_header = exists $data->{po_header}
                  ? $data->{po_header}->{msgstr} || {} : {};
 
+   # This is here because of the code ref. Cannot serialize (cache) a code ref
    # Determine plural rules. The leading and trailing space is necessary
    # to be able to match against word boundaries.
    if (exists $po_header->{plural_forms}) {
