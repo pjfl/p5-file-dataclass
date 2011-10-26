@@ -214,17 +214,17 @@ sub _get_charset {
 # Private functions
 
 sub __comment_field {
-   return { '#'  => q(translator-comment),
-            '# ' => q(translator-comment),
-            '#.' => q(extracted-comment),
+   return { '#'  => q(translator_comment),
+            '# ' => q(translator_comment),
+            '#.' => q(extracted_comment),
             '#:' => q(reference),
             '#,' => q(flags),
             '#|' => q(previous), }->{ $_[ 0 ] };
 }
 
 sub __comment_prefix {
-   return { 'translator-comment' => '# ',
-            'extracted-comment'  => '#.',
+   return { 'translator_comment' => '# ',
+            'extracted_comment'  => '#.',
             'reference'          => '#:',
             'flags'              => '#,',
             'previous'           => '#|', }->{ $_[ 0 ] };

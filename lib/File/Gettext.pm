@@ -34,10 +34,10 @@ has '+result_source_attributes' =>
          defaults    => { msgstr => [], }, },
       po             => {
          attributes  =>
-            [ qw(translator-comment extracted-comment reference flags
+            [ qw(translator_comment extracted_comment reference flags
                  previous msgctxt msgid msgid_plural msgstr) ],
          defaults    => {
-            'translator-comment' => [], 'extracted-comment' => [],
+            'translator_comment' => [], 'extracted_comment' => [],
             'flags'              => [], 'previous'          => [],
             'msgstr'             => [], },
       }, } };

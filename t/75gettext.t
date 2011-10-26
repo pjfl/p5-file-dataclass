@@ -61,7 +61,7 @@ ok $data->{mo}->{March}->{msgstr}->[ 0 ] eq 'März', 'MO charset decode';
 
 # Cleanup
 
-#$dumped->unlink;
+$dumped->unlink;
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
 io( catfile( qw(t file-dataclass-schema.dat) ) )->unlink;
