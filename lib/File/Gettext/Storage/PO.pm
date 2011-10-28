@@ -92,7 +92,10 @@ sub _write_filter {
    for my $rec (map  { $po->{ $_ } }
                 sort { __original_order( $po, $a, $b ) } keys %{ $po }) {
       for my $attr_name (grep { exists $rec->{ $_ } } @{ $attrs }) {
-         my $values = $rec->{ $attr_name }; defined $values or next;
+         my $values = $rec->{ $attr_name };
+
+         defined $values or next;
+         ref $values eq q(ARRAY) and @{ $values } < 1 and next;
 
          push @{ $buf }, map { encode( $charset, $_ ) }
                             @{ $self->_get_lines( $attr_name, $values ) };
@@ -180,7 +183,7 @@ sub _header_deflate {
 sub _split_on_nl {
    my ($self, $prefix, $value) = @_; my $lines = [];
 
-   $value =~ s{ [\n] \s+ }{\\\n}gmsx;
+   $value ||= NUL; $value =~ s{ [\n] \s+ }{\\\n}gmsx;
 
    my @lines = split m{ [\\][n] }msx, $value;
 

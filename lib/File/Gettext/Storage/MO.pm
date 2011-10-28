@@ -72,16 +72,17 @@ sub _read_filter {
 
       my @origs = split m{ $sep }mx, substr $raw, $orig_offset,  $orig_length;
       my @trans = split m{ $sep }mx, substr $raw, $trans_offset, $trans_length;
+      my $msgs  = { msgstr => [ @trans ] };
 
-      # The singular is the key, the plural plus all translations is the value
-      $messages->{ $origs[ 0 ] || NUL } = { msgid_plural => $origs[ 1 ],
-                                            msgstr       => [ @trans ] };
+      # The singular is the origs 0, the plural is origs 1
+      $messages->{ $origs[ 0 ] || NUL } = $msgs;
+      $origs[ 1 ] and $messages->{ $origs[ 1 ] } = $msgs;
    }
 
    my $header = {}; my $null_entry;
 
    # Try to find po header information.
-   if ($null_entry = $messages->{ q() }->{msgstr}->[ 0 ]) {
+   if ($null_entry = $messages->{ NUL() }->{msgstr}->[ 0 ]) {
       for my $line (split m{ [\n] }msx, $null_entry) {
          my ($k, $v) = split m{ [:] }msx, $line, 2;
 
@@ -123,7 +124,7 @@ sub _read_filter {
 
    return { meta      => \%meta,
             mo        => $messages,
-            po_header => { msgid => q(), msgstr => $header } };
+            po_header => { msgid => NUL, msgstr => $header } };
 }
 
 # Private subroutines
