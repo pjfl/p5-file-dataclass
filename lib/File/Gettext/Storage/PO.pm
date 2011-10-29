@@ -45,10 +45,9 @@ sub _read_filter {
       }
       # Match any continuation lines
       elsif ($line =~ m{ \A \s* [\"] (.+) [\"] \z }msx and defined $key) {
-         if (ref $rec->{ $key } ne ARRAY) { $rec->{ $key } .= $1 }
-         else { $rec->{ $key }->[ $last || 0 ] .= $1 }
+         __append_msgtext( $rec, $key, $last, $1 );
       }
-      # A blank lines ends the record
+      # A blank line ends the record
       elsif ($line =~ m{ \A \s* \z }msx) {
          __store_record( $data, $rec, \$order );
          $key = undef; $last = undef; $rec = {};
@@ -92,9 +91,8 @@ sub _write_filter {
    for my $rec (map  { $po->{ $_ } }
                 sort { __original_order( $po, $a, $b ) } keys %{ $po }) {
       for my $attr_name (grep { exists $rec->{ $_ } } @{ $attrs }) {
-         my $values = $rec->{ $attr_name };
+         my $values = $rec->{ $attr_name }; defined $values or next;
 
-         defined $values or next;
          ref $values eq q(ARRAY) and @{ $values } < 1 and next;
 
          push @{ $buf }, map { encode( $charset, $_ ) }
@@ -112,8 +110,7 @@ sub _array_split_on_nl {
    my ($self, $attr, $values) = @_; my $index = 0; my $lines = [];
 
    for my $value (@{ $values }) {
-      push @{ $lines },
-           @{ $self->_split_on_nl( "${attr}[${index}]", $value ) };
+      push @{ $lines }, @{ $self->_split_on_nl( "${attr}[${index}]", $value ) };
       $index++;
    }
 
@@ -171,7 +168,7 @@ sub _header_deflate {
                   <=> $self->_get_po_header_key( $b )->[ 0 ] }
               keys %{ $msgstr_ref }) {
       $msgstr .= $self->_get_po_header_key( $k )->[ 1 ];
-      $msgstr .= ': '.($msgstr_ref->{ $k } || NUL).'\\n';
+      $msgstr .= ': '.($msgstr_ref->{ $k } || NUL)."\n";
    }
 
    $header->{_order} = 0;
@@ -181,23 +178,19 @@ sub _header_deflate {
 }
 
 sub _split_on_nl {
-   my ($self, $prefix, $value) = @_; my $lines = [];
+   my ($self, $attr_name, $value) = @_;
 
-   $value ||= NUL; $value =~ s{ [\n] \s+ }{\\\n}gmsx;
+   $value ||= NUL; my $last_char = substr $value, -1; chomp $value;
 
-   my @lines = split m{ [\\][n] }msx, $value;
+   my @lines = split m{ [\n] }msx, $value; my $lines = [];
 
-   if (@lines < 2) {
-      push @{ $lines }, $prefix.' "'.__quote_string( $value ).'"';
-   }
+   if (@lines < 2) { push @{ $lines }, $attr_name.SPC.__quote( $value ) }
    else {
-      push @{ $lines }, "${prefix} \"\"";
-
-      for my $line (map { __quote_string( $_ ) } @lines) {
-         push @{ $lines }, "\"${line}\\n\"\n";
-      }
+      push @{ $lines }, $attr_name.' ""';
+      push @{ $lines }, map { __quote( $_ ) } @lines;
    }
 
+   $last_char ne "\n" and $lines->[ -1 ] =~ s{ [\\][n][\"] \z }{\"}msx;
    return $lines;
 }
 
@@ -215,6 +208,15 @@ sub _get_charset {
 }
 
 # Private functions
+
+sub __append_msgtext {
+   my ($rec, $key, $last, $text) = @_;
+
+   if (ref $rec->{ $key } ne ARRAY) { $rec->{ $key } .= __unquote( $text ) }
+   else { $rec->{ $key }->[ $last || 0 ] .= __unquote( $text ) }
+
+   return;
+}
 
 sub __comment_field {
    return { '#'  => q(translator_comment),
@@ -283,12 +285,12 @@ sub __original_order {
    return $hash->{ $lhs }->{_order} <=> $hash->{ $rhs }->{_order};
 }
 
-sub __quote_string {
-   my $line = shift;
+sub __quote {
+   my $text = shift;
 
-   $line =~ s{ \A [\"] }{\\\"}msx; $line =~ s{ ([^\\])[\"] }{$1\\\"}gmsx;
+   $text =~ s{ \A [\"] }{\\\"}msx; $text =~ s{ ([^\\])[\"] }{$1\\\"}gmsx;
 
-   return $line;
+   return '"'.$text.'\n"';
 }
 
 sub __store_comment {
@@ -310,21 +312,21 @@ sub __store_msgtext {
    my ($rec, $line, $last_ref) = @_; my $key;
 
    if ($line =~ m{ \A msgctxt \s+ [\"] (.*) [\"] \z }msx) {
-      $key = q(msgctxt); $rec->{ $key } = $1;
+      $key = q(msgctxt); $rec->{ $key } = __unquote( $1 );
    }
    elsif ($line =~ m{ \A msgid \s+ [\"] (.*) [\"] \z }msx) {
-      $key = q(msgid); $rec->{ $key } = $1;
+      $key = q(msgid); $rec->{ $key } = __unquote( $1 );
    }
    elsif ($line =~ m{ \A msgid_plural \s+ [\"] (.*) [\"] \z }msx) {
-      $key = q(msgid_plural); $rec->{ $key } = $1;
+      $key = q(msgid_plural); $rec->{ $key } = __unquote( $1 );
    }
    elsif ($line =~ m{ \A msgstr \s+ [\"] (.*) [\"] \z }msx) {
       $key = q(msgstr); $rec->{ $key } ||= [];
-      $rec->{ $key }->[ ${ $last_ref } = 0 ] .= $1;
+      $rec->{ $key }->[ ${ $last_ref } = 0 ] .= __unquote( $1 );
    }
    elsif ($line =~ m{ \A msgstr\[\s*(\d+)\s*\] \s+ [\"](.*)[\"] \z }msx) {
       $key = q(msgstr); $rec->{ $key } ||= [];
-      $rec->{ $key }->[ ${ $last_ref } = $1 ] .= $2;
+      $rec->{ $key }->[ ${ $last_ref } = $1 ] .= __unquote( $2 );
    }
 
    return $key;
@@ -336,6 +338,14 @@ sub __store_record {
    $rec->{_order} = ${ $order_ref }++; $data->{ __make_key( $rec ) } = $rec;
 
    return;
+}
+
+sub __unquote {
+   my $text = shift;
+
+   $text =~ s{ [\\][n] \z }{\n}msx; $text =~ s{ [\\][\"] }{\"}gmsx;
+
+   return $text;
 }
 
 __PACKAGE__->meta->make_immutable;

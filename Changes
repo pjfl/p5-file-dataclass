@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Fixed string quoting in po files
          - Gettext mo files now create a hash table entry for msgid_plural
          - Added Gettext for mo files (read-only)
          - Fixed the way ResultSource::WithLanguage patches in storage object
