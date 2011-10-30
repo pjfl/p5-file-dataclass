@@ -119,7 +119,7 @@ sub push {
       $self->find_and_update( $attrs );
    } );
 
-   return $res ? $added : undef;
+   return $res ? $added : $res;
 }
 
 sub reset {
@@ -152,7 +152,7 @@ sub splice {
       $self->find_and_update( $attrs );
    } );
 
-   return $res ? $removed : undef;
+   return $res ? $removed : $res;
 }
 
 sub update {
@@ -160,7 +160,7 @@ sub update {
 
    my $res = $self->_txn_do( sub { $self->find_and_update( $args ) } );
 
-   return $res ? $name : undef;
+   return $res ? $name : $res;
 }
 
 # Private methods

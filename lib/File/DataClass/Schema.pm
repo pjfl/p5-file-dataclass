@@ -60,7 +60,7 @@ has 'storage_base'             => is => 'ro', isa => 'ClassName',
    default                     => q(File::DataClass::Storage);
 has 'storage_class'            => is => 'rw', isa => 'Str',
    default                     => q(XML::Simple);
-has 'storage'                  => is => 'rw', isa => 'Object',
+has 'storage'                  => is => 'ro', isa => 'Object',
    lazy_build                  => TRUE;
 has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
    default                     => File::Spec->tmpdir,

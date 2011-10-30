@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Fixed bug in ResultSource now has copy of schema storage
          - Fixed string quoting in po files
          - Gettext mo files now create a hash table entry for msgid_plural
          - Added Gettext for mo files (read-only)
