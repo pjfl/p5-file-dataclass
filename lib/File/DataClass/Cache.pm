@@ -19,7 +19,7 @@ has 'cache_attributes' => is => 'ro', isa => 'HashRef',
 has 'cache_class'      => is => 'ro', isa => 'ClassName',
    default             => q(CHI);
 has 'schema'           => is => 'ro', isa => 'Object',
-   required            => 1, weak_ref => TRUE,
+   required            => 1,
    handles             => { _debug          => q(debug),
                             exception_class => q(exception_class),
                             _log            => q(log), };
