@@ -6,8 +6,8 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
-use File::DataClass::Combinator;
 use File::DataClass::Constants;
+use File::DataClass::Storage::WithLanguage;
 use Moose;
 
 extends qw(File::DataClass::ResultSource);
@@ -22,7 +22,7 @@ sub BUILD {
    if ($self->lang_dep) {
       my $attrs = { lang => $self->lang, storage => $self->storage };
 
-      $self->storage( File::DataClass::Combinator->new( $attrs ) );
+      $self->storage( File::DataClass::Storage::WithLanguage->new( $attrs ) );
    }
 
    return;

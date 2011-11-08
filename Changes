@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Renamed Combinator to Storage::WithLanguage
          - Combinator rewritten to use F::Gettext
          - Updated inc::Bob
          - Fixed bug in ResultSource now has copy of schema storage

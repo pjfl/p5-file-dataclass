@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package File::DataClass::Combinator;
+package File::DataClass::Storage::WithLanguage;
 
 use strict;
 use namespace::autoclean;
