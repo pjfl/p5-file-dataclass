@@ -7,12 +7,15 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
+use File::Gettext;
+use Hash::Merge qw(merge);
 use Moose;
 
 extends qw(File::DataClass);
 
-has 'lang'    => is => 'rw', isa => 'Str',    required => TRUE;
-has 'storage' => is => 'ro', isa => 'Object', required => TRUE,
+has 'gettext' => is => 'ro', isa => 'Object', lazy_build => TRUE;
+has 'lang'    => is => 'rw', isa => 'Str',    required   => TRUE;
+has 'storage' => is => 'ro', isa => 'Object', required   => TRUE,
    handles    => [ qw(exception_class extn load txn_do validate_params) ];
 
 with qw(File::DataClass::Util);
@@ -22,10 +25,12 @@ sub delete {
 
    my $deleted = $self->storage->delete( $path, $element_obj );
 
-   if (my $lang_path = $self->_make_lang_path( $path )) {
-      my $updated = $self->storage->delete( $lang_path, $element_obj );
+   if ($self->_set_gettext_path( $path )) {
+      my $rs   = $self->gettext->resultset;
+      my $name = $rs->delete( { name => $element_obj->name,
+                                no_throw_if_missing => TRUE } );
 
-      $deleted ||= $updated;
+      $deleted ||= $name ? TRUE : FALSE;
    }
 
    return $deleted;
@@ -43,13 +48,19 @@ sub insert {
 }
 
 sub select {
-   my ($self, $path, $element) = @_; my @paths = ($path);
+   my ($self, $path, $element) = @_; $self->validate_params( $path, $element );
 
-   push @paths, $self->_make_lang_path( $path ) if ($self->lang);
+   my $data = $self->load( $path );
 
-   my $data = $self->load( @paths );
+   if ($self->_set_gettext_path( $path )) {
+      my $gettext_data = $self->gettext->load;
 
-   $self->validate_params( $path, $element );
+      for (keys %{ $gettext_data }) {
+         $data->{ $_ } = exists $data->{ $_ }
+                       ? merge( $data->{ $_ }, $gettext_data->{ $_ } )
+                       : $gettext_data->{ $_ };
+      }
+   }
 
    return exists $data->{ $element } ? $data->{ $element } : {};
 }
@@ -62,18 +73,20 @@ sub update {
 
 # Private methods
 
-sub _make_lang_path {
+sub _build_gettext {
+   my $self = shift; return File::Gettext->new;
+}
+
+sub _set_gettext_path {
    my ($self, $path) = @_;
 
-   return unless ($path and $self->lang);
+   $path or $self->throw( 'Path not specified' ); $self->lang or return FALSE;
 
-   my $extn = $self->storage->extn;
+   my $dir  = $self->dirname ( $path );
+   my $file = $self->basename( $path, $self->extn ).q(_).$self->lang.q(.po);
 
-   return $path.q(_).$self->lang unless ($path =~ m{ $extn \z }mx);
-
-   my $file = $self->basename( $path, $extn ).q(_).$self->lang.$extn;
-
-   return $self->io( $self->catfile( $self->dirname( $path ), $file ) );
+   $self->gettext->path( $self->io( $self->catfile( $dir, $file ) ) );
+   return TRUE;
 }
 
 sub _update {
@@ -84,14 +97,15 @@ sub _update {
    my $updated   = $self->storage->update( $path, $element_obj,
                                            $overwrite, $condition );
 
-   if (my $lpath = $self->_make_lang_path( $path )) {
-      $condition  = sub { $source->lang_dep && $source->lang_dep->{ $_[0] } };
-      my $written = $self->storage->update( $lpath, $element_obj,
-                                            $overwrite, $condition );
-      $updated ||= $written;
+   if ($self->_set_gettext_path( $path )) {
+      my $rs   = $self->gettext->resultset;
+      my $name = $overwrite ? $rs->update( $element_obj )
+                            : $rs->create( $element_obj );
+
+      $updated ||= $name ? TRUE : FALSE;
    }
 
-   $self->throw( 'Nothing updated' ) if ($overwrite and not $updated);
+   $overwrite and not $updated and $self->throw( 'Nothing updated' );
 
    return $updated;
 }
@@ -202,7 +216,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2010 Peter Flanigan. All rights reserved
+Copyright (c) 2011 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

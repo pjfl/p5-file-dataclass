@@ -74,8 +74,7 @@ sub load {
             || $newest > $cache_mtime
              ? TRUE : FALSE;
 
-   defined $data and not $stale and return $data;
-   $data = {}; $newest = 0;
+   defined $data and not $stale and return $data; $data = {}; $newest = 0;
 
    for my $path (@paths) {
       my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
@@ -119,7 +118,10 @@ sub txn_do {
 
       $self->_lock->reset( k => $key );
    }
-   catch { $self->_lock->reset( k => $key ); $self->throw( $_ ) };
+   catch {
+      $self->_lock->reset( k => $key );
+      $self->throw( error => $_, level => 7 );
+   };
 
    return $wantarray ? @{ $res } : $res;
 }
@@ -135,10 +137,10 @@ sub update {
 sub validate_params {
    my ($self, $path, $element) = @_;
 
-   $path or $self->throw( 'No file path specified' );
+   $path or $self->throw( error => 'No file path specified', level => 4 );
 
-   blessed $path or
-      $self->throw( error => 'Path [_1] is not blessed', args => [ $path ] );
+   blessed $path
+      or $self->throw( error => 'Path [_1] is not blessed', args => [ $path ] );
 
    $element or $self->throw( error => 'Path [_1] no element specified',
                              args  => [ $path ] );
@@ -191,13 +193,14 @@ sub _update {
 
    $self->validate_params( $path, $element );
 
-   my ($data) = $self->_read_file( $path, TRUE );
-   my $name   = $element_obj->{name};
+   my ($data) = $overwrite || $path->is_file ? $self->_read_file( $path, TRUE )
+                                             : ({ $element => {} });
+   my $name   = $element_obj->name;
 
    if (not $overwrite and exists $data->{ $element }->{ $name }) {
       $self->_lock->reset( k => $path );
       $self->throw( error => 'File [_1] element [_2] already exists',
-                    args  => [ $path, $name ] );
+                    args  => [ $path, $name ], level => 4 );
    }
 
    my $updated = File::DataClass::HashMerge->merge

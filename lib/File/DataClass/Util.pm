@@ -66,7 +66,7 @@ sub is_member {
 }
 
 sub throw {
-   my $self = shift; return $self->exception_class->throw( @_ );
+   shift->exception_class->throw( @_ ); return;
 }
 
 no Moose::Role;

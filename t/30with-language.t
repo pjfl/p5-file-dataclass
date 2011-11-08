@@ -25,14 +25,14 @@ BEGIN {
 sub test {
    my ($obj, $method, @args) = @_; local $EVAL_ERROR;
 
-   my $wantarray = wantarray; my ($e, $res);
+   my $wantarray = wantarray; my $res;
 
    eval {
       if ($wantarray) { @{ $res } = $obj->$method( @args ) }
       else { $res = $obj->$method( @args ) }
    };
 
-   return $e if ($e = $EVAL_ERROR);
+   my $e = $EVAL_ERROR; $e and return $e;
 
    return $wantarray ? @{ $res } : $res;
 }

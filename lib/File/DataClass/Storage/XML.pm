@@ -86,7 +86,6 @@ sub _update {
    my $element = $element_obj->_resultset->source->name;
 
    $self->validate_params( $path, $element );
-   $overwrite or $path->touch;
 
    if (        $self->_is_array ( $element )
        and not $self->_is_in_dtd( $element )) {

@@ -20,11 +20,9 @@ use File::Spec::Functions;
 use Module::Build;
 
 sub new {
-   my ($class, $params) = @_;
+   my ($class, $params) = @_; $params ||= {};
 
-   ($params and ref $params eq q(HASH)) or whimper 'No params hash';
-
-   my $module     = $params->{module};
+   my $module     = $params->{module} or whimper 'No module name';
    my $distname   = $module; $distname =~ s{ :: }{-}gmx;
    my $class_path = catfile( q(lib), split m{ :: }mx, $module.q(.pm) );
 
@@ -37,7 +35,7 @@ sub new {
         create_packlist    => 0,
         create_readme      => 1,
         dist_version_from  => $class_path,
-        license            => $params->{license},
+        license            => $params->{license} || q(perl),
         meta_merge         => __get_resources( $params, $distname ),
         module_name        => $module,
         no_index           => __get_no_index( $params ),
@@ -61,7 +59,7 @@ sub __get_no_index {
 sub __get_notes {
    my $params = shift; my $notes = $params->{notes} || {};
 
-   $notes->{stop_tests} = $params->{stop_tests} && __cpan_testing()
+   $notes->{stop_tests} = ($params->{stop_tests} || 0) && __cpan_testing()
                         ? 'CPAN Testing stopped' : 0;
 
    return $notes;

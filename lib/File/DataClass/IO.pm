@@ -174,9 +174,11 @@ sub atomic {
    my $self = shift; $self->_atomic( TRUE ); return $self;
 }
 
-*atomic_suffix = \&atomic_infix;
-
 sub atomic_infix {
+   my ($self, $value) = @_; $self->_atomic_infix( $value ); return $self;
+}
+
+sub atomic_suffix {
    my ($self, $value) = @_; $self->_atomic_infix( $value ); return $self;
 }
 
@@ -640,7 +642,7 @@ sub _open_dir {
    $self->_assert and $self->assert_dirpath( $path );
    $self->io_handle( IO::Dir->new( $path ) )
       or $self->throw( error => 'Directory [_1] cannot open',
-                       args  => [ $path ] );
+                       args  => [ $path ], level => 6 );
    $self->is_open( TRUE );
    return $self;
 }
@@ -651,7 +653,8 @@ sub _open_file {
    $self->_assert and $self->assert_filepath;
    $self->_umask_push( $perms );
    $self->io_handle( IO::File->new( $path, $mode ) )
-      or $self->throw( error => 'File [_1] cannot open', args => [ $path ] );
+      or $self->throw( error => 'File [_1] cannot open',
+                       args  => [ $path ], level => 6 );
    $self->_umask_pop;
    $self->is_open( TRUE );
    $self->set_binmode;

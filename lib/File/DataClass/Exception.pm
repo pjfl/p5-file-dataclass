@@ -7,7 +7,8 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 use Exception::Class
-   'File::DataClass::Exception::Base' => { fields => [ qw(args out rv) ] };
+   'File::DataClass::Exception::Base' => {
+      fields => [ qw(args leader out rv) ] };
 
 use base qw(File::DataClass::Exception::Base);
 
@@ -22,32 +23,42 @@ our $IGNORE = [ __PACKAGE__ ];
 sub new {
    my ($self, @rest) = @_;
 
+   my $args   = @rest < 2 ? { error => $rest[ 0 ] } : { @rest };
+   my $level  = 3; exists $args->{level} and $level = delete $args->{level};
+   my ($package, $line) = (caller( $level ))[ 0, 2 ];
+   my $leader = "${package}[${line}]: ";
+
+   if (__is_one_of_us( $args->{error} )) {
+      $args->{error}->{leader} = $leader; return $args->{error};
+   }
+
+   $args->{error} .= NUL;
+
    return $self->next::method( args           => [],
                                error          => 'Error unknown',
                                ignore_package => $IGNORE,
+                               leader         => $leader,
                                out            => NUL,
-                               @rest );
+                               %{ $args } );
 }
 
 sub catch {
-   my ($self, $e) = @_; $e ||= $EVAL_ERROR;
+   my ($self, $e) = @_; $e ||= $EVAL_ERROR; $e or return;
 
-   $e and blessed $e and $e->isa( __PACKAGE__ ) and return $e;
-
-   return $e ? $self->new( error => NUL.$e ) : undef;
+   return __is_one_of_us( $e ) ? $e : $self->new( $e );
 }
 
 sub full_message {
    my $self = shift; my $text = $self->error or return;
 
    # Expand positional parameters of the form [_<n>]
-   0 > index $text, LOCALIZE and return $text;
+   0 > index $text, LOCALIZE and return $self->leader.$text;
 
    my @args = @{ $self->args }; push @args, map { NUL } 0 .. 10;
 
    $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
 
-   return $text;
+   return $self->leader.$text;
 }
 
 sub stacktrace {
@@ -68,19 +79,23 @@ sub stacktrace {
 }
 
 sub throw {
-   my ($self, @rest) = @_; my $e = $rest[0];
+   my ($self, @rest) = @_;
 
-   $e and blessed $e and $e->isa( __PACKAGE__ ) and croak $e;
-
-   croak $self->new( @rest == 1 ? ( error => NUL.$e ) : @rest );
+   croak __is_one_of_us( $rest[ 0 ] ) ? $rest[ 0 ] : $self->new( @rest );
 }
 
 sub throw_on_error {
-   my ($self, @rest) = @_; my $e;
+   my ($self, @rest) = @_;
 
-   $e = $self->catch( @rest ) and $self->throw( $e );
+   my $e; $e = $self->catch( @rest ) and $self->throw( $e );
 
    return;
+}
+
+# Private subroutines
+
+sub __is_one_of_us {
+   return $_[ 0 ] && blessed $_[ 0 ] && $_[ 0 ]->isa( __PACKAGE__ );
 }
 
 1;
@@ -156,7 +171,7 @@ in this case
 
 =head2 throw_on_error
 
-   File::DataClass::Exception->throw_on_error( $error );
+   File::DataClass::Exception->throw_on_error $error );
 
 Calls L</catch> and if the was an exception L</throw>s it
 

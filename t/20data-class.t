@@ -57,7 +57,8 @@ ok( ! -f $cache_file, 'Cache file not created too early' );
 my $e = test( $schema, qw(load nonexistant_file) );
 
 ok( -f $cache_file, 'Cache file found' );
-is( $e, 'File nonexistant_file cannot open', 'Cannot open nonexistant_file' );
+ok( $e =~ m{ \QFile nonexistant_file cannot open\E }msx,
+    'Cannot open nonexistant_file' );
 is( ref $e, 'File::DataClass::Exception', 'Default exception class' );
 
 my $data = test( $schema, qw(load t/default.xml t/default_en.xml) );
@@ -80,11 +81,12 @@ ok( !$diff, 'Load and dump roundtrips' );
 
 $e = test( $schema, q(resultset) );
 
-is( $e, 'Result source not specified', 'Result source not specified' );
+ok( $e =~ m{ \QResult source not specified\E }msx,
+    'Result source not specified' );
 
 $e = test( $schema, q(resultset), q(globals) );
 
-is( $e, 'Result source globals unknown', 'Result source unknown' );
+ok( $e =~ m{ \QResult source globals unknown\E }msx, 'Result source unknown' );
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw(t default.xml) ],
@@ -95,7 +97,7 @@ my $rs = test( $schema, q(resultset), q(globals) );
 
 $args = {}; $e = test( $rs, q(create), $args );
 
-is( $e, 'No element name specified', 'No element name specified' );
+ok( $e =~ m{ \QNo element name specified\E }msx, 'No element name specified' );
 
 $args->{name} = q(dummy);
 

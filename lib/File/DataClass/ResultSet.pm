@@ -36,9 +36,8 @@ sub all {
 }
 
 sub create {
-   my ($self, $args) = @_;
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $name = $self->_validate_params( $args );
    my $res  = $self->_txn_do( sub { $self->_create_result( $args )->insert } );
 
    return $res ? $name : undef;
@@ -51,6 +50,7 @@ sub delete {
       my ($result, $error);
 
       unless ($result = $self->_find( $name )) {
+         $args->{no_throw_if_missing} and return;
          $error = 'File [_1] element [_2] does not exist';
          $self->throw( error => $error, args => [ $self->path, $name ] );
       }
@@ -106,11 +106,10 @@ sub next {
 }
 
 sub push {
-   my ($self, $args) = @_; my ($added, $attrs);
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $name  = $self->_validate_params( $args );
    my $list  = $args->{list} or $self->throw( 'No list name specified' );
-   my $items = $args->{items} || [];
+   my $items = $args->{items} || []; my ($added, $attrs);
 
    $items->[0] or $self->throw( 'List contains no items' );
 
@@ -139,11 +138,10 @@ sub search {
 }
 
 sub splice {
-   my ($self, $args) = @_; my ($attrs, $removed);
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $name  = $self->_validate_params( $args );
    my $list  = $args->{list} or $self->throw( 'No list name specified' );
-   my $items = $args->{items} || [];
+   my $items = $args->{items} || []; my ($attrs, $removed);
 
    $items->[0] or $self->throw( 'List contains no items' );
 
@@ -186,7 +184,7 @@ sub _create_result {
    my $attrs = { %{ $self->defaults }, _resultset => $self };
 
    $attrs->{ $_ } = $args->{ $_ }
-      for (grep { defined $args->{ $_ } } keys %{ $args });
+      for (grep { exists $args->{ $_ } } @{ $self->attributes }, qw(name));
 
    return $self->result_class->new( $attrs );
 }
@@ -236,7 +234,7 @@ sub _eval_op {
 sub _find {
    my ($self, $name) = @_; my $results = $self->select;
 
-   return unless ($name and exists $results->{ $name });
+   ($name and exists $results->{ $name }) or return;
 
    my $attrs = { %{ $results->{ $name } }, name => $name };
 
@@ -342,7 +340,8 @@ sub _txn_do {
 sub _validate_params {
    my ($self, $args) = @_; $args ||= {};
 
-   my $name = $args->{name} or $self->throw( 'No element name specified' );
+   my $name = $args->{name}
+      or $self->throw( error => 'No element name specified', level => 4 );
 
    return $name;
 }
@@ -579,7 +578,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2010 Peter Flanigan. All rights reserved
+Copyright (c) 2011 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
