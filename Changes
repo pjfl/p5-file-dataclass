@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Storage::WithLanguage passes tests
          - Renamed Combinator to Storage::WithLanguage
          - Combinator rewritten to use F::Gettext
          - Updated inc::Bob

@@ -21,15 +21,20 @@ has 'storage' => is => 'ro', isa => 'Object', required   => TRUE,
 with qw(File::DataClass::Util);
 
 sub delete {
-   my ($self, $path, $element_obj) = @_;
+   my ($self, $path, $element_obj) = @_; $self->_set_gettext_path( $path );
 
-   my $deleted = $self->storage->delete( $path, $element_obj );
+   my $deleted   = $self->storage->delete( $path, $element_obj );
+   my $source    = $element_obj->_resultset->source;
+   my $condition = sub { $source->lang_dep && $source->lang_dep->{ $_[ 0 ] } };
+   my $rs        = $self->gettext->resultset;
+   my $element   = $source->name;
 
-   if ($self->_set_gettext_path( $path )) {
-      my $rs   = $self->gettext->resultset;
-      my $name = $rs->delete( { name => $element_obj->name,
-                                no_throw_if_missing => TRUE } );
+   for my $attr_name (__get_src_attributes( $condition, $element_obj )) {
+      my $attrs  = { msgctxt => "${element}.${attr_name}",
+                     msgid   => $element_obj->name, };
+      my $name   = $rs->storage->make_key( $attrs );
 
+      $name = $rs->delete( { name => $name, optional => TRUE } );
       $deleted ||= $name ? TRUE : FALSE;
    }
 
@@ -44,22 +49,23 @@ sub dump {
 sub insert {
    my ($self, $path, $element_obj) = @_;
 
-   return $self->_update( $path, $element_obj, FALSE );
+   return $self->_create_or_update( $path, $element_obj, FALSE );
 }
 
 sub select {
    my ($self, $path, $element) = @_; $self->validate_params( $path, $element );
 
-   my $data = $self->load( $path );
+   $self->_set_gettext_path( $path );
 
-   if ($self->_set_gettext_path( $path )) {
-      my $gettext_data = $self->gettext->load;
+   my $gettext      = $self->gettext;
+   my $gettext_data = $gettext->load->{ $gettext->source_name };
+   my $data         = $self->load( $path );
 
-      for (keys %{ $gettext_data }) {
-         $data->{ $_ } = exists $data->{ $_ }
-                       ? merge( $data->{ $_ }, $gettext_data->{ $_ } )
-                       : $gettext_data->{ $_ };
-      }
+   for my $key (grep { m{ \A $element [\.] }msx } keys %{ $gettext_data }) {
+      my (undef, $attr_name, $msgid) = split m{ [\.] }msx, $key;
+
+      $data->{ $element }->{ $msgid }->{ $attr_name }
+         = $gettext_data->{ $key }->{msgstr}->[ 0 ];
    }
 
    return exists $data->{ $element } ? $data->{ $element } : {};
@@ -68,7 +74,7 @@ sub select {
 sub update {
    my ($self, $path, $element_obj) = @_;
 
-   return $self->_update( $path, $element_obj, TRUE );
+   return $self->_create_or_update( $path, $element_obj, TRUE );
 }
 
 # Private methods
@@ -77,10 +83,41 @@ sub _build_gettext {
    my $self = shift; return File::Gettext->new;
 }
 
+sub _create_or_update {
+   my ($self, $path, $element_obj, $overwrite) = @_;
+
+   $self->_set_gettext_path( $path );
+
+   my $source    = $element_obj->_resultset->source;
+   my $condition = sub { !$source->lang_dep || !$source->lang_dep->{ $_[0] } };
+   my $updated   = $self->storage->_create_or_update( $path, $element_obj,
+                                                      $overwrite, $condition );
+   my $rs        = $self->gettext->resultset;
+   my $element   = $source->name;
+      $condition = sub { $source->lang_dep && $source->lang_dep->{ $_[0] } };
+
+   for my $attr_name (__get_src_attributes( $condition, $element_obj )) {
+      my $attrs = { msgctxt => "${element}.${attr_name}",
+                    msgid   => $element_obj->name,
+                    msgstr  => [ $element_obj->$attr_name() ], };
+
+      $attrs->{name} = $rs->storage->make_key( $attrs );
+
+      my $name  = $overwrite ? $rs->update( $attrs ) : $rs->create( $attrs );
+
+      $updated ||= $name ? TRUE : FALSE;
+   }
+
+   $overwrite and not $updated and $self->throw( 'Nothing updated' );
+
+   return $updated;
+}
+
 sub _set_gettext_path {
    my ($self, $path) = @_;
 
-   $path or $self->throw( 'Path not specified' ); $self->lang or return FALSE;
+   $path       or $self->throw( 'Path not specified' );
+   $self->lang or $self->throw( 'Language not specified' );
 
    my $dir  = $self->dirname ( $path );
    my $file = $self->basename( $path, $self->extn ).q(_).$self->lang.q(.po);
@@ -89,25 +126,14 @@ sub _set_gettext_path {
    return TRUE;
 }
 
-sub _update {
-   my ($self, $path, $element_obj, $overwrite) = @_;
+# Private subroutines
 
-   my $source    = $element_obj->_resultset->source;
-   my $condition = sub { !$source->lang_dep || !$source->lang_dep->{ $_[0] } };
-   my $updated   = $self->storage->update( $path, $element_obj,
-                                           $overwrite, $condition );
+sub __get_src_attributes {
+   my ($condition, $src) = @_;
 
-   if ($self->_set_gettext_path( $path )) {
-      my $rs   = $self->gettext->resultset;
-      my $name = $overwrite ? $rs->update( $element_obj )
-                            : $rs->create( $element_obj );
-
-      $updated ||= $name ? TRUE : FALSE;
-   }
-
-   $overwrite and not $updated and $self->throw( 'Nothing updated' );
-
-   return $updated;
+   return grep { not m{ \A _ }mx
+                 and $_ ne q(name)
+                 and $condition->( $_ ) } keys %{ $src };
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -122,7 +148,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Combinator - Split/merge language dependent data
+File::DataClass::Storage::WithLanguage - Split/merge language dependent data
 
 =head1 Version
 

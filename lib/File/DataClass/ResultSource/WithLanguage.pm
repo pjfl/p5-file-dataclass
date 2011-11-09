@@ -28,6 +28,8 @@ sub BUILD {
    return;
 }
 
+# Private methods
+
 sub _set_lang {
    my ($self, $lang, $old_lang) = @_;
 

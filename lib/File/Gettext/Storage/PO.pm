@@ -25,6 +25,12 @@ augment '_write_file' => sub {
    return $data;
 };
 
+sub make_key {
+   my ($self, $rec) = @_;
+
+   return (exists $rec->{msgctxt} ? $rec->{msgctxt}.q(.) : NUL).$rec->{msgid};
+}
+
 # Private read methods
 
 sub _read_filter {
@@ -49,12 +55,12 @@ sub _read_filter {
       }
       # A blank line ends the record
       elsif ($line =~ m{ \A \s* \z }msx) {
-         __store_record( $data, $rec, \$order );
+         $self->_store_record( $data, $rec, \$order );
          $key = undef; $last = undef; $rec = {};
       }
    }
 
-   __store_record( $data, $rec, \$order ); # If the last line isn't blank
+   $self->_store_record( $data, $rec, \$order ); # If the last line isn't blank
 
    return $self->_inflate_and_decode( $data );
 }
@@ -74,6 +80,15 @@ sub _inflate_and_decode {
    }
 
    return { po => $data, po_header => __decode_hash( $charset, $po_header ), };
+}
+
+sub _store_record {
+   my ($self, $data, $rec, $order_ref) = @_; exists $rec->{msgid} or return;
+
+   $rec->{_order} = ${ $order_ref }++;
+   $data->{ $self->make_key( $rec ) } = $rec;
+
+   return;
 }
 
 # Private write methods
@@ -270,12 +285,6 @@ sub __header_inflate {
    return $header;
 }
 
-sub __make_key {
-   my $rec = shift;
-
-   return (exists $rec->{msgctxt} ? $rec->{msgctxt} : NUL).$rec->{msgid};
-}
-
 sub __original_order {
    my ($hash, $lhs, $rhs) = @_;
 
@@ -332,14 +341,6 @@ sub __store_msgtext {
    return $key;
 }
 
-sub __store_record {
-   my ($data, $rec, $order_ref) = @_; exists $rec->{msgid} or return;
-
-   $rec->{_order} = ${ $order_ref }++; $data->{ __make_key( $rec ) } = $rec;
-
-   return;
-}
-
 sub __unquote {
    my $text = shift;
 
@@ -371,6 +372,10 @@ File::Gettext::Storage::PO - Storage class for GNU gettext portable object forma
 =head1 Description
 
 =head1 Subroutines/Methods
+
+=head2 make_key
+
+Concatenates the I<msgctxt> and I<msgid> attributes to form the hash key
 
 =head1 Configuration and Environment
 

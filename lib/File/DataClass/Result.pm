@@ -14,16 +14,17 @@ has '_resultset' => is => 'ro', isa => 'Object', required => 1;
 sub BUILD {
    my ($self, $args) = @_; my $class = blessed $self;
 
-   my %types = ( qw(SCALAR Maybe[Str]
-                    ARRAY  Maybe[ArrayRef]
-                    HASH   Maybe[HashRef]) );
+   my $source = $self->_resultset->source;
+   my %types  = ( qw(SCALAR Maybe[Str]
+                     ARRAY  Maybe[ArrayRef]
+                     HASH   Maybe[HashRef]) );
 
-   for (@{ $self->_resultset->source->attributes }) {
-      my $type = ref $args->{ $_ } || q(SCALAR);
+   for (@{ $source->attributes }) {
+      my $type = ref $source->defaults->{ $_ } || ref $args->{ $_ };
 
       $class->meta->has_attribute( $_ )
          or $class->meta->add_attribute
-            ( $_ => ( is => 'rw', isa => $types{ $type } ) );
+            ( $_ => ( is => 'rw', isa => $types{ $type || q(SCALAR) } ) );
 
       defined $args->{ $_ } and $self->$_( $args->{ $_ } );
    }

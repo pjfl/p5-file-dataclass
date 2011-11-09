@@ -50,7 +50,7 @@ sub delete {
       my ($result, $error);
 
       unless ($result = $self->_find( $name )) {
-         $args->{no_throw_if_missing} and return;
+         $args->{optional} and return;
          $error = 'File [_1] element [_2] does not exist';
          $self->throw( error => $error, args => [ $self->path, $name ] );
       }

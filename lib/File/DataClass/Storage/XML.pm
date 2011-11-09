@@ -38,6 +38,21 @@ around '_meta_unpack' => sub {
 
 # Private methods
 
+sub _create_or_update {
+   my ($self, $path, $element_obj, $overwrite, $condition) = @_;
+
+   my $element = $element_obj->_resultset->source->name;
+
+   $self->validate_params( $path, $element );
+
+   if (        $self->_is_array ( $element )
+       and not $self->_is_in_dtd( $element )) {
+      push @{ $self->_dtd }, '<!ELEMENT '.$element.' (ARRAY)*>';
+   }
+
+   return $self->next::method( $path, $element_obj, $overwrite, $condition );
+}
+
 sub _dtd_parse {
    my ($self, $data) = @_;
 
@@ -78,21 +93,6 @@ sub _is_in_dtd {
    }
 
    return exists $elements{ $candidate };
-}
-
-sub _update {
-   my ($self, $path, $element_obj, $overwrite, $condition) = @_;
-
-   my $element = $element_obj->_resultset->source->name;
-
-   $self->validate_params( $path, $element );
-
-   if (        $self->_is_array ( $element )
-       and not $self->_is_in_dtd( $element )) {
-      push @{ $self->_dtd }, '<!ELEMENT '.$element.' (ARRAY)*>';
-   }
-
-   return $self->next::method( $path, $element_obj, $overwrite, $condition );
 }
 
 __PACKAGE__->meta->make_immutable;

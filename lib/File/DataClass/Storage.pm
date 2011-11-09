@@ -59,7 +59,7 @@ sub dump {
 sub insert {
    my ($self, $path, $element_obj) = @_;
 
-   return $self->_update( $path, $element_obj, FALSE, sub { TRUE } );
+   return $self->_create_or_update( $path, $element_obj, FALSE, sub { TRUE } );
 }
 
 sub load {
@@ -131,7 +131,8 @@ sub update {
 
    defined $overwrite or $overwrite = TRUE; $condition ||= sub { TRUE };
 
-   return $self->_update( $path, $element_obj, $overwrite, $condition );
+   return $self->_create_or_update( $path, $element_obj,
+                                    $overwrite, $condition );
 }
 
 sub validate_params {
@@ -149,6 +150,35 @@ sub validate_params {
 }
 
 # Private methods
+
+sub _create_or_update {
+   my ($self, $path, $element_obj, $overwrite, $condition) = @_;
+
+   my $element = $element_obj->_resultset->source->name;
+
+   $self->validate_params( $path, $element );my $data;
+
+   if ($overwrite || $path->is_file) {
+      ($data) =  $self->_read_file( $path, TRUE );
+   }
+   else { $data = { $element => {} }; $self->_lock->set( k => $path ) }
+
+   my $name = $element_obj->name;
+
+   if (not $overwrite and exists $data->{ $element }->{ $name }) {
+      $self->_lock->reset( k => $path );
+      $self->throw( error => 'File [_1] element [_2] already exists',
+                    args  => [ $path, $name ], level => 4 );
+   }
+
+   my $updated = File::DataClass::HashMerge->merge
+      ( $element_obj, \$data->{ $element }->{ $name }, $condition );
+
+   if ($updated) { $self->_write_file( $path, $data, not $overwrite ) }
+   else { $self->_lock->reset( k => $path ) }
+
+   return $updated;
+}
 
 sub _meta_pack {
    # Can be modified in a subclass
@@ -184,32 +214,6 @@ sub _read_file {
    $for_update or $self->_lock->reset( k => $path );
 
    return ($data, $path_mtime);
-}
-
-sub _update {
-   my ($self, $path, $element_obj, $overwrite, $condition) = @_;
-
-   my $element = $element_obj->_resultset->source->name;
-
-   $self->validate_params( $path, $element );
-
-   my ($data) = $overwrite || $path->is_file ? $self->_read_file( $path, TRUE )
-                                             : ({ $element => {} });
-   my $name   = $element_obj->name;
-
-   if (not $overwrite and exists $data->{ $element }->{ $name }) {
-      $self->_lock->reset( k => $path );
-      $self->throw( error => 'File [_1] element [_2] already exists',
-                    args  => [ $path, $name ], level => 4 );
-   }
-
-   my $updated = File::DataClass::HashMerge->merge
-      ( $element_obj, \$data->{ $element }->{ $name }, $condition );
-
-   if ($updated) { $self->_write_file( $path, $data ) }
-   else { $self->_lock->reset( k => $path ) }
-
-   return $updated;
 }
 
 sub _write_file {
