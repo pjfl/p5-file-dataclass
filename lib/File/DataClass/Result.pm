@@ -9,18 +9,19 @@ use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 use Moose;
 
 has 'name'       => is => 'rw', isa => 'Str',    required => 1;
-has '_resultset' => is => 'ro', isa => 'Object', required => 1;
+has '_resultset' => is => 'ro', isa => 'Object', required => 1,
+   handles       => { _path    => q(path), _source => q(source),
+                      _storage => q(storage) };
 
 sub BUILD {
    my ($self, $args) = @_; my $class = blessed $self;
 
-   my $source = $self->_resultset->source;
-   my %types  = ( qw(SCALAR Maybe[Str]
-                     ARRAY  Maybe[ArrayRef]
-                     HASH   Maybe[HashRef]) );
+   my %types = ( qw(SCALAR Maybe[Str]
+                    ARRAY  Maybe[ArrayRef]
+                    HASH   Maybe[HashRef]) );
 
-   for (@{ $source->attributes }) {
-      my $type = ref $source->defaults->{ $_ } || ref $args->{ $_ };
+   for (@{ $self->_source->attributes }) {
+      my $type = ref $self->_source->defaults->{ $_ } || ref $args->{ $_ };
 
       $class->meta->has_attribute( $_ )
          or $class->meta->add_attribute
@@ -33,25 +34,15 @@ sub BUILD {
 }
 
 sub delete {
-   my $self = shift; return $self->_storage->delete( $self->_path, $self );
+   return $_[ 0 ]->_storage->delete( $_[ 0 ]->_path, $_[ 0 ] );
 }
 
 sub insert {
-   my $self = shift; return $self->_storage->insert( $self->_path, $self );
+   return $_[ 0 ]->_storage->insert( $_[ 0 ]->_path, $_[ 0 ] );
 }
 
 sub update {
-   my $self = shift; return $self->_storage->update( $self->_path, $self );
-}
-
-# Private methods
-
-sub _path {
-   return shift->_resultset->path;
-}
-
-sub _storage {
-   return shift->_resultset->storage;
+   return $_[ 0 ]->_storage->update( $_[ 0 ]->_path, $_[ 0 ] );
 }
 
 no Moose;

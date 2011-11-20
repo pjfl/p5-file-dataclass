@@ -17,13 +17,13 @@ has 'lang'     => is => 'rw', isa => 'Str',
 has 'lang_dep' => is => 'rw', isa => 'Maybe[HashRef]';
 
 sub BUILD {
-   my $self = shift;
+   my $self    = shift;
+   my $storage = $self->storage;
+   my $class   = q(File::DataClass::Storage::WithLanguage);
+   my $attrs   = { lang => $self->lang, storage => $storage };
 
-   if ($self->lang_dep) {
-      my $attrs = { lang => $self->lang, storage => $self->storage };
-
-      $self->storage( File::DataClass::Storage::WithLanguage->new( $attrs ) );
-   }
+   $self->lang_dep and blessed $storage ne $class
+      and $self->schema->storage( $class->new( $attrs ) );
 
    return;
 }

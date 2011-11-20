@@ -16,25 +16,26 @@ extends qw(File::DataClass);
 has 'gettext' => is => 'ro', isa => 'Object', lazy_build => TRUE;
 has 'lang'    => is => 'rw', isa => 'Str',    required   => TRUE;
 has 'storage' => is => 'ro', isa => 'Object', required   => TRUE,
-   handles    => [ qw(exception_class extn load txn_do validate_params) ];
+   handles    => [ qw(_cache exception_class extn _is_stale _meta_pack
+                      _read_file schema txn_do validate_params) ];
 
 with qw(File::DataClass::Util);
 
 sub delete {
-   my ($self, $path, $element_obj) = @_; $self->_set_gettext_path( $path );
+   my ($self, $path, $result) = @_;
 
-   my $deleted   = $self->storage->delete( $path, $element_obj );
-   my $source    = $element_obj->_resultset->source;
+   my $deleted   = $self->storage->delete( $path, $result );
+   my $source    = $result->_resultset->source;
    my $condition = sub { $source->lang_dep && $source->lang_dep->{ $_[ 0 ] } };
-   my $rs        = $self->gettext->resultset;
+   my $rs        = $self->_gettext( $path )->resultset;
    my $element   = $source->name;
 
-   for my $attr_name (__get_src_attributes( $condition, $element_obj )) {
+   for my $attr_name (__get_attributes( $condition, $source )) {
       my $attrs  = { msgctxt => "${element}.${attr_name}",
-                     msgid   => $element_obj->name, };
+                     msgid   => $result->name, };
       my $name   = $rs->storage->make_key( $attrs );
 
-      $name = $rs->delete( { name => $name, optional => TRUE } );
+      $name      = $rs->delete( { name => $name, optional => TRUE } );
       $deleted ||= $name ? TRUE : FALSE;
    }
 
@@ -42,39 +43,90 @@ sub delete {
 }
 
 sub dump {
-   # Moose delegation bug
-   my ($self, $path, $data) = @_; return $self->storage->dump( $path, $data );
+   # Moose delegation bug. Finds Moose::Object::dump instead
+   my ($self, $path, $data) = @_; $self->validate_params( $path, TRUE );
+
+   my $gettext      = $self->_gettext( $path );
+   my $gettext_data = $gettext->path->is_file ? $gettext->load : {};
+
+   for my $source (values %{ $self->schema->source_registrations }) {
+      my $element = $source->name; my $element_ref = $data->{ $element };
+
+      for my $msgid (keys %{ $element_ref }) {
+         for my $attr_name (keys %{ $source->lang_dep || {} }) {
+            my $msgstr = delete $element_ref->{ $msgid }->{ $attr_name }
+                      or next;
+            my $attrs  = { msgctxt => "${element}.${attr_name}",
+                           msgid   => $msgid,
+                           msgstr  => [ $msgstr ] };
+            my $key    = $gettext->storage->make_key( $attrs );
+
+            $gettext_data->{ $gettext->source_name }->{ $key } = $attrs;
+         }
+      }
+   }
+
+   $gettext->dump( { data => $gettext_data } );
+
+   return $self->storage->dump( $path, $data );
 }
 
 sub insert {
-   my ($self, $path, $element_obj) = @_;
+   my ($self, $path, $result) = @_;
 
-   return $self->_create_or_update( $path, $element_obj, FALSE );
+   return $self->_create_or_update( $path, $result, FALSE );
+}
+
+sub load {
+   my ($self, @paths) = @_; $paths[ 0 ] or return {};
+
+   my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
+
+   not $self->_is_stale( $data, $meta, $newest ) and return $data;
+
+   $data = {}; $newest = 0;
+
+   for my $path (@paths) {
+      my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
+
+      $red or next; $path_mtime > $newest and $newest = $path_mtime;
+
+      for (keys %{ $red }) {
+         $data->{ $_ } = exists $data->{ $_ }
+                       ? merge( $data->{ $_ }, $red->{ $_ } )
+                       : $red->{ $_ };
+      }
+
+      my $gettext = $self->_gettext( $path ); $gettext->path->is_file or next;
+
+      my $gettext_source_ref = $gettext->load->{ $gettext->source_name };
+
+      for my $key (keys %{ $gettext_source_ref }) {
+         my ($element, $attr_name, $msgid) = split m{ [\.] }msx, $key;
+
+         ($element and $attr_name and $msgid) or next;
+         $data->{ $element }->{ $msgid }->{ $attr_name }
+            = $gettext_source_ref->{ $key }->{msgstr}->[ 0 ];
+      }
+   }
+
+   $self->_cache->set_by_paths( \@paths, $data, $self->_meta_pack( $newest ) );
+
+   return $data;
 }
 
 sub select {
    my ($self, $path, $element) = @_; $self->validate_params( $path, $element );
 
-   $self->_set_gettext_path( $path );
-
-   my $gettext      = $self->gettext;
-   my $gettext_data = $gettext->load->{ $gettext->source_name };
-   my $data         = $self->load( $path );
-
-   for my $key (grep { m{ \A $element [\.] }msx } keys %{ $gettext_data }) {
-      my (undef, $attr_name, $msgid) = split m{ [\.] }msx, $key;
-
-      $data->{ $element }->{ $msgid }->{ $attr_name }
-         = $gettext_data->{ $key }->{msgstr}->[ 0 ];
-   }
+   my $data = $self->load( $path );
 
    return exists $data->{ $element } ? $data->{ $element } : {};
 }
 
 sub update {
-   my ($self, $path, $element_obj) = @_;
+   my ($self, $path, $result) = @_;
 
-   return $self->_create_or_update( $path, $element_obj, TRUE );
+   return $self->_create_or_update( $path, $result, TRUE );
 }
 
 # Private methods
@@ -84,56 +136,58 @@ sub _build_gettext {
 }
 
 sub _create_or_update {
-   my ($self, $path, $element_obj, $overwrite) = @_;
+   my ($self, $path, $result, $updating) = @_;
 
-   $self->_set_gettext_path( $path );
-
-   my $source    = $element_obj->_resultset->source;
+   my $source    = $result->_resultset->source;
    my $condition = sub { !$source->lang_dep || !$source->lang_dep->{ $_[0] } };
-   my $updated   = $self->storage->_create_or_update( $path, $element_obj,
-                                                      $overwrite, $condition );
-   my $rs        = $self->gettext->resultset;
+   my $updated   = $self->storage->_create_or_update( $path, $result,
+                                                      $updating, $condition );
+   my $rs        = $self->_gettext( $path )->resultset;
    my $element   = $source->name;
-      $condition = sub { $source->lang_dep && $source->lang_dep->{ $_[0] } };
 
-   for my $attr_name (__get_src_attributes( $condition, $element_obj )) {
-      my $attrs = { msgctxt => "${element}.${attr_name}",
-                    msgid   => $element_obj->name,
-                    msgstr  => [ $element_obj->$attr_name() ], };
+   $condition = sub { $source->lang_dep && $source->lang_dep->{ $_[0] } };
+
+   for my $attr_name (__get_attributes( $condition, $source )) {
+      my $msgstr = $result->$attr_name() or next;
+      my $attrs  = { msgctxt => "${element}.${attr_name}",
+                     msgid   => $result->name,
+                     msgstr  => [ $msgstr ], };
 
       $attrs->{name} = $rs->storage->make_key( $attrs );
 
-      my $name  = $overwrite ? $rs->update( $attrs ) : $rs->create( $attrs );
+      my $name   = $updating ? $rs->update( $attrs ) : $rs->create( $attrs );
 
       $updated ||= $name ? TRUE : FALSE;
    }
 
-   $overwrite and not $updated and $self->throw( 'Nothing updated' );
+   $updating and not $updated and $self->throw( 'Nothing updated' );
 
    return $updated;
 }
 
-sub _set_gettext_path {
+sub _gettext {
    my ($self, $path) = @_;
 
    $path       or $self->throw( 'Path not specified' );
    $self->lang or $self->throw( 'Language not specified' );
 
-   my $dir  = $self->dirname ( $path );
-   my $file = $self->basename( $path, $self->extn ).q(_).$self->lang.q(.po);
+   my $gettext = $self->gettext;
+   my $dir     = $self->dirname ( $path );
+   my $file    = $self->basename( $path, $self->extn ).q(_).$self->lang.q(.po);
 
-   $self->gettext->path( $self->io( $self->catfile( $dir, $file ) ) );
-   return TRUE;
+   $gettext->path( $self->io( $self->catfile( $dir, $file ) ) );
+
+   return $gettext;
 }
 
 # Private subroutines
 
-sub __get_src_attributes {
-   my ($condition, $src) = @_;
+sub __get_attributes {
+   my ($condition, $source) = @_;
 
-   return grep { not m{ \A _ }mx
+   return grep { not m{ \A _ }msx
                  and $_ ne q(name)
-                 and $condition->( $_ ) } keys %{ $src };
+                 and $condition->( $_ ) } @{ $source->attributes || [] };
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -182,7 +236,7 @@ Instance of L<File::DataClass::Storage>
 
 =head2 delete
 
-   $bool = $self->delete( $path, $element_obj );
+   $bool = $self->delete( $path, $result );
 
 Deletes the specified element object returning true if successful. Throws
 an error otherwise
@@ -195,10 +249,16 @@ Exposes L<File::DataClass::Storage/dump> in the storage class
 
 =head2 insert
 
-   $bool = $self->insert( $path, $element_obj );
+   $bool = $self->insert( $path, $result );
 
 Inserts the specified element object returning true if successful. Throws
 an error otherwise
+
+=head2 load
+
+   $data = $self->load( $path );
+
+Exposes L<File::DataClass::Storage/load> in the storage class
 
 =head2 select
 
@@ -209,7 +269,7 @@ result source
 
 =head2 update
 
-   $bool = $self->update( $path, $element_obj );
+   $bool = $self->update( $path, $result );
 
 Updates the specified element object returning true if successful. Throws
 an error otherwise

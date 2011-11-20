@@ -13,9 +13,17 @@ use Moose::Util::TypeConstraints;
 
 extends qw(File::DataClass::Schema);
 
-has 'charset'          => is => 'ro', isa => 'Str', default => q(iso-8859-1);
-has 'header_key_table' => is => 'ro', isa => 'HashRef',
-   default             => sub { {
+has 'charset'           => is => 'ro', isa => 'Str', default => q(iso-8859-1);
+has 'default_po_header' => is => 'ro', isa => 'HashRef',
+   default              => sub { {
+      appname           => 'Your_Application',
+      company           => 'ExampleCom',
+      email             => '<translators@example.com>',
+      lang              => 'en',
+      team              => 'Translators',
+      translator        => 'Athena', } };
+has 'header_key_table'  => is => 'ro', isa => 'HashRef',
+   default              => sub { {
       project_id_version        => [ 0,  q(Project-Id-Version)        ],
       report_msgid_bugs_to      => [ 1,  q(Report-Msgid-Bugs-To)      ],
       pot_creation_date         => [ 2,  q(POT-Creation-Date)         ],
@@ -28,7 +36,7 @@ has 'header_key_table' => is => 'ro', isa => 'HashRef',
       content_transfer_encoding => [ 9,  q(Content-Transfer-Encoding) ],
       plural_forms              => [ 10, q(Plural-Forms)              ], } };
 has '+result_source_attributes' =>
-   default           => sub { return {
+   default           => sub { {
       mo             => {
          attributes  => [ qw(msgid_plural msgstr) ],
          defaults    => { msgstr => [], }, },

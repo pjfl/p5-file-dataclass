@@ -27,14 +27,14 @@ has 'schema' => is => 'ro', isa => 'Object', required => 1, weak_ref => TRUE,
 with qw(File::DataClass::Util);
 
 sub delete {
-   my ($self, $path, $element_obj) = @_;
+   my ($self, $path, $result) = @_;
 
-   my $element = $element_obj->_resultset->source->name;
+   my $element = $result->_resultset->source->name;
 
    $self->validate_params( $path, $element );
 
-   my ($data) = $self->_read_file( $path, TRUE );
-   my $name   = $element_obj->{name};
+   my $data = ($self->_read_file( $path, TRUE ))[ 0 ] || {};
+   my $name = $result->name;
 
    if (exists $data->{ $element } and exists $data->{ $element }->{ $name }) {
       delete $data->{ $element }->{ $name };
@@ -57,24 +57,22 @@ sub dump {
 }
 
 sub insert {
-   my ($self, $path, $element_obj) = @_;
+   my ($self, $path, $result) = @_;
 
-   return $self->_create_or_update( $path, $element_obj, FALSE, sub { TRUE } );
+   return $self->_create_or_update( $path, $result, FALSE, sub { TRUE } );
 }
 
 sub load {
-   my ($self, @paths) = @_; $paths[0] or return {};
+   my ($self, @paths) = @_; $paths[ 0 ] or return {};
 
    scalar @paths == 1
-      and return ($self->_read_file( $paths[0], FALSE ))[0] || {};
+      and return ($self->_read_file( $paths[ 0 ], FALSE ))[ 0 ] || {};
 
    my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
-   my $cache_mtime = $self->_meta_unpack( $meta );
-   my $stale = ! defined $newest || ! defined $cache_mtime
-            || $newest > $cache_mtime
-             ? TRUE : FALSE;
 
-   defined $data and not $stale and return $data; $data = {}; $newest = 0;
+   not $self->_is_stale( $data, $meta, $newest ) and return $data;
+
+   $data = {}; $newest = 0;
 
    for my $path (@paths) {
       my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
@@ -98,7 +96,7 @@ sub select {
 
    $self->validate_params( $path, $element );
 
-   my ($data) = $self->_read_file( $path, FALSE );
+   my $data = ($self->_read_file( $path, FALSE ))[ 0 ] || {};
 
    return exists $data->{ $element } ? $data->{ $element } : {};
 }
@@ -127,12 +125,11 @@ sub txn_do {
 }
 
 sub update {
-   my ($self, $path, $element_obj, $overwrite, $condition) = @_;
+   my ($self, $path, $result, $updating, $condition) = @_;
 
-   defined $overwrite or $overwrite = TRUE; $condition ||= sub { TRUE };
+   defined $updating or $updating = TRUE; $condition ||= sub { TRUE };
 
-   return $self->_create_or_update( $path, $element_obj,
-                                    $overwrite, $condition );
+   return $self->_create_or_update( $path, $result, $updating, $condition );
 }
 
 sub validate_params {
@@ -141,10 +138,11 @@ sub validate_params {
    $path or $self->throw( error => 'No file path specified', level => 4 );
 
    blessed $path
-      or $self->throw( error => 'Path [_1] is not blessed', args => [ $path ] );
+      or $self->throw( error => 'Path [_1] is not blessed',
+                       args  => [ $path ], level => 4 );
 
    $element or $self->throw( error => 'Path [_1] no element specified',
-                             args  => [ $path ] );
+                             args  => [ $path ], level => 4 );
 
    return;
 }
@@ -152,32 +150,40 @@ sub validate_params {
 # Private methods
 
 sub _create_or_update {
-   my ($self, $path, $element_obj, $overwrite, $condition) = @_;
+   my ($self, $path, $result, $updating, $condition) = @_;
 
-   my $element = $element_obj->_resultset->source->name;
+   my $element = $result->_resultset->source->name;
 
-   $self->validate_params( $path, $element );my $data;
+   $self->validate_params( $path, $element );
 
-   if ($overwrite || $path->is_file) {
-      ($data) =  $self->_read_file( $path, TRUE );
-   }
-   else { $data = { $element => {} }; $self->_lock->set( k => $path ) }
+   my $data = ($self->_read_file( $path, TRUE ))[ 0 ] || {};
+   my $name = $result->name;
 
-   my $name = $element_obj->name;
+   $data->{ $element } ||= {};
 
-   if (not $overwrite and exists $data->{ $element }->{ $name }) {
+   if (not $updating and exists $data->{ $element }->{ $name }) {
       $self->_lock->reset( k => $path );
       $self->throw( error => 'File [_1] element [_2] already exists',
                     args  => [ $path, $name ], level => 4 );
    }
 
    my $updated = File::DataClass::HashMerge->merge
-      ( $element_obj, \$data->{ $element }->{ $name }, $condition );
+      ( $result, \$data->{ $element }->{ $name }, $condition );
 
-   if ($updated) { $self->_write_file( $path, $data, not $overwrite ) }
+   if ($updated) { $self->_write_file( $path, $data, not $updating ) }
    else { $self->_lock->reset( k => $path ) }
 
    return $updated;
+}
+
+sub _is_stale {
+   my ($self, $data, $meta, $path_mtime) = @_;
+
+   my $cache_mtime = $self->_meta_unpack( $meta );
+
+   return ! defined $data || ! defined $path_mtime || ! defined $cache_mtime
+         || $path_mtime > $cache_mtime
+          ? TRUE : FALSE;
 }
 
 sub _meta_pack {
@@ -196,16 +202,17 @@ sub _read_file {
    $self->_lock->set( k => $path );
 
    my ($data, $meta) = $self->_cache->get( $path );
-   my $cache_mtime   = $self->_meta_unpack( $meta );
    my $path_mtime    = $path->stat->{mtime};
 
-   if (not defined $data or not defined $cache_mtime
-       or $path_mtime > $cache_mtime) {
-      try   { $data = inner( $path->lock ); $path->close }
-      catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
+   if ($self->_is_stale( $data, $meta, $path_mtime ) ) {
+      if (not $for_update or $path->is_file) {
+         try   { $data = inner( $path->lock ); $path->close }
+         catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
 
-      $self->_cache->set( $path, $data, $self->_meta_pack( $path_mtime ) );
-      $self->_debug and $self->_log->debug( "Read file  $path" );
+         $self->_cache->set( $path, $data, $self->_meta_pack( $path_mtime ) );
+         $self->_debug and $self->_log->debug( "Read file  $path" );
+      }
+      else { $data = undef }
    }
    else {
       $self->_debug and $self->_log->debug( "Read cache $path" );
@@ -266,7 +273,7 @@ Storage base class
 
 =head2 delete
 
-   $bool = $storage->delete( $path, $element_obj );
+   $bool = $storage->delete( $path, $result );
 
 Deletes the specified element object returning true if successful. Throws
 an error otherwise. Path is an instance of L<File::DataClass::IO>
@@ -280,7 +287,7 @@ L<File::DataClass::IO>
 
 =head2 insert
 
-   $bool = $storage->insert( $path, $element_obj );
+   $bool = $storage->insert( $path, $result );
 
 Inserts the specified element object returning true if successful. Throws
 an error otherwise. Path is an instance of L<File::DataClass::IO>
@@ -305,7 +312,7 @@ Executes the supplied coderef wrapped in lock on the pathname
 
 =head2 update
 
-   $bool = $storage->update( $path, $element_object, $overwrite, $condition );
+   $bool = $storage->update( $path, $result, $updating, $condition );
 
 Updates the specified element object returning true if successful. Throws
 an error otherwise. Path is an instance of L<File::DataClass::IO>

@@ -6,6 +6,7 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
+use Date::Format ();
 use Encode qw(decode encode);
 use File::DataClass::Constants;
 use Moose;
@@ -97,7 +98,7 @@ sub _write_filter {
    my ($self, $data) = @_; my $buf ||= [];
 
    my $po        = $data->{po       } || {};
-   my $po_header = $data->{po_header} || {};
+   my $po_header = $data->{po_header} || $self->_default_po_header;
    my $charset   = $self->_get_charset( $po_header );
    my $attrs     = $self->schema->source->attributes;
 
@@ -130,6 +131,39 @@ sub _array_split_on_nl {
    }
 
    return $lines;
+}
+
+sub _default_po_header {
+   my $self       = shift;
+   my $charset    = $self->schema->charset;
+   my $defaults   = $self->schema->default_po_header;
+   my $appname    = $defaults->{appname   };
+   my $company    = $defaults->{company   };
+   my $email      = $defaults->{email     };
+   my $lang       = $defaults->{lang      };
+   my $team       = $defaults->{team      };
+   my $translator = $defaults->{translator};
+   my $rev_date   = __time2str( "%Y-%m-%d %H:%M +%Z" );
+   my $year       = __time2str( "%Y" );
+
+   return {
+      'translator_comment' =>
+         [ '@(#)$Id'.'$',
+           'GNU Gettext Portable Object.',
+           "Copyright (C) ${year} ${company}.",
+           "${translator} ${email}, ${year}.",
+           '', ],
+      flags       => [ 'fuzzy', ],
+      msgstr      => {
+         'project_id_version'        => "${appname} ${VERSION}",
+         'po_revision_date'          => $rev_date,
+         'last_translator'           => "${translator} ${email}",
+         'language_team'             => "${team} ${email}",
+         'language'                  => $lang,
+         'mime_version'              => '1.0',
+         'content_type'              => 'text/plain; charset='.$charset,
+         'content_transfer_encoding' => '8bit',
+         'plural_forms'              => 'nplurals=2; plural=(n != 1);', }, };
 }
 
 sub _get_comment_lines {
@@ -339,6 +373,15 @@ sub __store_msgtext {
    }
 
    return $key;
+}
+
+sub __time2str {
+   my ($format, $time) = @_;
+
+   defined $format or $format = '%Y-%m-%d %H:%M:%S';
+   defined $time   or $time   = time;
+
+   return Date::Format::Generic->time2str( $format, $time );
 }
 
 sub __unquote {

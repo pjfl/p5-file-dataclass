@@ -75,7 +75,7 @@ sub stacktrace {
 
    defined $skip or $skip = 1; pop @lines while ($skip--);
 
-   return (join "\n", reverse @lines)."\n";
+   return wantarray ? reverse @lines : (join "\n", reverse @lines)."\n";
 }
 
 sub throw {
