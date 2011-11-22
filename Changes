@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+	 - Added Schema::WithLanguage
 	 - Storage::WithLanguage can dump
          - Storage::WithLanguage passes tests
          - Renamed Combinator to Storage::WithLanguage

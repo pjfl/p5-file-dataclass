@@ -18,8 +18,7 @@ has 'cache_attributes' => is => 'ro', isa => 'HashRef',
    default             => sub { return {} };
 has 'cache_class'      => is => 'ro', isa => 'ClassName',
    default             => q(CHI);
-has 'schema'           => is => 'ro', isa => 'Object',
-   required            => 1,
+has 'schema'           => is => 'ro', isa => 'Object', required => 1,
    handles             => { _debug          => q(debug),
                             exception_class => q(exception_class),
                             _log            => q(log), };
@@ -106,7 +105,7 @@ sub _get_key_and_newest {
 
    my $mtimes = $self->cache->get( $self->_mtimes_key ) || {};
 
-   for my $path (map { NUL.$_ } grep { $_->pathname } @{ $paths }) {
+   for my $path (grep { length } map { NUL.$_ } @{ $paths }) {
       $key .= $key ? q(~).$path : $path; my $mtime;
 
       if ($mtime = $mtimes->{ $path }) { $mtime > $newest and $newest = $mtime }
@@ -222,6 +221,13 @@ Sets the L<CHI> cache entry for the given key
 
 Set the L<CHI> cache entry for the compound key formed from the array ref
 C<$paths>
+
+=head2 _get_key_and_newest
+
+   ($key, $newest) = $schema->cache->_get_key_and_newest( $paths );
+
+Creates a key from the array ref of path names and also returns the most
+recent mod time. Will return undef for newest if the cache entry is invalid
 
 =head1 Diagnostics
 

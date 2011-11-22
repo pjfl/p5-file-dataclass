@@ -6,35 +6,11 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
-use File::DataClass::Constants;
-use File::DataClass::Storage::WithLanguage;
 use Moose;
 
 extends qw(File::DataClass::ResultSource);
 
-has 'lang'     => is => 'rw', isa => 'Str',
-   default     => NUL, trigger => \&_set_lang;
-has 'lang_dep' => is => 'rw', isa => 'Maybe[HashRef]';
-
-sub BUILD {
-   my $self    = shift;
-   my $storage = $self->storage;
-   my $class   = q(File::DataClass::Storage::WithLanguage);
-   my $attrs   = { lang => $self->lang, storage => $storage };
-
-   $self->lang_dep and blessed $storage ne $class
-      and $self->schema->storage( $class->new( $attrs ) );
-
-   return;
-}
-
-# Private methods
-
-sub _set_lang {
-   my ($self, $lang, $old_lang) = @_;
-
-   return defined $old_lang ? $self->storage->lang( $lang ) : undef;
-}
+has 'lang_dep' => is => 'ro', isa => 'HashRef', default => sub { {} };
 
 __PACKAGE__->meta->make_immutable;
 
@@ -58,21 +34,13 @@ File::DataClass::ResultSource::WithLanguage - Result source localisation
 
 =head1 Description
 
-If the result source is language dependent then an instance of
-L<File::DataClass::Combinator> is created as a proxy for the
-storage class
+Extends L<File::DataClass::ResultSource>
 
 =head1 Configuration and Environment
 
 Defines these attributes
 
 =over 3
-
-=item B<lang>
-
-The two character language code, e.g. de. The setting this attribute
-is propagated via a trigger to the attribute of the same name in the
-L<File::DataClass::Combinator> storage instance
 
 =item B<lang_dep>
 
@@ -83,12 +51,6 @@ to C<TRUE>
 
 =head1 Subroutines/Methods
 
-=head2 BUILD
-
-If the schema is language dependent then an instance of
-L<File::DataClass::Combinator> is created as a proxy for the
-storage class
-
 =head1 Diagnostics
 
 None
@@ -96,8 +58,6 @@ None
 =head1 Dependencies
 
 =over 3
-
-=item L<File::DataClass::Combinator>
 
 =item L<File::DataClass::ResultSource>
 
@@ -119,7 +79,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2010 Peter Flanigan. All rights reserved
+Copyright (c) 2011 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

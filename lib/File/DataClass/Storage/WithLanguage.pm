@@ -14,10 +14,11 @@ use Moose;
 extends qw(File::DataClass);
 
 has 'gettext' => is => 'ro', isa => 'Object', lazy_build => TRUE;
-has 'lang'    => is => 'rw', isa => 'Str',    required   => TRUE;
+has 'schema'  => is => 'ro', isa => 'Object', required   => TRUE,
+   handles    => [ qw(lang) ],                weak_ref   => TRUE;
 has 'storage' => is => 'ro', isa => 'Object', required   => TRUE,
    handles    => [ qw(_cache exception_class extn _is_stale _meta_pack
-                      _read_file schema txn_do validate_params) ];
+                      _read_file txn_do validate_params) ];
 
 with qw(File::DataClass::Util);
 
@@ -80,37 +81,15 @@ sub insert {
 sub load {
    my ($self, @paths) = @_; $paths[ 0 ] or return {};
 
-   my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
+   my ($key, $newest) = $self->_get_key_and_newest( \@paths );
+
+   my ($data, $meta)  = $self->_cache->get( $key );
 
    not $self->_is_stale( $data, $meta, $newest ) and return $data;
 
-   $data = {}; $newest = 0;
+   ($data, $newest)   = $self->_load( \@paths );
 
-   for my $path (@paths) {
-      my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
-
-      $red or next; $path_mtime > $newest and $newest = $path_mtime;
-
-      for (keys %{ $red }) {
-         $data->{ $_ } = exists $data->{ $_ }
-                       ? merge( $data->{ $_ }, $red->{ $_ } )
-                       : $red->{ $_ };
-      }
-
-      my $gettext = $self->_gettext( $path ); $gettext->path->is_file or next;
-
-      my $gettext_source_ref = $gettext->load->{ $gettext->source_name };
-
-      for my $key (keys %{ $gettext_source_ref }) {
-         my ($element, $attr_name, $msgid) = split m{ [\.] }msx, $key;
-
-         ($element and $attr_name and $msgid) or next;
-         $data->{ $element }->{ $msgid }->{ $attr_name }
-            = $gettext_source_ref->{ $key }->{msgstr}->[ 0 ];
-      }
-   }
-
-   $self->_cache->set_by_paths( \@paths, $data, $self->_meta_pack( $newest ) );
+   $self->_cache->set( $key, $data, $self->_meta_pack( $newest ) );
 
    return $data;
 }
@@ -132,7 +111,7 @@ sub update {
 # Private methods
 
 sub _build_gettext {
-   my $self = shift; return File::Gettext->new;
+   my $self = shift; return File::Gettext->new( ioc_obj => $self->schema );
 }
 
 sub _create_or_update {
@@ -165,6 +144,36 @@ sub _create_or_update {
    return $updated;
 }
 
+sub _get_key_and_newest {
+   my ($self, $paths) = @_; my $key; my $newest = 0; my $valid = TRUE;
+
+   my $mtimes = $self->_cache->get( $self->_cache->_mtimes_key ) || {};
+
+   for my $path (grep { length } map { NUL.$_ } @{ $paths }) {
+      $key .= $key ? q(~).$path : $path; my $mtime;
+
+      if ($mtime = $mtimes->{ $path }) { $mtime > $newest and $newest = $mtime }
+      else { $valid = FALSE }
+
+      my $lang_path = NUL.$self->_get_lang_file_path( $path );
+
+      if ($mtime = $mtimes->{ $lang_path }) {
+         $key .= $key ? q(~).$lang_path : $lang_path;
+         $mtime > $newest and $newest = $mtime;
+      }
+   }
+
+   return ($key, $valid ? $newest : undef);
+}
+
+sub _get_lang_file_path {
+   my ($self, $path) = @_; $path .= NUL;
+
+   my $file = $self->basename( $path, $self->extn ).q(_).$self->lang.q(.po);
+
+   return $self->io( $self->catfile( $self->dirname( $path ), $file ) );
+}
+
 sub _gettext {
    my ($self, $path) = @_;
 
@@ -172,12 +181,46 @@ sub _gettext {
    $self->lang or $self->throw( 'Language not specified' );
 
    my $gettext = $self->gettext;
-   my $dir     = $self->dirname ( $path );
-   my $file    = $self->basename( $path, $self->extn ).q(_).$self->lang.q(.po);
 
-   $gettext->path( $self->io( $self->catfile( $dir, $file ) ) );
+   $gettext->path( $self->_get_lang_file_path( $path ) );
 
    return $gettext;
+}
+
+sub _load {
+   my ($self, $paths) = @_; my $data = {}; my $newest = 0;
+
+   for my $path (@{ $paths }) {
+      my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
+
+      if ($red) {
+         for (keys %{ $red }) {
+            $data->{ $_ } = exists $data->{ $_ }
+                          ? merge( $data->{ $_ }, $red->{ $_ } )
+                          : $red->{ $_ };
+         }
+
+         $path_mtime > $newest and $newest = $path_mtime;
+      }
+
+      my $gettext = $self->_gettext( $path ); $gettext->path->is_file or next;
+
+      my $gettext_data = $gettext->load->{ $gettext->source_name };
+
+      for my $key (keys %{ $gettext_data }) {
+         my ($element, $attr_name, $msgid) = split m{ [\.] }msx, $key, 3;
+
+         ($element and $attr_name and $msgid) or next;
+
+         $data->{ $element }->{ $msgid }->{ $attr_name }
+            = $gettext_data->{ $key }->{msgstr}->[ 0 ];
+      }
+
+      $path_mtime = $gettext->path->stat->{mtime};
+      $path_mtime > $newest and $newest = $path_mtime;
+   }
+
+   return ($data, $newest);
 }
 
 # Private subroutines

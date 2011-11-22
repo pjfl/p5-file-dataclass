@@ -19,7 +19,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 15;
+   plan tests => 13;
 }
 
 sub test {
@@ -37,26 +37,25 @@ sub test {
    return $wantarray ? @{ $res } : $res;
 }
 
-use_ok( q(File::DataClass::Schema) );
-use_ok( q(File::DataClass::ResultSource::WithLanguage) );
+use_ok( q(File::DataClass::Schema::WithLanguage) );
 use_ok( q(File::Gettext) );
 
 my $default = catfile( qw(t default.xml) );
-my $schema  = File::DataClass::Schema->new
+my $schema  = File::DataClass::Schema::WithLanguage->new
    ( path => $default,
+     lang => q(en),
      result_source_attributes => {
         pages => {
            attributes => [ qw(columns heading) ],
            lang       => q(en),
            lang_dep   => { qw(heading 1) }, }, },
-     result_source_class => q(File::DataClass::ResultSource::WithLanguage),
      tempdir => q(t) );
 
 isa_ok( $schema, q(File::DataClass::Schema) );
 
-my $source = $schema->source( q(pages) );
+is( $schema->lang, q(en), 'Has language attribute' );
 
-is( $source->lang, q(en), 'Has language attribute' );
+my $source = $schema->source( q(pages) );
 
 my $rs = $source->resultset; my $args = {};
 
@@ -93,10 +92,7 @@ $e = test( $rs, q(delete), $args );
 
 ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
 
-$source->lang( q(de) );
-
-is( $source->storage->lang, q(de), 'Triggers storage language change' );
-
+$schema->lang( q(de) );
 $args->{name  }  = q(dummy);
 $args->{columns} = 3;
 $args->{heading} = q(This is a heading);
@@ -111,7 +107,9 @@ my $pofile = catfile( qw(t dumped_de.po) );
 
 $schema->dump( { data => $data, path => $dumped } );
 
-my $gettext = File::Gettext->new( path => $pofile ); $data = $gettext->load;
+my $gettext = File::Gettext->new( path => $pofile, tempdir => q(t) );
+
+$data = $gettext->load;
 
 my $text = $data->{ 'po' }->{ 'pages.heading.dummy' }->{ 'msgstr' }->[ 0 ];
 
