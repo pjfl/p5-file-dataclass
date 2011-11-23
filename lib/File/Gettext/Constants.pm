@@ -6,14 +6,14 @@ use strict;
 use warnings;
 use version; our $VERSION = qv( sprintf '0.4.%d', q$Rev$ =~ /\d+/gmx );
 
-my @constants;
+my @_constants;
 
 BEGIN {
-   @constants = ( qw(CONTEXT_SEP DIRECTORIES MAGIC_N MAGIC_V PLURAL_SEP) );
+   @_constants = ( qw(CONTEXT_SEP DIRECTORIES MAGIC_N MAGIC_V PLURAL_SEP) );
 }
 
 use Sub::Exporter -setup => {
-   exports => [ @constants ], groups => { default => [ @constants ], },
+   exports => [ @_constants ], groups => { default => [ @_constants ], },
 };
 
 sub CONTEXT_SEP () {
