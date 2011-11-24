@@ -40,6 +40,8 @@ sub test {
 use_ok( q(File::DataClass::Schema::WithLanguage) );
 use_ok( q(File::Gettext) );
 
+use File::Gettext::Constants;
+
 my $default = catfile( qw(t default.xml) );
 my $schema  = File::DataClass::Schema::WithLanguage->new
    ( path => $default,
@@ -111,7 +113,8 @@ my $gettext = File::Gettext->new( path => $pofile, tempdir => q(t) );
 
 $data = $gettext->load;
 
-my $text = $data->{ 'po' }->{ 'pages.heading.dummy' }->{ 'msgstr' }->[ 0 ];
+my $key  = 'pages.heading'.CONTEXT_SEP().'dummy';
+my $text = $data->{ 'po' }->{ $key }->{ 'msgstr' }->[ 0 ];
 
 ok( $text eq 'This is a heading', 'Dumps' );
 

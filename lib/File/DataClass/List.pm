@@ -10,10 +10,10 @@ use Moose;
 
 with qw(File::DataClass::Constraints);
 
-has 'found'  => is => 'rw', isa => 'Bool',     default => 0;
-has 'labels' => is => 'rw', isa => 'HashRef',  default => sub { return {} };
-has 'list'   => is => 'rw', isa => 'ArrayRef', default => sub { return [] };
-has 'result' => is => 'rw', isa => 'Maybe[F_DC_Result]';
+has 'found'  => is => 'ro', isa => 'Bool',     default => 0;
+has 'labels' => is => 'ro', isa => 'HashRef',  default => sub { return {} };
+has 'list'   => is => 'ro', isa => 'ArrayRef', default => sub { return [] };
+has 'result' => is => 'ro', isa => 'Maybe[F_DC_Result]';
 
 __PACKAGE__->meta->make_immutable;
 

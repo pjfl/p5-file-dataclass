@@ -16,8 +16,7 @@ has '_resultset' => is => 'ro', isa => 'Object', required => 1,
 sub BUILD {
    my ($self, $args) = @_; my $class = blessed $self;
 
-   my %types = ( qw(SCALAR Maybe[Str]
-                    ARRAY  Maybe[ArrayRef]
+   my %types = ( qw(SCALAR Maybe[Str] ARRAY  Maybe[ArrayRef]
                     HASH   Maybe[HashRef]) );
 
    for (@{ $self->_source->attributes }) {

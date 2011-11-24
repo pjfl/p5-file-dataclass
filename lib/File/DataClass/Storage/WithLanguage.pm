@@ -15,9 +15,9 @@ extends qw(File::DataClass);
 
 has 'gettext' => is => 'ro', isa => 'Object', lazy_build => TRUE;
 has 'schema'  => is => 'ro', isa => 'Object', required   => TRUE,
-   handles    => [ qw(lang) ],                weak_ref   => TRUE;
+   handles    => [ qw(cache lang) ],         weak_ref   => TRUE;
 has 'storage' => is => 'ro', isa => 'Object', required   => TRUE,
-   handles    => [ qw(_cache exception_class extn _is_stale _meta_pack
+   handles    => [ qw(exception_class extn _is_stale _meta_pack
                       _read_file txn_do validate_params) ];
 
 with qw(File::DataClass::Util);
@@ -83,13 +83,13 @@ sub load {
 
    my ($key, $newest) = $self->_get_key_and_newest( \@paths );
 
-   my ($data, $meta)  = $self->_cache->get( $key );
+   my ($data, $meta)  = $self->cache->get( $key );
 
    not $self->_is_stale( $data, $meta, $newest ) and return $data;
 
    ($data, $newest)   = $self->_load( \@paths );
 
-   $self->_cache->set( $key, $data, $self->_meta_pack( $newest ) );
+   $self->cache->set( $key, $data, $self->_meta_pack( $newest ) );
 
    return $data;
 }
@@ -118,13 +118,13 @@ sub _create_or_update {
    my ($self, $path, $result, $updating) = @_;
 
    my $source    = $result->_resultset->source;
-   my $condition = sub { !$source->lang_dep || !$source->lang_dep->{ $_[0] } };
+   my $condition = sub { not $source->lang_dep->{ $_[ 0 ] } };
    my $updated   = $self->storage->_create_or_update( $path, $result,
                                                       $updating, $condition );
    my $rs        = $self->_gettext( $path )->resultset;
    my $element   = $source->name;
 
-   $condition = sub { $source->lang_dep && $source->lang_dep->{ $_[0] } };
+   $condition = sub { $source->lang_dep->{ $_[ 0 ] } };
 
    for my $attr_name (__get_attributes( $condition, $source )) {
       my $msgstr = $result->$attr_name() or next;
@@ -147,7 +147,7 @@ sub _create_or_update {
 sub _get_key_and_newest {
    my ($self, $paths) = @_; my $key; my $newest = 0; my $valid = TRUE;
 
-   my $mtimes = $self->_cache->get( $self->_cache->_mtimes_key ) || {};
+   my $mtimes = $self->cache->get_mtimes;
 
    for my $path (grep { length } map { NUL.$_ } @{ $paths }) {
       $key .= $key ? q(~).$path : $path; my $mtime;
@@ -208,7 +208,8 @@ sub _load {
       my $gettext_data = $gettext->load->{ $gettext->source_name };
 
       for my $key (keys %{ $gettext_data }) {
-         my ($element, $attr_name, $msgid) = split m{ [\.] }msx, $key, 3;
+         my ($msgctxt, $msgid)     = $gettext->storage->decompose_key( $key );
+         my ($element, $attr_name) = split m{ [\.] }msx, $msgctxt, 2;
 
          ($element and $attr_name and $msgid) or next;
 

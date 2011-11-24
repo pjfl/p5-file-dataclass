@@ -3,17 +3,16 @@
 package File::MailAlias;
 
 use strict;
-use warnings;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
+use Moose;
+use IPC::Cmd qw( can_run run );
+use English  qw( -no_match_vars );
 use File::DataClass::Constants;
 use File::DataClass::IO ();
-use English  qw( -no_match_vars );
-use IPC::Cmd qw( can_run run );
 use File::Copy;
 use File::Spec;
-use Moose;
 
 extends qw(File::DataClass::Schema);
 
@@ -49,17 +48,16 @@ has 'source_name' => is => 'ro', isa => 'Str', default => q(aliases);
 around BUILDARGS => sub {
    my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
 
-   $car or return $class->$orig();
+   (not $car or blessed $car) and return $class->$orig( $car, @cdr );
 
-   if    (blessed $car)      { return $class->$orig( $car, @cdr ) }
-   elsif (ref $car eq HASH)  { $attrs         = $car }
+   if    (ref $car eq HASH)  { $attrs         = $car }
    elsif (ref $car eq ARRAY) { $attrs->{path} = $class->catfile( @{ $car } ) }
    else                      { $attrs->{path} = $car.NUL }
 
    $cdr[ 0 ] and $attrs->{system_aliases} =   $cdr[ 0 ];
    $cdr[ 1 ] and $attrs->{newaliases    } = [ $cdr[ 1 ] ];
 
-   return $attrs;
+   return $class->$orig( $attrs );
 };
 
 around 'resultset' => sub {

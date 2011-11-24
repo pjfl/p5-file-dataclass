@@ -242,27 +242,25 @@ sub _find {
 }
 
 sub _list {
-   my ($self, $name) = @_; my ($attr, $attrs);
+   my ($self, $name) = @_; my ($attr, $attrs, $labels); my $found = FALSE;
 
-   my $new = $self->list_class->new; my $results = $self->select;
+   my $results = $self->select; my $list = [ sort keys %{ $results } ];
 
-   $new->list( [ sort keys %{ $results } ] );
-
-   if ($attr = $self->label_attr) {
-      my %labels = map { $_ => $results->{ $_ }->{ $attr } } @{ $new->list };
-
-      $new->labels( \%labels );
-   }
+   $attr = $self->label_attr
+      and $labels = { map { $_ => $results->{ $_ }->{ $attr } } @{ $list } };
 
    if ($name and exists $results->{ $name }) {
-      $attrs = { %{ $results->{ $name } }, name => $name };
-      $new->found( TRUE );
+      $attrs = { %{ $results->{ $name } }, name => $name }; $found = TRUE;
    }
    else { $attrs = { name => $name } }
 
-   $new->result( $self->_create_result( $attrs ) );
+   my $result = $self->_create_result( $attrs );
 
-   return $new;
+   $attrs = { found => $found, list => $list, result => $result, };
+
+   $labels and $attrs->{labels} = $labels;
+
+   return $self->list_class->new( $attrs );
 }
 
 sub _push {

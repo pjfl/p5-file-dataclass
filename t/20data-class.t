@@ -90,7 +90,8 @@ ok( $e =~ m{ \QResult source globals unknown\E }msx, 'Result source unknown' );
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw(t default.xml) ],
-     result_source_attributes => { globals => {}, },
+     result_source_attributes => {
+        globals => { attributes => [ qw(text) ], }, },
      tempdir => q(t) );
 
 my $rs = test( $schema, q(resultset), q(globals) );
@@ -107,7 +108,7 @@ ok( !defined $res, 'Creates dummy element but does not insert' );
 
 my $source = $schema->source( q(globals) );
 
-$source->attributes( [ qw(text) ] ); $args->{text} = q(value1);
+$args->{text} = q(value1);
 
 $res = test( $rs, q(create), $args );
 
@@ -137,10 +138,10 @@ ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw(t default.xml) ],
-     result_source_attributes => { fields => {}, },
+     result_source_attributes => {
+        fields => { attributes => [ qw(width) ], }, },
      tempdir => q(t) );
 
-$schema->source( q(fields) )->attributes( [ qw(width) ] );
 $rs   = $schema->resultset( q(fields) );
 $args = { name => q(feedback.body) };
 $res  = test( $rs, q(list), $args );
@@ -149,10 +150,10 @@ ok( $res->result->width == 72 && scalar @{ $res->list } == 3, 'Can list' );
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw(t default.xml) ],
-     result_source_attributes => { levels => {}, },
+     result_source_attributes => {
+        levels => { attributes => [ qw(acl state) ] }, },
      tempdir => q(t) );
 
-$schema->source( q(levels) )->attributes( [ qw(acl state) ] );
 $rs   = $schema->resultset( q(levels) );
 $args = { list => q(acl), name => q(admin) };
 $args->{items} = [ qw(group1 group2) ];

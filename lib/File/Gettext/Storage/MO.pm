@@ -13,6 +13,8 @@ use Moose;
 
 extends qw(File::DataClass::Storage);
 
+has '+extn' => default => q(.mo);
+
 augment '_read_file' => sub {
    my ($self, $rdr) = @_; return $self->_read_filter( $rdr );
 };

@@ -11,13 +11,13 @@ use Moose;
 
 use File::DataClass::ResultSet;
 
-has 'attributes'           => is => 'rw', isa => 'ArrayRef[Str]',
+has 'attributes'           => is => 'ro', isa => 'ArrayRef[Str]',
    default                 => sub { [] };
-has 'defaults'             => is => 'rw', isa => 'HashRef',
+has 'defaults'             => is => 'ro', isa => 'HashRef',
    default                 => sub { {} };
-has 'name'                 => is => 'rw', isa => 'Str',
+has 'name'                 => is => 'ro', isa => 'Str',
    default                 => NUL;
-has 'label_attr'           => is => 'rw', isa => 'Str',
+has 'label_attr'           => is => 'ro', isa => 'Str',
    default                 => NUL;
 has 'resultset_attributes' => is => 'ro', isa => 'HashRef',
    default                 => sub { {} };

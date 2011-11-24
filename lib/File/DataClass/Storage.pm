@@ -17,8 +17,8 @@ use Try::Tiny;
 
 extends qw(File::DataClass);
 
-has 'backup' => is => 'rw', isa => 'Str',    default  => NUL;
-has 'extn'   => is => 'rw', isa => 'Str',    default  => NUL;
+has 'backup' => is => 'ro', isa => 'Str',    default  => NUL;
+has 'extn'   => is => 'ro', isa => 'Str',    default  => NUL;
 has 'schema' => is => 'ro', isa => 'Object', required => 1, weak_ref => TRUE,
    handles => { _cache          => q(cache),           _debug => q(debug),
                 exception_class => q(exception_class), _lock  => q(lock),
@@ -167,8 +167,9 @@ sub _create_or_update {
                     args  => [ $path, $name ], level => 4 );
    }
 
+   my $filter  = sub { __get_src_attributes( $condition, $_[ 0 ] ) };
    my $updated = File::DataClass::HashMerge->merge
-      ( $result, \$data->{ $element }->{ $name }, $condition );
+      ( \$data->{ $element }->{ $name }, $result, $filter );
 
    if ($updated) { $self->_write_file( $path, $data, not $updating ) }
    else { $self->_lock->reset( k => $path ) }
@@ -214,9 +215,7 @@ sub _read_file {
       }
       else { $data = undef }
    }
-   else {
-      $self->_debug and $self->_log->debug( "Read cache $path" );
-   }
+   else { $self->_debug and $self->_log->debug( "Read cache $path" ) }
 
    $for_update or $self->_lock->reset( k => $path );
 
@@ -243,6 +242,16 @@ sub _write_file {
    $self->_cache->remove( $path );
    $self->_lock->reset( k => $path );
    return $data;
+}
+
+# Private subroutines
+
+sub __get_src_attributes {
+   my ($condition, $src) = @_;
+
+   return grep { not m{ \A _ }mx
+                 and $_ ne q(name)
+                 and $condition->( $_ ) } keys %{ $src };
 }
 
 __PACKAGE__->meta->make_immutable;

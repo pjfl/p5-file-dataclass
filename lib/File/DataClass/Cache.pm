@@ -45,12 +45,15 @@ sub get_by_paths {
    return ($self->get( $key ), $newest);
 }
 
+sub get_mtimes {
+   my $self = shift; return $self->cache->get( $self->_mtimes_key ) || {};
+}
+
 sub remove {
    my ($self, $key) = @_; $key or return; $key .= NUL;
 
-   my $mtimes = $self->cache->get( $self->_mtimes_key ) || {};
+   my $mtimes = $self->get_mtimes; delete $mtimes->{ $key };
 
-   delete $mtimes->{ $key };
    $self->cache->set( $self->_mtimes_key, $mtimes );
    $self->cache->remove( $key );
    return;
@@ -69,9 +72,8 @@ sub set {
    if ($key and defined $data) {
       $self->cache->set( $key, { data => $data, meta => $meta } );
 
-      my $mtimes = $self->cache->get( $mt_key ) || {};
+      my $mtimes = $self->get_mtimes; $mtimes->{ $key } = $meta->{mtime};
 
-      $mtimes->{ $key } = $meta->{mtime};
       $self->cache->set( $mt_key, $mtimes );
    }
 
@@ -101,9 +103,9 @@ sub _build_cache {
 }
 
 sub _get_key_and_newest {
-   my ($self, $paths) = @_; my $key; my $newest = 0; my $valid = TRUE;
+   my ($self, $paths) = @_;
 
-   my $mtimes = $self->cache->get( $self->_mtimes_key ) || {};
+   my $mtimes = $self->get_mtimes; my $newest = 0; my $valid = TRUE;  my $key;
 
    for my $path (grep { length } map { NUL.$_ } @{ $paths }) {
       $key .= $key ? q(~).$path : $path; my $mtime;
@@ -202,6 +204,12 @@ with a key of C<mtime> and a value of C<0>
 The paths passed in the array ref are concatenated to form a compound key.
 The L<CHI> cache entry is fetched and the data and meta data returned along
 with the modification time of the newest file in the list of paths
+
+=head2 get_mtimes
+
+   $hash_ref = $schema->cache->get_mtimes
+
+Returns a hash ref of files in the cache and their mod times
 
 =head2 remove
 

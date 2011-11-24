@@ -10,13 +10,13 @@ use File::DataClass::Constants;
 use Carp;
 
 sub merge {
-   my ($self, $src, $dest_ref, $condition) = @_; my $updated = FALSE;
+   my ($self, $dest_ref, $src, $filter) = @_; my $updated = FALSE;
 
    $dest_ref or croak 'No destination reference specified';
 
-   $src ||= {}; ${ $dest_ref } ||= {}; $condition ||= sub { return TRUE };
+   ${ $dest_ref } ||= {}; $src ||= {}; $filter ||= sub { keys %{ $_[ 0 ] } };
 
-   for my $attr (__get_src_attributes( $condition, $src )) {
+   for my $attr ($filter->( $src )) {
       if (defined $src->{ $attr }) {
          my $res = $self->_merge_attr
             ( $src->{ $attr }, \${ $dest_ref }->{ $attr } );
@@ -97,16 +97,6 @@ sub _merge_attr_hashes {
    return $updated;
 }
 
-# Private subroutines
-
-sub __get_src_attributes {
-   my ($condition, $src) = @_;
-
-   return grep { not m{ \A _ }mx
-                 and $_ ne q(name)
-                 and $condition->( $_ ) } keys %{ $src };
-}
-
 1;
 
 __END__
@@ -137,10 +127,10 @@ Merge the attributes from the source hash ref into destination ref
 =head2 merge
 
    $class = q(File::DataClass::HashMerge);
-   $bool  = $class->merge( $src, $dest_ref, $condition );
+   $bool  = $class->merge( $dest_ref, $src, $filter );
 
 Only merge the attributes from C<$src> to C<$dest_ref> if the
-C<$condition> coderef evaluates to true. Return true if the destination
+C<$filter> coderef evaluates returns the,. Return true if the destination
 ref was updated
 
 =head1 Diagnostics
@@ -171,7 +161,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2010 Peter Flanigan. All rights reserved
+Copyright (c) 2011 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

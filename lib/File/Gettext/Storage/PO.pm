@@ -9,9 +9,12 @@ use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 use Date::Format ();
 use Encode qw(decode encode);
 use File::DataClass::Constants;
+use File::Gettext::Constants;
 use Moose;
 
 extends qw(File::DataClass::Storage);
+
+has '+extn' => default => q(.po);
 
 augment '_read_file' => sub {
    my ($self, $rdr) = @_;
@@ -26,10 +29,19 @@ augment '_write_file' => sub {
    return $data;
 };
 
+sub decompose_key {
+   my ($self, $key) = @_; my $sep = CONTEXT_SEP;
+
+   0 >= index $key, $sep and return (NUL, $key);
+
+   return split m{ $sep }msx, $key, 2;
+}
+
 sub make_key {
    my ($self, $rec) = @_;
 
-   return (exists $rec->{msgctxt} ? $rec->{msgctxt}.q(.) : NUL).$rec->{msgid};
+   return (exists $rec->{msgctxt}
+           ? $rec->{msgctxt}.CONTEXT_SEP : NUL).$rec->{msgid};
 }
 
 # Private read methods
@@ -415,6 +427,8 @@ File::Gettext::Storage::PO - Storage class for GNU gettext portable object forma
 =head1 Description
 
 =head1 Subroutines/Methods
+
+=head2 decompose_key
 
 =head2 make_key
 

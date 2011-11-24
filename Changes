@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+	 - Fixed bug in File::MailAlias BUILDARGS not using ioc_obj
 	 - Added Schema::WithLanguage
 	 - Storage::WithLanguage can dump
          - Storage::WithLanguage passes tests

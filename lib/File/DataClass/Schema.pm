@@ -152,9 +152,7 @@ sub _build_cache {
 }
 
 sub _build_lock {
-   my $self = shift;
-
-   $self->Lock and return $self->Lock;
+   my $self = shift; my $lock = $self->Lock; $lock and return $lock;
 
    $self->lock_class eq q(none) and return Class::Null->new;
 
