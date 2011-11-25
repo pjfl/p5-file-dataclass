@@ -44,10 +44,7 @@ has '+result_source_attributes' =>
          attributes  =>
             [ qw(translator_comment extracted_comment reference flags
                  previous msgctxt msgid msgid_plural msgstr) ],
-         defaults    => {
-            'translator_comment' => [], 'extracted_comment' => [],
-            'flags'              => [], 'previous'          => [],
-            'msgstr'             => [], },
+         defaults    => { 'flags' => [], 'msgstr' => [], },
       }, } };
 has '+storage_class' => default => q(+File::Gettext::Storage::PO);
 has 'source_name'    => is => 'ro', isa => enum( [ qw(mo po) ] ),

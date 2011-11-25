@@ -159,12 +159,11 @@ sub _default_po_header {
    my $year       = __time2str( "%Y" );
 
    return {
-      'translator_comment' =>
-         [ '@(#)$Id'.'$',
-           'GNU Gettext Portable Object.',
-           "Copyright (C) ${year} ${company}.",
-           "${translator} ${email}, ${year}.",
-           '', ],
+      'translator_comment' => join "\n", ( '@(#)$Id'.'$',
+                                           'GNU Gettext Portable Object.',
+                                           "Copyright (C) ${year} ${company}.",
+                                           "${translator} ${email}, ${year}.",
+                                           '', ),
       flags       => [ 'fuzzy', ],
       msgstr      => {
          'project_id_version'        => "${appname} ${VERSION}",
@@ -179,13 +178,14 @@ sub _default_po_header {
 }
 
 sub _get_comment_lines {
-   my ($self, $prefix, $values) = @_; my $lines = [];
+   my ($self, $attr_name, $values, $prefix) = @_; my $lines = [];
 
-   for my $value (@{ $values || [] }) {
-      my $line = $prefix.$value;
+   $attr_name eq q(flags) and return [ $prefix.SPC.(join q(, ), @{ $values }) ];
 
-      2 == length $line and $line =~ s{ \s \z }{}msx;
-      push @{ $lines }, $line;
+   $values =~ m{ [\n] \z }msx and $values .= SPC;
+
+   for my $line (map { $prefix.$_ } split m{ [\n] }msx, $values) {
+      $line =~ s{ \# \s+ \z }{\#}msx; push @{ $lines }, $line;
    }
 
    return $lines;
@@ -195,9 +195,7 @@ sub _get_lines {
    my ($self, $attr_name, $values) = @_; my ($cpref, $lines);
 
    if ($cpref = __comment_prefix( $attr_name )) {
-      $attr_name eq q(flags) and $values = [ SPC.(join q(, ), @{ $values }) ];
-
-      $lines = $self->_get_comment_lines( $cpref, $values );
+      $lines = $self->_get_comment_lines( $attr_name, $values, $cpref );
    }
    elsif (ref $values eq ARRAY) {
       if (@{ $values } > 1) {
@@ -349,16 +347,15 @@ sub __quote {
 }
 
 sub __store_comment {
-   my ($rec, $line, $attr) = @_; $rec->{ $attr } ||= [];
+   my ($rec, $line, $attr) = @_;
 
    my $value = length $line > 1 ? substr $line, 2 : NUL;
 
    if ($attr eq q(flags)) {
-      my @values = map { s{ \s+ }{}msx; $_ } split m{ [,] }msx, $value;
-
-      push @{ $rec->{ $attr } }, @values;
+      push @{ $rec->{ $attr } }, map    { s{ \s+ }{}msx; $_ }
+                                 split m{ [,]      }msx, $value;
    }
-   else { push @{ $rec->{ $attr } }, $value }
+   else { $rec->{ $attr } .= $rec->{ $attr } ? "\n".$value : $value }
 
    return;
 }
