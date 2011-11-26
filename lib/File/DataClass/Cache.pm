@@ -45,36 +45,32 @@ sub get_by_paths {
    return ($self->get( $key ), $newest);
 }
 
-sub get_mtimes {
-   my $self = shift; return $self->cache->get( $self->_mtimes_key ) || {};
+sub get_mtime {
+   my ($self, $k) = @_; $k or return;
+
+   my $mtimes = $self->cache->get( $self->_mtimes_key ) || {};
+
+   return $mtimes->{ $k };
 }
 
 sub remove {
    my ($self, $key) = @_; $key or return; $key .= NUL;
 
-   my $mtimes = $self->get_mtimes; delete $mtimes->{ $key };
-
-   $self->cache->set( $self->_mtimes_key, $mtimes );
-   $self->cache->remove( $key );
+   $self->cache->remove( $key ); $self->set_mtime( $key, undef );
    return;
 }
 
 sub set {
-   my ($self, $key, $data, $meta) = @_;
+   my ($self, $key, $data, $meta) = @_; my $mt_key = $self->_mtimes_key;
 
    $key .= NUL; $meta ||= {}; $meta->{mtime} ||= undef;
-
-   my $mt_key = $self->_mtimes_key;
 
    $key eq $mt_key and $self->throw( error => 'Cache key "[_1]" not allowed',
                                      args  => [ $mt_key ] );
 
    if ($key and defined $data) {
       $self->cache->set( $key, { data => $data, meta => $meta } );
-
-      my $mtimes = $self->get_mtimes; $mtimes->{ $key } = $meta->{mtime};
-
-      $self->cache->set( $mt_key, $mtimes );
+      $self->set_mtime( $key, $meta->{mtime} );
    }
 
    return ($data, $meta);
@@ -85,9 +81,18 @@ sub set_by_paths {
 
    my ($key, $newest) = $self->_get_key_and_newest( $paths );
 
-   $meta->{mtime} = $newest;
+   $meta->{mtime} = $newest; return $self->set( $key, $data, $meta );
+}
 
-   return $self->set( $key, $data, $meta );
+sub set_mtime {
+   my ($self, $k, $v) = @_;
+
+   my $mtimes = $self->cache->get( $self->_mtimes_key ) || {};
+
+   if (defined $v) { $mtimes->{ $k } = $v }
+   else { delete $mtimes->{ $k } }
+
+   return $self->cache->set( $self->_mtimes_key, $mtimes );
 }
 
 # Private methods
@@ -103,14 +108,12 @@ sub _build_cache {
 }
 
 sub _get_key_and_newest {
-   my ($self, $paths) = @_;
-
-   my $mtimes = $self->get_mtimes; my $newest = 0; my $valid = TRUE;  my $key;
+   my ($self, $paths) = @_; my $newest = 0; my $valid = TRUE;  my $key;
 
    for my $path (grep { length } map { NUL.$_ } @{ $paths }) {
-      $key .= $key ? q(~).$path : $path; my $mtime;
+      $key .= $key ? q(~).$path : $path; my $mtime = $self->get_mtime( $path );
 
-      if ($mtime = $mtimes->{ $path }) { $mtime > $newest and $newest = $mtime }
+      if ($mtime) { $mtime > $newest and $newest = $mtime }
       else { $valid = FALSE }
    }
 
@@ -205,11 +208,12 @@ The paths passed in the array ref are concatenated to form a compound key.
 The L<CHI> cache entry is fetched and the data and meta data returned along
 with the modification time of the newest file in the list of paths
 
-=head2 get_mtimes
+=head2 get_mtime
 
-   $hash_ref = $schema->cache->get_mtimes
+   $mod_time = $schema->cache->get_mtime( $key );
 
-Returns a hash ref of files in the cache and their mod times
+Returns the mod time of a file if it's in the cache. Returns undef if it is not.
+Returns zero if the filesystem was checked and the file did not exist
 
 =head2 remove
 
@@ -229,6 +233,13 @@ Sets the L<CHI> cache entry for the given key
 
 Set the L<CHI> cache entry for the compound key formed from the array ref
 C<$paths>
+
+=head2 set_mtime
+
+   $schema->cache->set_mtime( $key, $value );
+
+Sets the mod time in the cache for the given key. Setting the mod time to
+zero means the filesystem was checked and the file did not exist
 
 =head2 _get_key_and_newest
 

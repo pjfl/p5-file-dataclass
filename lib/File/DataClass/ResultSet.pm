@@ -38,9 +38,21 @@ sub all {
 sub create {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $res  = $self->_txn_do( sub { $self->_create_result( $args )->insert } );
+   my $res = $self->_txn_do( sub { $self->_create_result( $args )->insert } );
 
    return $res ? $name : undef;
+}
+
+sub create_or_update {
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+
+   my $res = $self->_txn_do( sub {
+      my $res; $res = $self->find_and_update( $args ) and return $res;
+
+      return $self->_create_result( $args )->insert;
+   } );
+
+   return $res ? $name : $res;
 }
 
 sub delete {
@@ -434,6 +446,13 @@ keys; I<name> of the element to create and I<fields> is a hash
 containing the attributes of the new element. Missing attributes are
 defaulted from the I<defaults> attribute of the
 L<File::DataClass::Schema> object. Returns the new element's name
+
+=head2 create_or_update
+
+   $element_name = $rs->create_or_update( $args );
+
+Creates a new element if it does not already exist, updates the existsing
+one if it does. Calls L</find_and_update>
 
 =head2 delete
 

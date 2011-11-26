@@ -15,7 +15,7 @@ extends qw(File::DataClass);
 
 has 'gettext' => is => 'ro', isa => 'Object', lazy_build => TRUE;
 has 'schema'  => is => 'ro', isa => 'Object', required   => TRUE,
-   handles    => [ qw(cache lang) ],         weak_ref   => TRUE;
+   handles    => [ qw(cache lang) ],          weak_ref   => TRUE;
 has 'storage' => is => 'ro', isa => 'Object', required   => TRUE,
    handles    => [ qw(exception_class extn _is_stale _meta_pack
                       _read_file txn_do validate_params) ];
@@ -25,9 +25,9 @@ with qw(File::DataClass::Util);
 sub delete {
    my ($self, $path, $result) = @_;
 
-   my $deleted   = $self->storage->delete( $path, $result );
    my $source    = $result->_resultset->source;
-   my $condition = sub { $source->lang_dep && $source->lang_dep->{ $_[ 0 ] } };
+   my $condition = sub { $source->lang_dep->{ $_[ 0 ] } };
+   my $deleted   = $self->storage->delete( $path, $result );
    my $rs        = $self->_gettext( $path )->resultset;
    my $element   = $source->name;
 
@@ -134,44 +134,54 @@ sub _create_or_update {
 
       $attrs->{name} = $rs->storage->make_key( $attrs );
 
-      my $name   = $updating ? $rs->update( $attrs ) : $rs->create( $attrs );
+      my $name   = $updating ? $rs->create_or_update( $attrs )
+                             : $rs->create( $attrs );
 
       $updated ||= $name ? TRUE : FALSE;
    }
 
    $updating and not $updated and $self->throw( 'Nothing updated' );
 
-   return $updated;
+   $updated and $path->touch; return $updated;
 }
 
 sub _get_key_and_newest {
    my ($self, $paths) = @_; my $key; my $newest = 0; my $valid = TRUE;
 
-   my $mtimes = $self->cache->get_mtimes;
-
    for my $path (grep { length } map { NUL.$_ } @{ $paths }) {
-      $key .= $key ? q(~).$path : $path; my $mtime;
+      $key .= $key ? q(~).$path : $path;
 
-      if ($mtime = $mtimes->{ $path }) { $mtime > $newest and $newest = $mtime }
+      my $mtime = $self->cache->get_mtime( $path );
+
+      if ($mtime) { $mtime > $newest and $newest = $mtime }
       else { $valid = FALSE }
 
-      my $lang_path = NUL.$self->_get_lang_file_path( $path );
+      my $lang_path = $self->_get_lang_path( $path );
 
-      if ($mtime = $mtimes->{ $lang_path }) {
-         $key .= $key ? q(~).$lang_path : $lang_path;
-         $mtime > $newest and $newest = $mtime;
+      if (defined ($mtime = $self->cache->get_mtime( NUL.$lang_path ))) {
+         if ($mtime) {
+            $key .= $key ? q(~).$lang_path : $lang_path;
+            $mtime > $newest and $newest = $mtime;
+         }
+      }
+      else {
+         if ($lang_path->is_file) {
+            $key .= $key ? q(~).$lang_path : $lang_path; $valid = FALSE;
+         }
+         else { $self->cache->set_mtime( NUL.$lang_path, 0 ) }
       }
    }
 
    return ($key, $valid ? $newest : undef);
 }
 
-sub _get_lang_file_path {
+sub _get_lang_path {
    my ($self, $path) = @_; $path .= NUL;
 
-   my $file = $self->basename( $path, $self->extn ).q(_).$self->lang.q(.po);
+   my $extn = $self->gettext->storage->extn;
+   my $file = $self->basename( $path, $self->extn ).q(_).$self->lang.$extn;
 
-   return $self->io( $self->catfile( $self->dirname( $path ), $file ) );
+   return $self->io( [ $self->dirname( $path ), $file ] );
 }
 
 sub _gettext {
@@ -179,12 +189,9 @@ sub _gettext {
 
    $path       or $self->throw( 'Path not specified' );
    $self->lang or $self->throw( 'Language not specified' );
+   $self->gettext->path( $self->_get_lang_path( $path ) );
 
-   my $gettext = $self->gettext;
-
-   $gettext->path( $self->_get_lang_file_path( $path ) );
-
-   return $gettext;
+   return $self->gettext;
 }
 
 sub _load {
@@ -196,29 +203,14 @@ sub _load {
       if ($red) {
          for (keys %{ $red }) {
             $data->{ $_ } = exists $data->{ $_ }
-                          ? merge( $data->{ $_ }, $red->{ $_ } )
-                          : $red->{ $_ };
+                          ? merge( $data->{ $_ }, $red->{ $_ } ) : $red->{ $_ };
          }
 
          $path_mtime > $newest and $newest = $path_mtime;
       }
 
-      my $gettext = $self->_gettext( $path ); $gettext->path->is_file or next;
-
-      my $gettext_data = $gettext->load->{ $gettext->source_name };
-
-      for my $key (keys %{ $gettext_data }) {
-         my ($msgctxt, $msgid)     = $gettext->storage->decompose_key( $key );
-         my ($element, $attr_name) = split m{ [\.] }msx, $msgctxt, 2;
-
-         ($element and $attr_name and $msgid) or next;
-
-         $data->{ $element }->{ $msgid }->{ $attr_name }
-            = $gettext_data->{ $key }->{msgstr}->[ 0 ];
-      }
-
-      $path_mtime = $gettext->path->stat->{mtime};
-      $path_mtime > $newest and $newest = $path_mtime;
+      $path_mtime = __load_gettext( $data, $self->_gettext( $path ) );
+      $path_mtime and $path_mtime > $newest and $newest = $path_mtime;
    }
 
    return ($data, $newest);
@@ -232,6 +224,24 @@ sub __get_attributes {
    return grep { not m{ \A _ }msx
                  and $_ ne q(name)
                  and $condition->( $_ ) } @{ $source->attributes || [] };
+}
+
+sub __load_gettext {
+   my ($data, $gettext) = @_; $gettext->path->is_file or return;
+
+   my $gettext_data = $gettext->load->{ $gettext->source_name };
+
+   for my $key (keys %{ $gettext_data }) {
+      my ($msgctxt, $msgid)     = $gettext->storage->decompose_key( $key );
+      my ($element, $attr_name) = split m{ [\.] }msx, $msgctxt, 2;
+
+      ($element and $attr_name and $msgid) or next;
+
+      $data->{ $element }->{ $msgid }->{ $attr_name }
+         = $gettext_data->{ $key }->{msgstr}->[ 0 ];
+   }
+
+   return $gettext->path->stat->{mtime};
 }
 
 __PACKAGE__->meta->make_immutable;

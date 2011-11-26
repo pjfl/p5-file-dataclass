@@ -43,17 +43,16 @@ sub delete {
       return TRUE;
    }
 
-   $self->_lock->reset( k => $path->pathname );
+   $self->_lock->reset( k => $path );
    return FALSE;
 }
 
 sub dump {
    my ($self, $path, $data) = @_;
 
-   $self->validate_params( $path, TRUE );
-   $self->_lock->set( k => $path );
-
-   return $self->_write_file( $path, $data, TRUE );
+   return $self->txn_do( $path, sub {
+      $self->_lock->set( k => $path );
+      $self->_write_file( $path, $data, TRUE ) } );
 }
 
 sub insert {
@@ -81,8 +80,7 @@ sub load {
 
       for (keys %{ $red }) {
          $data->{ $_ } = exists $data->{ $_ }
-                       ? merge( $data->{ $_ }, $red->{ $_ } )
-                       : $red->{ $_ };
+                       ? merge( $data->{ $_ }, $red->{ $_ } ) : $red->{ $_ };
       }
    }
 
@@ -108,18 +106,18 @@ sub txn_do {
 
    my $key = q(txn:).$path; my $wantarray = wantarray; my $res;
 
-   try {
-      $self->_lock->set( k => $key );
+   $self->_lock->set( k => $key );
 
+   try {
       if ($wantarray) { @{ $res } = $code_ref->() }
       else { $res = $code_ref->() }
-
-      $self->_lock->reset( k => $key );
    }
    catch {
       $self->_lock->reset( k => $key );
       $self->throw( error => $_, level => 7 );
    };
+
+   $self->_lock->reset( k => $key );
 
    return $wantarray ? @{ $res } : $res;
 }
@@ -154,22 +152,24 @@ sub _create_or_update {
 
    my $element = $result->_resultset->source->name;
 
-   $self->validate_params( $path, $element );
+   $self->validate_params( $path, $element ); my $updated;
 
    my $data = ($self->_read_file( $path, TRUE ))[ 0 ] || {};
-   my $name = $result->name;
 
-   $data->{ $element } ||= {};
+   try {
+      my $filter = sub { __get_src_attributes( $condition, $_[ 0 ] ) };
+      my $name   = $result->name;
 
-   if (not $updating and exists $data->{ $element }->{ $name }) {
-      $self->_lock->reset( k => $path );
-      $self->throw( error => 'File [_1] element [_2] already exists',
-                    args  => [ $path, $name ], level => 4 );
+      $data->{ $element } ||= {};
+
+      not $updating and exists $data->{ $element }->{ $name }
+         and $self->throw( error => 'File [_1] element [_2] already exists',
+                           args  => [ $path, $name ], level => 4 );
+
+      $updated = File::DataClass::HashMerge->merge
+         ( \$data->{ $element }->{ $name }, $result, $filter );
    }
-
-   my $filter  = sub { __get_src_attributes( $condition, $_[ 0 ] ) };
-   my $updated = File::DataClass::HashMerge->merge
-      ( \$data->{ $element }->{ $name }, $result, $filter );
+   catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
 
    if ($updated) { $self->_write_file( $path, $data, not $updating ) }
    else { $self->_lock->reset( k => $path ) }
@@ -200,22 +200,24 @@ sub _meta_unpack {
 sub _read_file {
    my ($self, $path, $for_update) = @_;
 
-   $self->_lock->set( k => $path );
+   $self->_lock->set( k => $path ); my ($data, $meta, $path_mtime);
 
-   my ($data, $meta) = $self->_cache->get( $path );
-   my $path_mtime    = $path->stat->{mtime};
+   try {
+      ($data, $meta) = $self->_cache->get( $path );
+      $path_mtime    = $path->stat->{mtime};
 
-   if ($self->_is_stale( $data, $meta, $path_mtime ) ) {
-      if (not $for_update or $path->is_file) {
-         try   { $data = inner( $path->lock ); $path->close }
-         catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
-
-         $self->_cache->set( $path, $data, $self->_meta_pack( $path_mtime ) );
-         $self->_debug and $self->_log->debug( "Read file  $path" );
+      if ($self->_is_stale( $data, $meta, $path_mtime ) ) {
+         if ($for_update and not $path->is_file) { $data = undef }
+         else {
+            $data = inner( $path->lock ); $path->close;
+            $meta = $self->_meta_pack( $path_mtime );
+            $self->_cache->set( $path, $data, $meta );
+            $self->_debug and $self->_log->debug( "Read file  $path" );
+         }
       }
-      else { $data = undef }
+      else { $self->_debug and $self->_log->debug( "Read cache $path" ) }
    }
-   else { $self->_debug and $self->_log->debug( "Read cache $path" ) }
+   catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
 
    $for_update or $self->_lock->reset( k => $path );
 
@@ -225,21 +227,24 @@ sub _read_file {
 sub _write_file {
    my ($self, $path, $data, $create) = @_;
 
-   $create or $path->is_file
-      or $self->throw( error => 'File [_1] not found', args => [ $path ] );
+   try {
+      $create or $path->is_file
+         or $self->throw( error => 'File [_1] not found', args => [ $path ] );
 
-   $path->is_file or $path->perms( $self->_perms );
+      $path->is_file or $path->perms( $self->_perms );
 
-   if ($self->backup and $path->is_file and not $path->empty) {
-      copy( $path.NUL, $path.$self->backup ) or $self->throw( $ERRNO );
+      if ($self->backup and $path->is_file and not $path->empty) {
+         copy( $path.NUL, $path.$self->backup ) or $self->throw( $ERRNO );
+      }
+
+      try   { $data = inner( $path->atomic->lock, $data ); $path->close }
+      catch { $path->delete; $self->throw( $_ ) };
+
+      $self->_cache->remove( $path );
+      $self->_debug and $self->_log->debug( "Write file $path" )
    }
+   catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
 
-   try   { $data = inner( $path->atomic->lock, $data ) }
-   catch { $path->delete; $self->_lock->reset( k => $path );
-           $self->throw( $_ ) };
-
-   $path->close;
-   $self->_cache->remove( $path );
    $self->_lock->reset( k => $path );
    return $data;
 }

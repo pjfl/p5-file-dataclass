@@ -82,9 +82,7 @@ around BUILDARGS => sub {
 };
 
 sub dump {
-   my ($self, $args) = @_;
-
-   my $path = $args->{path} || $self->path;
+   my ($self, $args) = @_; my $path = $args->{path} || $self->path;
 
    blessed $path or $path = $self->io( $path );
 
@@ -92,9 +90,7 @@ sub dump {
 }
 
 sub load {
-   my ($self, @paths) = @_;
-
-   $paths[ 0 ] or $paths[ 0 ] = $self->path;
+   my ($self, @paths) = @_; $paths[ 0 ] or $paths[ 0 ] = $self->path;
 
    @paths = map { blessed $_ ? $_ : $self->io( $_ ) } @paths;
 
@@ -130,6 +126,7 @@ sub translate {
 
    $attrs = { path => $args->{to}, storage_class => $args->{to_class} };
    $class->new( $attrs )->dump( { data => $data } );
+
    return;
 }
 

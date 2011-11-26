@@ -19,7 +19,7 @@ sub merge {
    for my $attr ($filter->( $src )) {
       if (defined $src->{ $attr }) {
          my $res = $self->_merge_attr
-            ( $src->{ $attr }, \${ $dest_ref }->{ $attr } );
+            ( \${ $dest_ref }->{ $attr }, $src->{ $attr } );
 
          $updated ||= $res;
       }
@@ -36,13 +36,13 @@ sub merge {
 # Private methods
 
 sub _merge_attr {
-   my ($self, $from, $to_ref) = @_; my $updated = FALSE; my $to = ${ $to_ref };
+   my ($self, $to_ref, $from) = @_; my $to = ${ $to_ref }; my $updated = FALSE;
 
-   if ($to and ref $to eq ARRAY) {
-      $updated = $self->_merge_attr_arrays( $from, $to );
+   if ($to and ref $to eq HASH) {
+      $updated = $self->_merge_attr_hashes( $to, $from );
    }
-   elsif ($to and ref $to eq HASH) {
-      $updated = $self->_merge_attr_hashes( $from, $to );
+   elsif ($to and ref $to eq ARRAY) {
+      $updated = $self->_merge_attr_arrays( $to, $from );
    }
    elsif ((not $to and defined $from) or ($to and $to ne $from)) {
       $updated = TRUE; ${ $to_ref } = $from;
@@ -52,17 +52,15 @@ sub _merge_attr {
 }
 
 sub _merge_attr_arrays {
-   my ($self, $from, $to) = @_; my $updated = FALSE;
+   my ($self, $to, $from) = @_; my $updated = FALSE;
 
    for (0 .. $#{ $to }) {
       if ($from->[ $_ ]) {
-         my $res = $self->_merge_attr( $from->[ $_ ], \$to->[ $_ ] );
+         my $res = $self->_merge_attr( \$to->[ $_ ], $from->[ $_ ] );
 
          $updated ||= $res;
       }
-      elsif ($to->[ $_ ]) {
-         splice @{ $to }, $_; $updated = TRUE; last;
-      }
+      elsif ($to->[ $_ ]) { splice @{ $to }, $_; $updated = TRUE; last }
    }
 
    if (@{ $from } > @{ $to }) {
@@ -73,17 +71,15 @@ sub _merge_attr_arrays {
 }
 
 sub _merge_attr_hashes {
-   my ($self, $from, $to) = @_; my $updated = FALSE;
+   my ($self, $to, $from) = @_; my $updated = FALSE;
 
    for (keys %{ $to }) {
       if ($from->{ $_ }) {
-         my $res = $self->_merge_attr( $from->{ $_ }, \$to->{ $_ } );
+         my $res = $self->_merge_attr( \$to->{ $_ }, $from->{ $_ } );
 
          $updated ||= $res;
       }
-      elsif ($to->{ $_ }) {
-         delete $to->{ $_ }; $updated = TRUE;
-      }
+      elsif ($to->{ $_ }) { delete $to->{ $_ }; $updated = TRUE }
    }
 
    if (keys %{ $from } > keys %{ $to }) {
@@ -116,7 +112,7 @@ File::DataClass::HashMerge - Merge hashes with update flag
    use File::DataClass::HashMerge;
 
    $class   = q(File::DataClass::HashMerge);
-   $updated = $class->merge( $src, $dest_ref, $condition );
+   $updated = $class->merge( $dest_ref, $src, $condition );
 
 =head1 Description
 
