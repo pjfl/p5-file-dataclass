@@ -127,7 +127,9 @@ sub update {
 
    defined $updating or $updating = TRUE; $condition ||= sub { TRUE };
 
-   return $self->_create_or_update( $path, $result, $updating, $condition );
+   return $self->_create_or_update( $path, $result,
+                                    $updating, $condition )
+       or $self->throw( 'Nothing updated' );
 }
 
 sub validate_params {

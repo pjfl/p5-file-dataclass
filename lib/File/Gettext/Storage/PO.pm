@@ -98,6 +98,11 @@ sub _inflate_and_decode {
 sub _store_record {
    my ($self, $data, $rec, $order_ref) = @_; exists $rec->{msgid} or return;
 
+   my @ctxt = split m{ [\.] }msx, ($rec->{msgctxt} || NUL), 2;
+
+   $ctxt[ 0 ] = $ctxt[ 0 ] ? $ctxt[ 0 ].SPC : 'messages ';
+   $ctxt[ 1 ] = $ctxt[ 1 ] ? SPC.$ctxt[ 1 ] : NUL;
+   $rec->{labels} = $ctxt[ 0 ].$rec->{msgid}.$ctxt[ 1 ];
    $rec->{_order} = ${ $order_ref }++;
    $data->{ $self->make_key( $rec ) } = $rec;
 

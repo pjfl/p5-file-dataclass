@@ -18,6 +18,7 @@ sub merge {
 
    for my $attr ($filter->( $src )) {
       if (defined $src->{ $attr }) {
+
          my $res = $self->_merge_attr
             ( \${ $dest_ref }->{ $attr }, $src->{ $attr } );
 
@@ -44,8 +45,18 @@ sub _merge_attr {
    elsif ($to and ref $to eq ARRAY) {
       $updated = $self->_merge_attr_arrays( $to, $from );
    }
-   elsif ((not $to and defined $from) or ($to and $to ne $from)) {
+   elsif ($to and $to ne $from) {
       $updated = TRUE; ${ $to_ref } = $from;
+   }
+   elsif (not $to and defined $from) {
+      if (ref $from eq HASH) {
+         scalar keys %{ $from } > 0 and $updated = TRUE
+            and ${ $to_ref } = $from;
+      }
+      elsif (ref $from eq ARRAY) {
+         scalar @{ $from } > 0 and $updated = TRUE; ${ $to_ref } = $from;
+      }
+      else { $updated = TRUE; ${ $to_ref } = $from }
    }
 
    return $updated;

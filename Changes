@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+	 - Fixed new attribute assignment bug in HashMerge
 	 - Changed comment field types in Gettext::Storage::PO to scalars
 	 - Fixed bug in File::MailAlias BUILDARGS not using ioc_obj
 	 - Added Schema::WithLanguage

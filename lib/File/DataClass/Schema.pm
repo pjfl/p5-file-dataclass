@@ -29,6 +29,8 @@ has 'cache'                    => is => 'ro', isa => 'F_DC_Cache',
 has 'cache_attributes'         => is => 'ro', isa => 'HashRef',
    default                     => sub { {
       driver                   => q(FastMmap),
+      page_size                => 131072,
+      num_pages                => 89,
       unlink_on_exit           => TRUE, } };
 has 'cache_class'              => is => 'ro',
    isa                         => 'F_DC_DummyClass | ClassName',

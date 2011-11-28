@@ -47,12 +47,17 @@ sub create_or_update {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
    my $res = $self->_txn_do( sub {
-      my $res; $res = $self->find_and_update( $args ) and return $res;
+      my $result = $self->_find( $name )
+         or return $self->_create_result( $args )->insert;
 
-      return $self->_create_result( $args )->insert;
+      for (grep { exists $args->{ $_ } } @{ $self->attributes }) {
+         $result->$_( $args->{ $_ } );
+      }
+
+      return $result->update;
    } );
 
-   return $res ? $name : $res;
+   return $res ? $name : undef;
 }
 
 sub delete {
