@@ -44,8 +44,9 @@ use File::Gettext::Constants;
 
 my $default = catfile( qw(t default.xml) );
 my $schema  = File::DataClass::Schema::WithLanguage->new
-   ( path => $default,
-     lang => q(en),
+   ( path      => $default,
+     lang      => q(en),
+     localedir => catdir( qw(t locale) ),
      result_source_attributes => {
         pages => {
            attributes => [ qw(columns heading) ],
@@ -105,7 +106,7 @@ is( $res, q(dummy), 'Creates dummy element and inserts 2' );
 
 my $data   = $schema->load;
 my $dumped = catfile( qw(t dumped.xml)   );
-my $pofile = catfile( qw(t dumped_de.po) );
+my $pofile = catfile( qw(t locale de LC_MESSAGES dumped.po) );
 
 $schema->dump( { data => $data, path => $dumped } );
 
@@ -126,8 +127,8 @@ is( $res, q(dummy), 'Deletes dummy element 2' );
 
 io( $dumped )->unlink;
 io( $pofile )->unlink;
-io( catfile( qw(t default_de.po)  ) )->unlink;
-io( catfile( qw(t default_en.po)  ) )->unlink;
+io( catfile( qw(t locale de LC_MESSAGES default.po)  ) )->unlink;
+io( catfile( qw(t locale en LC_MESSAGES default.po)  ) )->unlink;
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
 io( catfile( qw(t file-dataclass-schema.dat) ) )->unlink;

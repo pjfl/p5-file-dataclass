@@ -69,7 +69,7 @@ has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
    coerce                      => TRUE;
 
 around BUILDARGS => sub {
-   my ($orig, $class, @args) = @_; my $attrs = $class->$orig( @args );
+   my ($next, $class, @args) = @_; my $attrs = $class->$next( @args );
 
    exists $attrs->{ioc_obj} or return $attrs;
 

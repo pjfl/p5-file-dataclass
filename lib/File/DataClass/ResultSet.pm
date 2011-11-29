@@ -63,22 +63,21 @@ sub create_or_update {
 sub delete {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   $self->_txn_do( sub {
+   my $res = $self->_txn_do( sub {
       my ($result, $error);
 
       unless ($result = $self->_find( $name )) {
-         $args->{optional} and return;
+         $args->{optional} and return FALSE;
          $error = 'File [_1] element [_2] does not exist';
          $self->throw( error => $error, args => [ $self->path, $name ] );
       }
 
-      unless ($result->delete) {
-         $error = 'File [_1] element [_2] not deleted';
-         $self->throw( error => $error, args => [ $self->path, $name ] );
-      }
+      $result->delete and return TRUE;
+      $error = 'File [_1] element [_2] not deleted';
+      $self->throw( error => $error, args => [ $self->path, $name ] );
    } );
 
-   return $name;
+   return $res ? $name : undef;
 }
 
 sub find {
@@ -200,8 +199,10 @@ sub _create_result {
 
    my $attrs = { %{ $self->defaults }, _resultset => $self };
 
-   $attrs->{ $_ } = $args->{ $_ }
-      for (grep { exists $args->{ $_ } } @{ $self->attributes }, qw(name));
+   for (grep { exists $args->{ $_ } and defined $args->{ $_ } }
+            @{ $self->attributes }, qw(name)) {
+      $attrs->{ $_ } = $args->{ $_ };
+   }
 
    return $self->result_class->new( $attrs );
 }

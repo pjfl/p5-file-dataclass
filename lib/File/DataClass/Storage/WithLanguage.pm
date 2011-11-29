@@ -13,10 +13,10 @@ use Moose;
 
 extends qw(File::DataClass);
 
-has 'gettext' => is => 'ro', isa => 'Object', lazy_build => TRUE;
-has 'schema'  => is => 'ro', isa => 'Object', required   => TRUE,
-   handles    => [ qw(cache lang) ],          weak_ref   => TRUE;
-has 'storage' => is => 'ro', isa => 'Object', required   => TRUE,
+has 'gettext' => is => 'ro', isa => 'Object',  lazy_build => TRUE;
+has 'schema'  => is => 'ro', isa => 'Object',  required   => TRUE,
+   handles    => [ qw(cache lang localedir) ], weak_ref   => TRUE;
+has 'storage' => is => 'ro', isa => 'Object',  required   => TRUE,
    handles    => [ qw(exception_class extn _is_stale _meta_pack
                       _read_file txn_do validate_params) ];
 
@@ -111,7 +111,10 @@ sub update {
 # Private methods
 
 sub _build_gettext {
-   my $self = shift; return File::Gettext->new( ioc_obj => $self->schema );
+   my $self = shift;
+
+   return File::Gettext->new( ioc_obj   => $self->schema,
+                              localedir => $self->localedir );
 }
 
 sub _create_or_update {
@@ -156,7 +159,7 @@ sub _get_key_and_newest {
       if ($mtime) { $mtime > $newest and $newest = $mtime }
       else { $valid = FALSE }
 
-      my $lang_path = $self->_get_lang_path( $path );
+      my $lang_path = $self->_gettext( $path )->path;
 
       if (defined ($mtime = $self->cache->get_mtime( NUL.$lang_path ))) {
          if ($mtime) {
@@ -175,23 +178,14 @@ sub _get_key_and_newest {
    return ($key, $valid ? $newest : undef);
 }
 
-sub _get_lang_path {
-   my ($self, $path) = @_; $path .= NUL;
-
-   my $extn = $self->gettext->storage->extn;
-   my $file = $self->basename( $path, $self->extn ).q(_).$self->lang.$extn;
-
-   return $self->io( [ $self->dirname( $path ), $file ] );
-}
-
 sub _gettext {
-   my ($self, $path) = @_;
+   my ($self, $path) = @_; my $gettext = $self->gettext;
 
-   $path       or $self->throw( 'Path not specified' );
-   $self->lang or $self->throw( 'Language not specified' );
-   $self->gettext->path( $self->_get_lang_path( $path ) );
+   $path or $self->throw( 'Path not specified' );
 
-   return $self->gettext;
+   $gettext->set_path( $self->lang, $self->basename( $path, $self->extn ) );
+
+   return $gettext;
 }
 
 sub _load {

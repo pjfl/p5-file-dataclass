@@ -9,7 +9,7 @@ use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 my @constants;
 
 BEGIN {
-   @constants = ( qw(ARRAY CODE EVIL FALSE HASH LOCALIZE NO_UMASK_STACK
+   @constants = ( qw(ARRAY CODE EVIL FALSE HASH LANG LOCALIZE NO_UMASK_STACK
                      NUL PERMS SPC STAT_FIELDS TRUE) );
 }
 
@@ -35,6 +35,10 @@ sub FALSE () {
 
 sub HASH () {
    return q(HASH);
+}
+
+sub LANG () {
+   return q(en);
 }
 
 sub LOCALIZE () {
@@ -111,6 +115,10 @@ Digit 0
 =head2 HASH
 
 String HASH
+
+=head2 LANG
+
+Default language code, en
 
 =head2 LOCALIZE
 

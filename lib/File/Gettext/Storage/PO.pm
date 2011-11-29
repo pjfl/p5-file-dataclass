@@ -324,7 +324,7 @@ sub __header_inflate {
 
    $null_entry or return $header;
 
-   for my $line (split m{ [\\][n] }msx, $null_entry) {
+   for my $line (split m{ [\n] }msx, $null_entry) {
       my ($k, $v) = split m{ [:] }msx, $line, 2;
 
       $k =~ s{ [-] }{_}gmsx; $v =~ s{ \A \s+ }{}msx;

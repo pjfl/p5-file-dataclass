@@ -6,13 +6,24 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
-use English qw(-no_match_vars);
-use File::DataClass::Constants;
 use Moose;
 use Moose::Util::TypeConstraints;
+use English qw(-no_match_vars);
+use File::DataClass::Constants;
+use File::DataClass::Constraints;
+use File::DataClass::IO;
+use File::Gettext::Constants;
+use File::Spec;
 
 extends qw(File::DataClass::Schema);
 
+subtype 'F_DC_Localedir', as 'F_DC_Directory';
+
+coerce 'F_DC_Localedir' => from 'ArrayRef' => via { __build_localedir( $_ ) };
+coerce 'F_DC_Localedir' => from 'Str'      => via { __build_localedir( $_ ) };
+coerce 'F_DC_Localedir' => from 'Undef'    => via { __build_localedir( $_ ) };
+
+has 'catagory_name'     => is => 'ro', isa => 'Str', default => q(LC_MESSAGES);
 has 'charset'           => is => 'ro', isa => 'Str', default => q(iso-8859-1);
 has 'default_po_header' => is => 'ro', isa => 'HashRef',
    default              => sub { {
@@ -35,6 +46,8 @@ has 'header_key_table'  => is => 'ro', isa => 'HashRef',
       content_type              => [ 8,  q(Content-Type)              ],
       content_transfer_encoding => [ 9,  q(Content-Transfer-Encoding) ],
       plural_forms              => [ 10, q(Plural-Forms)              ], } };
+has 'localedir'         => is => 'ro', isa => 'F_DC_Localedir', coerce => TRUE,
+   default              => NUL;
 has '+result_source_attributes' =>
    default           => sub { {
       mo             => {
@@ -52,20 +65,22 @@ has 'source_name'    => is => 'ro', isa => enum( [ qw(mo po) ] ),
    default           => q(po), trigger => \&_set_storage_class;
 
 around 'source' => sub {
-   my ($orig, $self) = @_; return $self->$orig( $self->source_name );
+   my ($next, $self) = @_; return $self->$next( $self->source_name );
 };
 
 around 'resultset' => sub {
-   my ($orig, $self) = @_; return $self->$orig( $self->source_name );
+   my ($next, $self) = @_; return $self->$next( $self->source_name );
 };
 
 around 'load' => sub {
-   my ($orig, $self, @rest) = @_;
+   my ($next, $self, $lang, @names) = @_;
 
-   my $data = $self->$orig( @rest ); my $plural_func;
-
+   my @paths     = grep { $self->_is_file_or_log_debug( $_ ) }
+                   map  { $self->_get_path( $lang, $_ ) } @names;
+   my $data      = $self->$next( @paths );
    my $po_header = exists $data->{po_header}
                  ? $data->{po_header}->{msgstr} || {} : {};
+   my $plural_func;
 
    # This is here because of the code ref. Cannot serialize (cache) a code ref
    # Determine plural rules. The leading and trailing space is necessary
@@ -92,7 +107,30 @@ around 'load' => sub {
    return $data;
 };
 
+sub set_path {
+   my ($self, @rest) = @_; return $self->path( $self->_get_path( @rest ) );
+}
+
 # Private methods
+
+sub _get_path {
+   my ($self, $lang, $file) = @_;
+
+   $lang or $self->throw( 'Language not specified' );
+   $file or $self->throw( 'Language file path not specified' );
+
+   my $cn = $self->catagory_name; my $extn = $self->storage->extn;
+
+   return $self->io( [ $self->localedir, $lang, $cn, $file.$extn ] );
+}
+
+sub _is_file_or_log_debug {
+   my ($self, $path) = @_; $path->is_file and return TRUE;
+
+   $self->debug and $self->log->debug( 'Path '.$path->pathname.' not found' );
+
+   return FALSE;
+}
 
 sub _set_storage_class {
    my $self = shift;
@@ -103,8 +141,23 @@ sub _set_storage_class {
    return;
 }
 
+# Private functions
+
+sub __build_localedir {
+   my $dir = shift; my $io;
+
+   $dir and $io = io( $dir ) and $io->is_dir and return $io;
+
+   for $dir (map { io( $_ ) } @{ DIRECTORIES() }) {
+      $dir->is_dir and return $dir;
+   }
+
+   return io( File::Spec->tmpdir );
+}
+
 __PACKAGE__->meta->make_immutable;
 
+no Moose::Util::TypeConstraints;
 no Moose;
 
 1;
@@ -128,6 +181,12 @@ File::Gettext - Read and write GNU gettext po/mo files
 =head1 Description
 
 =head1 Subroutines/Methods
+
+=head2 set_path
+
+   $gettext->set_path( $lang, $file );
+
+Sets the I<path> attribute on the parent class from C<$lang> and C<$file>
 
 =head1 Configuration and Environment
 

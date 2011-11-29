@@ -137,9 +137,8 @@ sub validate_params {
 
    $path or $self->throw( error => 'No file path specified', level => 4 );
 
-   blessed $path
-      or $self->throw( error => 'Path [_1] is not blessed',
-                       args  => [ $path ], level => 4 );
+   blessed $path or $self->throw( error => 'Path [_1] is not blessed',
+                                  args  => [ $path ], level => 4 );
 
    $element or $self->throw( error => 'Path [_1] no element specified',
                              args  => [ $path ], level => 4 );

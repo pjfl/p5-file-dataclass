@@ -8,15 +8,17 @@ use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use File::DataClass::Constants;
+use File::DataClass::Constraints;
 use File::DataClass::ResultSource::WithLanguage;
 use File::DataClass::Storage::WithLanguage;
 
 extends qw(File::DataClass::Schema);
 
-has 'lang' => is => 'rw', isa => 'Str', default => NUL;
+has 'lang'      => is => 'rw', isa => 'Str', default => LANG;
+has 'localedir' => is => 'ro', isa => 'F_DC_Directory', coerce => TRUE;
 
 around BUILDARGS => sub {
-   my ($orig, $class, @args) = @_; my $attrs = $class->$orig( @args );
+   my ($next, $class, @args) = @_; my $attrs = $class->$next( @args );
 
    $attrs->{result_source_class}
       = q(File::DataClass::ResultSource::WithLanguage);
