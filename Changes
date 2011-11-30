@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.7.321	 2011-11-30
 	 - Works with CX::U 0.4.1084
 	 - Fixed new attribute assignment bug in HashMerge
 	 - Changed comment field types in Gettext::Storage::PO to scalars

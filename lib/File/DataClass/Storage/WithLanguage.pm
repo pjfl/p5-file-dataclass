@@ -4,7 +4,7 @@ package File::DataClass::Storage::WithLanguage;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use File::Gettext;
@@ -254,7 +254,7 @@ File::DataClass::Storage::WithLanguage - Split/merge language dependent data
 
 =head1 Version
 
-0.6.$Revision$
+0.7.$Revision$
 
 =head1 Synopsis
 

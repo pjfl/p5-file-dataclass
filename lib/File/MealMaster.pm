@@ -4,7 +4,7 @@ package File::MealMaster;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.6.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use File::MealMaster::Result;
@@ -56,7 +56,7 @@ File::MealMaster - OO access to the MealMaster recipe files
 
 =head1 Version
 
-0.6.$Revision$
+0.7.$Revision$
 
 =head1 Synopsis
 
