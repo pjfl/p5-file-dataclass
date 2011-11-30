@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+	 - Added default for localedir to F::DC::Schema::WithLanguage
+
 0.7.321	 2011-11-30
 	 - Works with CX::U 0.4.1084
 	 - Fixed new attribute assignment bug in HashMerge

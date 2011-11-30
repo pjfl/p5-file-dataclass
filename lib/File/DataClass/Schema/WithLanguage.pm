@@ -11,11 +11,13 @@ use File::DataClass::Constants;
 use File::DataClass::Constraints;
 use File::DataClass::ResultSource::WithLanguage;
 use File::DataClass::Storage::WithLanguage;
+use File::Gettext::Constants;
 
 extends qw(File::DataClass::Schema);
 
 has 'lang'      => is => 'rw', isa => 'Str', default => LANG;
-has 'localedir' => is => 'ro', isa => 'F_DC_Directory', coerce => TRUE;
+has 'localedir' => is => 'ro', isa => 'F_DC_Directory', coerce => TRUE,
+   default      => sub { DIRECTORIES->[ 0 ] };
 
 around BUILDARGS => sub {
    my ($next, $class, @args) = @_; my $attrs = $class->$next( @args );
