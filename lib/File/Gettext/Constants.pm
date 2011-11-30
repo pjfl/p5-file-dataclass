@@ -46,7 +46,7 @@ __END__
 
 =head1 Name
 
-CatalystX::Usul::Constants - Definitions of constant values
+File::Gettext::Constants - Definitions of constant values
 
 =head1 Version
 
@@ -54,13 +54,13 @@ CatalystX::Usul::Constants - Definitions of constant values
 
 =head1 Synopsis
 
-   use CatalystX::Usul::Constants::L10N;
+   use File::Gettext::Constants;
 
    my $magic = MAGIC_V;
 
 =head1 Description
 
-Exports a list of subroutines each of which returns a constants value
+Exports a list of subroutines each of which returns a constant value
 
 =head1 Subroutines/Methods
 
