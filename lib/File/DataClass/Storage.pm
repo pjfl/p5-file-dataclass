@@ -6,13 +6,13 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
 
+use Moose;
 use Class::Null;
 use English qw(-no_match_vars);
 use File::Copy;
 use File::DataClass::Constants;
 use File::DataClass::HashMerge;
 use Hash::Merge qw(merge);
-use Moose;
 use Try::Tiny;
 
 extends qw(File::DataClass);
@@ -159,9 +159,7 @@ sub _create_or_update {
 
    try {
       my $filter = sub { __get_src_attributes( $condition, $_[ 0 ] ) };
-      my $name   = $result->name;
-
-      $data->{ $element } ||= {};
+      my $name   = $result->name; $data->{ $element } ||= {};
 
       not $updating and exists $data->{ $element }->{ $name }
          and $self->throw( error => 'File [_1] element [_2] already exists',

@@ -6,10 +6,10 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
 
+use Moose;
 use Class::Null;
 use File::DataClass::Constants;
 use File::Spec;
-use Moose;
 
 use File::DataClass::Cache;
 use File::DataClass::Exception;

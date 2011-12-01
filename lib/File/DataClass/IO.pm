@@ -65,18 +65,17 @@ has '_umask'           => is => 'rw', isa => 'ArrayRef[Num]',
    default             => sub { return [] }                                   ;
 
 around BUILDARGS => sub {
-   my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
+   my ($next, $class, $name, $mode, $perms) = @_; my $attrs = {};
 
-   $car or return $attrs; my $is_blessed = blessed $car;
+   $name or return $attrs; my $is_blessed = blessed $name;
 
-   $is_blessed and $car->isa( __PACKAGE__ ) and return $car;
-   $is_blessed and $car .= NUL; # Stringify path object
+   $is_blessed and $name->isa( __PACKAGE__ ) and return $name;
+   $is_blessed and $name .= NUL; # Stringify path object
 
-   my $type = ref $car; $type eq HASH and return $car;
+   my $type = ref $name; $type eq HASH and return $name;
 
-   $attrs->{name} = $type eq ARRAY ? File::Spec->catfile( @{ $car } ) : $car;
-   $cdr[ 0 ] and $attrs->{mode  } = $cdr[ 0 ];
-   $cdr[ 1 ] and $attrs->{_perms} = $cdr[ 1 ];
+   $attrs->{name} = $type eq ARRAY ? File::Spec->catfile( @{ $name } ) : $name;
+   $mode and $attrs->{mode} = $mode; $perms and $attrs->{_perms} = $perms;
 
    return $attrs;
 };
