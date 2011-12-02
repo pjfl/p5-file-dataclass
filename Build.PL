@@ -24,7 +24,7 @@ Bob->new( {
       'Encode'                 => 2.12,
       'Exception::Class'       => 1.23,
       'Hash::Merge'            => 0.08,
-      'File::Path'             => 1.08,
+      'File::Path'             => 2.08,
       'File::Temp'             => 0.20,
       'Hash::Merge'            => 0.08,
       'IO::Dir'                => 1.05,

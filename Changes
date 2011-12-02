@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.7.326  2011-12-02
+	 - Bumped File::Path version
+
 0.7.325  2011-12-02
          - Updated inc::Bob, set create_readme_pod to true for README.pod file
          - Added missing IPC::Cmd dependency
