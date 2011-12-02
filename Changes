@@ -1,14 +1,17 @@
 Revision history for File::DataClass
 
-	 - Added default for localedir to F::DC::Schema::WithLanguage
+0.7.325  2011-12-02
+         - Updated inc::Bob, set create_readme_pod to true for README.pod file
+         - Added missing IPC::Cmd dependency
+         - Added default for localedir to F::DC::Schema::WithLanguage
 
-0.7.321	 2011-11-30
-	 - Works with CX::U 0.4.1084
-	 - Fixed new attribute assignment bug in HashMerge
-	 - Changed comment field types in Gettext::Storage::PO to scalars
-	 - Fixed bug in File::MailAlias BUILDARGS not using ioc_obj
-	 - Added Schema::WithLanguage
-	 - Storage::WithLanguage can dump
+0.7.321  2011-11-30
+         - Works with CX::U 0.4.1084
+         - Fixed new attribute assignment bug in HashMerge
+         - Changed comment field types in Gettext::Storage::PO to scalars
+         - Fixed bug in File::MailAlias BUILDARGS not using ioc_obj
+         - Added Schema::WithLanguage
+         - Storage::WithLanguage can dump
          - Storage::WithLanguage passes tests
          - Renamed Combinator to Storage::WithLanguage
          - Combinator rewritten to use F::Gettext
