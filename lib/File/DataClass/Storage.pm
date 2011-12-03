@@ -16,15 +16,13 @@ use Hash::Merge qw(merge);
 use Try::Tiny;
 
 extends qw(File::DataClass);
+with    qw(File::DataClass::Util);
 
 has 'backup' => is => 'ro', isa => 'Str',    default  => NUL;
 has 'extn'   => is => 'ro', isa => 'Str',    default  => NUL;
 has 'schema' => is => 'ro', isa => 'Object', required => 1, weak_ref => TRUE,
-   handles => { _cache          => q(cache),           _debug => q(debug),
-                exception_class => q(exception_class), _lock  => q(lock),
-                _log            => q(log),             _perms => q(perms) };
-
-with qw(File::DataClass::Util);
+   handles   => { _cache => q(cache), _debug => q(debug), _lock  => q(lock),
+                  _log   => q(log),   _perms => q(perms) };
 
 sub delete {
    my ($self, $path, $result) = @_;

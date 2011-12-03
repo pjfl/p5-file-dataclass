@@ -1,7 +1,11 @@
 Revision history for File::DataClass
 
+         - Fixed circular reference in result source registrations
+         - Rationalised the exception_class attribute
+         - Fixed circular reference in Cache on_set_error log
+
 0.7.326  2011-12-02
-	 - Bumped File::Path version
+         - Bumped File::Path version
 
 0.7.325  2011-12-02
          - Updated inc::Bob, set create_readme_pod to true for README.pod file

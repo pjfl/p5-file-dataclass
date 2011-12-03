@@ -7,6 +7,8 @@ use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
 use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
 
+use Moose;
+use Moose::Util::TypeConstraints;
 use File::DataClass::Constants;
 use File::DataClass::Exception;
 use English      qw( -no_match_vars );
@@ -19,8 +21,6 @@ use File::Spec     ();
 use File::Temp     ();
 use IO::Dir;
 use IO::File;
-use Moose;
-use Moose::Util::TypeConstraints;
 use Scalar::Util qw( blessed );
 
 use Sub::Exporter -setup => {

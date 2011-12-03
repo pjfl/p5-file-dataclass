@@ -25,7 +25,7 @@ has 'resultset_class'      => is => 'ro', isa => 'ClassName',
    default                 => q(File::DataClass::ResultSet);
 has 'schema'               => is => 'ro', isa => 'Object',
    required                => TRUE, weak_ref => TRUE,
-   handles                 => [ qw(exception_class path storage) ];
+   handles                 => [ qw(path storage) ];
 
 sub resultset {
    my $self = shift;

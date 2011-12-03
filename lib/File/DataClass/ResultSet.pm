@@ -13,6 +13,7 @@ use File::DataClass::List;
 use File::DataClass::Result;
 
 extends qw(File::DataClass);
+with    qw(File::DataClass::Util);
 
 has 'list_class'   => is => 'ro', isa => 'ClassName',
    default         => q(File::DataClass::List);
@@ -20,16 +21,13 @@ has 'result_class' => is => 'ro', isa => 'ClassName',
    default         => q(File::DataClass::Result);
 has 'source'       => is => 'ro', isa => 'Object',
    required        => TRUE, weak_ref => TRUE,
-   handles         => [ qw(attributes defaults
-                           exception_class label_attr path storage) ];
+   handles         => [ qw(attributes defaults label_attr path storage) ];
 has '_iterator'    => is => 'rw', isa => 'Int',
    default         => 0, init_arg => undef;
 has '_operators'   => is => 'ro', isa => 'HashRef',
    lazy_build      => TRUE;
 has '_results'     => is => 'rw', isa => 'ArrayRef',
    default         => sub { [] }, init_arg => undef;
-
-with qw(File::DataClass::Util);
 
 sub all {
    my $self = shift; return @{ $self->_results };

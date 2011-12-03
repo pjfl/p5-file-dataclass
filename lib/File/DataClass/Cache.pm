@@ -11,6 +11,7 @@ use File::DataClass::Constants;
 use Moose;
 
 extends qw(File::DataClass);
+with    qw(File::DataClass::Util);
 
 has 'cache'            => is => 'ro', isa => 'Object',
    lazy_build          => TRUE;
@@ -18,15 +19,25 @@ has 'cache_attributes' => is => 'ro', isa => 'HashRef',
    default             => sub { return {} };
 has 'cache_class'      => is => 'ro', isa => 'ClassName',
    default             => q(CHI);
-has 'schema'           => is => 'ro', isa => 'Object', required => 1,
-   handles             => { _debug          => q(debug),
-                            exception_class => q(exception_class),
-                            _log            => q(log), };
+has 'debug'            => is => 'ro', isa => 'Bool',
+   default             => FALSE;
+has 'log'              => is => 'ro', isa => 'Object',
+   default             => sub { Class::Null->new };
 
 has '_mtimes_key'      => is => 'ro', isa => 'Str',
    default             => q(_mtimes);
 
-with qw(File::DataClass::Util);
+around BUILDARGS => sub {
+   my ($next, $class, @rest) = @_; my $attrs = $class->$next( @rest );
+
+   exists $attrs->{ioc_obj} or return $attrs;
+
+   my $ioc = delete $attrs->{ioc_obj}; my @attrs = ( qw(debug log) );
+
+   $attrs->{ $_ } ||= $ioc->$_() for (grep { $ioc->can( $_ ) } @attrs);
+
+   return $attrs;
+};
 
 sub get {
    my ($self, $key) = @_; $key .= NUL;
@@ -98,11 +109,11 @@ sub set_mtime {
 # Private methods
 
 sub _build_cache {
-   my $self = shift; my $attrs = $self->cache_attributes;
+   my $self = shift; my $attrs = $self->cache_attributes; my $log = $self->log;
 
    my $class = delete $attrs->{cache_class} || $self->cache_class;
 
-   $attrs->{on_set_error} = sub { $self->_log->error( $_[ 0 ] ) };
+   $attrs->{on_set_error} = sub { $log->error( $_[ 0 ] ) };
 
    return $class->new( %{ $attrs } );
 }

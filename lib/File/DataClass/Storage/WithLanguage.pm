@@ -6,21 +6,20 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
 
+use Moose;
 use File::DataClass::Constants;
 use File::Gettext;
 use Hash::Merge qw(merge);
-use Moose;
 
 extends qw(File::DataClass);
+with    qw(File::DataClass::Util);
 
 has 'gettext' => is => 'ro', isa => 'Object',  lazy_build => TRUE;
 has 'schema'  => is => 'ro', isa => 'Object',  required   => TRUE,
    handles    => [ qw(cache lang localedir) ], weak_ref   => TRUE;
 has 'storage' => is => 'ro', isa => 'Object',  required   => TRUE,
-   handles    => [ qw(exception_class extn _is_stale _meta_pack
-                      _read_file txn_do validate_params) ];
-
-with qw(File::DataClass::Util);
+   handles    => [ qw(extn _is_stale _meta_pack _read_file txn_do
+                      validate_params) ];
 
 sub delete {
    my ($self, $path, $result) = @_;
