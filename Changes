@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.7.328  2011-12-03
          - Fixed circular reference in result source registrations
          - Rationalised the exception_class attribute
          - Fixed circular reference in Cache on_set_error log
