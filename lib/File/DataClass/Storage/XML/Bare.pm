@@ -12,6 +12,7 @@ use Moose;
 
 extends qw(File::DataClass::Storage::XML);
 
+my $BORKED  = $XML::Bare::VERSION > 0.45 ? TRUE : FALSE;
 my $PADDING = q(  );
 
 augment '_read_file' => sub {
@@ -36,48 +37,19 @@ augment '_write_file' => sub {
 
 sub _read_filter {
    # Turn the structure returned by XML::Bare into one returned by XML::Simple
-   my ($self, $arrays, $data) = @_; my ($hash, $value);
+   my ($self, $arrays, $data) = @_;
 
    if (ref $data eq ARRAY) {
       for my $key (0 .. $#{ $data }) {
-         if (    ref $data->[ $key ] eq HASH
-             and defined ($value = $data->[ $key ]->{value})
-             and $value !~ m{ \A [\n\s]+ \z }mx) {
-            # Coerce arrays from single scalars. Array list given by the DTD
-            $data->[ $key ] = $arrays->{ $key } ? [ $value ] : $value;
-
-            next;
-         }
-
+         __coerce_array( $arrays, $data, $key ) and next;
          $self->_read_filter( $arrays, $data->[ $key ] ); # Recurse
       }
    }
    elsif (ref $data eq HASH) {
       for my $key (keys %{ $data }) {
-         if (    ref $data->{ $key } eq HASH
-             and defined ($value = $data->{ $key }->{value})
-             and $value !~ m{ \A [\n\s]+ \z }mx) {
-            # Coerce arrays from single scalars. Array list given by the DTD
-            $data->{ $key } = $arrays->{ $key } ? [ $value ] : $value;
-
-            next;
-         }
-
+         __coerce_hash( $arrays, $data, $key ) and next;
          $self->_read_filter( $arrays, $data->{ $key } ); # Recurse
-
-         # Turn arrays of hashes with a name attribute into hash keyed by name
-         if (    ref $data->{ $key } eq ARRAY
-             and $value = $data->{ $key }->[0]
-             and ref $value eq HASH
-             and exists $value->{name}) {
-            $hash = {};
-
-            for my $ref (@{ $data->{ $key } }) {
-               my $name = delete $ref->{name}; $hash->{ $name } = $ref;
-            }
-
-            $data->{ $key } = $hash;
-         }
+         __promote( $data, $key );
       }
 
       exists $data->{_i   } and delete $data->{_i};
@@ -96,9 +68,7 @@ sub _write_filter {
    my $padding = $PADDING x $level;
 
    if (ref $data eq ARRAY) {
-      for (sort @{ $data }) {
-         $xml .= $padding.q(<).$element.q(>).$_.q(</).$element.q(>)."\n";
-      }
+      $xml .= $padding.__bracket( $element, $_ )."\n" for (sort @{ $data });
    }
    elsif (ref $data eq HASH) {
       $padding = $PADDING x ($level + 1);
@@ -109,7 +79,7 @@ sub _write_filter {
          if (ref $value eq HASH) {
             for (sort keys %{ $value }) {
                $xml .= $padding.q(<).$key.q(>)."\n";
-               $xml .= $padding.$PADDING.q(<name>).$_.q(</name>)."\n";
+               $xml .= $padding.$PADDING.__bracket( q(name), $_ )."\n";
                $xml .= $self->_write_filter( $level + 1, NUL, $value->{ $_ } );
                $xml .= $padding.q(</).$key.q(>)."\n";
             }
@@ -118,7 +88,7 @@ sub _write_filter {
       }
    }
    elsif ($element) {
-      $xml .= $padding.q(<).$element.q(>).$data.q(</).$element.q(>)."\n";
+      $xml .= $padding.__bracket( $element, $data )."\n";
    }
 
    if ($level == 0 && $element) {
@@ -126,6 +96,55 @@ sub _write_filter {
    }
 
    return $xml;
+}
+
+# Private subroutines
+
+sub __bracket {
+   my ($k, $v) = @_; $BORKED and $v =~ s{ [&] }{&amp;}gmsx;
+
+   return q(<).$k.q(>).$v.q(</).$k.q(>);
+}
+
+sub __coerce_array {
+   my ($arrays, $data, $key) = @_; my $value;
+
+   (ref $data->[ $key ] eq HASH
+    and defined ($value = $data->[ $key ]->{value})
+    and $value !~ m{ \A [\n\s]+ \z }mx) or return FALSE;
+
+   # Coerce arrays from single scalars. Array list given by the DTD
+   $data->[ $key ] = $arrays->{ $key } ? [ $value ] : $value;
+
+   return TRUE;
+}
+
+sub __coerce_hash {
+   my ($arrays, $data, $key) = @_; my $value;
+
+   (ref $data->{ $key } eq HASH
+    and defined ($value = $data->{ $key }->{value})
+    and $value !~ m{ \A [\n\s]+ \z }mx) or return FALSE;
+
+   # Coerce arrays from single scalars. Array list given by the DTD
+   $data->{ $key } = $arrays->{ $key } ? [ $value ] : $value;
+
+   return TRUE;
+}
+
+sub __promote {
+   my ($data, $key) = @_; my $value; my $hash = {};
+
+   # Turn arrays of hashes with a name attribute into hash keyed by name
+   (ref $data->{ $key } eq ARRAY and $value = $data->{ $key }->[0]
+    and ref $value eq HASH and exists $value->{name}) or return;
+
+   for my $ref (@{ $data->{ $key } }) {
+      my $name = delete $ref->{name}; $hash->{ $name } = $ref;
+   }
+
+   $data->{ $key } = $hash;
+   return;
 }
 
 __PACKAGE__->meta->make_immutable;

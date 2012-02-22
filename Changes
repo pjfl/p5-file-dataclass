@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+0.7.330  2012-02-22
+         - Fixed Storage::XML::Bare for borked versions of XML::Bare > 0.45
+           see RT#75220
+
 0.7.328  2011-12-03
          - Fixed circular reference in result source registrations
          - Rationalised the exception_class attribute
