@@ -8,10 +8,8 @@ use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
 
 use English qw(-no_match_vars);
-use File::DataClass::IO;
 use Module::Build;
 use Test::More;
-use Text::Diff;
 
 BEGIN {
    my $current = eval { Module::Build->current };
@@ -21,6 +19,9 @@ BEGIN {
 
    plan tests => 5;
 }
+
+use File::DataClass::IO;
+use Text::Diff;
 
 sub test {
    my ($obj, $method, @args) = @_; local $EVAL_ERROR;

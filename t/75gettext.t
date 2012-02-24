@@ -9,10 +9,8 @@ use lib catdir( $Bin, updir, q(lib) );
 use utf8;
 
 use English qw(-no_match_vars);
-use File::DataClass::IO;
 use Module::Build;
 use Test::More;
-use Text::Diff;
 
 BEGIN {
    my $current = eval { Module::Build->current };
@@ -22,6 +20,9 @@ BEGIN {
 
    plan tests => 7;
 }
+
+use File::DataClass::IO;
+use Text::Diff;
 
 use_ok q(File::Gettext );
 

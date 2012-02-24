@@ -1,8 +1,12 @@
 Revision history for File::DataClass
 
+0.7.332  2012-02-24
+         - Explicitley stopped Nigel Horne from testing my modules, see
+           6f77a84e-5e4f-11e1-952b-9fe4e7658155
+
 0.7.331  2012-02-23
          - Switched off CPAN testing again. Still a waste of bandwidth, see
-           http://www.cpantesters.org/cpan/report/5a821344-5d86-11e1-92ee-8d2dc56bd05b
+           5a821344-5d86-11e1-92ee-8d2dc56bd05b
 
 0.7.330  2012-02-22
          - Fixed Storage::XML::Bare for borked versions of XML::Bare > 0.45
