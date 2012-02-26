@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - Updated Moose / Class::MOP / MRO::Compat dependencies
+
 0.7.332  2012-02-24
          - Explicitley stopped Nigel Horne from testing my modules, see
            6f77a84e-5e4f-11e1-952b-9fe4e7658155
