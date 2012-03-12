@@ -6,13 +6,15 @@ use strict;
 use namespace::clean -except => 'meta';
 use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
 
-use Data::Section -setup;
-use File::DataClass::Constants;
 use Moose;
+use English qw( -no_match_vars );
+use File::DataClass::Constants;
 
 extends qw(File::DataClass::Result);
 
-has '_render_template' => is => 'rw', isa => 'Str', lazy_build => TRUE;
+my $DATA = do { local $RS = undef; <DATA> };
+
+has '_render_template' => is => 'rw', isa => 'Str', default => $DATA;
 
 sub render {
    my $self          = shift;
@@ -24,12 +26,6 @@ sub render {
       or $buffer = $template->error;
 
    return $buffer;
-}
-
-# Private methods
-
-sub _build__render_template {
-   my $self = shift; return ${ $self->section_data( q(render_template) ) };
 }
 
 no Moose;
@@ -110,7 +106,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 # End:
 
 __DATA__
-__[ render_template ]__
 <table class="recipe">
    <tr><td class="label">Title</td><td>[% title | html %]</td></tr>
    <tr><td class="label">Categories</td><td>

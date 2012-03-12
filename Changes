@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+0.7.335  2012-03-12
+         - Stopped using Data::Section. It doesn't work with Plack/Starman
          - Updated Moose / Class::MOP / MRO::Compat dependencies
 
 0.7.332  2012-02-24
