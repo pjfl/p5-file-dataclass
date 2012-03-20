@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+0.7.336  2012-03-20
+         - Turned CPAN testing on. Trying to diagnose Module::Build / Moose
+           bug which results in 'has' not being defined during testing
+
 0.7.335  2012-03-12
          - Stopped using Data::Section. It doesn't work with Plack/Starman
          - Updated Moose / Class::MOP / MRO::Compat dependencies
