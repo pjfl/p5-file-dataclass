@@ -17,7 +17,7 @@ BEGIN {
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 
-   plan tests => 96;
+   plan tests => 98;
 }
 
 use_ok( q(File::DataClass::IO) );
@@ -174,6 +174,14 @@ for ($io->chomp->separator( 'io' )->getlines) { $seen = 1 if (m { io }mx) }
 
 ok( !$seen, 'Getlines chomps record separators' );
 
+# Create/remove directory
+
+$dir = catdir( qw(t output) );
+
+io( $dir )->mkpath; ok -e $dir, 'Make path';
+
+io( $dir )->rmtree; ok !-e $dir, 'Remove tree';
+
 # Assert
 
 ok( !-e catfile( qw(t output newpath hello.txt) ), 'Non existant file' );
@@ -239,6 +247,8 @@ ok( ref $input,      'Open input' );
 my $output  = io( $outfile )->open( q(w) );
 
 ok( ref $output,     'Open output' );
+
+if (q(MSWin32) eq $OSNAME) { $input->binary; $output->binary; }
 
 my $buffer; $input->buffer( $buffer ); $output->buffer( $buffer );
 

@@ -6,9 +6,9 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
 
+use Moose;
 use CHI;
 use File::DataClass::Constants;
-use Moose;
 
 extends qw(File::DataClass);
 with    qw(File::DataClass::Util);
@@ -130,6 +130,10 @@ sub _get_key_and_newest {
 
    return ($key, $valid ? $newest : undef);
 }
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
 
 1;
 
@@ -291,7 +295,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2010 Peter Flanigan. All rights reserved
+Copyright (c) 2012 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

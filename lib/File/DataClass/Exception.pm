@@ -13,10 +13,10 @@ use Exception::Class
 use base qw(File::DataClass::Exception::Base);
 
 use Carp;
-use File::DataClass::Constants;
+use MRO::Compat;
 use English      qw(-no_match_vars);
 use Scalar::Util qw(blessed);
-use MRO::Compat;
+use File::DataClass::Constants;
 
 our $IGNORE = [ __PACKAGE__ ];
 
@@ -216,7 +216,7 @@ Peter Flanigan C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2010 Peter Flanigan. All rights reserved
+Copyright (c) 2012 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

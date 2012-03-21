@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+0.7.338  2012-03-21
+         - Tried reordering some use statements
+         - Use binary mode for some IO tests on evil platform
+
 0.7.336  2012-03-20
          - Turned CPAN testing on. Trying to diagnose Module::Build / Moose
            bug which results in 'has' not being defined during testing

@@ -9,8 +9,6 @@ use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use Moose::Util::TypeConstraints;
-use File::DataClass::Constants;
-use File::DataClass::Exception;
 use English      qw( -no_match_vars );
 use Fcntl        qw( :flock :seek );
 use List::Util   qw( first );
@@ -22,6 +20,8 @@ use File::Temp     ();
 use IO::Dir;
 use IO::File;
 use Scalar::Util qw( blessed );
+use File::DataClass::Constants;
+use File::DataClass::Exception;
 
 use Sub::Exporter -setup => {
    exports => [ qw(io) ], groups => { default => [ qw(io) ], },
@@ -1587,7 +1587,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2011 Peter Flanigan. All rights reserved
+Copyright (c) 2012 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
