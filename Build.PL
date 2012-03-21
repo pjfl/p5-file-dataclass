@@ -18,7 +18,6 @@ Bob->new( {
       'Carp'                   => 0,
       'CHI'                    => 0.33,
       'Class::Null'            => 1.09,
-      'Data::Section'          => 0.093410,
       'Date::Format'           => 2.22,
       'Encode'                 => 2.12,
       'Exception::Class'       => 1.23,
