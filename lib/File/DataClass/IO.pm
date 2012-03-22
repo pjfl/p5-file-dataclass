@@ -1157,7 +1157,7 @@ that the whole directory tree is searched
 =head2 delete
 
 Deletes the atomic update temporary file if it exists. Then calls
-L</_close_file>
+L</close>
 
 =head2 delete_tmp_files
 
@@ -1486,8 +1486,7 @@ Delete the specified file
 =head2 unlock
 
 Calls C<flock> on the open file handle with the I<LOCK_UN> option to
-release the L<Fcntl> lock if one was set. Called by the L</file_close>
-method
+release the L<Fcntl> lock if one was set. Called by the L</close> method
 
 =head2 utf8
 
