@@ -31,8 +31,8 @@ sub _build_exception_class {
 
 __PACKAGE__->meta->make_immutable;
 
-no MooseX::ClassAttribute;
 no Moose;
+no MooseX::ClassAttribute;
 
 1;
 
@@ -147,4 +147,3 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
 # mode: perl
 # tab-width: 3
 # End:
-

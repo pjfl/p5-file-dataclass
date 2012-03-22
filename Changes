@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.7.339  2012-03-22
+         - Altered F::DC:IO::close to work around rename of open files
+
 0.7.338  2012-03-21
          - Tried reordering some use statements
          - Use binary mode for some IO tests on evil platform

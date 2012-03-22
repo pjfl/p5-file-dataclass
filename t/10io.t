@@ -16,8 +16,6 @@ BEGIN {
 
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
-
-   plan tests => 98;
 }
 
 use_ok( q(File::DataClass::IO) );
@@ -262,6 +260,18 @@ ok( -s $outfile,     'Exists output file' );
 
 ok( $input->stat->{size} == $output->stat->{size}, 'File sizes match' );
 
+# Atomic
+
+my $atomic_file = catfile( qw(t output B_atomic) );
+
+$outfile = catfile( qw(t output atomic) );
+$io      = io( $outfile )->atomic->lock->println( 'x' );
+
+ok  -f $atomic_file, 'Atomic file exists';
+ok !-e $outfile,     'Atomic outfile does not exist'; $io->close;
+ok !-e $atomic_file, 'Renames atomic file';
+ok  -f $outfile,     'Writes atomic file';
+
 # Substitution
 
 $io = io( catfile( qw(t output substitute) ) );
@@ -273,16 +283,16 @@ is( ($io->chomp->getlines)[ 1 ], q(changed), 'Substitute values' );
 
 my $to = io( catfile( qw(t output copy) ) ); $io->close;
 
-$io->copy( $to );
-is( $io->all, $to->all, 'Copy file' );
+$io->copy( $to ); is( $io->all, $to->all, 'Copy file' );
 
 # Chmod
 
-$io->chmod( 0777 );
-$stat = $io->stat;
+$io->chmod( 0777 ); $stat = $io->stat;
+
 is( (sprintf "%o", $stat->{mode} & 07777), q(777), 'chmod1' );
-$io->chmod( 0400 );
-$stat = $io->stat;
+
+$io->chmod( 0400 ); $stat = $io->stat;
+
 is( (sprintf "%o", $stat->{mode} & 07777), q(400), 'chmod2' );
 
 # Permissions
@@ -318,6 +328,8 @@ $io->unlink;
 # Cleanup
 
 io( catdir( qw(t output) ) )->rmtree;
+
+done_testing;
 
 # Local Variables:
 # mode: perl

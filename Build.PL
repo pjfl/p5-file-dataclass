@@ -10,8 +10,8 @@ Bob->new( {
    home_page  => q(http://www.roxsoft.co.uk),
    requires   => {
       'perl'                   => 5.008,
-      'namespace::autoclean'   => 0.12,
-      'namespace::clean'       => 0.20,
+      'namespace::autoclean'   => 0.13,
+      'namespace::clean'       => 0.22,
       'overload'               => 1.04,
       'version'                => 0.74,
       'Cache::FastMmap'        => 1.36,
