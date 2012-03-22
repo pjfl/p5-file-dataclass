@@ -1137,12 +1137,6 @@ Set the contents of the internal buffer to the null string
 
 Close the file or directory handle depending on type
 
-=head2 _close_dir
-
-Closes the open directory handle.
-
-=head2 _close_file
-
 If the temporary atomic file exists, renames it to the original
 filename. Unlocks the file if it was locked. Closes the file handle
 
