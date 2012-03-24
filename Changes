@@ -1,6 +1,6 @@
 Revision history for File::DataClass
 
-0.7.342  2012-03-23
+0.7.343  2012-03-23
          - In F::DC::IO::close unlock and close handle before rename
            on MSWin32 and Cygwin. Creates a race condition on those platforms
 
