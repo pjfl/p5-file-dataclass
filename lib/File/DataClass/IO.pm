@@ -280,16 +280,18 @@ sub clear {
 }
 
 sub close {
-   my $self = shift; my $path; $self->is_open or return $self;
+   my $self = shift; $self->is_open or return $self;
 
-   if ($self->_atomic and $path = $self->_get_atomic_path and -f $path) {
-      File::Copy::move( $path, $self->name )
-         or $self->throw( error => 'Cannot rename [_1] to [_2]: [_3]',
-                          args  => [ $path, $self->name, $ERRNO ] );
+   unless ($OSNAME eq EVIL or $OSNAME eq CYGWIN) {
+      $self->_atomic and $self->_rename_atomic;
    }
 
-   $self->unlock;
-   $self->io_handle and $self->io_handle->close;
+   $self->unlock; $self->io_handle and $self->io_handle->close;
+
+   if ($OSNAME eq EVIL or $OSNAME eq CYGWIN) {
+      $self->_atomic and $self->_rename_atomic;
+   }
+
    $self->io_handle( undef );
    $self->is_open  ( FALSE );
    $self->mode     ( q(r)  );
@@ -708,6 +710,18 @@ sub rel2abs {
 
 sub relative {
    my $self = shift; $self->name( $self->abs2rel ); return $self;
+}
+
+sub _rename_atomic {
+   my $self = shift; my $path = $self->_get_atomic_path;
+
+   if ($path and -f $path) {
+      File::Copy::move( $path, $self->name )
+         or $self->throw( error => 'Cannot rename [_1] to [_2]: [_3]',
+                          args  => [ $path, $self->name, $ERRNO ] );
+   }
+
+   return;
 }
 
 sub rmdir {
@@ -1527,7 +1541,9 @@ None
 
 =head1 Incompatibilities
 
-There are no known incompatibilities in this module
+On MSWin32 and Cygwin platforms there is a race condition when the atomic
+write option is used. This is caused by the filesystem which does not allow
+an open file to be renamed
 
 =head1 Bugs and Limitations
 
