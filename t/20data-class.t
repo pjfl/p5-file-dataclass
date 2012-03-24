@@ -61,7 +61,7 @@ ok $e =~ m{ \QFile nonexistant_file cannot open\E }msx,
 
 is ref $e, 'File::DataClass::Exception', 'Default exception class';
 
-ok -f $cache_file, 'Cache file found';
+ok -f $cache_file, 'Cache file found'; ! -f $cache_file and warn "${e}\n";
 
 my $data = test( $schema, qw(load t/default.xml t/default_en.xml) );
 
