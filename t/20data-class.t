@@ -64,13 +64,16 @@ is( ref $e, 'File::DataClass::Exception', 'Default exception class' );
 
 my $data = test( $schema, qw(load t/default.xml t/default_en.xml) );
 
-ok( $data->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
+ok( exists $data->{ '_cvs_default' }
+    && $data->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 1' );
 
-ok( $data->{ '_cvs_lang_default' } =~ m{ @\(\#\)\$Id: }mx,
+ok( exists $data->{ '_cvs_lang_default' }
+    && $data->{ '_cvs_lang_default' } =~ m{ @\(\#\)\$Id: }mx,
     'Has reference element 2' );
 
-ok( ref $data->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays' );
+ok( exists $data->{levels}
+    && ref $data->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays' );
 
 $data = $schema->load( $path ); my $args = { data => $data, path => $dumped };
 
