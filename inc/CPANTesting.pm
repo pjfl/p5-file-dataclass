@@ -12,6 +12,7 @@ sub broken {
    $uname     =~ m{ higgsboson     }mx and return 'Stopped dcollins';
    $uname     =~ m{ profvince.com  }mx and return 'Stopped vpit';
    $uname     =~ m{ nexus          }mx and return 'Stopped Bingo';
+   $uname     =~ m{ oatcake        }mx and return 'Stopped Bingo';
    $ENV{PATH} =~ m{ \A /home/sand  }mx and return 'Stopped Konig';
    return 0;
 }
