@@ -4,7 +4,7 @@ package File::DataClass::Schema;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.7.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use Class::Null;
@@ -204,7 +204,7 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Version
 
-0.7.$Revision$
+0.8.$Revision$
 
 =head1 Synopsis
 

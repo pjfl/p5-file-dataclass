@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+0.8.351  2012-03-29
+         - Upped min Perl ver to 5.10
          - Updated inc::Bob. Added inc::CPANTesting
 
 0.7.343  2012-03-23

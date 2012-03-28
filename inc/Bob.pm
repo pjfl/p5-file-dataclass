@@ -9,11 +9,11 @@ use inc::CPANTesting;
 sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN {
-   eval { require 5.008; }; $@ and whimper 'Perl minimum 5.8';
+   eval { require 5.010; }; $@ and whimper 'Perl minimum 5.10';
    my $reason; $reason = CPANTesting::broken and whimper $reason;
 }
 
-use version; our $VERSION = qv( '1.0' );
+use version; our $VERSION = qv( '1.1' );
 
 use File::Spec::Functions;
 use Module::Build;
