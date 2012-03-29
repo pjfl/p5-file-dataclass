@@ -9,17 +9,20 @@ use inc::CPANTesting;
 sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN {
-   eval { require 5.010; }; $@ and whimper 'Perl minimum 5.10';
-   my $reason; $reason = CPANTesting::broken and whimper $reason;
+   my $reason; $reason = CPANTesting::broken_toolchain and whimper $reason;
 }
 
-use version; our $VERSION = qv( '1.1' );
+use version; our $VERSION = qv( '1.2' );
 
 use File::Spec::Functions;
 use Module::Build;
 
 sub new {
-   my ($class, $params) = @_; $params ||= {};
+   my ($class, $params) = @_; $params ||= {}; $params->{requires} ||= {};
+
+   my $perl_ver   = $params->{requires}->{perl} || 5.008_008;
+
+   $] < $perl_ver and whimper "Perl minimum ${perl_ver}";
 
    my $module     = $params->{module} or whimper 'No module name';
    my $distname   = $module; $distname =~ s{ :: }{-}gmx;
@@ -68,8 +71,7 @@ sub __get_notes {
    my $params = shift; my $notes = $params->{notes} || {};
 
    $notes->{create_readme_pod} = $params->{create_readme_pod} || 0;
-   $notes->{stop_tests} = ($params->{stop_tests} || 0) && __cpan_testing()
-                        ? 'CPAN Testing stopped' : 0;
+   $notes->{stop_tests       } = __stop_tests( $params );
 
    return $notes;
 }
@@ -102,6 +104,14 @@ sub __get_resources {
       and $resources->{repository} = $repo;
 
    return { resources => $resources };
+}
+
+sub __stop_tests {
+   my $params = shift; __cpan_testing() or return 0;
+
+   $params->{stop_tests} and return 'CPAN Testing stopped';
+
+   return CPANTesting::exceptions;
 }
 
 1;
