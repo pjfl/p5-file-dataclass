@@ -16,10 +16,6 @@ sub broken_toolchain {
 sub exceptions {
    $uname =~ m{ higgsboson    }mx and return 'Stopped dcollins';
    $uname =~ m{ profvince.com }mx and return 'Stopped vpit';
-   $uname =~ m{ fremen        }mx and return 'Stopped bingos';
-   $uname =~ m{ nexus         }mx and return 'Stopped bingos';
-   $uname =~ m{ oatcake       }mx and return 'Stopped bingos';
-   $uname =~ m{ oliphant      }mx and return 'Stopped bingos';
    $uname =~ m{ slack64       }mx and return 'Stopped bingos';
    return 0;
 }
