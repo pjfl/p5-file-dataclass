@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+         - Turned CPAN testing back on and exempted permission tests in io.t
+           for MSWin32 and cygwin
+
 0.8.355  2012-03-29
          - Turning CPAN testing off
          - Updated inc::Bob to 1.2

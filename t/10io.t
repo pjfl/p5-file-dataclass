@@ -297,33 +297,37 @@ is( (sprintf "%o", $stat->{mode} & 07777), q(400), 'chmod2' );
 
 # Permissions
 
-$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0400) )->println( 'x' );
-is( (sprintf "%o", $io->stat->{mode} & 07777), q(400), 'Create 400' );
-$io->unlink;
+if ($OSNAME ne q(MSWin32) and $OSNAME ne q(cygwin)) {
+   my $path = catfile( qw(t output print.pl) );
 
-$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0440) )->println( 'x' );
-is( (sprintf "%o", $io->stat->{mode} & 07777), q(440), 'Create 440' );
-$io->unlink;
+   $io = io( $path, q(w), oct q(0400) )->println( 'x' );
+   is( (sprintf "%o", $io->stat->{mode} & 07777), q(400), 'Create 400' );
+   $io->unlink;
 
-$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0600) )->println( 'x' );
-is( (sprintf "%o", $io->stat->{mode} & 07777), q(600), 'Create 600' );
-$io->unlink;
+   $io = io( $path, q(w), oct q(0440) )->println( 'x' );
+   is( (sprintf "%o", $io->stat->{mode} & 07777), q(440), 'Create 440' );
+   $io->unlink;
 
-$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0640) )->println( 'x' );
-is( (sprintf "%o", $io->stat->{mode} & 07777), q(640), 'Create 640' );
-$io->unlink;
+   $io = io( $path, q(w), oct q(0600) )->println( 'x' );
+   is( (sprintf "%o", $io->stat->{mode} & 07777), q(600), 'Create 600' );
+   $io->unlink;
 
-$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0644) )->println( 'x' );
-is( (sprintf "%o", $io->stat->{mode} & 07777), q(644), 'Create 644' );
-$io->unlink;
+   $io = io( $path, q(w), oct q(0640) )->println( 'x' );
+   is( (sprintf "%o", $io->stat->{mode} & 07777), q(640), 'Create 640' );
+   $io->unlink;
 
-$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0664) )->println( 'x' );
-is( (sprintf "%o", $io->stat->{mode} & 07777), q(664), 'Create 664' );
-$io->unlink;
+   $io = io( $path, q(w), oct q(0644) )->println( 'x' );
+   is( (sprintf "%o", $io->stat->{mode} & 07777), q(644), 'Create 644' );
+   $io->unlink;
 
-$io = io( catfile( qw(t output print.pl) ), q(w), oct q(0666) )->println( 'x' );
-is( (sprintf "%o", $io->stat->{mode} & 07777), q(666), 'Create 666' );
-$io->unlink;
+   $io = io( $path, q(w), oct q(0664) )->println( 'x' );
+   is( (sprintf "%o", $io->stat->{mode} & 07777), q(664), 'Create 664' );
+   $io->unlink;
+
+   $io = io( $path, q(w), oct q(0666) )->println( 'x' );
+   is( (sprintf "%o", $io->stat->{mode} & 07777), q(666), 'Create 666' );
+   $io->unlink;
+}
 
 # Cleanup
 
