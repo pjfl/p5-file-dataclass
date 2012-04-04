@@ -14,7 +14,7 @@ sub broken_toolchain {
 }
 
 sub exceptions {
-   $uname =~ m{ slack64 }mx and return 'Stopped bingos';
+   $uname =~ m{ slack64 }mx and return 'Stopped Bingos slack64';
    return 0;
 }
 
