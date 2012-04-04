@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.8.360  2012-04-03
+         - Stopped CPAN testing, no point in allowing it to continue
+
 0.8.357  2012-04-03
          - Turned CPAN testing back on and exempted permission tests in io.t
            for MSWin32 and cygwin
