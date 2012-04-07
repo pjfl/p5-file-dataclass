@@ -729,7 +729,7 @@ sub rmdir {
 }
 
 sub rmtree {
-   my ($self, @rest) = @_; return File::Path::rmtree( $self->name, @rest );
+   my ($self, @rest) = @_; return File::Path::remove_tree( $self->name, @rest );
 }
 
 sub seek {

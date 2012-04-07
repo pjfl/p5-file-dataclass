@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - API update F::DC::IO::rmtree now calls File::Path::remove_tree
+
 0.8.360  2012-04-03
          - Stopped CPAN testing, no point in allowing it to continue
 
