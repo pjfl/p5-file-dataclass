@@ -45,11 +45,9 @@ Bob->new( {
       'XML::DTD'               => 0.09,
       'XML::Simple'            => 2.14, },
    configure_requires => { 'Module::Build'    => 0.32,
-                           'Moose'            => 2.0402,
                            'version'          => 0.74, },
    build_requires     => { 'utf8'             => 1.06,
                            'Exception::Class' => 1.23,
-                           'Moose'            => 2.0402,
                            'Test::More'       => 0.74,
                            'Text::Diff'       => 1.37, },
 } )->create_build_script; # Goal!
