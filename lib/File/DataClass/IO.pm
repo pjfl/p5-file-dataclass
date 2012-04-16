@@ -8,28 +8,23 @@ use overload '""' => sub { shift->pathname }, fallback => 1;
 use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
+use File::DataClass::Constants;
 use Moose::Util::TypeConstraints;
 use English      qw( -no_match_vars );
 use Fcntl        qw( :flock :seek );
 use List::Util   qw( first );
+use Scalar::Util qw( blessed );
 use File::Basename ();
 use File::Copy     ();
 use File::Path     ();
 use File::Spec     ();
 use File::Temp     ();
-use IO::Dir;
 use IO::File;
-use Scalar::Util qw( blessed );
-use File::DataClass::Constants;
-use File::DataClass::Exception;
+use IO::Dir;
 
 use Sub::Exporter -setup => {
    exports => [ qw(io) ], groups => { default => [ qw(io) ], },
 };
-
-subtype 'F_DC_IO_Exception' => as 'ClassName' =>
-   where   { $_->can( q(throw) ) } =>
-   message { "Class $_ is not loaded or has no throw method" };
 
 enum 'F_DC_IO_Mode'    => qw(a a+ r r+ w w+);
 enum 'F_DC_IO_Type'    => qw(dir file);
@@ -52,9 +47,6 @@ has '_chomp'           => is => 'rw', isa => 'Bool',      default    => FALSE ;
 has '_deep'            => is => 'rw', isa => 'Bool',      default    => FALSE ;
 has '_dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE  ;
 has '_encoding'        => is => 'rw', isa => 'Str',       default    => NUL   ;
-has '_exception_class' => is => 'rw', isa => 'F_DC_IO_Exception',
-   default             => q(File::DataClass::Exception),
-   writer              => 'exception_class';
 has '_filter'          => is => 'rw', isa => 'Maybe[CodeRef]'                 ;
 has '_lock'            => is => 'rw', isa => 'Bool',      default    => FALSE ;
 has '_lock_obj'        => is => 'rw', isa => 'Maybe[Object]',
@@ -148,15 +140,15 @@ sub assert_dirpath {
 
    $self->_umask_pop;
 
-   -d $dir_name or $self->throw( error => 'Path [_1] cannot create: [_2]',
-                                 args  => [ $dir_name, $ERRNO ] );
+   -d $dir_name or $self->_throw( error => 'Path [_1] cannot create: [_2]',
+                                  args  => [ $dir_name, $ERRNO ] );
    return $dir_name;
 }
 
 sub assert_filepath {
    my $self = shift; my $dir;
 
-   $self->name or $self->throw( 'Path not specified' );
+   $self->name or $self->_throw( 'Path not specified' );
 
    (undef, $dir) = File::Spec->splitpath( $self->name );
 
@@ -303,14 +295,14 @@ sub _constructor {
 }
 
 sub copy {
-   my ($self, $to) = @_; $to or $self->throw( 'Copy requires two args' );
+   my ($self, $to) = @_; $to or $self->_throw( 'Copy requires two args' );
 
    (blessed $to and $to->isa( __PACKAGE__ ))
       or $to = $self->_constructor( $to );
 
    File::Copy::copy( $self->name, $to->pathname )
-      or $self->throw( error => 'Cannot copy [_1] to [_2]',
-                       args  => [ $self->name, $to->pathname ] );
+      or $self->_throw( error => 'Cannot copy [_1] to [_2]',
+                        args  => [ $self->name, $to->pathname ] );
 
    return $to;
 }
@@ -357,8 +349,8 @@ sub empty {
    my $self = shift;
 
    $self->is_file and return -z $self->name;
-   $self->is_dir  or  $self->throw( error => 'Path [_1] not found',
-                                    args  => [ $self->name ] );
+   $self->is_dir  or  $self->_throw( error => 'Path [_1] not found',
+                                     args  => [ $self->name ] );
 
    return $self->next ? FALSE : TRUE;
 }
@@ -367,7 +359,7 @@ sub encoding {
    my ($self, $encoding) = @_;
 
    $encoding or
-      $self->throw( 'No encoding value passed to '.__PACKAGE__.'::encoding' );
+      $self->_throw( 'No encoding value passed to '.__PACKAGE__.'::encoding' );
    $self->is_open and CORE::binmode( $self->io_handle, ":$encoding" );
    $self->_encoding( $encoding );
    $self->is_utf8( $encoding eq q(utf8) ? TRUE : FALSE );
@@ -379,7 +371,7 @@ sub error_check {
 
    $self->io_handle->can( q(error) ) or return;
    $self->io_handle->error or return;
-   $self->throw( error => 'IO error [_1]', args => [ $ERRNO ] );
+   $self->_throw( error => 'IO error [_1]', args => [ $ERRNO ] );
    return;
 }
 
@@ -541,8 +533,8 @@ sub mkdir {
 
    $self->_umask_pop;
 
-   -d $self->name or $self->throw( error => 'Path [_1] cannot create: [_2]',
-                                   args  => [ $self->name, $ERRNO ] );
+   -d $self->name or $self->_throw( error => 'Path [_1] cannot create: [_2]',
+                                    args  => [ $self->name, $ERRNO ] );
    return $self;
 }
 
@@ -561,8 +553,8 @@ sub mkpath {
 
    $self->_umask_pop;
 
-   -d $self->name or $self->throw( error => 'Path [_1] cannot create: [_2]',
-                                   args  => [ $self->name, $ERRNO ] );
+   -d $self->name or $self->_throw( error => 'Path [_1] cannot create: [_2]',
+                                    args  => [ $self->name, $ERRNO ] );
    return $self;
 }
 
@@ -602,7 +594,7 @@ sub open {
 sub _open_args {
    my ($self, $mode, $perms) = @_;
 
-   $self->name or $self->throw( 'Path not specified' );
+   $self->name or $self->_throw( 'Path not specified' );
 
    my $pathname = $self->_atomic && !$self->is_reading( $mode )
                 ? $self->_get_atomic_path : $self->name;
@@ -617,8 +609,8 @@ sub _open_dir {
 
    $self->_assert and $self->assert_dirpath( $path );
    $self->io_handle( IO::Dir->new( $path ) )
-      or $self->throw( error => 'Directory [_1] cannot open',
-                       args  => [ $path ], level => 6 );
+      or $self->_throw( error => 'Directory [_1] cannot open',
+                        args  => [ $path ], level => 6 );
    $self->is_open( TRUE );
    return $self;
 }
@@ -629,8 +621,8 @@ sub _open_file {
    $self->_assert and $self->assert_filepath;
    $self->_umask_push( $perms );
    $self->io_handle( IO::File->new( $path, $mode ) )
-      or $self->throw( error => 'File [_1] cannot open',
-                       args  => [ $path ], level => 6 );
+      or $self->_throw( error => 'File [_1] cannot open',
+                        args  => [ $path ], level => 6 );
    $self->_umask_pop;
    $self->is_open( TRUE );
    $self->set_binmode;
@@ -655,7 +647,7 @@ sub _print {
 
    for (@rest) {
       print {$self->io_handle} $_
-         or $self->throw( error => 'IO error [_1]', args  => [ $ERRNO ] );
+         or $self->_throw( error => 'IO error [_1]', args  => [ $ERRNO ] );
    }
 
    return $self;
@@ -717,8 +709,8 @@ sub _rename_atomic {
 
    if ($path and -f $path) {
       File::Copy::move( $path, $self->name )
-         or $self->throw( error => 'Cannot rename [_1] to [_2]: [_3]',
-                          args  => [ $path, $self->name, $ERRNO ] );
+         or $self->_throw( error => 'Cannot rename [_1] to [_2]: [_3]',
+                           args  => [ $path, $self->name, $ERRNO ] );
    }
 
    return;
@@ -831,12 +823,10 @@ sub tempfile {
    return $self;
 }
 
-sub throw {
-   my ($self, @rest) = @_;
+sub _throw {
+   my ($self, @rest) = @_; eval { $self->unlock; };
 
-   eval { $self->unlock; }; $self->_exception_class->throw( @rest );
-
-   return; # Never reached
+   EXCEPTION_CLASS->throw( @rest ); return; # Not reached
 }
 
 sub touch {
@@ -1483,9 +1473,9 @@ Create a randomly named temporary file in the I<name>
 directory. The file name is prefixed with the creating processes id
 and the temporary directory defaults to F</tmp>
 
-=head2 throw
+=head2 _throw
 
-Exposes the C<throw> method in the class exception class
+Exposes the C<throw> method in the exception class
 
 =head2 touch
 

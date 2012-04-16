@@ -18,7 +18,7 @@ BEGIN {
             and plan skip_all => $current->notes->{stop_tests};
 }
 
-use_ok( q(File::DataClass::IO) );
+use File::DataClass::IO;
 
 isa_ok( io( $PROGRAM_NAME ), q(File::DataClass::IO) );
 

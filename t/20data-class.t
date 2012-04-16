@@ -36,7 +36,7 @@ sub test {
    return $wantarray ? @{ $res } : $res;
 }
 
-use_ok q(File::DataClass::Schema);
+use File::DataClass::Schema;
 
 my $path       = catfile( qw(t default.xml) );
 my $dumped     = catfile( qw(t dumped.xml) );
@@ -56,7 +56,7 @@ ok ! -f $cache_file, 'Cache file not created too early';
 
 my $e = test( $schema, qw(load nonexistant_file) );
 
-ok $e =~ m{ \QFile nonexistant_file cannot open\E }msx,
+like $e, qr{ \QFile nonexistant_file cannot open\E }msx,
     'Cannot open nonexistant_file';
 
 is ref $e, 'File::DataClass::Exception', 'Default exception class';
@@ -185,22 +185,23 @@ ok ! $diff, 'Can translate from XML to JSON';
 
 {  package Dummy;
 
-   use Exception::Class ( q(MyException) );
+   sub new { bless { tempdir => q(t) }, q(Dummy) }
 
-   sub new {
-      return bless { exception_class => q(MyException) }, q(Dummy);
-   }
-
-   sub exception_class {
-      return $_[ 0 ]->{exception_class};
-   }
+   sub tempdir { $_[ 0 ]->{tempdir} }
 }
 
+use Exception::Class ( q(MyException) );
+use File::DataClass::Constants ();
+
+File::DataClass::Constants->Exception_Class( q(MyException) );
+
 $schema = File::DataClass::Schema->new
-   ( ioc_obj => Dummy->new, path => [ qw(t default.xml) ], tempdir => q(t) );
+   ( ioc_obj => Dummy->new, path => [ qw(t default.xml) ] );
 
 is ref $schema, q(File::DataClass::Schema),
    'File::DataClass::Schema - with inversion of control';
+
+is $schema->tempdir, q(t), 'IOC tempdir';
 
 $e = test( $schema, qw(load nonexistant_file) );
 

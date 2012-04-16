@@ -21,11 +21,10 @@ subtype 'F_DC_DummyClass' => as 'Str' =>
    where   { $_ eq q(none) } =>
    message { "Class $_ is not 'none'" };
 
-subtype 'F_DC_Exception' => as 'ClassName' =>
-   where   { $_->can( q(throw) ) } =>
-   message { "Class $_ is not loaded or has no throw method" };
-
 subtype 'F_DC_HashRefOfBools' => as 'HashRef';
+
+coerce 'F_DC_HashRefOfBools' => from 'ArrayRef' =>
+   via { my %hash = map { $_ => 1 } @{ $_ }; return \%hash; };
 
 subtype 'F_DC_Lock' => as 'Object' =>
    where   { $_->isa( q(Class::Null) )
@@ -38,32 +37,34 @@ subtype 'F_DC_Path' => as 'Object' =>
    message {
       'Object '.(blessed $_ || $_).' is not of class File::DataClass::IO' };
 
-subtype 'F_DC_Result' => as 'Object' =>
-   where   { $_->isa( q(File::DataClass::Result) ) } =>
-   message {
-      'Object '.(blessed $_ || $_).' is not of class File::DataClass::Result'
-   };
+coerce 'F_DC_Path' =>
+   from 'ArrayRef' => via { io( $_ ) },
+   from 'Str'      => via { io( $_ ) },
+   from 'Undef'    => via { io( $_ ) };
 
 subtype 'F_DC_Directory' => as 'F_DC_Path' =>
    where   { $_->is_dir  } =>
    message { 'Path '.($_ ? $_.' is not a directory' : 'not specified') };
 
+coerce 'F_DC_Directory' =>
+   from 'ArrayRef' => via { io( $_ ) },
+   from 'Str'      => via { io( $_ ) },
+   from 'Undef'    => via { io( $_ ) };
+
 subtype 'F_DC_File'      => as 'F_DC_Path' =>
    where   { $_->is_file } =>
    message { 'Path '.($_ ? $_.' is not a file' : 'not specified') };
 
-coerce 'F_DC_Path'      => from 'ArrayRef' => via { io( $_ ) };
-coerce 'F_DC_Directory' => from 'ArrayRef' => via { io( $_ ) };
-coerce 'F_DC_File'      => from 'ArrayRef' => via { io( $_ ) };
-coerce 'F_DC_Path'      => from 'Str'      => via { io( $_ ) };
-coerce 'F_DC_Directory' => from 'Str'      => via { io( $_ ) };
-coerce 'F_DC_File'      => from 'Str'      => via { io( $_ ) };
-coerce 'F_DC_Path'      => from 'Undef'    => via { io( $_ ) };
-coerce 'F_DC_Directory' => from 'Undef'    => via { io( $_ ) };
-coerce 'F_DC_File'      => from 'Undef'    => via { io( $_ ) };
+coerce 'F_DC_File' =>
+   from 'ArrayRef' => via { io( $_ ) },
+   from 'Str'      => via { io( $_ ) },
+   from 'Undef'    => via { io( $_ ) };
 
-coerce 'F_DC_HashRefOfBools' => from 'ArrayRef' =>
-   via { my %hash = map { $_ => 1 } @{ $_ }; return \%hash; };
+subtype 'F_DC_Result' => as 'Object' =>
+   where   { $_->isa( q(File::DataClass::Result) ) } =>
+   message {
+      'Object '.(blessed $_ || $_).' is not of class File::DataClass::Result'
+   };
 
 no Moose::Util::TypeConstraints;
 no Moose::Role;

@@ -16,7 +16,6 @@ use Carp;
 use MRO::Compat;
 use English      qw(-no_match_vars);
 use Scalar::Util qw(blessed);
-use File::DataClass::Constants;
 
 our $IGNORE = [ __PACKAGE__ ];
 
@@ -32,13 +31,13 @@ sub new {
       $args->{error}->{leader} = $leader; return $args->{error};
    }
 
-   $args->{error} .= NUL;
+   $args->{error} .= q();
 
    return $self->next::method( args           => [],
                                error          => 'Error unknown',
                                ignore_package => $IGNORE,
                                leader         => $leader,
-                               out            => NUL,
+                               out            => q(),
                                %{ $args } );
 }
 
@@ -52,9 +51,9 @@ sub full_message {
    my $self = shift; my $text = $self->error or return;
 
    # Expand positional parameters of the form [_<n>]
-   0 > index $text, LOCALIZE and return $self->leader.$text;
+   0 > index $text, q([_) and return $self->leader.$text;
 
-   my @args = @{ $self->args }; push @args, map { NUL } 0 .. 10;
+   my @args = @{ $self->args }; push @args, map { q() } 0 .. 10;
 
    $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
 
@@ -66,7 +65,7 @@ sub stacktrace {
 
    for my $frame (reverse $self->trace->frames) {
       unless ($l_no = $seen{ $frame->package } and $l_no == $frame->line) {
-         $subr and push @lines, join SPC, $subr, 'line', $frame->line;
+         $subr and push @lines, join q( ), $subr, 'line', $frame->line;
          $seen{ $frame->package } = $frame->line;
       }
 

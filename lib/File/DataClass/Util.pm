@@ -14,8 +14,6 @@ use Try::Tiny;
 use File::DataClass::Constants;
 use File::DataClass::IO ();
 
-requires qw(exception_class);
-
 sub basename {
    my ($self, $path, @suffixes) = @_;
 
@@ -52,11 +50,7 @@ sub ensure_class_loaded {
 }
 
 sub io {
-   my ($self, @rest) = @_; my $io = File::DataClass::IO->new( @rest );
-
-   $io->exception_class( $self->exception_class );
-
-   return $io;
+   my ($self, @rest) = @_; return File::DataClass::IO->new( @rest );
 }
 
 sub is_member {
@@ -66,7 +60,7 @@ sub is_member {
 }
 
 sub throw {
-   shift->exception_class->throw( @_ ); return;
+   my $self = shift; EXCEPTION_CLASS->throw( @_ ); return; # Not reached
 }
 
 no Moose::Role;

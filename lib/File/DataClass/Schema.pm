@@ -73,9 +73,6 @@ around BUILDARGS => sub {
 
    $attrs->{ $_ } ||= $ioc->$_() for (grep { $ioc->can( $_ ) } @attrs);
 
-   $ioc->can( q(exception_class) )
-      and $class->Exception_Class( $ioc->exception_class );
-
    $ioc->can( q(config) ) and $attrs->{tempdir} ||= $ioc->config->{tempdir};
 
    return $attrs;
