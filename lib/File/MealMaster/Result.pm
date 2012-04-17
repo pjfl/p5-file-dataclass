@@ -4,7 +4,7 @@ package File::MealMaster::Result;
 
 use strict;
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use English qw( -no_match_vars );
@@ -40,7 +40,7 @@ File::MealMaster::Result - MealMaster food recipes custom methods
 
 =head1 Version
 
-0.8.$Revision$
+0.9.$Revision$
 
 =head1 Synopsis
 

@@ -3,10 +3,9 @@
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 
 Bob->new( {
-   stop_tests => 1,
    module     => q(File::DataClass),
    home_page  => q(http://www.roxsoft.co.uk),
    requires   => {

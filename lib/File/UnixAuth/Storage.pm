@@ -4,7 +4,7 @@ package File::UnixAuth::Storage;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use Lingua::EN::NameParse;
@@ -149,7 +149,7 @@ File::UnixAuth::Storage - Unix authentication and authorisation file storage
 
 =head1 Version
 
-0.8.$Revision$
+0.9.$Revision$
 
 =head1 Synopsis
 
