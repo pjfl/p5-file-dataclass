@@ -8,13 +8,13 @@ use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
+use MooseX::Types::Moose qw(HashRef Undef);
+use File::DataClass::Constraints qw(Cache Lock);
 
-with qw(File::DataClass::Constraints);
-
-class_has 'Cache' => is => 'rw', isa => 'HashRef[F_DC_Cache]',
+class_has 'F_DC_Cache' => is => 'rw', isa => HashRef[Cache],
    default        => sub { {} };
 
-class_has 'Lock'  => is => 'rw', isa => 'Maybe[F_DC_Lock]';
+class_has 'F_DC_Lock'  => is => 'rw', isa => Lock | Undef;
 
 __PACKAGE__->meta->make_immutable;
 
@@ -68,12 +68,11 @@ of L<File::DataClass::Schema> is created
 =item B<Cache>
 
 This is a L<Cache::Cache> object which is used to cache the results of
-reading a file. Maybe of type C<F_DC_Cache>
+reading a file. Maybe of type C<Cache>
 
 =item B<Lock>
 
-A lock object that has the methods C<set> and C<reset>. Maybe of type
-C<F_DC_Lock>
+A lock object that has the methods C<set> and C<reset>. Maybe of type C<Lock>
 
 =back
 

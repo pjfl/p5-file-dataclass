@@ -12,8 +12,7 @@ use File::DataClass::Constants;
 use File::DataClass::List;
 use File::DataClass::Result;
 
-extends qw(File::DataClass);
-with    qw(File::DataClass::Util);
+with qw(File::DataClass::Util);
 
 has 'list_class'   => is => 'ro', isa => 'ClassName',
    default         => q(File::DataClass::List);

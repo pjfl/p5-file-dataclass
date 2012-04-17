@@ -35,6 +35,7 @@ Bob->new( {
       'MealMaster'             => 0.28,
       'Moose'                  => 2.0402,
       'MooseX::ClassAttribute' => 0.26,
+      'MooseX::Types'          => 0.25,
       'Scalar::Util'           => 1.18,
       'Sub::Exporter'          => 0.982,
       'Template'               => 2.18,

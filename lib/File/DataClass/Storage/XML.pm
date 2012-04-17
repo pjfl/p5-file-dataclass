@@ -7,18 +7,22 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
+use File::DataClass::Constraints qw(HashRefOfBools);
+use MooseX::Types::Moose qw(ArrayRef Str);
 use XML::DTD;
 use Moose;
 
 extends qw(File::DataClass::Storage);
 
 has '+extn'     => default => q(.xml);
-has 'root_name' => is => 'ro', isa => 'Str',      default  => 'config';
-has '_arrays'   => is => 'rw', isa => 'F_DC_HashRefOfBools',
-   coerce       => TRUE,  init_arg => 'force_array',
-   default      => sub { return {} };
-has '_dtd'      => is => 'rw', isa => 'ArrayRef', init_arg => 'dtd',
-   default      => sub { return [] };
+
+has 'root_name' => is => 'ro', isa => Str,            default => 'config';
+
+has '_arrays'   => is => 'rw', isa => HashRefOfBools, default => sub { {} },
+   init_arg     => 'force_array',                     coerce  => TRUE;
+
+has '_dtd'      => is => 'rw', isa => ArrayRef,       default => sub { [] },
+   init_arg     => 'dtd';
 
 around '_meta_pack' => sub {
    my ($orig, $self, $args) = @_; my $packed = $self->$orig( $args );

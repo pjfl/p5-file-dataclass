@@ -11,11 +11,11 @@ use MooseX::ClassAttribute;
 use Moose::Util::TypeConstraints;
 use File::DataClass::Exception;
 
-subtype 'F_DC_Exception' => as 'ClassName' =>
+subtype 'File::DataClass::Exception' => as 'ClassName' =>
    where   { $_->can( q(throw) ) } =>
    message { "Class $_ is not loaded or has no throw method" };
 
-class_has 'Exception_Class' => is => 'rw', isa => 'F_DC_Exception',
+class_has 'Exception_Class' => is => 'rw', isa => 'File::DataClass::Exception',
    default                  => q(File::DataClass::Exception);
 
 my @constants;
@@ -49,7 +49,6 @@ sub STAT_FIELDS     () { qw(device inode mode nlink uid gid device_id
 
 __PACKAGE__->meta->make_immutable;
 
-no Moose;
 no MooseX::ClassAttribute;
 no Moose::Util::TypeConstraints;
 
@@ -152,6 +151,8 @@ None
 =head1 Dependencies
 
 =over 3
+
+=item L<MooseX::ClassAttribute>
 
 =item L<Sub::Exporter>
 

@@ -8,15 +8,16 @@ use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use File::DataClass::Constants;
-use File::DataClass::Constraints;
+use File::DataClass::Constraints qw(Directory);
 use File::DataClass::ResultSource::WithLanguage;
 use File::DataClass::Storage::WithLanguage;
 use File::Gettext::Constants;
+use MooseX::Types::Moose qw(Str);
 
 extends qw(File::DataClass::Schema);
 
-has 'lang'      => is => 'rw', isa => 'Str', default => LANG;
-has 'localedir' => is => 'ro', isa => 'F_DC_Directory', coerce => TRUE,
+has 'lang'      => is => 'rw', isa => Str,     default => LANG;
+has 'localedir' => is => 'ro', isa => Directory, coerce  => TRUE,
    default      => sub { DIRECTORIES->[ 0 ] };
 
 around BUILDARGS => sub {

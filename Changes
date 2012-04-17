@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Switched to using MX::Types
          - Exception_Class now a class attribute of F::DC::Constants
          - Updated inc::Bob to 1.3
          - API update F::DC::IO::rmtree now calls File::Path::remove_tree

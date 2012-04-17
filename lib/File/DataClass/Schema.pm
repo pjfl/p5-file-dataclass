@@ -9,6 +9,8 @@ use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
 use Moose;
 use Class::Null;
 use File::DataClass::Constants;
+use File::DataClass::Constraints qw(Cache Directory DummyClass Lock Path);
+use MooseX::Types::Moose         qw(Bool ClassName HashRef Num Object Str);
 use File::Spec;
 
 use File::DataClass::Cache;
@@ -19,47 +21,45 @@ use IPC::SRLock;
 extends qw(File::DataClass);
 with    qw(File::DataClass::Util);
 
-has 'cache'                    => is => 'ro', isa => 'F_DC_Cache',
+has 'cache'                    => is => 'ro', isa => Cache,
    lazy_build                  => TRUE;
-has 'cache_attributes'         => is => 'ro', isa => 'HashRef',
+has 'cache_attributes'         => is => 'ro', isa => HashRef,
    default                     => sub { {
       driver                   => q(FastMmap),
       page_size                => 131072,
       num_pages                => 89,
       unlink_on_exit           => TRUE, } };
-has 'cache_class'              => is => 'ro',
-   isa                         => 'F_DC_DummyClass | ClassName',
+has 'cache_class'              => is => 'ro', isa => ClassName | DummyClass,
    default                     => q(File::DataClass::Cache);
-has 'debug'                    => is => 'ro', isa => 'Bool',
+has 'debug'                    => is => 'ro', isa => Bool,
    default                     => FALSE;
-has 'lock'                     => is => 'ro', isa => 'F_DC_Lock',
+has 'lock'                     => is => 'ro', isa => Lock,
    lazy_build                  => TRUE;
-has 'lock_attributes'          => is => 'ro', isa => 'HashRef',
+has 'lock_attributes'          => is => 'ro', isa => HashRef,
    default                     => sub { {} };
-has 'lock_class'               => is => 'ro',
-   isa                         => 'F_DC_DummyClass | ClassName',
+has 'lock_class'               => is => 'ro', isa => ClassName | DummyClass,
    default                     => q(IPC::SRLock);
-has 'log'                      => is => 'ro', isa => 'Object',
+has 'log'                      => is => 'ro', isa => Object,
    default                     => sub { Class::Null->new };
-has 'path'                     => is => 'rw', isa => 'F_DC_Path',
+has 'path'                     => is => 'rw', isa => Path,
    coerce                      => TRUE;
-has 'perms'                    => is => 'rw', isa => 'Num',
+has 'perms'                    => is => 'rw', isa => Num,
    default                     => PERMS;
-has 'result_source_attributes' => is => 'ro', isa => 'HashRef',
+has 'result_source_attributes' => is => 'ro', isa => HashRef,
    default                     => sub { {} };
-has 'result_source_class'      => is => 'ro', isa => 'ClassName',
+has 'result_source_class'      => is => 'ro', isa => ClassName,
    default                     => q(File::DataClass::ResultSource);
-has 'source_registrations'     => is => 'ro', isa => 'HashRef[Object]',
+has 'source_registrations'     => is => 'ro', isa => HashRef[Object],
    lazy_build                  => TRUE;
-has 'storage'                  => is => 'rw', isa => 'Object',
+has 'storage'                  => is => 'rw', isa => Object,
    lazy_build                  => TRUE;
-has 'storage_attributes'       => is => 'ro', isa => 'HashRef',
+has 'storage_attributes'       => is => 'ro', isa => HashRef,
    default                     => sub { {} };
-has 'storage_base'             => is => 'ro', isa => 'ClassName',
+has 'storage_base'             => is => 'ro', isa => ClassName,
    default                     => q(File::DataClass::Storage);
-has 'storage_class'            => is => 'rw', isa => 'Str',
+has 'storage_class'            => is => 'rw', isa => Str,
    default                     => q(XML::Simple);
-has 'tempdir'                  => is => 'ro', isa => 'F_DC_Directory',
+has 'tempdir'                  => is => 'ro', isa => Directory,
    default                     => File::Spec->tmpdir,
    coerce                      => TRUE;
 
@@ -137,17 +137,18 @@ sub _build_cache {
 
    $ns = $attrs->{cache_attributes}->{namespace} ||= $ns;
 
-   $cache = $self->Cache and exists $cache->{ $ns } and return $cache->{ $ns };
+   $cache = $self->F_DC_Cache and exists $cache->{ $ns }
+      and return $cache->{ $ns };
 
    $self->cache_class eq q(none) and return Class::Null->new;
 
    $attrs->{cache_attributes}->{root_dir} ||= NUL.$self->tempdir;
 
-   return $self->Cache->{ $ns } = $self->cache_class->new( $attrs );
+   return $self->F_DC_Cache->{ $ns } = $self->cache_class->new( $attrs );
 }
 
 sub _build_lock {
-   my $self = shift; my $lock = $self->Lock; $lock and return $lock;
+   my $self = shift; my $lock = $self->F_DC_Lock; $lock and return $lock;
 
    $self->lock_class eq q(none) and return Class::Null->new;
 
@@ -155,7 +156,7 @@ sub _build_lock {
 
    $attrs->{ $_ } ||= $self->$_() for (qw(debug log tempdir));
 
-   return $self->Lock( $self->lock_class->new( $attrs ) );
+   return $self->F_DC_Lock( $self->lock_class->new( $attrs ) );
 }
 
 sub _build_source_registrations {
@@ -251,7 +252,7 @@ Writes debug information to the log object if set to true
 =item B<exception_class>
 
 A classname that is expected to have a class method C<throw>. Defaults to
-L<File::DataClass::Exception> and is of type C<F_DC_Exception>
+L<File::DataClass::Exception> and is of type C<File::DataClass::Exception>
 
 =item B<ioc_obj>
 

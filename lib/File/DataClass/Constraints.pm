@@ -3,71 +3,74 @@
 package File::DataClass::Constraints;
 
 use strict;
+use warnings;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
 
-use Moose::Role;
-use Moose::Util::TypeConstraints;
-use Scalar::Util qw(blessed);
+use MooseX::Types -declare => [ qw(Cache DummyClass HashRefOfBools Lock Path
+                                   Directory File Result Symbol) ];
+use MooseX::Types::Moose qw(ArrayRef HashRef Object Str Undef);
+
 use File::DataClass::IO;
+use Scalar::Util qw(blessed);
 
-subtype 'F_DC_Cache' => as 'Object' =>
-   where   { $_->isa( q(File::DataClass::Cache) )
-          || $_->isa( q(Class::Null) ) } =>
+subtype Cache, as Object,
+   where   { $_->isa( q(File::DataClass::Cache) ) || $_->isa( q(Class::Null) )},
    message {
-      'Object '.(blessed $_ || $_).' is not of class File::DataClass::Cache' };
+      'Object '.(blessed $_ || $_).' is not of class File::DataClass::Cache'
+   };
 
-subtype 'F_DC_DummyClass' => as 'Str' =>
-   where   { $_ eq q(none) } =>
-   message { "Class $_ is not 'none'" };
+subtype DummyClass, as Str,
+   where   { $_ eq q(none) }, message { "Class $_ is not 'none'" };
 
-subtype 'F_DC_HashRefOfBools' => as 'HashRef';
+subtype HashRefOfBools, as HashRef;
 
-coerce 'F_DC_HashRefOfBools' => from 'ArrayRef' =>
-   via { my %hash = map { $_ => 1 } @{ $_ }; return \%hash; };
+coerce HashRefOfBools, from ArrayRef,
+   via     { my %hash = map { $_ => 1 } @{ $_ }; return \%hash; };
 
-subtype 'F_DC_Lock' => as 'Object' =>
+subtype Lock, as Object,
    where   { $_->isa( q(Class::Null) )
-                or ($_->can( q(set) ) and $_->can( q(reset) ) ) } =>
+                or ($_->can( q(set) ) and $_->can( q(reset) ) ) },
    message {
-   'Object '.(blessed $_ || $_ || 'undef').' is missing set or reset methods' };
+      'Object '.(blessed $_ || $_ || 'undef').' is missing set or reset methods'
+   };
 
-subtype 'F_DC_Path' => as 'Object' =>
-   where   { $_->isa( q(File::DataClass::IO) ) } =>
-   message {
-      'Object '.(blessed $_ || $_).' is not of class File::DataClass::IO' };
-
-coerce 'F_DC_Path' =>
-   from 'ArrayRef' => via { io( $_ ) },
-   from 'Str'      => via { io( $_ ) },
-   from 'Undef'    => via { io( $_ ) };
-
-subtype 'F_DC_Directory' => as 'F_DC_Path' =>
-   where   { $_->is_dir  } =>
-   message { 'Path '.($_ ? $_.' is not a directory' : 'not specified') };
-
-coerce 'F_DC_Directory' =>
-   from 'ArrayRef' => via { io( $_ ) },
-   from 'Str'      => via { io( $_ ) },
-   from 'Undef'    => via { io( $_ ) };
-
-subtype 'F_DC_File'      => as 'F_DC_Path' =>
-   where   { $_->is_file } =>
-   message { 'Path '.($_ ? $_.' is not a file' : 'not specified') };
-
-coerce 'F_DC_File' =>
-   from 'ArrayRef' => via { io( $_ ) },
-   from 'Str'      => via { io( $_ ) },
-   from 'Undef'    => via { io( $_ ) };
-
-subtype 'F_DC_Result' => as 'Object' =>
-   where   { $_->isa( q(File::DataClass::Result) ) } =>
+subtype Result, as Object,
+   where   { $_->isa( q(File::DataClass::Result) ) },
    message {
       'Object '.(blessed $_ || $_).' is not of class File::DataClass::Result'
    };
 
-no Moose::Util::TypeConstraints;
-no Moose::Role;
+subtype Path, as Object,
+   where   { $_->isa( q(File::DataClass::IO) ) },
+   message {
+      'Object '.(blessed $_ || $_).' is not of class File::DataClass::IO'
+   };
+
+coerce Path,
+   from ArrayRef, via { io( $_ ) },
+   from Str,      via { io( $_ ) },
+   from Undef,    via { io( $_ ) };
+
+subtype Directory, as Path,
+   where   { $_->is_dir  },
+   message { 'Path '.($_ ? $_.' is not a directory' : 'not specified') };
+
+coerce Directory,
+   from ArrayRef, via { io( $_ ) },
+   from Str,      via { io( $_ ) },
+   from Undef,    via { io( $_ ) };
+
+subtype File, as Path,
+   where   { $_->is_file },
+   message { 'Path '.($_ ? $_.' is not a file' : 'not specified') };
+
+coerce File,
+   from ArrayRef, via { io( $_ ) },
+   from Str,      via { io( $_ ) },
+   from Undef,    via { io( $_ ) };
+
+no MooseX::Types;
 
 1;
 
@@ -86,8 +89,7 @@ File::DataClass::Constraints - Role defining package constraints
 =head1 Synopsis
 
    use Moose;
-
-   with qw(File::DataClass::Constraints);
+   use File::DataClass::Constraints q(Path Directory File);
 
 =head1 Description
 
@@ -99,35 +101,35 @@ Defines these subtypes
 
 =over 3
 
-=item B<F_DC_Cache>
+=item B<Cache>
 
 Is a L<File::DataClass::Cache>
 
-=item B<F_DC_Exception>
+=item B<Exception>
 
 Can C<throw>
 
-=item B<F_DC_Lock>
+=item B<Lock>
 
 Is a L<Class::Null> or can C<set> and C<reset>
 
-=item B<F_DC_Path>
+=item B<Path>
 
 Is a L<File::DataClass::IO>. Can be coerced from either a string or
 an array ref
 
-=item B<F_DC_Result>
+=item B<Result>
 
 Is a L<File::DataClass::Result>
 
-=item B<F_DC_Directory>
+=item B<Directory>
 
-Subtype of C<F_DC_Path> which is a directory. Can be coerced from
+Subtype of C<Path> which is a directory. Can be coerced from
 either a string or an array ref
 
-=item B<F_DC_File>
+=item B<File>
 
-Subtype of C<F_DC_Path> which is a file. Can be coerced from either a
+Subtype of C<Path> which is a file. Can be coerced from either a
 string or an array ref
 
 =back
@@ -146,9 +148,7 @@ None
 
 =item L<File::DataClass::IO>
 
-=item L<Moose::Role>
-
-=item L<Moose::Util::TypeConstraints>
+=item L<MooseX::Types
 
 =back
 

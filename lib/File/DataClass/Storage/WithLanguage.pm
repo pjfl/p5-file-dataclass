@@ -11,8 +11,7 @@ use File::DataClass::Constants;
 use File::Gettext;
 use Hash::Merge qw(merge);
 
-extends qw(File::DataClass);
-with    qw(File::DataClass::Util);
+with qw(File::DataClass::Util);
 
 has 'gettext' => is => 'ro', isa => 'Object',  lazy_build => TRUE;
 has 'schema'  => is => 'ro', isa => 'Object',  required   => TRUE,

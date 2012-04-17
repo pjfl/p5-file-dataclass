@@ -7,13 +7,13 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
+use MooseX::Types::Moose qw(ArrayRef Bool HashRef Undef);
+use File::DataClass::Constraints qw(Result);
 
-with qw(File::DataClass::Constraints);
-
-has 'found'  => is => 'ro', isa => 'Bool',     default => 0;
-has 'labels' => is => 'ro', isa => 'HashRef',  default => sub { return {} };
-has 'list'   => is => 'ro', isa => 'ArrayRef', default => sub { return [] };
-has 'result' => is => 'ro', isa => 'Maybe[F_DC_Result]';
+has 'found'  => is => 'ro', isa => Bool,     default => 0;
+has 'labels' => is => 'ro', isa => HashRef,  default => sub { return {} };
+has 'list'   => is => 'ro', isa => ArrayRef, default => sub { return [] };
+has 'result' => is => 'ro', isa => Result | Undef;
 
 __PACKAGE__->meta->make_immutable;
 
@@ -64,7 +64,7 @@ An array ref of element names
 
 =item B<result>
 
-Maybe an C<F_DC_Result> if the requested element was found
+Maybe an C<Result> if the requested element was found
 
 =back
 

@@ -10,18 +10,19 @@ use Moose;
 use Moose::Util::TypeConstraints;
 use English qw(-no_match_vars);
 use File::DataClass::Constants;
-use File::DataClass::Constraints;
+use File::DataClass::Constraints qw(Directory);
 use File::DataClass::IO;
 use File::Gettext::Constants;
 use File::Spec;
 
 extends qw(File::DataClass::Schema);
 
-subtype 'F_DC_Localedir', as 'F_DC_Directory';
+subtype 'File::DataClass::Localedir', as Directory;
 
-coerce 'F_DC_Localedir' => from 'ArrayRef' => via { __build_localedir( $_ ) };
-coerce 'F_DC_Localedir' => from 'Str'      => via { __build_localedir( $_ ) };
-coerce 'F_DC_Localedir' => from 'Undef'    => via { __build_localedir( $_ ) };
+coerce 'File::DataClass::Localedir' =>
+   from 'ArrayRef' => via { __build_localedir( $_ ) },
+   from 'Str'      => via { __build_localedir( $_ ) },
+   from 'Undef'    => via { __build_localedir( $_ ) };
 
 has 'catagory_name'     => is => 'ro', isa => 'Str', default => q(LC_MESSAGES);
 has 'charset'           => is => 'ro', isa => 'Str', default => q(iso-8859-1);
@@ -46,8 +47,8 @@ has 'header_key_table'  => is => 'ro', isa => 'HashRef',
       content_type              => [ 8,  q(Content-Type)              ],
       content_transfer_encoding => [ 9,  q(Content-Transfer-Encoding) ],
       plural_forms              => [ 10, q(Plural-Forms)              ], } };
-has 'localedir'         => is => 'ro', isa => 'F_DC_Localedir', coerce => TRUE,
-   default              => NUL;
+has 'localedir'         => is => 'ro', isa => 'File::DataClass::Localedir',
+   default              => NUL, coerce => TRUE;
 has '+result_source_attributes' =>
    default           => sub { {
       mo             => {

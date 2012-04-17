@@ -26,17 +26,18 @@ use Sub::Exporter -setup => {
    exports => [ qw(io) ], groups => { default => [ qw(io) ], },
 };
 
-enum 'F_DC_IO_Mode'    => qw(a a+ r r+ w w+);
-enum 'F_DC_IO_Type'    => qw(dir file);
+enum 'File::DataClass::IO_Mode' => qw(a a+ r r+ w w+);
+enum 'File::DataClass::IO_Type' => qw(dir file);
 
 has 'autoclose'        => is => 'rw', isa => 'Bool',      default    => TRUE  ;
 has 'io_handle'        => is => 'rw', isa => 'Maybe[Object]'                  ;
 has 'is_open'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
 has 'is_utf8'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has 'mode'             => is => 'rw', isa => 'F_DC_IO_Mode', default => q(r)  ;
+has 'mode'             => is => 'rw', isa => 'File::DataClass::IO_Mode',
+   default             => q(r);
 has 'name'             => is => 'rw', isa => 'Str',       default    => NUL   ;
 has 'sort'             => is => 'rw', isa => 'Bool',      default    => TRUE  ;
-has 'type'             => is => 'rw', isa => 'Maybe[F_DC_IO_Type]'            ;
+has 'type'             => is => 'rw', isa => 'Maybe[File::DataClass::IO_Type]';
 has '_assert'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
 has '_atomic'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
 has '_atomic_infix'    => is => 'rw', isa => 'Str',       default    => q(B_*);
@@ -54,7 +55,7 @@ has '_lock_obj'        => is => 'rw', isa => 'Maybe[Object]',
 has '_perms'           => is => 'rw', isa => 'Num',       default    => PERMS ;
 has '_separator'       => is => 'rw', isa => 'Str',       default    => $RS   ;
 has '_umask'           => is => 'rw', isa => 'ArrayRef[Num]',
-   default             => sub { return [] }                                   ;
+   default             => sub { [] };
 
 around BUILDARGS => sub {
    my ($next, $class, $name, $mode, $perms) = @_; my $attrs = {};

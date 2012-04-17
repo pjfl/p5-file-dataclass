@@ -7,11 +7,10 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.8.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
-use CHI;
 use File::DataClass::Constants;
+use CHI;
 
-extends qw(File::DataClass);
-with    qw(File::DataClass::Util);
+with qw(File::DataClass::Util);
 
 has 'cache'            => is => 'ro', isa => 'Object',
    lazy_build          => TRUE;
@@ -153,13 +152,13 @@ File::DataClass::Cache - Adds extra methods to the CHI API
 
    package File::DataClass::Schema;
 
-   use File::DataClass::Cache;
    use Moose;
+   use File::DataClass::Constraints qw(Cache);
+   use File::DataClass::Cache;
 
-   extends qw(File::DataClass);
-   with    qw(File::DataClass::Util);
+   with qw(File::DataClass::Util);
 
-   has 'cache'            => is => 'ro', isa => 'F_DC_Cache',
+   has 'cache'            => is => 'ro', isa => Cache,
       lazy_build          => TRUE;
 
    has 'cache_attributes' => is => 'ro', isa => 'HashRef',
