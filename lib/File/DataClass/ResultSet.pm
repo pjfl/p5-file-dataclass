@@ -19,12 +19,12 @@ has 'list_class'   => is => 'ro', isa => 'ClassName',
 has 'result_class' => is => 'ro', isa => 'ClassName',
    default         => q(File::DataClass::Result);
 has 'source'       => is => 'ro', isa => 'Object',
-   required        => TRUE, weak_ref => TRUE,
+   required        => TRUE,  weak_ref => TRUE,
    handles         => [ qw(attributes defaults label_attr path storage) ];
 has '_iterator'    => is => 'rw', isa => 'Int',
-   default         => 0, init_arg => undef;
+   default         => 0,     init_arg => undef;
 has '_operators'   => is => 'ro', isa => 'HashRef',
-   lazy_build      => TRUE;
+   lazy            => TRUE,   builder => '_build__operators';
 has '_results'     => is => 'rw', isa => 'ArrayRef',
    default         => sub { [] }, init_arg => undef;
 

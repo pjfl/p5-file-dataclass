@@ -17,7 +17,7 @@ use File::Spec;
 extends qw(File::DataClass::Schema);
 
 has 'mail_domain'    => is => 'ro', isa => 'Str',
-   lazy_build        => TRUE;
+   lazy              => TRUE,   builder => '_build_mail_domain';
 has 'newaliases'     => is => 'ro', isa => 'ArrayRef',
    default           => sub { return [ q(newaliases) ] };
 has 'system_aliases' => is => 'ro', isa => 'Str',

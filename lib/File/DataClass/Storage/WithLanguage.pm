@@ -13,10 +13,11 @@ use Hash::Merge qw(merge);
 
 with qw(File::DataClass::Util);
 
-has 'gettext' => is => 'ro', isa => 'Object',  lazy_build => TRUE;
-has 'schema'  => is => 'ro', isa => 'Object',  required   => TRUE,
-   handles    => [ qw(cache lang localedir) ], weak_ref   => TRUE;
-has 'storage' => is => 'ro', isa => 'Object',  required   => TRUE,
+has 'gettext' => is => 'ro', isa => 'Object',  lazy     => TRUE,
+   builder    => '_build_gettext';
+has 'schema'  => is => 'ro', isa => 'Object',  required => TRUE,
+   handles    => [ qw(cache lang localedir) ], weak_ref => TRUE;
+has 'storage' => is => 'ro', isa => 'Object',  required => TRUE,
    handles    => [ qw(extn _is_stale _meta_pack _read_file txn_do
                       validate_params) ];
 

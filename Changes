@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Stopped using lazy_builder in favour of lazy and builder
          - Switched to using MX::Types
          - Exception_Class now a class attribute of F::DC::Constants
          - Updated inc::Bob to 1.3

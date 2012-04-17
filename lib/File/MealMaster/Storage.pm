@@ -17,8 +17,9 @@ extends qw(File::DataClass::Storage);
 my $DATA = do { local $RS = undef; <DATA> };
 
 has '+extn'          => default => q(.mmf);
-has 'template'       => is => 'ro', isa => 'Object', lazy_build => TRUE;
-has 'write_template' => is => 'ro', isa => 'Str',    default    => $DATA;
+has 'template'       => is => 'ro', isa => 'Object', lazy    => TRUE,
+   builder           => '_build_template';
+has 'write_template' => is => 'ro', isa => 'Str',    default => $DATA;
 
 augment '_read_file' => sub {
    my ($self, $rdr) = @_; return $rdr->all;

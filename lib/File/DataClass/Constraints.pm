@@ -148,7 +148,7 @@ None
 
 =item L<File::DataClass::IO>
 
-=item L<MooseX::Types
+=item L<MooseX::Types>
 
 =back
 

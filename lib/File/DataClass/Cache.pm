@@ -13,7 +13,7 @@ use CHI;
 with qw(File::DataClass::Util);
 
 has 'cache'            => is => 'ro', isa => 'Object',
-   lazy_build          => TRUE;
+   lazy                => TRUE,   builder => '_build_cache';
 has 'cache_attributes' => is => 'ro', isa => 'HashRef',
    default             => sub { return {} };
 has 'cache_class'      => is => 'ro', isa => 'ClassName',
@@ -159,7 +159,7 @@ File::DataClass::Cache - Adds extra methods to the CHI API
    with qw(File::DataClass::Util);
 
    has 'cache'            => is => 'ro', isa => Cache,
-      lazy_build          => TRUE;
+      lazy                => TRUE,   builder => '_build_cache';
 
    has 'cache_attributes' => is => 'ro', isa => 'HashRef',
       default             => sub { return {} };
