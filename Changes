@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - POD updates
+
 0.9.368  2012-04-17
          - Turned CPAN testing on
          - Stopped using lazy_builder in favour of lazy and builder
