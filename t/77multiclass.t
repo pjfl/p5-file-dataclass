@@ -22,11 +22,11 @@ use File::DataClass::Schema;
 
 my $json   = catfile( qw(t default.json) );
 my $xml    = catfile( qw(t default_en.xml) );
-my $schema = File::DataClass::Schema->new( storage_class => q(MultiClass),
+my $schema = File::DataClass::Schema->new( storage_class => q(Any),
                                            tempdir       => q(t) );
 
 isa_ok $schema, 'File::DataClass::Schema';
-isa_ok $schema->storage, 'File::DataClass::Storage::MultiClass';
+isa_ok $schema->storage, 'File::DataClass::Storage::Any';
 
 my $data = $schema->load( $json, $xml );
 

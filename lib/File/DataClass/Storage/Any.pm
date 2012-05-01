@@ -1,6 +1,6 @@
 # @(#)$Id$
 
-package File::DataClass::Storage::MultiClass;
+package File::DataClass::Storage::Any;
 
 use strict;
 use namespace::autoclean;
@@ -137,7 +137,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Storage::MultiClass - Loads and merges data from multiply storage classes
+File::DataClass::Storage::Any - Loads and merges data from multiply storage classes
 
 =head1 Version
 
@@ -147,7 +147,7 @@ File::DataClass::Storage::MultiClass - Loads and merges data from multiply stora
 
    use File::DataClass::Schema;
 
-   my $schema = File::DataClass::Schema->new( storage_class => q(MultiClass) );
+   my $schema = File::DataClass::Schema->new( storage_class => q(Any) );
 
    my $data = $schema->load( 'data_file1.xml', 'data_file2.json' );
 

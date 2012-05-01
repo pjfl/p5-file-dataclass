@@ -1,7 +1,7 @@
 Revision history for File::DataClass
 
 0.10.0
-         - Added F::DC::Storage::MultiClass
+         - Added F::DC::Storage::Any
          - F::DC::IO can coerce the filename from a coderef
          - POD updates
 
