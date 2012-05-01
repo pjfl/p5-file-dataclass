@@ -30,10 +30,8 @@ isa_ok $schema->storage, 'File::DataClass::Storage::MultiClass';
 
 my $data = $schema->load( $json, $xml );
 
-is $data->{ '_cvs_default' },
-   '@(#)$Id: default.xml 474 2008-09-01 22:48:04Z pjf$', 'Json file';
-is $data->{ '_cvs_lang_default' },
-   '@(#)$Id$', 'XML File';
+like $data->{ '_cvs_default' }, qr{ default.xml \s 474 }mx, 'Json file';
+like $data->{ '_cvs_lang_default' }, qr{ default_en.xml \s 572 }mx, 'XML File';
 
 # Cleanup
 
