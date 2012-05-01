@@ -9,8 +9,7 @@ use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 
 use MooseX::Types -declare => [ qw(Cache DummyClass HashRefOfBools Lock Path
                                    Directory File Result Symbol) ];
-use MooseX::Types::Moose qw(ArrayRef HashRef Object Str Undef);
-
+use MooseX::Types::Moose        qw(ArrayRef CodeRef HashRef Object Str Undef);
 use File::DataClass::IO;
 use Scalar::Util qw(blessed);
 
@@ -49,6 +48,7 @@ subtype Path, as Object,
 
 coerce Path,
    from ArrayRef, via { io( $_ ) },
+   from CodeRef,  via { io( $_ ) },
    from Str,      via { io( $_ ) },
    from Undef,    via { io( $_ ) };
 
@@ -58,6 +58,7 @@ subtype Directory, as Path,
 
 coerce Directory,
    from ArrayRef, via { io( $_ ) },
+   from CodeRef,  via { io( $_ ) },
    from Str,      via { io( $_ ) },
    from Undef,    via { io( $_ ) };
 
@@ -67,6 +68,7 @@ subtype File, as Path,
 
 coerce File,
    from ArrayRef, via { io( $_ ) },
+   from CodeRef,  via { io( $_ ) },
    from Str,      via { io( $_ ) },
    from Undef,    via { io( $_ ) };
 

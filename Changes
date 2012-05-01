@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - F::DC::IO can coerce the filename from a coderef
          - POD updates
 
 0.9.368  2012-04-17

@@ -65,7 +65,10 @@ around BUILDARGS => sub {
    $is_blessed and $name->isa( __PACKAGE__ ) and return $name;
    $is_blessed and $name .= NUL; # Stringify path object
 
-   my $type = ref $name; $type eq HASH and return $name;
+   my $type = ref $name;
+
+   $type eq CODE and $name = $name->() and $type = ref $name;
+   $type eq HASH and return $name;
 
    $attrs->{name} = $type eq ARRAY ? File::Spec->catfile( @{ $name } ) : $name;
    $mode and $attrs->{mode} = $mode; $perms and $attrs->{_perms} = $perms;
