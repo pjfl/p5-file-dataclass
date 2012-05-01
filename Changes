@@ -1,11 +1,13 @@
 Revision history for File::DataClass
 
+0.10.0
+         - Added F::DC::Storage::MultiClass
          - F::DC::IO can coerce the filename from a coderef
          - POD updates
 
 0.9.368  2012-04-17
          - Turned CPAN testing on
-         - Stopped using lazy_builder in favour of lazy and builder
+         - Stopped using lazy_build in favour of lazy and builder
          - Switched to using MX::Types
          - Exception_Class now a class attribute of F::DC::Constants
          - Updated inc::Bob to 1.3

@@ -6,11 +6,11 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 
+use Moose;
 use File::DataClass::Constants;
 use File::DataClass::Constraints qw(HashRefOfBools);
 use MooseX::Types::Moose qw(ArrayRef Str);
 use XML::DTD;
-use Moose;
 
 extends qw(File::DataClass::Storage);
 
@@ -25,7 +25,7 @@ has '_dtd'      => is => 'rw', isa => ArrayRef,       default => sub { [] },
    init_arg     => 'dtd';
 
 around '_meta_pack' => sub {
-   my ($orig, $self, $args) = @_; my $packed = $self->$orig( $args );
+   my ($next, $self, $args) = @_; my $packed = $self->$next( $args );
 
    $self->_dtd and $packed->{_dtd} = $self->_dtd;
 
@@ -33,11 +33,11 @@ around '_meta_pack' => sub {
 };
 
 around '_meta_unpack' => sub {
-   my ($orig, $self, $packed) = @_; $packed ||= {};
+   my ($next, $self, $packed) = @_; $packed ||= {};
 
    $self->_dtd( exists $packed->{_dtd} ? delete $packed->{_dtd} : [] );
 
-   return $self->$orig( $packed );
+   return $self->$next( $packed );
 };
 
 # Private methods
@@ -144,9 +144,7 @@ None
 
 =item L<File::DataClass::Storage>
 
-=item L<Hash::Merge>
-
-=item L<List::Util>
+=item L<XML::DTD>
 
 =back
 

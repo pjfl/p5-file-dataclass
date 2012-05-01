@@ -9,7 +9,8 @@ use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 use Moose::Role;
 use Class::MOP;
 use File::Spec;
-use List::Util qw(first);
+use Hash::Merge qw(merge);
+use List::Util  qw(first);
 use Try::Tiny;
 use File::DataClass::Constants;
 use File::DataClass::IO ();
@@ -59,6 +60,26 @@ sub is_member {
    return (first { $_ eq $candidate } @rest) ? TRUE : FALSE;
 }
 
+sub is_stale {
+   my ($self, $data, $cache_mtime, $path_mtime) = @_;
+
+   return ! defined $data || ! defined $path_mtime || ! defined $cache_mtime
+         || $path_mtime > $cache_mtime
+          ? TRUE : FALSE;
+}
+
+sub merge_hash_data {
+   my ($self, $existing, $new) = @_;
+
+   for (keys %{ $new }) {
+      $existing->{ $_ } = exists $existing->{ $_ }
+                        ? merge( $existing->{ $_ }, $new->{ $_ } )
+                        : $new->{ $_ };
+   }
+
+   return;
+}
+
 sub throw {
    my $self = shift; EXCEPTION_CLASS->throw( @_ ); return; # Not reached
 }
@@ -103,6 +124,19 @@ File::DataClass::Util - Moose Role defining utility methods
 
 =head2 is_member
 
+=head2 is_stale
+
+   $bool = $self->is_stale( $data, $cache_mtime, $path_mtime );
+
+Returns true if there is no data or the cache mtime is older than the
+path mtime
+
+=head2 merge_hash_data
+
+   $self->merge_hash_data( $existsing, $new );
+
+Uses L<Hash::Merge> to merge data from the new hash ref in with the existsing
+
 =head2 throw
 
 =head1 Configuration and Environment
@@ -120,6 +154,8 @@ None
 =item L<Class::MOP>
 
 =item L<File::DataClass::IO>
+
+=item L<Hash::Merge>
 
 =item L<List::Util>
 

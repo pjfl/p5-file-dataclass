@@ -10,10 +10,9 @@ use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 use Moose;
 use File::DataClass::Constants;
 use Moose::Util::TypeConstraints;
-use English      qw( -no_match_vars );
-use Fcntl        qw( :flock :seek );
-use List::Util   qw( first );
-use Scalar::Util qw( blessed );
+use English      qw(-no_match_vars);
+use Fcntl        qw(:flock :seek);
+use List::Util   qw(first);
 use File::Basename ();
 use File::Copy     ();
 use File::Path     ();
@@ -29,33 +28,34 @@ use Sub::Exporter -setup => {
 enum 'File::DataClass::IO_Mode' => qw(a a+ r r+ w w+);
 enum 'File::DataClass::IO_Type' => qw(dir file);
 
-has 'autoclose'        => is => 'rw', isa => 'Bool',      default    => TRUE  ;
-has 'io_handle'        => is => 'rw', isa => 'Maybe[Object]'                  ;
-has 'is_open'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has 'is_utf8'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has 'mode'             => is => 'rw', isa => 'File::DataClass::IO_Mode',
-   default             => q(r);
-has 'name'             => is => 'rw', isa => 'Str',       default    => NUL   ;
-has 'sort'             => is => 'rw', isa => 'Bool',      default    => TRUE  ;
-has 'type'             => is => 'rw', isa => 'Maybe[File::DataClass::IO_Type]';
-has '_assert'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_atomic'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_atomic_infix'    => is => 'rw', isa => 'Str',       default    => q(B_*);
-has '_binary'          => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_binmode'         => is => 'rw', isa => 'Str',       default    => NUL   ;
-has '_block_size'      => is => 'rw', isa => 'Int',       default    => 1024  ;
-has '_chomp'           => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_deep'            => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_dir_pattern'     => is => 'ro', isa => 'RegexpRef', lazy_build => TRUE  ;
-has '_encoding'        => is => 'rw', isa => 'Str',       default    => NUL   ;
-has '_filter'          => is => 'rw', isa => 'Maybe[CodeRef]'                 ;
-has '_lock'            => is => 'rw', isa => 'Bool',      default    => FALSE ;
-has '_lock_obj'        => is => 'rw', isa => 'Maybe[Object]',
-   writer              => 'lock_obj';
-has '_perms'           => is => 'rw', isa => 'Num',       default    => PERMS ;
-has '_separator'       => is => 'rw', isa => 'Str',       default    => $RS   ;
-has '_umask'           => is => 'rw', isa => 'ArrayRef[Num]',
-   default             => sub { [] };
+has 'autoclose'     => is => 'rw', isa => 'Bool',         default => TRUE  ;
+has 'io_handle'     => is => 'rw', isa => 'Maybe[Object]'                  ;
+has 'is_open'       => is => 'rw', isa => 'Bool',         default => FALSE ;
+has 'is_utf8'       => is => 'rw', isa => 'Bool',         default => FALSE ;
+has 'mode'          => is => 'rw', isa => 'File::DataClass::IO_Mode',
+   default          => q(r);
+has 'name'          => is => 'rw', isa => 'Str',          default => NUL   ;
+has 'sort'          => is => 'rw', isa => 'Bool',         default => TRUE  ;
+has 'type'          => is => 'rw', isa => 'Maybe[File::DataClass::IO_Type]';
+has '_assert'       => is => 'rw', isa => 'Bool',         default => FALSE ;
+has '_atomic'       => is => 'rw', isa => 'Bool',         default => FALSE ;
+has '_atomic_infix' => is => 'rw', isa => 'Str',          default => q(B_*);
+has '_binary'       => is => 'rw', isa => 'Bool',         default => FALSE ;
+has '_binmode'      => is => 'rw', isa => 'Str',          default => NUL   ;
+has '_block_size'   => is => 'rw', isa => 'Int',          default => 1024  ;
+has '_chomp'        => is => 'rw', isa => 'Bool',         default => FALSE ;
+has '_deep'         => is => 'rw', isa => 'Bool',         default => FALSE ;
+has '_dir_pattern'  => is => 'ro', isa => 'RegexpRef',    lazy    => TRUE,
+   builder          => '_build__dir_pattern';
+has '_encoding'     => is => 'rw', isa => 'Str',          default => NUL   ;
+has '_filter'       => is => 'rw', isa => 'Maybe[CodeRef]'                 ;
+has '_lock'         => is => 'rw', isa => 'Bool',         default => FALSE ;
+has '_lock_obj'     => is => 'rw', isa => 'Maybe[Object]',
+   writer           => 'lock_obj';
+has '_perms'        => is => 'rw', isa => 'Num',          default => PERMS ;
+has '_separator'    => is => 'rw', isa => 'Str',          default => $RS   ;
+has '_umask'        => is => 'rw', isa => 'ArrayRef[Num]',
+   default          => sub { [] };
 
 around BUILDARGS => sub {
    my ($next, $class, $name, $mode, $perms) = @_; my $attrs = {};

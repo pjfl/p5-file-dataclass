@@ -9,17 +9,18 @@ use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 use Moose;
 use File::DataClass::Constants;
 use File::Gettext;
-use Hash::Merge qw(merge);
 
 with qw(File::DataClass::Util);
 
 has 'gettext' => is => 'ro', isa => 'Object',  lazy     => TRUE,
    builder    => '_build_gettext';
+
 has 'schema'  => is => 'ro', isa => 'Object',  required => TRUE,
    handles    => [ qw(cache lang localedir) ], weak_ref => TRUE;
+
 has 'storage' => is => 'ro', isa => 'Object',  required => TRUE,
-   handles    => [ qw(extn _is_stale _meta_pack _read_file txn_do
-                      validate_params) ];
+   handles    => [ qw(extn _meta_pack _meta_unpack
+                      _read_file txn_do validate_params) ];
 
 sub delete {
    my ($self, $path, $result) = @_;
@@ -81,10 +82,10 @@ sub load {
    my ($self, @paths) = @_; $paths[ 0 ] or return {};
 
    my ($key, $newest) = $self->_get_key_and_newest( \@paths );
-
    my ($data, $meta)  = $self->cache->get( $key );
+   my $cache_mtime    = $self->_meta_unpack( $meta );
 
-   not $self->_is_stale( $data, $meta, $newest ) and return $data;
+   not $self->is_stale( $data, $cache_mtime, $newest ) and return $data;
 
    ($data, $newest)   = $self->_load( \@paths );
 
@@ -194,12 +195,8 @@ sub _load {
       my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
 
       if ($red) {
-         for (keys %{ $red }) {
-            $data->{ $_ } = exists $data->{ $_ }
-                          ? merge( $data->{ $_ }, $red->{ $_ } ) : $red->{ $_ };
-         }
-
          $path_mtime > $newest and $newest = $path_mtime;
+         $self->merge_hash_data( $data, $red );
       }
 
       $path_mtime = __load_gettext( $data, $self->_gettext( $path ) );

@@ -31,7 +31,7 @@ sub new {
       $args->{error}->{leader} = $leader; return $args->{error};
    }
 
-   $args->{error} .= q();
+   $args->{error} .= q(); chomp $args->{error}; $args->{error} .= "\n";
 
    return $self->next::method( args           => [],
                                error          => 'Error unknown',

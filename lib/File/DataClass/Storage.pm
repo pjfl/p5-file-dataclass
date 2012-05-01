@@ -12,15 +12,14 @@ use English qw(-no_match_vars);
 use File::Copy;
 use File::DataClass::Constants;
 use File::DataClass::HashMerge;
-use Hash::Merge qw(merge);
 use Try::Tiny;
 
 with qw(File::DataClass::Util);
 
 has 'backup' => is => 'ro', isa => 'Str',    default  => NUL;
 has 'extn'   => is => 'ro', isa => 'Str',    default  => NUL;
-has 'schema' => is => 'ro', isa => 'Object', required => 1, weak_ref => TRUE,
-   handles   => { _cache => q(cache), _debug => q(debug), _lock  => q(lock),
+has 'schema' => is => 'ro', isa => 'Object', required => TRUE, weak_ref => TRUE,
+   handles   => { _cache => q(cache), _debug => q(debug), _lock => q(lock),
                   _log   => q(log),   _perms => q(perms) };
 
 sub delete {
@@ -52,6 +51,11 @@ sub dump {
       $self->_write_file( $path, $data, TRUE ) } );
 }
 
+sub extensions {
+   return { '.json' => [ q(JSON) ],
+            '.xml'  => [ q(XML::Simple), q(XML::Bare) ] };
+}
+
 sub insert {
    my ($self, $path, $result) = @_;
 
@@ -65,21 +69,11 @@ sub load {
       and return ($self->_read_file( $paths[ 0 ], FALSE ))[ 0 ] || {};
 
    my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
+   my $cache_mtime  = $self->_meta_unpack( $meta );
 
-   not $self->_is_stale( $data, $meta, $newest ) and return $data;
+   not $self->is_stale( $data, $cache_mtime, $newest ) and return $data;
 
-   $data = {}; $newest = 0;
-
-   for my $path (@paths) {
-      my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
-
-      $red or next; $path_mtime > $newest and $newest = $path_mtime;
-
-      for (keys %{ $red }) {
-         $data->{ $_ } = exists $data->{ $_ }
-                       ? merge( $data->{ $_ }, $red->{ $_ } ) : $red->{ $_ };
-      }
-   }
+   ($data, $newest) = $self->_load( \@paths );
 
    $self->_cache->set_by_paths( \@paths, $data, $self->_meta_pack( $newest ) );
 
@@ -173,14 +167,17 @@ sub _create_or_update {
    return $updated;
 }
 
-sub _is_stale {
-   my ($self, $data, $meta, $path_mtime) = @_;
+sub _load {
+   my ($self, $paths) = @_; my $data = {}; my $newest = 0;
 
-   my $cache_mtime = $self->_meta_unpack( $meta );
+   for my $path (@{ $paths }) {
+      my ($red, $path_mtime) = $self->_read_file( $path, FALSE ); $red or next;
 
-   return ! defined $data || ! defined $path_mtime || ! defined $cache_mtime
-         || $path_mtime > $cache_mtime
-          ? TRUE : FALSE;
+      $path_mtime > $newest and $newest = $path_mtime;
+      $self->merge_hash_data( $data, $red );
+   }
+
+   return ($data, $newest);
 }
 
 sub _meta_pack {
@@ -199,19 +196,21 @@ sub _read_file {
    $self->_lock->set( k => $path ); my ($data, $meta, $path_mtime);
 
    try {
-      ($data, $meta) = $self->_cache->get( $path );
-      $path_mtime    = $path->stat->{mtime};
+      ($data, $meta)  = $self->_cache->get( $path );
+      $path_mtime     = $path->stat->{mtime};
 
-      if ($self->_is_stale( $data, $meta, $path_mtime ) ) {
+      my $cache_mtime = $self->_meta_unpack( $meta );
+
+      if ($self->is_stale( $data, $cache_mtime, $path_mtime )) {
          if ($for_update and not $path->is_file) { $data = undef }
          else {
             $data = inner( $path->lock ); $path->close;
             $meta = $self->_meta_pack( $path_mtime );
             $self->_cache->set( $path, $data, $meta );
-            $self->_debug and $self->_log->debug( "Read file  $path" );
+            $self->_debug and $self->_log->debug( "Read file  ${path}" );
          }
       }
-      else { $self->_debug and $self->_log->debug( "Read cache $path" ) }
+      else { $self->_debug and $self->_log->debug( "Read cache ${path}" ) }
    }
    catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
 
@@ -237,7 +236,7 @@ sub _write_file {
       catch { $path->delete; $self->throw( $_ ) };
 
       $self->_cache->remove( $path );
-      $self->_debug and $self->_log->debug( "Write file $path" )
+      $self->_debug and $self->_log->debug( "Write file ${path}" )
    }
    catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
 
@@ -295,6 +294,14 @@ an error otherwise. Path is an instance of L<File::DataClass::IO>
 Dumps the data to the specified path. Path is an instance of
 L<File::DataClass::IO>
 
+=head2 extensions
+
+   $hash_ref = $storage->extensions;
+
+Returns a hash ref whose keys are the supported extensions and whose values
+are an array ref of storage subclasses that implement reading/writing files
+with that extension
+
 =head2 insert
 
    $bool = $storage->insert( $path, $result );
@@ -344,8 +351,6 @@ None
 =item L<File::DataClass::HashMerge>
 
 =item L<File::DataClass::Util>
-
-=item L<Hash::Merge>
 
 =item L<Scalar::Util>
 

@@ -22,43 +22,60 @@ extends qw(File::DataClass);
 with    qw(File::DataClass::Util);
 
 has 'cache'                    => is => 'ro', isa => Cache,
-   lazy_build                  => TRUE;
+   builder                     => '_build_cache', lazy => TRUE;
+
 has 'cache_attributes'         => is => 'ro', isa => HashRef,
    default                     => sub { {
       driver                   => q(FastMmap),
       page_size                => 131072,
       num_pages                => 89,
       unlink_on_exit           => TRUE, } };
+
 has 'cache_class'              => is => 'ro', isa => ClassName | DummyClass,
    default                     => q(File::DataClass::Cache);
+
 has 'debug'                    => is => 'ro', isa => Bool,
    default                     => FALSE;
+
 has 'lock'                     => is => 'ro', isa => Lock,
-   lazy_build                  => TRUE;
+   builder                     => '_build_lock', lazy => TRUE;
+
 has 'lock_attributes'          => is => 'ro', isa => HashRef,
    default                     => sub { {} };
+
 has 'lock_class'               => is => 'ro', isa => ClassName | DummyClass,
    default                     => q(IPC::SRLock);
+
 has 'log'                      => is => 'ro', isa => Object,
    default                     => sub { Class::Null->new };
+
 has 'path'                     => is => 'rw', isa => Path,
    coerce                      => TRUE;
+
 has 'perms'                    => is => 'rw', isa => Num,
    default                     => PERMS;
+
 has 'result_source_attributes' => is => 'ro', isa => HashRef,
    default                     => sub { {} };
+
 has 'result_source_class'      => is => 'ro', isa => ClassName,
    default                     => q(File::DataClass::ResultSource);
+
 has 'source_registrations'     => is => 'ro', isa => HashRef[Object],
-   lazy_build                  => TRUE;
+   builder                     => '_build_source_registrations', lazy => TRUE;
+
 has 'storage'                  => is => 'rw', isa => Object,
-   lazy_build                  => TRUE;
+   builder                     => '_build_storage', lazy => TRUE;
+
 has 'storage_attributes'       => is => 'ro', isa => HashRef,
    default                     => sub { {} };
+
 has 'storage_base'             => is => 'ro', isa => ClassName,
    default                     => q(File::DataClass::Storage);
+
 has 'storage_class'            => is => 'rw', isa => Str,
    default                     => q(XML::Simple);
+
 has 'tempdir'                  => is => 'ro', isa => Directory,
    default                     => File::Spec->tmpdir,
    coerce                      => TRUE;
