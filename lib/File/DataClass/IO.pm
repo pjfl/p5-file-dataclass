@@ -614,7 +614,7 @@ sub _open_dir {
    $self->_assert and $self->assert_dirpath( $path );
    $self->io_handle( IO::Dir->new( $path ) )
       or $self->_throw( error => 'Directory [_1] cannot open',
-                        args  => [ $path ], level => 6 );
+                        args  => [ $path ] );
    $self->is_open( TRUE );
    return $self;
 }
@@ -626,7 +626,7 @@ sub _open_file {
    $self->_umask_push( $perms );
    $self->io_handle( IO::File->new( $path, $mode ) )
       or $self->_throw( error => 'File [_1] cannot open',
-                        args  => [ $path ], level => 6 );
+                        args  => [ $path ] );
    $self->_umask_pop;
    $self->is_open( TRUE );
    $self->set_binmode;

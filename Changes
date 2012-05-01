@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
 0.10.0
+         - Enhanced leader selection in F::DC::Exception
          - Added F::DC::Storage::Any
          - F::DC::IO can coerce the filename from a coderef
          - POD updates

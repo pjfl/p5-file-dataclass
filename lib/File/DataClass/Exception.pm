@@ -15,17 +15,24 @@ use base qw(File::DataClass::Exception::Base);
 use Carp;
 use MRO::Compat;
 use English      qw(-no_match_vars);
+use List::Util   qw(first);
 use Scalar::Util qw(blessed);
 
-our $IGNORE = [ __PACKAGE__ ];
+our $IGNORE = [ __PACKAGE__, q(File::DataClass::IO) ];
 
 sub new {
    my ($self, @rest) = @_;
 
-   my $args   = @rest < 2 ? { error => $rest[ 0 ] } : { @rest };
-   my $level  = 3; exists $args->{level} and $level = delete $args->{level};
-   my ($package, $line) = (caller( $level ))[ 0, 2 ];
-   my $leader = "${package}[${line}]: ";
+   my $args = @rest < 2 ? { error => $rest[ 0 ] } : { @rest };
+
+   my ($leader, $line, $package); my $level = 3; $args->{level} ||= 3;
+
+   do {
+      ($package, $line) = (caller( $level ))[ 0, 2 ];
+      $leader = "${package}[${line}]: "; $level++;
+   } while ($level < $args->{level} or __is_member( $package, $IGNORE ));
+
+   delete $args->{level};
 
    if (__is_one_of_us( $args->{error} )) {
       $args->{error}->{leader} = $leader; return $args->{error};
@@ -92,6 +99,12 @@ sub throw_on_error {
 }
 
 # Private subroutines
+
+sub __is_member {
+   my ($candidate, $list) = @_; $candidate or return;
+
+   return (first { $_ eq $candidate } @{ $list }) ? 1 : 0;
+}
 
 sub __is_one_of_us {
    return $_[ 0 ] && blessed $_[ 0 ] && $_[ 0 ]->isa( __PACKAGE__ );
