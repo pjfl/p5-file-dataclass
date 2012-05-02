@@ -19,24 +19,25 @@ has 'stores' => is => 'ro', isa => 'HashRef', lazy => TRUE,
    builder   => '_build_stores';
 
 sub delete {
-   my $self = shift;
+   my ($self, $path, $result) = @_;
 
-   $self->throw( 'Delete method not implimented in multiclass storage' );
-   return; # Not reached
+   return $self->_get_store_from_extension( $path )->delete( $path, $result );
 }
 
 sub dump {
-   my $self = shift;
+   my ($self, $path, $data) = @_;
 
-   $self->throw( 'Dump method not implimented in multiclass storage' );
-   return; # Not reached
+   return $self->_get_store_from_extension( $path )->dump( $path, $data );
+}
+
+sub extensions {
+   return File::DataClass::Storage->extensions;
 }
 
 sub insert {
-   my $self = shift;
+   my ($self, $path, $result) = @_;
 
-   $self->throw( 'Insert method not implimented in multiclass storage' );
-   return; # Not reached
+   return $self->_get_store_from_extension( $path )->insert( $path, $result );
 }
 
 sub load {
@@ -54,36 +55,48 @@ sub load {
 }
 
 sub select {
-   my $self = shift;
+   my ($self, $path, $element) = @_;
 
-   $self->throw( 'Select method not implimented in multiclass storage' );
-   return; # Not reached
+   return $self->_get_store_from_extension( $path )->select( $path, $element );
+}
+
+sub txn_do {
+   my ($self, $path, $code_ref) = @_;
+
+   return $self->_get_store_from_extension( $path )->txn_do( $path, $code_ref );
 }
 
 sub update {
-   my $self = shift;
+   my ($self, $path, $result, $updating, $condition) = @_;
 
-   $self->throw( 'Update method not implimented in multiclass storage' );
-   return; # Not reached
+   my $store = $self->_get_store_from_extension( $path );
+
+   return $store->update( $path, $result, $updating, $condition );
+}
+
+sub validate_params {
+   my ($self, $path, $element) = @_;
+
+   my $store = $self->_get_store_from_extension( $path );
+
+   return $store->validate_params( $path, $element );
 }
 
 # Private methods
 
 sub _build_stores {
-   my $self = shift; my $stores = {};
-
-   my $extensions = File::DataClass::Storage->extensions;
+   my $self = shift; my $stores = {}; my $extensions = $self->extensions;
 
    for my $extn (keys %{ $extensions }) {
-       my $class = $extensions->{ $extn }->[ 0 ];
+      my $class = $extensions->{ $extn }->[ 0 ];
 
-       if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
-       else { $class = $self->storage_base.q(::).$class }
+      if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
+      else { $class = $self->storage_base.q(::).$class }
 
-       $self->ensure_class_loaded( $class );
+      $self->ensure_class_loaded( $class );
 
-       $stores->{ $extn } = $class->new( { %{ $self->storage_attributes },
-                                           schema => $self->schema } );
+      $stores->{ $extn } = $class->new( { %{ $self->storage_attributes },
+                                          schema => $self->schema } );
    }
 
    return $stores;
@@ -111,7 +124,7 @@ sub _load {
       my ($red, $path_mtime) = $store->_read_file( $path, FALSE ); $red or next;
 
       $path_mtime > $newest and $newest = $path_mtime;
-      $self->merge_hash_data( $data, $red );
+      $store->_merge_hash_data( $data, $red );
    }
 
    return ($data, $newest);
@@ -137,7 +150,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Storage::Any - Loads and merges data from multiply storage classes
+File::DataClass::Storage::Any - Selects storage class using the extension on the path
 
 =head1 Version
 
@@ -153,7 +166,7 @@ File::DataClass::Storage::Any - Loads and merges data from multiply storage clas
 
 =head1 Description
 
-Loads and merges data from multiply storage classes
+Selects storage class using the extension on the path
 
 =head1 Subroutines/Methods
 
@@ -161,13 +174,21 @@ Loads and merges data from multiply storage classes
 
 =head2 dump
 
+=head2 extensions
+
+Class method that proxies the call to L<File::DataClass::Storage/extensions>
+
 =head2 insert
 
 =head2 load
 
 =head2 select
 
+=head2 txn_do
+
 =head2 update
+
+=head2 validate_params
 
 =head1 Configuration and Environment
 

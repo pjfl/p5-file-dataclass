@@ -6,9 +6,9 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 
+use Moose;
 use File::DataClass::Constants;
 use XML::Simple;
-use Moose;
 
 extends qw(File::DataClass::Storage::XML);
 

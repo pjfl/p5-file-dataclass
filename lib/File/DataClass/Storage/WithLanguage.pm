@@ -19,7 +19,7 @@ has 'schema'  => is => 'ro', isa => 'Object',  required => TRUE,
    handles    => [ qw(cache lang localedir) ], weak_ref => TRUE;
 
 has 'storage' => is => 'ro', isa => 'Object',  required => TRUE,
-   handles    => [ qw(extn _meta_pack _meta_unpack
+   handles    => [ qw(extn extensions _meta_pack _merge_hash_data _meta_unpack
                       _read_file txn_do validate_params) ];
 
 sub delete {
@@ -196,7 +196,7 @@ sub _load {
 
       if ($red) {
          $path_mtime > $newest and $newest = $path_mtime;
-         $self->merge_hash_data( $data, $red );
+         $self->_merge_hash_data( $data, $red );
       }
 
       $path_mtime = __load_gettext( $data, $self->_gettext( $path ) );

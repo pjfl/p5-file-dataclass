@@ -8,10 +8,11 @@ use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use Class::Null;
-use English qw(-no_match_vars);
+use English     qw(-no_match_vars);
 use File::Copy;
 use File::DataClass::Constants;
 use File::DataClass::HashMerge;
+use Hash::Merge qw(merge);
 use Try::Tiny;
 
 with qw(File::DataClass::Util);
@@ -53,7 +54,7 @@ sub dump {
 
 sub extensions {
    return { '.json' => [ q(JSON) ],
-            '.xml'  => [ q(XML::Simple), q(XML::Bare) ] };
+            '.xml'  => [ q(XML::Simple), q(XML::Bare) ], };
 }
 
 sub insert {
@@ -174,10 +175,22 @@ sub _load {
       my ($red, $path_mtime) = $self->_read_file( $path, FALSE ); $red or next;
 
       $path_mtime > $newest and $newest = $path_mtime;
-      $self->merge_hash_data( $data, $red );
+      $self->_merge_hash_data( $data, $red );
    }
 
    return ($data, $newest);
+}
+
+sub _merge_hash_data {
+   my ($self, $existing, $new) = @_;
+
+   for (keys %{ $new }) {
+      $existing->{ $_ } = exists $existing->{ $_ }
+                        ? merge( $existing->{ $_ }, $new->{ $_ } )
+                        : $new->{ $_ };
+   }
+
+   return;
 }
 
 sub _meta_pack {
@@ -336,6 +349,12 @@ an error otherwise. Path is an instance of L<File::DataClass::IO>
 
 =head2 validate_params
 
+=head2 _merge_hash_data
+
+   $self->_merge_hash_data( $existsing, $new );
+
+Uses L<Hash::Merge> to merge data from the new hash ref in with the existsing
+
 =head1 Diagnostics
 
 None
@@ -351,6 +370,8 @@ None
 =item L<File::DataClass::HashMerge>
 
 =item L<File::DataClass::Util>
+
+=item L<Hash::Merge>
 
 =item L<Scalar::Util>
 
