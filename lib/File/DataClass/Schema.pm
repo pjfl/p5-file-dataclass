@@ -82,18 +82,16 @@ has 'tempdir'                  => is => 'ro', isa => Directory,
    coerce                      => TRUE;
 
 around BUILDARGS => sub {
-   my ($next, $class, @args) = @_; my $attrs = $class->$next( @args );
+   my ($next, $class, @args) = @_; my $attr = $class->$next( @args );
 
-   exists $attrs->{ioc_obj} or return $attrs;
+   my $ioc = delete $attr->{ioc_obj}; $ioc or return $attr;
 
-   my $ioc   = delete $attrs->{ioc_obj};
-   my @attrs = ( qw(debug lock log tempdir) );
+   __merge_attributes( $attr, $ioc, [ qw(debug lock log tempdir) ] );
 
-   $attrs->{ $_ } ||= $ioc->$_() for (grep { $ioc->can( $_ ) } @attrs);
+   $ioc->can( q(config) )
+      and __merge_attributes( $attr, $ioc->config, [ qw(tempdir) ] );
 
-   $ioc->can( q(config) ) and $attrs->{tempdir} ||= $ioc->config->{tempdir};
-
-   return $attrs;
+   return $attr;
 };
 
 sub dump {
@@ -202,6 +200,21 @@ sub _build_storage {
    $self->ensure_class_loaded( $class );
 
    return $class->new( { %{ $self->storage_attributes }, schema => $self } );
+}
+
+# Private functions
+
+sub __merge_attributes {
+   my ($dest, $src, $attrs) = @_; my $class = blessed $src;
+
+   for (grep { not exists $dest->{ $_ } or not defined $dest->{ $_ } }
+        @{ $attrs || [] }) {
+      my $v = $class ? ($src->can( $_ ) ? $src->$_() : undef) : $src->{ $_ };
+
+      defined $v and $dest->{ $_ } = $v;
+   }
+
+   return $dest;
 }
 
 __PACKAGE__->meta->make_immutable;

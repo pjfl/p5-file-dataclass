@@ -278,19 +278,28 @@ sub clear {
 sub close {
    my $self = shift; $self->is_open or return $self;
 
-   unless ($OSNAME eq EVIL or $OSNAME eq CYGWIN) {
-      $self->_atomic and $self->_rename_atomic;
-   }
-
-   $self->unlock; $self->io_handle and $self->io_handle->close;
-
-   if ($OSNAME eq EVIL or $OSNAME eq CYGWIN) {
-      $self->_atomic and $self->_rename_atomic;
-   }
+   $OSNAME eq EVIL || $OSNAME eq CYGWIN ? $self->_close_and_rename
+                                        : $self->_rename_and_close;
 
    $self->io_handle( undef );
    $self->is_open  ( FALSE );
    $self->mode     ( q(r)  );
+   return $self;
+}
+
+sub _close_and_rename {
+   my $self = shift;
+
+   $self->unlock; $self->io_handle and $self->io_handle->close;
+   $self->_atomic and $self->_rename_atomic;
+   return $self;
+}
+
+sub _rename_and_close {
+   my $self = shift;
+
+   $self->_atomic and $self->_rename_atomic;
+   $self->unlock; $self->io_handle and $self->io_handle->close;
    return $self;
 }
 

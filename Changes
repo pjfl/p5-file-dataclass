@@ -1,6 +1,8 @@
 Revision history for File::DataClass
 
 0.10.0
+         - Fixed attribute merging in F::DC::Schema::BUILDARGS
+         - Enhanced F::DC::IO close/rename logic
          - Enhanced leader selection in F::DC::Exception
          - Added F::DC::Storage::Any
          - F::DC::IO can coerce the filename from a coderef
