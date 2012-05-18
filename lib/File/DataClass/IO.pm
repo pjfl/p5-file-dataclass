@@ -500,7 +500,7 @@ sub is_absolute {
 }
 
 sub is_dir {
-   my $self = shift; $self->type or $self->_set_type;
+   my $self = shift; $self->type or $self->_set_type or return FALSE;
 
    return $self->type && $self->type eq q(dir) ? TRUE : FALSE;
 }
