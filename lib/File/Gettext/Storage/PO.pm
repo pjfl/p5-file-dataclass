@@ -4,7 +4,7 @@ package File::Gettext::Storage::PO;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 
 use Date::Format ();
 use Encode qw(decode encode);
@@ -422,7 +422,7 @@ File::Gettext::Storage::PO - Storage class for GNU gettext portable object forma
 
 =head1 Version
 
-0.9.$Revision$
+0.10.$Revision$
 
 =head1 Synopsis
 

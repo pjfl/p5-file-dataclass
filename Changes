@@ -1,6 +1,6 @@
 Revision history for File::DataClass
 
-0.10.0
+0.10.380 2012-05-19
          - Added F::DC::Storage::Any
          - Fixed attribute merging in F::DC::Schema::BUILDARGS
          - Enhanced F::DC::IO close/rename logic

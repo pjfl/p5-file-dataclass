@@ -4,7 +4,7 @@ package File::MailAlias::Storage;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 
 use Date::Format;
 use File::DataClass::Constants;
@@ -132,7 +132,7 @@ File::MailAlias::Storage - Storage class file the mail alias file
 
 =head1 Version
 
-0.9.$Revision$
+0.10.$Revision$
 
 =head1 Synopsis
 

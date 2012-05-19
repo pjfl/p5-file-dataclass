@@ -4,7 +4,7 @@ package File::DataClass::Constants;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.9.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
@@ -64,7 +64,7 @@ File::DataClass::Constants - Definitions of constant values
 
 =head1 Version
 
-0.9.$Rev$
+0.10.$Rev$
 
 =head1 Synopsis
 
