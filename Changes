@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+         - Added type coercion to LanguageType from Undef in
+           F::DC::Schema::WithLanguage
+
 0.10.380 2012-05-19
          - Added F::DC::Storage::Any
          - Fixed attribute merging in F::DC::Schema::BUILDARGS

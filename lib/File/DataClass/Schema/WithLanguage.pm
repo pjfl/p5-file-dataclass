@@ -12,12 +12,18 @@ use File::DataClass::Constraints qw(Directory);
 use File::DataClass::ResultSource::WithLanguage;
 use File::DataClass::Storage::WithLanguage;
 use File::Gettext::Constants;
-use MooseX::Types::Moose qw(Str);
+use MooseX::Types  -declare => [ qw(LanguageType) ];
+use MooseX::Types::Moose         qw(Str Undef);
 
 extends qw(File::DataClass::Schema);
 
-has 'lang'      => is => 'rw', isa => Str,     default => LANG;
-has 'localedir' => is => 'ro', isa => Directory, coerce  => TRUE,
+subtype LanguageType, as Str;
+coerce  LanguageType, from Undef, via { LANG };
+
+has 'lang'      => is => 'rw', isa => LanguageType, coerce => TRUE,
+   default      => LANG;
+
+has 'localedir' => is => 'ro', isa => Directory, coerce => TRUE,
    default      => sub { DIRECTORIES->[ 0 ] };
 
 around BUILDARGS => sub {
