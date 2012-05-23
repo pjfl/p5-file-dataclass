@@ -159,7 +159,8 @@ sub _get_key_and_newest {
       if ($mtime) { $mtime > $newest and $newest = $mtime }
       else { $valid = FALSE }
 
-      my $lang_path = $self->_gettext( $path )->path;
+      my $file      = $self->basename( $path, $self->extn );
+      my $lang_path = $self->gettext->get_path( $self->lang, $file );
 
       if (defined ($mtime = $self->cache->get_mtime( NUL.$lang_path ))) {
          if ($mtime) {
@@ -168,7 +169,7 @@ sub _get_key_and_newest {
          }
       }
       else {
-         if ($lang_path->is_file) {
+         if (-f $lang_path) {
             $key .= $key ? q(~).$lang_path : $lang_path; $valid = FALSE;
          }
          else { $self->cache->set_mtime( NUL.$lang_path, 0 ) }

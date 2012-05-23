@@ -13,7 +13,7 @@ use File::DataClass::Constants;
 use File::DataClass::Constraints qw(Directory);
 use File::DataClass::IO;
 use File::Gettext::Constants;
-use File::Spec;
+use File::Spec::Functions qw(catfile tmpdir);
 
 extends qw(File::DataClass::Schema);
 
@@ -77,7 +77,7 @@ around 'load' => sub {
    my ($next, $self, $lang, @names) = @_;
 
    my @paths     = grep { $self->_is_file_or_log_debug( $_ ) }
-                   map  { $self->_get_path( $lang, $_ ) } @names;
+                   map  { $self->_get_path_io( $lang, $_ ) } @names;
    my $data      = $self->$next( @paths );
    my $po_header = exists $data->{po_header}
                  ? $data->{po_header}->{msgstr} || {} : {};
@@ -108,21 +108,24 @@ around 'load' => sub {
    return $data;
 };
 
-sub set_path {
-   my ($self, @rest) = @_; return $self->path( $self->_get_path( @rest ) );
-}
-
-# Private methods
-
-sub _get_path {
+sub get_path {
    my ($self, $lang, $file) = @_;
 
    $lang or $self->throw( 'Language not specified' );
    $file or $self->throw( 'Language file path not specified' );
 
-   my $cn = $self->catagory_name; my $extn = $self->storage->extn;
+   return catfile( $self->localedir, $lang,
+                   $self->catagory_name, $file.$self->storage->extn );
+}
 
-   return $self->io( [ $self->localedir, $lang, $cn, $file.$extn ] );
+sub set_path {
+   my ($self, @rest) = @_; return $self->path( $self->_get_path_io( @rest ) );
+}
+
+# Private methods
+
+sub _get_path_io {
+   return $_[ 0 ]->io( $_[ 0 ]->get_path( $_[ 1 ], $_[ 2 ] ) );
 }
 
 sub _is_file_or_log_debug {
@@ -153,7 +156,7 @@ sub __build_localedir {
       $dir->is_dir and return $dir;
    }
 
-   return io( File::Spec->tmpdir );
+   return io( tmpdir() );
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -182,6 +185,12 @@ File::Gettext - Read and write GNU gettext po/mo files
 =head1 Description
 
 =head1 Subroutines/Methods
+
+=head2 get_path
+
+   $gettext->get_path( $lang, $file );
+
+Returns the path to the po/mo file for the specified language
 
 =head2 set_path
 
