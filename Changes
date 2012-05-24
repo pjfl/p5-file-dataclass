@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Optimised coercions in F::DC::Constraints
          - Optimised F::DC::Storage::WithLanguage::_get_key_and_newest
          - Added type coercion to LanguageType from Undef in
            F::DC::Schema::WithLanguage

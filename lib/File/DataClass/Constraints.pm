@@ -10,7 +10,7 @@ use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 use MooseX::Types -declare => [ qw(Cache DummyClass HashRefOfBools Lock Path
                                    Directory File Result Symbol) ];
 use MooseX::Types::Moose        qw(ArrayRef CodeRef HashRef Object Str Undef);
-use File::DataClass::IO;
+use File::DataClass::IO ();
 use Scalar::Util qw(blessed);
 
 subtype Cache, as Object,
@@ -47,30 +47,30 @@ subtype Path, as Object,
    };
 
 coerce Path,
-   from ArrayRef, via { io( $_ ) },
-   from CodeRef,  via { io( $_ ) },
-   from Str,      via { io( $_ ) },
-   from Undef,    via { io( $_ ) };
+   from ArrayRef, via { File::DataClass::IO->new( $_ ) },
+   from CodeRef,  via { File::DataClass::IO->new( $_ ) },
+   from Str,      via { File::DataClass::IO->new( $_ ) },
+   from Undef,    via { File::DataClass::IO->new( $_ ) };
 
 subtype Directory, as Path,
    where   { $_->is_dir  },
    message { 'Path '.($_ ? $_.' is not a directory' : 'not specified') };
 
 coerce Directory,
-   from ArrayRef, via { io( $_ ) },
-   from CodeRef,  via { io( $_ ) },
-   from Str,      via { io( $_ ) },
-   from Undef,    via { io( $_ ) };
+   from ArrayRef, via { File::DataClass::IO->new( $_ ) },
+   from CodeRef,  via { File::DataClass::IO->new( $_ ) },
+   from Str,      via { File::DataClass::IO->new( $_ ) },
+   from Undef,    via { File::DataClass::IO->new( $_ ) };
 
 subtype File, as Path,
    where   { $_->is_file },
    message { 'Path '.($_ ? $_.' is not a file' : 'not specified') };
 
 coerce File,
-   from ArrayRef, via { io( $_ ) },
-   from CodeRef,  via { io( $_ ) },
-   from Str,      via { io( $_ ) },
-   from Undef,    via { io( $_ ) };
+   from ArrayRef, via { File::DataClass::IO->new( $_ ) },
+   from CodeRef,  via { File::DataClass::IO->new( $_ ) },
+   from Str,      via { File::DataClass::IO->new( $_ ) },
+   from Undef,    via { File::DataClass::IO->new( $_ ) };
 
 no MooseX::Types;
 
