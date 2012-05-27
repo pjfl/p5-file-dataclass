@@ -170,11 +170,15 @@ sub atomic {
 }
 
 sub atomic_infix {
-   my ($self, $value) = @_; $self->_atomic_infix( $value ); return $self;
+   my ($self, $value) = @_;
+
+   defined $value and $self->_atomic_infix( $value ); return $self;
 }
 
 sub atomic_suffix {
-   my ($self, $value) = @_; $self->_atomic_infix( $value ); return $self;
+   my ($self, $value) = @_;
+
+   defined $value and $self->_atomic_infix( $value ); return $self;
 }
 
 sub basename {
@@ -204,7 +208,9 @@ sub binmode {
 }
 
 sub block_size {
-   my ($self, $size) = @_; $self->_block_size( $size ); return $self;
+   my ($self, $size) = @_;
+
+   defined $size and $self->_block_size( $size ); return $self;
 }
 
 sub buffer {
@@ -267,7 +273,8 @@ sub chomp {
 sub chown {
    my ($self, $uid, $gid) = @_;
 
-   CORE::chown $uid, $gid, $self->name;
+   defined $uid and defined $gid and CORE::chown $uid, $gid, $self->name;
+
    return $self;
 }
 
@@ -411,7 +418,9 @@ sub filepath {
 }
 
 sub filter {
-   my ($self, $code) = @_; $self->_filter( $code ); return $self;
+   my ($self, $code) = @_;
+
+   defined $code and $self->_filter( $code ); return $self;
 }
 
 sub _find {
@@ -648,7 +657,9 @@ sub pathname {
 }
 
 sub perms {
-   my ($self, $perms) = @_; $self->_perms( $perms ); return $self;
+   my ($self, $perms) = @_;
+
+   defined $perms and $self->_perms( $perms ); return $self;
 }
 
 sub print {
@@ -748,7 +759,9 @@ sub seek {
 }
 
 sub separator {
-   my ($self, $value) = @_; $self->_separator( $value ); return $self;
+   my ($self, $value) = @_;
+
+   defined $value and $self->_separator( $value ); return $self;
 }
 
 sub set_binmode {
