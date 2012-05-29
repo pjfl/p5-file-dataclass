@@ -13,19 +13,39 @@ use File::DataClass::ResultSet;
 
 has 'attributes'           => is => 'ro', isa => 'ArrayRef[Str]',
    default                 => sub { [] };
+
 has 'defaults'             => is => 'ro', isa => 'HashRef',
    default                 => sub { {} };
+
 has 'name'                 => is => 'ro', isa => 'Str',
    default                 => NUL;
+
 has 'label_attr'           => is => 'ro', isa => 'Str',
    default                 => NUL;
+
 has 'resultset_attributes' => is => 'ro', isa => 'HashRef',
    default                 => sub { {} };
+
 has 'resultset_class'      => is => 'ro', isa => 'ClassName',
    default                 => q(File::DataClass::ResultSet);
+
 has 'schema'               => is => 'ro', isa => 'Object',
    required                => TRUE, weak_ref => TRUE,
    handles                 => [ qw(path storage) ];
+
+
+has '_attributes' => is => 'ro', isa => 'HashRef',
+   builder        => '_build_attributes', init_arg => undef, lazy => TRUE;
+
+sub columns {
+   return @{ $_[ 0 ]->attributes };
+}
+
+sub has_column {
+   my $attr = $_[ 0 ]->_attributes; my $key = $_[ 1 ] || q(_invalid_key_);
+
+   return exists $attr->{ $key } and $attr->{ $key } ? TRUE : FALSE;
+}
 
 sub resultset {
    my $self = shift;
@@ -33,6 +53,16 @@ sub resultset {
    my $attrs = { %{ $self->resultset_attributes }, source => $self };
 
    return $self->resultset_class->new( $attrs );
+}
+
+# Private methods
+
+sub _build_attributes {
+   my $self = shift; my $attr = {};
+
+   $attr->{ $_ } = TRUE for (@{ $self->attributes });
+
+   return $attr;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -79,9 +109,13 @@ inherit from this
 
 =head1 Configuration and Environment
 
+Defines the following attributes
+
 =over 3
 
 =item B<attributes>
+
+Array ref of attributes defined in this result source
 
 =item B<defaults>
 
@@ -101,7 +135,21 @@ inherit from this
 
 =head1 Subroutines/Methods
 
+=head2 columns
+
+   @attributes = $self->columns;
+
+Returns a list of attributes
+
+=head2 has_column
+
+   $bool = $self->has_column( $attribute_name );
+
+Predicate return true if the attribute exists, false otherwise
+
 =head2 resultset
+
+   $rs = $self->resultset;
 
 Creates and returns a new L<File::DataClass::ResultSet> object
 
