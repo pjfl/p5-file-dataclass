@@ -47,15 +47,15 @@ has 'source_name' => is => 'ro', isa => 'Str', default => q(aliases);
 around 'BUILDARGS' => sub {
    my ($next, $self, $car, @cdr) = @_;
 
-   my $attrs = {}; not $car and return $attrs;
+   my $attr = {}; not $car and return $attr;
 
-   if (ref $car eq HASH) { $attrs = $car }
-   else { $attrs->{path} = $car }
+   if (ref $car eq HASH) { $attr = $car }
+   else { $attr->{path} = $car }
 
-   $cdr[ 0 ] and $attrs->{system_aliases} = [ $cdr[ 0 ] ];
-   $cdr[ 1 ] and $attrs->{newaliases    } = [ $cdr[ 1 ] ];
+   $cdr[ 0 ] and $attr->{system_aliases} = [ $cdr[ 0 ] ];
+   $cdr[ 1 ] and $attr->{newaliases    } = [ $cdr[ 1 ] ];
 
-   return $self->$next( $attrs );
+   return $self->$next( $attr );
 };
 
 around 'resultset' => sub {
