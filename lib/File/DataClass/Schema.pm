@@ -84,7 +84,8 @@ has 'tempdir'                  => is => 'ro', isa => Directory,
 around 'BUILDARGS' => sub {
    my ($next, $class, @args) = @_; my $attr = $class->$next( @args );
 
-   my $builder = delete $attr->{builder} || delete $attr->{ioc_obj};
+   my $builder = delete $attr->{builder}
+              || delete $attr->{ioc_obj}; # Deprecated
 
    $builder or return $attr;
 

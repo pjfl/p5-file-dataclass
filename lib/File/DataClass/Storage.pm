@@ -115,13 +115,14 @@ sub txn_do {
 }
 
 sub update {
-   my ($self, $path, $result, $updating, $condition) = @_;
+   my ($self, $path, $result, $updating, $cond) = @_;
 
-   defined $updating or $updating = TRUE; $condition ||= sub { TRUE };
+   defined $updating or $updating = TRUE; $cond ||= sub { TRUE };
 
-   return $self->_create_or_update( $path, $result,
-                                    $updating, $condition )
-       or $self->throw( 'Nothing updated' );
+   my $updated = $self->_create_or_update( $path, $result, $updating, $cond )
+      or $self->throw( 'Nothing updated' );
+
+   return $updated;
 }
 
 sub validate_params {
@@ -141,7 +142,7 @@ sub validate_params {
 # Private methods
 
 sub _create_or_update {
-   my ($self, $path, $result, $updating, $condition) = @_;
+   my ($self, $path, $result, $updating, $cond) = @_;
 
    my $element = $result->_resultset->source->name;
 
@@ -150,7 +151,7 @@ sub _create_or_update {
    my $data = ($self->_read_file( $path, TRUE ))[ 0 ] || {};
 
    try {
-      my $filter = sub { __get_src_attributes( $condition, $_[ 0 ] ) };
+      my $filter = sub { __get_src_attributes( $cond, $_[ 0 ] ) };
       my $name   = $result->name; $data->{ $element } ||= {};
 
       not $updating and exists $data->{ $element }->{ $name }
@@ -260,11 +261,11 @@ sub _write_file {
 # Private subroutines
 
 sub __get_src_attributes {
-   my ($condition, $src) = @_;
+   my ($cond, $src) = @_;
 
    return grep { not m{ \A _ }mx
                  and $_ ne q(name)
-                 and $condition->( $_ ) } keys %{ $src };
+                 and $cond->( $_ ) } keys %{ $src };
 }
 
 __PACKAGE__->meta->make_immutable;

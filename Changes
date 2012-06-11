@@ -1,6 +1,8 @@
 Revision history for File::DataClass
 
 0.11.
+         - Fixed bug in update detection logic
+         - Fixed F::MailAlias api
          - Added Schema attribute builder, deprecated ioc_obj
          - Added columns and has_column to F::DC::ResultSource
          - Do not allow setting attributes to undef in F::DC::IO

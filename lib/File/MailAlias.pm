@@ -12,17 +12,16 @@ use English  qw( -no_match_vars );
 use File::DataClass::Constants;
 use File::DataClass::IO ();
 use File::Copy;
-use File::Spec;
+use File::Spec::Functions qw(catfile);
 
 extends qw(File::DataClass::Schema);
 
 has 'mail_domain'    => is => 'ro', isa => 'Str',
    lazy              => TRUE,   builder => '_build_mail_domain';
 has 'newaliases'     => is => 'ro', isa => 'ArrayRef',
-   default           => sub { return [ q(newaliases) ] };
-has 'system_aliases' => is => 'ro', isa => 'Str',
-   default           => sub {
-      return File::Spec->catfile( NUL, qw(etc mail aliases) ) };
+   default           => sub { [ q(newaliases) ] };
+has 'system_aliases' => is => 'ro', isa => 'ArrayRef',
+   default           => sub { [ NUL, qw(etc mail aliases) ] };
 
 has 'commit'     => is => 'rw', isa => 'Bool',
    default       => FALSE;
@@ -36,28 +35,27 @@ has 'root_update_attrs' => is => 'ro', isa => 'ArrayRef',
    default              => sub { return [ qw(-S -n -c update_mail_aliases) ] };
 
 has '+result_source_attributes' =>
-   default                      => sub { return {
-      aliases => { attributes => [ qw(comment created owner recipients) ],
-                   defaults   => { comment    => [ '-' ],
-                                   recipients => [] } }, } };
+   default          => sub { return {
+      aliases       => {
+         attributes => [ qw(comment created owner recipients) ],
+         defaults   => { comment => [ '-' ], recipients => [] } }, } };
 has '+storage_class' =>
    default           => q(+File::MailAlias::Storage);
 
 has 'source_name' => is => 'ro', isa => 'Str', default => q(aliases);
 
-around BUILDARGS => sub {
-   my ($orig, $class, $car, @cdr) = @_; my $attrs = {};
+around 'BUILDARGS' => sub {
+   my ($next, $self, $car, @cdr) = @_;
 
-   (not $car or blessed $car) and return $class->$orig( $car, @cdr );
+   my $attrs = {}; not $car and return $attrs;
 
-   if    (ref $car eq HASH)  { $attrs         = $car }
-   elsif (ref $car eq ARRAY) { $attrs->{path} = $class->catfile( @{ $car } ) }
-   else                      { $attrs->{path} = $car.NUL }
+   if (ref $car eq HASH) { $attrs = $car }
+   else { $attrs->{path} = $car }
 
-   $cdr[ 0 ] and $attrs->{system_aliases} =   $cdr[ 0 ];
+   $cdr[ 0 ] and $attrs->{system_aliases} = [ $cdr[ 0 ] ];
    $cdr[ 1 ] and $attrs->{newaliases    } = [ $cdr[ 1 ] ];
 
-   return $class->$orig( $attrs );
+   return $self->$next( $attrs );
 };
 
 around 'resultset' => sub {
@@ -113,15 +111,15 @@ sub update {
 }
 
 sub update_as_root {
-   my $self = shift; my $cmd = join SPC, @{ $self->newaliases || [] };
+   my $self = shift; my $cmd = shift @{ $self->newaliases };
 
-   ($self->newaliases and $cmd = can_run( $self->newaliases->[ 0 ] ))
+   $cmd = can_run( $cmd )
       or $self->throw( error => 'Path [_1] cannot execute', args => [ $cmd ] );
 
-   copy( NUL.$self->path, $self->catfile( $self->system_aliases ) )
+   copy( NUL.$self->path, catfile( @{ $self->system_aliases } ) )
       or $self->throw( $ERRNO );
 
-   return $self->_run_cmd( $cmd );
+   return $self->_run_cmd( [ $cmd, @{ $self->newaliases } ] );
 }
 
 # Private methods
@@ -145,8 +143,8 @@ sub _run_update_cmd {
       my $cmd  = [ $self->root_update_cmd,
                    @{ $self->root_update_attrs },
                    NUL.$self->path,
-                   $self->system_aliases,
-                   $self->catfile( @{ $self->newaliases } ) ];
+                   catfile( @{ $self->system_aliases } ),
+                   catfile( @{ $self->newaliases } ) ];
 
       $out .= $self->_run_cmd( $cmd );
    }
