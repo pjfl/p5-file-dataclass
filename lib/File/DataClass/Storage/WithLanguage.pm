@@ -12,7 +12,7 @@ use File::Gettext;
 
 with qw(File::DataClass::Util);
 
-has 'gettext' => is => 'ro', isa => 'Object',  lazy     => TRUE,
+has 'gettext' => is => 'ro', isa => 'Object',  lazy => TRUE,
    builder    => '_build_gettext';
 
 has 'schema'  => is => 'ro', isa => 'Object',  required => TRUE,
@@ -73,9 +73,7 @@ sub dump {
 }
 
 sub insert {
-   my ($self, $path, $result) = @_;
-
-   return $self->_create_or_update( $path, $result, FALSE );
+   return $_[ 0 ]->_create_or_update( $_[ 1 ], $_[ 2 ], FALSE );
 }
 
 sub load {
@@ -113,13 +111,10 @@ sub select {
 }
 
 sub update {
-   my ($self, $path, $result) = @_;
-
-   return $self->_create_or_update( $path, $result, TRUE );
+   return $_[ 0 ]->_create_or_update( $_[ 1 ], $_[ 2 ], TRUE );
 }
 
 # Private methods
-
 
 sub _extn {
    my $extn = $_[ 0 ]->extn;
@@ -128,10 +123,8 @@ sub _extn {
 }
 
 sub _build_gettext {
-   my $self = shift;
-
-   return File::Gettext->new( builder   => $self->schema,
-                              localedir => $self->localedir );
+   return File::Gettext->new( builder   => $_[ 0 ]->schema,
+                              localedir => $_[ 0 ]->localedir );
 }
 
 sub _create_or_update {
@@ -139,8 +132,8 @@ sub _create_or_update {
 
    my $source    = $result->_resultset->source;
    my $condition = sub { not $source->lang_dep->{ $_[ 0 ] } };
-   my $updated   = $self->storage->_create_or_update( $path, $result,
-                                                      $updating, $condition );
+   my $updated   = $self->storage->create_or_update( $path, $result,
+                                                     $updating, $condition );
    my $rs        = $self->_gettext( $path )->resultset;
    my $element   = $source->name;
 

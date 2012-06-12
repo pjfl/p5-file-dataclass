@@ -22,6 +22,34 @@ has 'schema' => is => 'ro', isa => 'Object', required => TRUE, weak_ref => TRUE,
    handles   => { _cache => q(cache), _debug => q(debug), _lock => q(lock),
                   _log   => q(log),   _perms => q(perms) };
 
+sub create_or_update {
+   my ($self, $path, $result, $updating, $cond) = @_;
+
+   my $element = $result->_resultset->source->name;
+
+   $self->validate_params( $path, $element ); my $updated;
+
+   my $data = ($self->_read_file( $path, TRUE ))[ 0 ] || {};
+
+   try {
+      my $filter = sub { __get_src_attributes( $cond, $_[ 0 ] ) };
+      my $name   = $result->name; $data->{ $element } ||= {};
+
+      not $updating and exists $data->{ $element }->{ $name }
+         and $self->throw( error => 'File [_1] element [_2] already exists',
+                           args  => [ $path, $name ], level => 4 );
+
+      $updated = File::DataClass::HashMerge->merge
+         ( \$data->{ $element }->{ $name }, $result, $filter );
+   }
+   catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
+
+   if ($updated) { $self->_write_file( $path, $data, not $updating ) }
+   else { $self->_lock->reset( k => $path ) }
+
+   return $updated;
+}
+
 sub delete {
    my ($self, $path, $result) = @_;
 
@@ -59,7 +87,7 @@ sub extensions {
 sub insert {
    my ($self, $path, $result) = @_;
 
-   return $self->_create_or_update( $path, $result, FALSE, sub { TRUE } );
+   return $self->create_or_update( $path, $result, FALSE, sub { TRUE } );
 }
 
 sub load {
@@ -139,7 +167,7 @@ sub update {
 
    defined $updating or $updating = TRUE; $cond ||= sub { TRUE };
 
-   my $updated = $self->_create_or_update( $path, $result, $updating, $cond )
+   my $updated = $self->create_or_update( $path, $result, $updating, $cond )
       or $self->throw( 'Nothing updated' );
 
    return $updated;
@@ -160,34 +188,6 @@ sub validate_params {
 }
 
 # Private methods
-
-sub _create_or_update {
-   my ($self, $path, $result, $updating, $cond) = @_;
-
-   my $element = $result->_resultset->source->name;
-
-   $self->validate_params( $path, $element ); my $updated;
-
-   my $data = ($self->_read_file( $path, TRUE ))[ 0 ] || {};
-
-   try {
-      my $filter = sub { __get_src_attributes( $cond, $_[ 0 ] ) };
-      my $name   = $result->name; $data->{ $element } ||= {};
-
-      not $updating and exists $data->{ $element }->{ $name }
-         and $self->throw( error => 'File [_1] element [_2] already exists',
-                           args  => [ $path, $name ], level => 4 );
-
-      $updated = File::DataClass::HashMerge->merge
-         ( \$data->{ $element }->{ $name }, $result, $filter );
-   }
-   catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
-
-   if ($updated) { $self->_write_file( $path, $data, not $updating ) }
-   else { $self->_lock->reset( k => $path ) }
-
-   return $updated;
-}
 
 sub _read_file {
    my ($self, $path, $for_update) = @_;
@@ -278,6 +278,12 @@ File::DataClass::Storage - Storage base class
 Storage base class
 
 =head1 Subroutines/Methods
+
+=head2 create_or_update
+
+   $bool = $self->create_or_update( $path, $result, $updating, $condition );
+
+Does the heavy lifting for L</insert> and L</update>
 
 =head2 delete
 

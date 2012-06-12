@@ -18,6 +18,10 @@ has 'schema' => is => 'ro', isa => 'Object', required => TRUE, weak_ref => TRUE,
 has 'stores' => is => 'ro', isa => 'HashRef', lazy => TRUE,
    builder   => '_build_stores';
 
+sub create_or_update {
+   return shift->_get_store_from_extension( $_[ 0 ] )->create_or_update( @_ );
+}
+
 sub delete {
    return shift->_get_store_from_extension( $_[ 0 ] )->delete( @_ );
 }
@@ -161,6 +165,8 @@ File::DataClass::Storage::Any - Selects storage class using the extension on the
 Selects storage class using the extension on the path
 
 =head1 Subroutines/Methods
+
+=head2 create_or_update
 
 =head2 delete
 
