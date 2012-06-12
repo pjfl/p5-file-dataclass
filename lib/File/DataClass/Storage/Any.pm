@@ -19,22 +19,18 @@ has 'stores' => is => 'ro', isa => 'HashRef', lazy => TRUE,
    builder   => '_build_stores';
 
 sub delete {
-   my ($self, $path, @rest) = @_;
-
-   return $self->_get_store_from_extension( $path )->delete( $path, @rest );
+   return shift->_get_store_from_extension( $_[ 0 ] )->delete( @_ );
 }
 
 sub dump {
-   my ($self, $path, @rest) = @_;
-
-   return $self->_get_store_from_extension( $path )->dump( $path, @rest );
+   return shift->_get_store_from_extension( $_[ 0 ] )->dump( @_ );
 }
 
 sub extn {
    return sub {
-      my $extn = ((split m{ \. (.+) \z }mx, $_[ 0 ])[ -1 ]);
+      my $path = shift || NUL; my ($extn) = $path =~ m{ \. ([^\.]+) \z }mx;
 
-      return $extn ? q(.).$extn : q();
+      return $extn ? q(.).$extn : NUL;
    };
 }
 
@@ -43,9 +39,7 @@ sub extensions {
 }
 
 sub insert {
-   my ($self, $path, @rest) = @_;
-
-   return $self->_get_store_from_extension( $path )->insert( $path, @rest );
+   return shift->_get_store_from_extension( $_[ 0 ] )->insert( @_ );
 }
 
 sub load {
@@ -83,35 +77,23 @@ sub meta_unpack {
 };
 
 sub read_file {
-   my ($self, $path, @rest) = @_;
-
-   return $self->_get_store_from_extension( $path )->read_file( $path, @rest );
+   return shift->_get_store_from_extension( $_[ 0 ] )->read_file( @_ );
 }
 
 sub select {
-   my ($self, $path, @rest) = @_;
-
-   return $self->_get_store_from_extension( $path )->select( $path, @rest );
+   return shift->_get_store_from_extension( $_[ 0 ] )->select( @_ );
 }
 
 sub txn_do {
-   my ($self, $path, @rest) = @_;
-
-   return $self->_get_store_from_extension( $path )->txn_do( $path, @rest );
+   return shift->_get_store_from_extension( $_[ 0 ] )->txn_do( @_ );
 }
 
 sub update {
-   my ($self, $path, @rest) = @_;
-
-   return $self->_get_store_from_extension( $path )->update( $path, @rest );
+   return shift->_get_store_from_extension( $_[ 0 ] )->update( @_ );
 }
 
 sub validate_params {
-   my ($self, $path, @rest) = @_;
-
-   my $store = $self->_get_store_from_extension( $path );
-
-   return $store->validate_params( $path, @rest );
+   return shift->_get_store_from_extension( $_[ 0 ] )->validate_params( @_ );
 }
 
 # Private methods
@@ -193,6 +175,10 @@ Class method that proxies the call to L<File::DataClass::Storage/extensions>
 =head2 insert
 
 =head2 load
+
+=head2 meta_pack
+
+=head2 meta_unpack
 
 =head2 read_file
 
