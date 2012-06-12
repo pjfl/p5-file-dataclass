@@ -24,15 +24,15 @@ has '_arrays'   => is => 'rw', isa => HashRefOfBools, default => sub { {} },
 has '_dtd'      => is => 'rw', isa => ArrayRef,       default => sub { [] },
    init_arg     => 'dtd';
 
-around '_meta_pack' => sub {
-   my ($next, $self, $args) = @_; my $packed = $self->$next( $args );
+around 'meta_pack' => sub {
+   my ($next, $self, @args) = @_; my $packed = $self->$next( @args );
 
    $self->_dtd and $packed->{_dtd} = $self->_dtd;
 
    return $packed;
 };
 
-around '_meta_unpack' => sub {
+around 'meta_unpack' => sub {
    my ($next, $self, $packed) = @_; $packed ||= {};
 
    $self->_dtd( exists $packed->{_dtd} ? delete $packed->{_dtd} : [] );

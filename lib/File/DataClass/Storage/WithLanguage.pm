@@ -19,8 +19,8 @@ has 'schema'  => is => 'ro', isa => 'Object',  required => TRUE,
    handles    => [ qw(cache lang localedir) ], weak_ref => TRUE;
 
 has 'storage' => is => 'ro', isa => 'Object',  required => TRUE,
-   handles    => [ qw(extn extensions _meta_pack _merge_hash_data _meta_unpack
-                      _read_file txn_do validate_params) ];
+   handles    => [ qw(extn extensions meta_pack meta_unpack
+                      read_file txn_do validate_params) ];
 
 sub delete {
    my ($self, $path, $result) = @_;
@@ -83,13 +83,23 @@ sub load {
 
    my ($key, $newest) = $self->_get_key_and_newest( \@paths );
    my ($data, $meta)  = $self->cache->get( $key );
-   my $cache_mtime    = $self->_meta_unpack( $meta );
+   my $cache_mtime    = $self->meta_unpack( $meta );
 
    not $self->is_stale( $data, $cache_mtime, $newest ) and return $data;
 
-   ($data, $newest)   = $self->_load( \@paths );
+   $data = {}; $newest = 0;
 
-   $self->cache->set( $key, $data, $self->_meta_pack( $newest ) );
+   for my $path (@paths) {
+      my ($red, $path_mtime) = $self->read_file( $path, FALSE );
+
+      if ($red) {
+         $path_mtime > $newest and $newest = $path_mtime;
+         $self->merge_hash_data( $data, $red );
+      }
+
+      $path_mtime = __load_gettext( $data, $self->_gettext( $path ) );
+      $path_mtime and $path_mtime > $newest and $newest = $path_mtime;
+   }
 
    return $data;
 }
@@ -110,10 +120,17 @@ sub update {
 
 # Private methods
 
+
+sub _extn {
+   my $extn = $_[ 0 ]->extn;
+
+   return ref $extn eq CODE ? $extn->( $_[ 1 ] ) : $extn;
+}
+
 sub _build_gettext {
    my $self = shift;
 
-   return File::Gettext->new( ioc_obj   => $self->schema,
+   return File::Gettext->new( builder   => $self->schema,
                               localedir => $self->localedir );
 }
 
@@ -159,7 +176,7 @@ sub _get_key_and_newest {
       if ($mtime) { $mtime > $newest and $newest = $mtime }
       else { $valid = FALSE }
 
-      my $file      = $self->basename( $path, $self->extn );
+      my $file      = $self->basename( $path, $self->_extn( $path ) );
       my $lang_path = $self->gettext->get_path( $self->lang, $file );
 
       if (defined ($mtime = $self->cache->get_mtime( NUL.$lang_path ))) {
@@ -184,27 +201,11 @@ sub _gettext {
 
    $path or $self->throw( 'Path not specified' );
 
-   $gettext->set_path( $self->lang, $self->basename( $path, $self->extn ) );
+   my $extn = $self->_extn( $path );
+
+   $gettext->set_path( $self->lang, $self->basename( $path, $extn ) );
 
    return $gettext;
-}
-
-sub _load {
-   my ($self, $paths) = @_; my $data = {}; my $newest = 0;
-
-   for my $path (@{ $paths }) {
-      my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
-
-      if ($red) {
-         $path_mtime > $newest and $newest = $path_mtime;
-         $self->_merge_hash_data( $data, $red );
-      }
-
-      $path_mtime = __load_gettext( $data, $self->_gettext( $path ) );
-      $path_mtime and $path_mtime > $newest and $newest = $path_mtime;
-   }
-
-   return ($data, $newest);
 }
 
 # Private subroutines

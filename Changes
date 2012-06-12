@@ -1,6 +1,8 @@
 Revision history for File::DataClass
 
 0.11.
+         - Fixed using F::DC::Storage::WithLanguage with F::DC::S::Any
+         - F::DC::Schema::translate defaults to storage class Any
          - Fixed bug in update detection logic
          - Fixed F::MailAlias api
          - Added Schema attribute builder, deprecated ioc_obj

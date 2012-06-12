@@ -12,7 +12,6 @@ use English     qw(-no_match_vars);
 use File::Copy;
 use File::DataClass::Constants;
 use File::DataClass::HashMerge;
-use Hash::Merge qw(merge);
 use Try::Tiny;
 
 with qw(File::DataClass::Util);
@@ -70,15 +69,36 @@ sub load {
       and return ($self->_read_file( $paths[ 0 ], FALSE ))[ 0 ] || {};
 
    my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
-   my $cache_mtime  = $self->_meta_unpack( $meta );
+   my $cache_mtime  = $self->meta_unpack( $meta );
 
    not $self->is_stale( $data, $cache_mtime, $newest ) and return $data;
 
-   ($data, $newest) = $self->_load( \@paths );
+   $data = {}; $newest = 0;
 
-   $self->_cache->set_by_paths( \@paths, $data, $self->_meta_pack( $newest ) );
+   for my $path (@paths) {
+      my ($red, $path_mtime) = $self->_read_file( $path, FALSE ); $red or next;
+
+      $path_mtime > $newest and $newest = $path_mtime;
+      $self->merge_hash_data( $data, $red );
+   }
+
+   $self->_cache->set_by_paths( \@paths, $data, $self->meta_pack( $newest ) );
 
    return $data;
+}
+
+sub meta_pack {
+   # Can be modified in a subclass
+   my ($self, $mtime) = @_; return { mtime => $mtime };
+}
+
+sub meta_unpack {
+   # Can be modified in a subclass
+   my ($self, $attrs) = @_; return $attrs ? $attrs->{mtime} : undef;
+}
+
+sub read_file {
+   return shift->_read_file( @_ );
 }
 
 sub select {
@@ -169,41 +189,6 @@ sub _create_or_update {
    return $updated;
 }
 
-sub _load {
-   my ($self, $paths) = @_; my $data = {}; my $newest = 0;
-
-   for my $path (@{ $paths }) {
-      my ($red, $path_mtime) = $self->_read_file( $path, FALSE ); $red or next;
-
-      $path_mtime > $newest and $newest = $path_mtime;
-      $self->_merge_hash_data( $data, $red );
-   }
-
-   return ($data, $newest);
-}
-
-sub _merge_hash_data {
-   my ($self, $existing, $new) = @_;
-
-   for (keys %{ $new }) {
-      $existing->{ $_ } = exists $existing->{ $_ }
-                        ? merge( $existing->{ $_ }, $new->{ $_ } )
-                        : $new->{ $_ };
-   }
-
-   return;
-}
-
-sub _meta_pack {
-   # Can be modified in a subclass
-   my ($self, $mtime) = @_; return { mtime => $mtime };
-}
-
-sub _meta_unpack {
-   # Can be modified in a subclass
-   my ($self, $attrs) = @_; return $attrs ? $attrs->{mtime} : undef;
-}
-
 sub _read_file {
    my ($self, $path, $for_update) = @_;
 
@@ -213,13 +198,13 @@ sub _read_file {
       ($data, $meta)  = $self->_cache->get( $path );
       $path_mtime     = $path->stat->{mtime};
 
-      my $cache_mtime = $self->_meta_unpack( $meta );
+      my $cache_mtime = $self->meta_unpack( $meta );
 
       if ($self->is_stale( $data, $cache_mtime, $path_mtime )) {
          if ($for_update and not $path->is_file) { $data = undef }
          else {
             $data = inner( $path->lock ); $path->close;
-            $meta = $self->_meta_pack( $path_mtime );
+            $meta = $self->meta_pack( $path_mtime );
             $self->_cache->set( $path, $data, $meta );
             $self->_debug and $self->_log->debug( "Read file  ${path}" );
          }
@@ -330,6 +315,16 @@ an error otherwise. Path is an instance of L<File::DataClass::IO>
 Loads each of the specified files merging the resultant hash ref which
 it returns. Paths are instances of L<File::DataClass::IO>
 
+=head2 meta_pack
+
+=head2 meta_unpack
+
+=head2 read_file
+
+   ($data, $mtime) = $self->read_file( $path, $for_update ):
+
+Read a file from cache or disk
+
 =head2 select
 
    $hash_ref = $storage->select( $path );
@@ -350,12 +345,6 @@ an error otherwise. Path is an instance of L<File::DataClass::IO>
 
 =head2 validate_params
 
-=head2 _merge_hash_data
-
-   $self->_merge_hash_data( $existsing, $new );
-
-Uses L<Hash::Merge> to merge data from the new hash ref in with the existsing
-
 =head1 Diagnostics
 
 None
@@ -371,8 +360,6 @@ None
 =item L<File::DataClass::HashMerge>
 
 =item L<File::DataClass::Util>
-
-=item L<Hash::Merge>
 
 =item L<Scalar::Util>
 

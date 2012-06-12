@@ -19,15 +19,23 @@ has 'stores' => is => 'ro', isa => 'HashRef', lazy => TRUE,
    builder   => '_build_stores';
 
 sub delete {
-   my ($self, $path, $result) = @_;
+   my ($self, $path, @rest) = @_;
 
-   return $self->_get_store_from_extension( $path )->delete( $path, $result );
+   return $self->_get_store_from_extension( $path )->delete( $path, @rest );
 }
 
 sub dump {
-   my ($self, $path, $data) = @_;
+   my ($self, $path, @rest) = @_;
 
-   return $self->_get_store_from_extension( $path )->dump( $path, $data );
+   return $self->_get_store_from_extension( $path )->dump( $path, @rest );
+}
+
+sub extn {
+   return sub {
+      my $extn = ((split m{ \. (.+) \z }mx, $_[ 0 ])[ -1 ]);
+
+      return $extn ? q(.).$extn : q();
+   };
 }
 
 sub extensions {
@@ -35,51 +43,75 @@ sub extensions {
 }
 
 sub insert {
-   my ($self, $path, $result) = @_;
+   my ($self, $path, @rest) = @_;
 
-   return $self->_get_store_from_extension( $path )->insert( $path, $result );
+   return $self->_get_store_from_extension( $path )->insert( $path, @rest );
 }
 
 sub load {
    my ($self, @paths) = @_; $paths[ 0 ] or return {};
 
    my ($data, $meta, $newest) = $self->cache->get_by_paths( \@paths );
-   my $cache_mtime  = $self->_meta_unpack( $meta );
+   my $cache_mtime  = $self->meta_unpack( $meta );
 
    not $self->is_stale( $data, $cache_mtime, $newest ) and return $data;
 
-   ($data, $newest) = $self->_load( \@paths );
-   $self->_meta_pack( $meta, $newest );
-   $self->cache->set_by_paths( \@paths, $data, $meta );
+   $data = {}; $newest = 0;
+
+   for my $path (@paths) {
+      my $store = $self->_get_store_from_extension( $path );
+      my ($red, $path_mtime) = $store->read_file( $path, FALSE ); $red or next;
+
+      $path_mtime > $newest and $newest = $path_mtime;
+      $self->merge_hash_data( $data, $red );
+   }
+
+   $self->cache->set_by_paths( \@paths, $data, $self->meta_pack( $newest ) );
    return $data;
 }
 
-sub select {
-   my ($self, $path, $element) = @_;
+sub meta_pack {
+   my ($self, $mtime) = @_; my $attr = $self->{_meta_cache} || {};
 
-   return $self->_get_store_from_extension( $path )->select( $path, $element );
+   $attr->{mtime} = $mtime; return $attr;
+}
+
+sub meta_unpack {
+   my ($self, $attr) = @_; $self->{_meta_cache} = $attr;
+
+   return $attr ? $attr->{mtime} : undef;
+};
+
+sub read_file {
+   my ($self, $path, @rest) = @_;
+
+   return $self->_get_store_from_extension( $path )->read_file( $path, @rest );
+}
+
+sub select {
+   my ($self, $path, @rest) = @_;
+
+   return $self->_get_store_from_extension( $path )->select( $path, @rest );
 }
 
 sub txn_do {
-   my ($self, $path, $code_ref) = @_;
+   my ($self, $path, @rest) = @_;
 
-   return $self->_get_store_from_extension( $path )->txn_do( $path, $code_ref );
+   return $self->_get_store_from_extension( $path )->txn_do( $path, @rest );
 }
 
 sub update {
-   my ($self, $path, $result, $updating, $condition) = @_;
+   my ($self, $path, @rest) = @_;
 
-   my $store = $self->_get_store_from_extension( $path );
-
-   return $store->update( $path, $result, $updating, $condition );
+   return $self->_get_store_from_extension( $path )->update( $path, @rest );
 }
 
 sub validate_params {
-   my ($self, $path, $element) = @_;
+   my ($self, $path, @rest) = @_;
 
    my $store = $self->_get_store_from_extension( $path );
 
-   return $store->validate_params( $path, $element );
+   return $store->validate_params( $path, @rest );
 }
 
 # Private methods
@@ -114,28 +146,6 @@ sub _get_store_from_extension {
                        args  => [ $extn ] );
 
    return $store;
-}
-
-sub _load {
-   my ($self, $paths) = @_; my $data = {}; my $newest = 0;
-
-   for my $path (@{ $paths }) {
-      my $store = $self->_get_store_from_extension( $path );
-      my ($red, $path_mtime) = $store->_read_file( $path, FALSE ); $red or next;
-
-      $path_mtime > $newest and $newest = $path_mtime;
-      $store->_merge_hash_data( $data, $red );
-   }
-
-   return ($data, $newest);
-}
-
-sub _meta_pack {
-   my ($self, $attrs, $mtime) = @_; $attrs->{mtime} = $mtime;
-}
-
-sub _meta_unpack {
-   my ($self, $attrs) = @_; return $attrs ? $attrs->{mtime} : undef;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -174,6 +184,8 @@ Selects storage class using the extension on the path
 
 =head2 dump
 
+=head2 extn
+
 =head2 extensions
 
 Class method that proxies the call to L<File::DataClass::Storage/extensions>
@@ -181,6 +193,8 @@ Class method that proxies the call to L<File::DataClass::Storage/extensions>
 =head2 insert
 
 =head2 load
+
+=head2 read_file
 
 =head2 select
 

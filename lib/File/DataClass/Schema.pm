@@ -136,11 +136,13 @@ sub sources {
 sub translate {
    my ($self, $args) = @_;
 
-   my $class = blessed $self || $self;
-   my $attrs = { path => $args->{from}, storage_class => $args->{from_class} };
-   my $data  = $class->new( $attrs )->load;
+   my $class      = blessed $self       || $self;
+   my $from_class = $args->{from_class} || q(Any);
+   my $to_class   = $args->{to_class  } || q(Any);
+   my $attrs      = { path => $args->{from}, storage_class => $from_class };
+   my $data       = $class->new( $attrs )->load;
 
-   $attrs = { path => $args->{to}, storage_class => $args->{to_class} };
+   $attrs = { path => $args->{to}, storage_class => $to_class };
    $class->new( $attrs )->dump( { data => $data } );
 
    return;
