@@ -38,10 +38,6 @@ sub extn {
    };
 }
 
-sub extensions {
-   return File::DataClass::Storage->extensions;
-}
-
 sub insert {
    return shift->_get_store_from_extension( $_[ 0 ] )->insert( @_ );
 }
@@ -173,10 +169,6 @@ Selects storage class using the extension on the path
 =head2 dump
 
 =head2 extn
-
-=head2 extensions
-
-Class method that proxies the call to L<File::DataClass::Storage/extensions>
 
 =head2 insert
 

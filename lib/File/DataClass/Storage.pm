@@ -79,11 +79,6 @@ sub dump {
       $self->_write_file( $path, $data, TRUE ) } );
 }
 
-sub extensions {
-   return { '.json' => [ q(JSON) ],
-            '.xml'  => [ q(XML::Simple), q(XML::Bare) ], };
-}
-
 sub insert {
    my ($self, $path, $result) = @_;
 
@@ -298,14 +293,6 @@ an error otherwise. Path is an instance of L<File::DataClass::IO>
 
 Dumps the data to the specified path. Path is an instance of
 L<File::DataClass::IO>
-
-=head2 extensions
-
-   $hash_ref = $storage->extensions;
-
-Returns a hash ref whose keys are the supported extensions and whose values
-are an array ref of storage subclasses that implement reading/writing files
-with that extension
 
 =head2 insert
 

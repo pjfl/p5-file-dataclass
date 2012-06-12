@@ -19,8 +19,8 @@ has 'schema'  => is => 'ro', isa => 'Object',  required => TRUE,
    handles    => [ qw(cache lang localedir) ], weak_ref => TRUE;
 
 has 'storage' => is => 'ro', isa => 'Object',  required => TRUE,
-   handles    => [ qw(extn extensions meta_pack meta_unpack
-                      read_file txn_do validate_params) ];
+   handles    => [ qw(extn meta_pack meta_unpack read_file txn_do
+                      validate_params) ];
 
 sub delete {
    my ($self, $path, $result) = @_;

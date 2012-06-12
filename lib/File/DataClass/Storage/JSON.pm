@@ -14,7 +14,10 @@ extends qw(File::DataClass::Storage);
 has '+extn' => default => q(.json);
 
 augment '_read_file' => sub {
-   my ($self, $rdr) = @_; my $json = JSON->new->canonical;
+   my ($self, $rdr) = @_;
+
+   # The filter causes the data to be untainted (suid). I shit you not
+   my $json = JSON->new->canonical->filter_json_object( sub { $_[ 0 ] } );
 
    return $rdr->empty ? {} : $json->decode( $rdr->all );
 };

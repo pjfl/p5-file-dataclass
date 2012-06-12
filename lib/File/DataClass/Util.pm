@@ -50,6 +50,11 @@ sub ensure_class_loaded {
    return; # Not reached
 }
 
+sub extensions {
+   return { '.json' => [ q(JSON) ],
+            '.xml'  => [ q(XML::Simple), q(XML::Bare) ], };
+}
+
 sub io {
    my ($self, @rest) = @_; return File::DataClass::IO->new( @rest );
 }
@@ -119,6 +124,12 @@ File::DataClass::Util - Moose Role defining utility methods
 =head2 dirname
 
 =head2 ensure_class_loaded
+
+=head2 extensions
+
+Returns a hash ref whose keys are the supported extensions and whose values
+are an array ref of storage subclasses that implement reading/writing files
+with that extension
 
 =head2 io
 

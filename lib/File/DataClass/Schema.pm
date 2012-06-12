@@ -65,8 +65,7 @@ has 'source_registrations'     => is => 'ro', isa => HashRef[Object],
    builder                     => '_build_source_registrations', lazy => TRUE;
 
 has 'storage'                  => is => 'rw', isa => Object,
-   builder                     => '_build_storage', lazy => TRUE,
-   handles                     => [ qw(extensions) ];
+   builder                     => '_build_storage', lazy => TRUE;
 
 has 'storage_attributes'       => is => 'ro', isa => HashRef,
    default                     => sub { {} };
