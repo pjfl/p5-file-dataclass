@@ -8,6 +8,7 @@ use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 
 use Encode qw(decode);
 use File::DataClass::Constants;
+use File::DataClass::Functions qw(throw);
 use File::Gettext::Constants;
 use Moose;
 
@@ -29,28 +30,28 @@ sub _read_filter {
    my ($self, $rdr) = @_; my $path = $rdr->pathname; my $raw = $rdr->all;
 
    my $size = length $raw; $size < 28
-      and $self->throw( error => 'Path [_1] corrupted', args => [ $path ] );
+      and throw error => 'Path [_1] corrupted', args => [ $path ];
    my %meta = (); my $unpack = q(N);
 
    $meta{magic} = unpack $unpack, substr $raw, 0, 4;
 
    if    ($meta{magic} == MAGIC_V) { $unpack = q(V) }
    elsif ($meta{magic} != MAGIC_N) {
-      $self->throw( error => 'Path [_1] bad magic', args => [ $path ] );
+      throw error => 'Path [_1] bad magic', args => [ $path ];
    }
 
    @meta{ qw(revision num_strings msgids_off msgstrs_off hash_size hash_off) }
       = unpack( ($unpack x 6), substr $raw, 4, 24 );
 
-   $meta{revision} == 0 or $self->throw( error => 'Path [_1 ] invalid version',
-                                         args  => [ $path ] );
+   $meta{revision} == 0 or throw error => 'Path [_1 ] invalid version',
+                                 args  => [ $path ];
 
    my $nstrs = $meta{num_strings};
 
    $meta{msgids_off}  + 4 * $nstrs > $size and
-      $self->throw( error => 'Path [_1] bad msgid offset',  args => [ $path ] );
+      throw error => 'Path [_1] bad msgid offset',  args => [ $path ];
    $meta{msgstrs_off} + 4 * $nstrs > $size and
-      $self->throw( error => 'Path [_1] bad msgstr offset', args => [ $path ] );
+      throw error => 'Path [_1] bad msgstr offset', args => [ $path ];
 
    my @orig_tab  = unpack( ($unpack x (2 * $nstrs)),
       substr $raw, $meta{msgids_off},  8 * $nstrs );
@@ -66,11 +67,9 @@ sub _read_filter {
       my $trans_offset = $trans_tab[ $count + 1 ];
 
       $orig_offset  + $orig_length  > $size
-         and $self->throw( error => 'Path [_1] bad key length',
-                           args  => [ $path ] );
+         and throw error => 'Path [_1] bad key length', args => [ $path ];
       $trans_offset + $trans_length > $size
-         and $self->throw( error => 'Path [_1] bad text length',
-                           args  => [ $path ] );
+         and throw error => 'Path [_1] bad text length', args => [ $path ];
 
       my @origs = split m{ $sep }mx, substr $raw, $orig_offset,  $orig_length;
       my @trans = split m{ $sep }mx, substr $raw, $trans_offset, $trans_length;

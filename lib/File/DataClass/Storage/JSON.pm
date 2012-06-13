@@ -6,8 +6,8 @@ use strict;
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 
-use JSON qw();
 use Moose;
+use JSON qw();
 
 extends qw(File::DataClass::Storage);
 
@@ -16,17 +16,20 @@ has '+extn' => default => q(.json);
 augment '_read_file' => sub {
    my ($self, $rdr) = @_;
 
-   # The filter causes the data to be untainted (suid). I shit you not
+   $self->encoding and $rdr->encoding( $self->encoding );
+
+   # The filter causes the data to be untainted (running suid). I shit you not
    my $json = JSON->new->canonical->filter_json_object( sub { $_[ 0 ] } );
 
-   return $rdr->empty ? {} : $json->decode( $rdr->all );
+   return $rdr->empty ? {} : $json->utf8( 0 )->decode( $rdr->all );
 };
 
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_; my $json = JSON->new->canonical;
 
-   $wtr->print( $json->pretty->encode( $data ) );
-   return $data;
+   $self->encoding and $wtr->encoding( $self->encoding );
+
+   $wtr->print( $json->pretty->utf8( 0 )->encode( $data ) ); return $data;
 };
 
 __PACKAGE__->meta->make_immutable;

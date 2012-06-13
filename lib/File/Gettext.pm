@@ -11,9 +11,10 @@ use Moose::Util::TypeConstraints;
 use English qw(-no_match_vars);
 use File::DataClass::Constants;
 use File::DataClass::Constraints qw(Directory);
+use File::DataClass::Functions   qw(throw);
 use File::DataClass::IO;
 use File::Gettext::Constants;
-use File::Spec::Functions qw(catfile tmpdir);
+use File::Spec::Functions        qw(catfile tmpdir);
 
 extends qw(File::DataClass::Schema);
 
@@ -111,8 +112,8 @@ around 'load' => sub {
 sub get_path {
    my ($self, $lang, $file) = @_;
 
-   $lang or $self->throw( 'Language not specified' );
-   $file or $self->throw( 'Language file path not specified' );
+   $lang or throw 'Language not specified';
+   $file or throw 'Language file path not specified';
 
    return catfile( $self->localedir, $lang,
                    $self->catagory_name, $file.$self->storage->extn );
@@ -125,7 +126,7 @@ sub set_path {
 # Private methods
 
 sub _get_path_io {
-   return $_[ 0 ]->io( $_[ 0 ]->get_path( $_[ 1 ], $_[ 2 ] ) );
+   return io( $_[ 0 ]->get_path( $_[ 1 ], $_[ 2 ] ) );
 }
 
 sub _is_file_or_log_debug {

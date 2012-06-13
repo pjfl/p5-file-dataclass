@@ -16,12 +16,15 @@ extends qw(File::DataClass::Storage);
 augment '_read_file' => sub {
    my ($self, $rdr) = @_;
 
+   $self->encoding and $rdr->encoding( $self->encoding );
+
    return $self->_read_filter( [ $rdr->chomp->getlines ] );
 };
 
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_;
 
+   $self->encoding and $wtr->encoding( $self->encoding );
    $wtr->println( @{ $self->_write_filter( $data ) } );
    return $data;
 };

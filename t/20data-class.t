@@ -163,7 +163,7 @@ $args = { acl => q(@support) };
 
 my @res = test( $rs, q(search), $args );
 
-ok $res[0] && $res[0]->name eq q(admin), 'Can search';
+ok $res[ 0 ] && $res[ 0 ]->name eq q(admin), 'Can search';
 
 $args = { list => q(acl), name => q(admin) };
 $args->{items} = [ qw(group1 group2) ];

@@ -8,23 +8,26 @@ use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use File::DataClass::Constants;
-
+use File::DataClass::Functions qw(is_arrayref is_member throw);
 use File::DataClass::List;
 use File::DataClass::Result;
 
-with qw(File::DataClass::Util);
-
 has 'list_class'   => is => 'ro', isa => 'ClassName',
    default         => q(File::DataClass::List);
+
 has 'result_class' => is => 'ro', isa => 'ClassName',
    default         => q(File::DataClass::Result);
+
 has 'source'       => is => 'ro', isa => 'Object',
    required        => TRUE,  weak_ref => TRUE,
    handles         => [ qw(attributes defaults label_attr path storage) ];
+
 has '_iterator'    => is => 'rw', isa => 'Int',
    default         => 0,     init_arg => undef;
+
 has '_operators'   => is => 'ro', isa => 'HashRef',
    lazy            => TRUE,   builder => '_build__operators';
+
 has '_results'     => is => 'rw', isa => 'ArrayRef',
    default         => sub { [] }, init_arg => undef;
 
@@ -66,12 +69,12 @@ sub delete {
       unless ($result = $self->_find( $name )) {
          $args->{optional} and return FALSE;
          $error = 'File [_1] element [_2] does not exist';
-         $self->throw( error => $error, args => [ $self->path, $name ] );
+         throw error => $error, args => [ $self->path, $name ];
       }
 
       $result->delete and return TRUE;
       $error = 'File [_1] element [_2] not deleted';
-      $self->throw( error => $error, args => [ $self->path, $name ] );
+      throw error => $error, args => [ $self->path, $name ];
    } );
 
    return $res ? $name : undef;
@@ -121,10 +124,10 @@ sub next {
 sub push {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $list  = $args->{list} or $self->throw( 'No list name specified' );
+   my $list  = $args->{list} or throw 'No list name specified';
    my $items = $args->{items} || []; my ($added, $attrs);
 
-   $items->[0] or $self->throw( 'List contains no items' );
+   $items->[0] or throw 'List contains no items';
 
    my $res = $self->_txn_do( sub {
       ($attrs, $added) = $self->_push( $name, $list, $items );
@@ -153,10 +156,10 @@ sub search {
 sub splice {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $list  = $args->{list} or $self->throw( 'No list name specified' );
+   my $list  = $args->{list} or throw 'No list name specified';
    my $items = $args->{items} || []; my ($attrs, $removed);
 
-   $items->[0] or $self->throw( 'List contains no items' );
+   $items->[0] or throw 'List contains no items';
 
    my $res = $self->_txn_do( sub {
       ($attrs, $removed) = $self->_splice( $name, $list, $items );
@@ -216,19 +219,18 @@ sub _eval_clause {
    }
 
    # TODO: Handle case of 2 arrays
-   $type eq ARRAY and return ref $lhs eq ARRAY
-                           ? FALSE : $self->is_member( $lhs, @{ $clause } );
+   $type eq ARRAY and return (is_arrayref $lhs) ? FALSE
+                                                : (is_member $lhs, $clause);
 
-   return ref $lhs eq ARRAY
-        ? $self->is_member( $clause, @{ $lhs } )
-        : $clause eq $lhs ? TRUE : FALSE;
+   return (is_arrayref $lhs) ? ((is_member $clause, $lhs) ? TRUE : FALSE)
+                             : ($clause eq $lhs           ? TRUE : FALSE);
 }
 
 sub _eval_criteria {
    my ($self, $criteria, $attrs) = @_; my $lhs;
 
    for (keys %{ $criteria }) {
-      defined ($lhs = $attrs->{ $_ } ) or return FALSE;
+      defined ($lhs = $attrs->{ $_ }) or return FALSE;
       $self->_eval_clause( $criteria->{ $_ }, $lhs ) or return FALSE;
    }
 
@@ -241,7 +243,7 @@ sub _eval_op {
    my $subr = $self->_operators->{ $op } or return FALSE;
 
    $_ or return FALSE for (map { $subr->( $_, $rhs ) }
-                           ref $lhs eq ARRAY ? @{ $lhs } : ( $lhs ));
+                           (is_arrayref $lhs) ? @{ $lhs } : ( $lhs ));
 
    return TRUE;
 }
@@ -285,9 +287,8 @@ sub _push {
    my $list  = [ @{ $attrs->{ $attr } || [] } ];
    my $in    = [];
 
-   for my $item (grep { not $self->is_member( $_, @{ $list } ) } @{ $items }) {
-      CORE::push @{ $list }, $item;
-      CORE::push @{ $in   }, $item;
+   for my $item (grep { not is_member $_, $list } @{ $items }) {
+      CORE::push @{ $list }, $item; CORE::push @{ $in }, $item;
    }
 
    $attrs->{ $attr } = $list;
@@ -299,7 +300,7 @@ sub _search {
 
    unless ($results) { $self->_results( [] ); $self->_iterator( 0 ) }
 
-   if (not defined $results->[0]) {
+   if (not defined $results->[ 0 ]) {
       $results = $self->select;
 
       for (keys %{ $results }) {
@@ -310,7 +311,7 @@ sub _search {
          }
       }
    }
-   elsif ($where and defined $results->[0]) {
+   elsif ($where and defined $results->[ 0 ]) {
       for (@{ $results }) {
          $self->_eval_criteria( $where, $_ ) and CORE::push @tmp, $_;
       }
@@ -329,7 +330,7 @@ sub _splice {
    my $out   = [];
 
    for my $item (@{ $items }) {
-      last unless (defined $list->[0]);
+      last unless (defined $list->[ 0 ]);
 
       for (0 .. $#{ $list }) {
          if ($list->[ $_ ] eq $item) {
@@ -354,7 +355,7 @@ sub _validate_params {
    my ($self, $args) = @_; $args ||= {};
 
    my $name = $args->{name}
-      or $self->throw( error => 'No element name specified', level => 4 );
+      or throw error => 'No element name specified', level => 4;
 
    return $name;
 }
@@ -578,8 +579,6 @@ None
 
 =item L<File::DataClass::Result>
 
-=item L<File::DataClass::Util>
-
 =back
 
 =head1 Incompatibilities
@@ -598,7 +597,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2011 Peter Flanigan. All rights reserved
+Copyright (c) 2012 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

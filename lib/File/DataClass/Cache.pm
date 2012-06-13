@@ -8,34 +8,33 @@ use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use File::DataClass::Constants;
+use File::DataClass::Functions qw(throw);
 use CHI;
 
-with qw(File::DataClass::Util);
-
 has 'cache'            => is => 'ro', isa => 'Object',
-   lazy                => TRUE,   builder => '_build_cache';
+   builder             => '_build_cache', lazy => TRUE;
+
 has 'cache_attributes' => is => 'ro', isa => 'HashRef',
    default             => sub { return {} };
-has 'cache_class'      => is => 'ro', isa => 'ClassName',
-   default             => q(CHI);
-has 'debug'            => is => 'ro', isa => 'Bool',
-   default             => FALSE;
+
+has 'cache_class'      => is => 'ro', isa => 'ClassName', default => q(CHI);
+
+has 'debug'            => is => 'ro', isa => 'Bool', default => FALSE;
+
 has 'log'              => is => 'ro', isa => 'Object',
    default             => sub { Class::Null->new };
 
-has '_mtimes_key'      => is => 'ro', isa => 'Str',
-   default             => q(_mtimes);
+
+has '_mtimes_key'      => is => 'ro', isa => 'Str', default => q(_mtimes);
 
 around BUILDARGS => sub {
-   my ($next, $class, @rest) = @_; my $attrs = $class->$next( @rest );
+   my ($next, $class, @rest) = @_; my $attr = $class->$next( @rest );
 
-   exists $attrs->{ioc_obj} or return $attrs;
+   my $ioc = delete $attr->{builder} or return $attr;
 
-   my $ioc = delete $attrs->{ioc_obj}; my @attrs = ( qw(debug log) );
+   $attr->{ $_ } ||= $ioc->$_() for (grep { $ioc->can( $_ ) } qw(debug log));
 
-   $attrs->{ $_ } ||= $ioc->$_() for (grep { $ioc->can( $_ ) } @attrs);
-
-   return $attrs;
+   return $attr;
 };
 
 sub get {
@@ -75,8 +74,8 @@ sub set {
 
    $key .= NUL; $meta ||= {}; $meta->{mtime} ||= undef;
 
-   $key eq $mt_key and $self->throw( error => 'Cache key "[_1]" not allowed',
-                                     args  => [ $mt_key ] );
+   $key eq $mt_key and throw error => 'Cache key "[_1]" not allowed',
+                             args  => [ $mt_key ];
 
    if ($key and defined $data) {
       $self->cache->set( $key, { data => $data, meta => $meta } );
@@ -108,13 +107,13 @@ sub set_mtime {
 # Private methods
 
 sub _build_cache {
-   my $self = shift; my $attrs = $self->cache_attributes; my $log = $self->log;
+   my $self = shift; my $attr = $self->cache_attributes; my $log = $self->log;
 
-   my $class = delete $attrs->{cache_class} || $self->cache_class;
+   my $class = delete $attr->{cache_class} || $self->cache_class;
 
-   $attrs->{on_set_error} = sub { $log->error( $_[ 0 ] ) };
+   $attr->{on_set_error} = sub { $log->error( $_[ 0 ] ) };
 
-   return $class->new( %{ $attrs } );
+   return $class->new( %{ $attr } );
 }
 
 sub _get_key_and_newest {
@@ -156,8 +155,6 @@ File::DataClass::Cache - Adds extra methods to the CHI API
    use File::DataClass::Constraints qw(Cache);
    use File::DataClass::Cache;
 
-   with qw(File::DataClass::Util);
-
    has 'cache'            => is => 'ro', isa => Cache,
       lazy                => TRUE,   builder => '_build_cache';
 
@@ -169,14 +166,14 @@ File::DataClass::Cache - Adds extra methods to the CHI API
 
       $self->Cache and return $self->Cache;
 
-      my $attrs = {}; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
+      my $attr = {}; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
 
-      $attrs->{cache_attributes}                = $self->cache_attributes;
-      $attrs->{cache_attributes}->{driver   } ||= q(FastMmap);
-      $attrs->{cache_attributes}->{root_dir } ||= NUL.$self->tempdir;
-      $attrs->{cache_attributes}->{namespace} ||= $ns;
+      $attr->{cache_attributes}                = $self->cache_attributes;
+      $attr->{cache_attributes}->{driver   } ||= q(FastMmap);
+      $attr->{cache_attributes}->{root_dir } ||= NUL.$self->tempdir;
+      $attr->{cache_attributes}->{namespace} ||= $ns;
 
-      return $self->Cache( File::DataClass::Cache->new( $attrs ) );
+      return $self->Cache( File::DataClass::Cache->new( $attr ) );
    }
 
 =head1 Description

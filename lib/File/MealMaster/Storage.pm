@@ -11,6 +11,7 @@ use Template;
 use Template::Stash;
 use English qw( -no_match_vars );
 use File::DataClass::Constants;
+use File::DataClass::Functions qw(throw);
 
 extends qw(File::DataClass::Storage);
 
@@ -22,7 +23,11 @@ has 'template'       => is => 'ro', isa => 'Object', lazy    => TRUE,
 has 'write_template' => is => 'ro', isa => 'Str',    default => $DATA;
 
 augment '_read_file' => sub {
-   my ($self, $rdr) = @_; return $rdr->all;
+   my ($self, $rdr) = @_;
+
+   $self->encoding and $rdr->encoding( $self->encoding );
+
+   return $rdr->all;
 };
 
 around '_read_file' => sub {
@@ -39,7 +44,11 @@ around '_read_file' => sub {
 };
 
 augment '_write_file' => sub {
-   my ($self, $wtr, $data) = @_; return $self->_write_filter( $wtr, $data );
+   my ($self, $wtr, $data) = @_;
+
+   $self->encoding and $wtr->encoding( $self->encoding );
+
+   return $self->_write_filter( $wtr, $data );
 };
 
 sub make_key {
@@ -67,7 +76,7 @@ sub _write_filter {
       my $buffer = NUL;
 
       $self->template->process( \$template_data, $recipes->{ $_ }, \$buffer )
-         or $self->throw( $self->template->error );
+         or throw $self->template->error;
       $output .= $buffer;
    }
 
@@ -80,7 +89,7 @@ sub _write_filter {
 sub _build_template {
    my $self = shift;
    my $args = { INTERPOLATE => FALSE, COMPILE_DIR => $self->schema->tempdir };
-   my $new  = Template->new( $args ) or $self->throw( Template->error );
+   my $new  = Template->new( $args ) or throw Template->error;
 
    $Template::Stash::SCALAR_OPS->{sprintf} = sub {
       my ($val, $format) = @_; return sprintf $format, $val;

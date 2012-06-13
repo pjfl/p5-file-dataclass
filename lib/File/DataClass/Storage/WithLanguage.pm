@@ -7,10 +7,10 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
+use File::Basename qw(basename);
 use File::DataClass::Constants;
+use File::DataClass::Functions qw(is_stale merge_hash_data throw);
 use File::Gettext;
-
-with qw(File::DataClass::Util);
 
 has 'gettext' => is => 'ro', isa => 'Object',  lazy => TRUE,
    builder    => '_build_gettext';
@@ -83,7 +83,7 @@ sub load {
    my ($data, $meta)  = $self->cache->get( $key );
    my $cache_mtime    = $self->meta_unpack( $meta );
 
-   not $self->is_stale( $data, $cache_mtime, $newest ) and return $data;
+   not is_stale $data, $cache_mtime, $newest and return $data;
 
    $data = {}; $newest = 0;
 
@@ -92,7 +92,7 @@ sub load {
 
       if ($red) {
          $path_mtime > $newest and $newest = $path_mtime;
-         $self->merge_hash_data( $data, $red );
+         merge_hash_data $data, $red;
       }
 
       $path_mtime = __load_gettext( $data, $self->_gettext( $path ) );
@@ -153,7 +153,7 @@ sub _create_or_update {
       $updated ||= $name ? TRUE : FALSE;
    }
 
-   $updating and not $updated and $self->throw( 'Nothing updated' );
+   $updating and not $updated and throw 'Nothing updated';
 
    $updated and $path->touch; return $updated;
 }
@@ -169,7 +169,7 @@ sub _get_key_and_newest {
       if ($mtime) { $mtime > $newest and $newest = $mtime }
       else { $valid = FALSE }
 
-      my $file      = $self->basename( $path, $self->_extn( $path ) );
+      my $file      = basename( NUL.$path, $self->_extn( $path ) );
       my $lang_path = $self->gettext->get_path( $self->lang, $file );
 
       if (defined ($mtime = $self->cache->get_mtime( NUL.$lang_path ))) {
@@ -192,11 +192,9 @@ sub _get_key_and_newest {
 sub _gettext {
    my ($self, $path) = @_; my $gettext = $self->gettext;
 
-   $path or $self->throw( 'Path not specified' );
+   $path or throw 'Path not specified'; my $extn = $self->_extn( $path );
 
-   my $extn = $self->_extn( $path );
-
-   $gettext->set_path( $self->lang, $self->basename( $path, $extn ) );
+   $gettext->set_path( $self->lang, basename( NUL.$path, $extn ) );
 
    return $gettext;
 }
@@ -321,7 +319,7 @@ None
 
 =over 3
 
-=item L<File::DataClass::Util>
+=item L<File::Gettext>
 
 =back
 

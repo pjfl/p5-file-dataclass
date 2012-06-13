@@ -11,16 +11,20 @@ use Class::Null;
 use English     qw(-no_match_vars);
 use File::Copy;
 use File::DataClass::Constants;
+use File::DataClass::Functions qw(is_stale merge_hash_data throw);
 use File::DataClass::HashMerge;
 use Try::Tiny;
 
-with qw(File::DataClass::Util);
+has 'backup'   => is => 'ro', isa => 'Str', default => NUL;
 
-has 'backup' => is => 'ro', isa => 'Str',    default  => NUL;
-has 'extn'   => is => 'ro', isa => 'Str',    default  => NUL;
-has 'schema' => is => 'ro', isa => 'Object', required => TRUE, weak_ref => TRUE,
-   handles   => { _cache => q(cache), _debug => q(debug), _lock => q(lock),
-                  _log   => q(log),   _perms => q(perms) };
+has 'encoding' => is => 'ro', isa => 'Str', default => NUL;
+
+has 'extn'     => is => 'ro', isa => 'Str', default => NUL;
+
+has 'schema'   => is => 'ro', isa => 'Object',
+   handles     => { _cache => q(cache), _debug => q(debug), _lock => q(lock),
+                    _log   => q(log),   _perms => q(perms) }, required => TRUE,
+   weak_ref    => TRUE;
 
 sub create_or_update {
    my ($self, $path, $result, $updating, $cond) = @_;
@@ -36,13 +40,13 @@ sub create_or_update {
       my $name   = $result->name; $data->{ $element } ||= {};
 
       not $updating and exists $data->{ $element }->{ $name }
-         and $self->throw( error => 'File [_1] element [_2] already exists',
-                           args  => [ $path, $name ], level => 4 );
+         and throw error => 'File [_1] element [_2] already exists',
+                   args  => [ $path, $name ], level => 4;
 
       $updated = File::DataClass::HashMerge->merge
          ( \$data->{ $element }->{ $name }, $result, $filter );
    }
-   catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
+   catch { $self->_lock->reset( k => $path ); throw $_ };
 
    if ($updated) { $self->_write_file( $path, $data, not $updating ) }
    else { $self->_lock->reset( k => $path ) }
@@ -94,7 +98,7 @@ sub load {
    my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
    my $cache_mtime  = $self->meta_unpack( $meta );
 
-   not $self->is_stale( $data, $cache_mtime, $newest ) and return $data;
+   not is_stale $data, $cache_mtime, $newest and return $data;
 
    $data = {}; $newest = 0;
 
@@ -102,7 +106,7 @@ sub load {
       my ($red, $path_mtime) = $self->_read_file( $path, FALSE ); $red or next;
 
       $path_mtime > $newest and $newest = $path_mtime;
-      $self->merge_hash_data( $data, $red );
+      merge_hash_data $data, $red;
    }
 
    $self->_cache->set_by_paths( \@paths, $data, $self->meta_pack( $newest ) );
@@ -147,10 +151,7 @@ sub txn_do {
       if ($wantarray) { @{ $res } = $code_ref->() }
       else { $res = $code_ref->() }
    }
-   catch {
-      $self->_lock->reset( k => $key );
-      $self->throw( error => $_, level => 7 );
-   };
+   catch { $self->_lock->reset( k => $key ); throw error => $_, level => 7 };
 
    $self->_lock->reset( k => $key );
 
@@ -163,7 +164,7 @@ sub update {
    defined $updating or $updating = TRUE; $cond ||= sub { TRUE };
 
    my $updated = $self->create_or_update( $path, $result, $updating, $cond )
-      or $self->throw( 'Nothing updated' );
+      or throw 'Nothing updated';
 
    return $updated;
 }
@@ -171,13 +172,13 @@ sub update {
 sub validate_params {
    my ($self, $path, $element) = @_;
 
-   $path or $self->throw( error => 'No file path specified', level => 4 );
+   $path or throw error => 'No file path specified', level => 4;
 
-   blessed $path or $self->throw( error => 'Path [_1] is not blessed',
-                                  args  => [ $path ], level => 4 );
+   blessed $path or throw error => 'Path [_1] is not blessed',
+                          args  => [ $path ], level => 4;
 
-   $element or $self->throw( error => 'Path [_1] no element specified',
-                             args  => [ $path ], level => 4 );
+   $element or throw error => 'Path [_1] no element specified',
+                     args  => [ $path ], level => 4;
 
    return;
 }
@@ -195,7 +196,7 @@ sub _read_file {
 
       my $cache_mtime = $self->meta_unpack( $meta );
 
-      if ($self->is_stale( $data, $cache_mtime, $path_mtime )) {
+      if (is_stale $data, $cache_mtime, $path_mtime) {
          if ($for_update and not $path->is_file) { $data = undef }
          else {
             $data = inner( $path->lock ); $path->close;
@@ -206,7 +207,7 @@ sub _read_file {
       }
       else { $self->_debug and $self->_log->debug( "Read cache ${path}" ) }
    }
-   catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
+   catch { $self->_lock->reset( k => $path ); throw $_ };
 
    $for_update or $self->_lock->reset( k => $path );
 
@@ -218,21 +219,21 @@ sub _write_file {
 
    try {
       $create or $path->is_file
-         or $self->throw( error => 'File [_1] not found', args => [ $path ] );
+         or throw error => 'File [_1] not found', args => [ $path ];
 
       $path->is_file or $path->perms( $self->_perms );
 
       if ($self->backup and $path->is_file and not $path->empty) {
-         copy( $path.NUL, $path.$self->backup ) or $self->throw( $ERRNO );
+         copy( $path.NUL, $path.$self->backup ) or throw $ERRNO;
       }
 
       try   { $data = inner( $path->atomic->lock, $data ); $path->close }
-      catch { $path->delete; $self->throw( $_ ) };
+      catch { $path->delete; throw $_ };
 
       $self->_cache->remove( $path );
       $self->_debug and $self->_log->debug( "Write file ${path}" )
    }
-   catch { $self->_lock->reset( k => $path ); $self->throw( $_ ) };
+   catch { $self->_lock->reset( k => $path ); throw $_ };
 
    $self->_lock->reset( k => $path );
    return $data;
@@ -351,10 +352,6 @@ None
 =over 3
 
 =item L<File::DataClass::HashMerge>
-
-=item L<File::DataClass::Util>
-
-=item L<Scalar::Util>
 
 =back
 

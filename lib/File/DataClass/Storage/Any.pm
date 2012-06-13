@@ -7,10 +7,11 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
+use File::Basename             qw(basename);
 use File::DataClass::Constants;
+use File::DataClass::Functions qw(ensure_class_loaded is_stale merge_hash_data
+                                  throw);
 use File::DataClass::Storage;
-
-with qw(File::DataClass::Util);
 
 has 'schema' => is => 'ro', isa => 'Object', required => TRUE, weak_ref => TRUE,
    handles   => [ qw(cache storage_attributes storage_base), ];
@@ -48,7 +49,7 @@ sub load {
    my ($data, $meta, $newest) = $self->cache->get_by_paths( \@paths );
    my $cache_mtime  = $self->meta_unpack( $meta );
 
-   not $self->is_stale( $data, $cache_mtime, $newest ) and return $data;
+   not is_stale $data, $cache_mtime, $newest and return $data;
 
    $data = {}; $newest = 0;
 
@@ -57,7 +58,7 @@ sub load {
       my ($red, $path_mtime) = $store->read_file( $path, FALSE ); $red or next;
 
       $path_mtime > $newest and $newest = $path_mtime;
-      $self->merge_hash_data( $data, $red );
+      merge_hash_data $data, $red;
    }
 
    $self->cache->set_by_paths( \@paths, $data, $self->meta_pack( $newest ) );
@@ -99,7 +100,7 @@ sub validate_params {
 # Private methods
 
 sub _build_stores {
-   my $self = shift; my $stores = {}; my $extensions = $self->extensions;
+   my $self = shift; my $stores = {}; my $extensions = $self->_extensions;
 
    for my $extn (keys %{ $extensions }) {
       my $class = $extensions->{ $extn }->[ 0 ];
@@ -107,7 +108,7 @@ sub _build_stores {
       if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
       else { $class = $self->storage_base.q(::).$class }
 
-      $self->ensure_class_loaded( $class );
+      ensure_class_loaded $class;
 
       $stores->{ $extn } = $class->new( { %{ $self->storage_attributes },
                                           schema => $self->schema } );
@@ -117,17 +118,20 @@ sub _build_stores {
 }
 
 sub _get_store_from_extension {
-   my ($self, $path) = @_; my $file = $self->basename( $path );
+   my ($self, $path) = @_; my $file = basename( NUL.$path );
 
    my $extn = (split m{ \. }mx, $file)[ -1 ]
-      or $self->throw( error => 'File [_1] has no extension',
-                       args  => [ $file ] );
+      or throw error => 'File [_1] has no extension', args => [ $file ];
 
    my $store = $self->stores->{ q(.).$extn }
-      or $self->throw( error => 'Extension [_1] has no store',
-                       args  => [ $extn ] );
+      or throw error => 'Extension [_1] has no store', args => [ $extn ];
 
    return $store;
+}
+
+sub _extensions {
+   return { '.json' => [ q(JSON) ],
+            '.xml'  => [ q(XML::Simple), q(XML::Bare) ], };
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -187,6 +191,12 @@ Selects storage class using the extension on the path
 =head2 update
 
 =head2 validate_params
+
+=head2 _extensions
+
+Returns a hash ref whose keys are the supported extensions and whose values
+are an array ref of storage subclasses that implement reading/writing files
+with that extension
 
 =head1 Configuration and Environment
 

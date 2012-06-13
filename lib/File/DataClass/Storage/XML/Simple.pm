@@ -15,6 +15,8 @@ extends qw(File::DataClass::Storage::XML);
 augment '_read_file' => sub {
    my ($self, $rdr) = @_;
 
+   $self->encoding and $rdr->encoding( $self->encoding );
+
    my $data = $self->_dtd_parse( $rdr->all );
    my $xs   = XML::Simple->new( SuppressEmpty => TRUE );
 
@@ -27,6 +29,7 @@ augment '_write_file' => sub {
    my $xs = XML::Simple->new( NoAttr   => TRUE, SuppressEmpty => TRUE,
                               RootName => $self->root_name );
 
+   $self->encoding and $wtr->encoding( $self->encoding );
    $self->_dtd->[ 0 ] and $wtr->println( @{ $self->_dtd } );
    $wtr->append( $xs->xml_out( $data ) );
    return $data;

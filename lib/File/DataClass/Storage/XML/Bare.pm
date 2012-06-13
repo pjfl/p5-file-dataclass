@@ -18,6 +18,8 @@ my $PADDING = q(  );
 augment '_read_file' => sub {
    my ($self, $rdr) = @_; my $data;
 
+   $self->encoding and $rdr->encoding( $self->encoding );
+
    $data = $self->_dtd_parse( $rdr->all );
    $data = XML::Bare->new( text => $data )->parse() || {};
    $data = $data->{ $self->root_name } || {};
@@ -28,6 +30,7 @@ augment '_read_file' => sub {
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_;
 
+   $self->encoding and $wtr->encoding( $self->encoding );
    $self->_dtd->[0] and $wtr->println( @{ $self->_dtd } );
    $wtr->append( $self->_write_filter( 0, $self->root_name, $data ) );
    return $data;

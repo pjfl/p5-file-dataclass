@@ -7,6 +7,7 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
+use File::DataClass::Functions qw(is_member);
 use Moose;
 
 extends qw(File::DataClass::Result);
@@ -14,7 +15,7 @@ extends qw(File::DataClass::Result);
 sub add_user_to_group {
    my ($self, $user) = @_; my $users = $self->members;
 
-   $self->is_member( $user, @{ $users } ) and return FALSE;
+   is_member $user, $users and return FALSE;
 
    $self->members( [ @{ $users }, $user ] );
 
@@ -24,7 +25,7 @@ sub add_user_to_group {
 sub remove_user_from_group {
    my ($self, $user) = @_; my $users = $self->members;
 
-   $self->is_member( $user, @{ $users } ) or return FALSE;
+   is_member $user, $users or return FALSE;
 
    $self->members( [ grep { $_ ne $user } @{ $users } ] );
 

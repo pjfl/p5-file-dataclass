@@ -378,9 +378,10 @@ sub empty {
 sub encoding {
    my ($self, $encoding) = @_;
 
+   $encoding and lc $encoding eq q(utf-8) and $encoding = q(utf8);
    $encoding or
       $self->_throw( 'No encoding value passed to '.__PACKAGE__.'::encoding' );
-   $self->is_open and CORE::binmode( $self->io_handle, ":$encoding" );
+   $self->is_open and CORE::binmode( $self->io_handle, ":encoding($encoding)" );
    $self->_encoding( $encoding );
    $self->is_utf8( $encoding eq q(utf8) ? TRUE : FALSE );
    return $self;

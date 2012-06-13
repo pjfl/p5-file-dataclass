@@ -10,6 +10,7 @@ use Moose;
 use IPC::Cmd qw( can_run run );
 use English  qw( -no_match_vars );
 use File::DataClass::Constants;
+use File::DataClass::Functions qw(throw);
 use File::DataClass::IO ();
 use File::Copy;
 use File::Spec::Functions qw(catfile);
@@ -114,10 +115,10 @@ sub update_as_root {
    my $self = shift; my $cmd = shift @{ $self->newaliases };
 
    $cmd = can_run( $cmd )
-      or $self->throw( error => 'Path [_1] cannot execute', args => [ $cmd ] );
+      or throw error => 'Path [_1] cannot execute', args => [ $cmd ];
 
    copy( NUL.$self->path, catfile( @{ $self->system_aliases } ) )
-      or $self->throw( $ERRNO );
+      or throw $ERRNO;
 
    return $self->_run_cmd( [ $cmd, @{ $self->newaliases } ] );
 }
@@ -156,8 +157,8 @@ sub _run_cmd {
    my ($self, $cmd) = @_; my ($ok, $err, $out) = run( command => $cmd );
 
    $out and ref $out eq ARRAY and $out = join "\n", @{ $out };
-   $ok or $self->throw( error => "Could not run [_1] -- [_2]\n[_3]",
-                        args  => [ $err, $ERRNO, $out ] );
+   $ok or throw error => "Could not run [_1] -- [_2]\n[_3]",
+                args  => [ $err, $ERRNO, $out ];
    return $out;
 }
 
