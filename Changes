@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
 0.11.
+         - Made EXTENSIONS available in F::DC::Schema
          - Replace F::DC::Util with F::DC::Functions
          - Made JSON untaint the data it reads
          - Moved F::DC::Storage::extensions to F::DC::Util

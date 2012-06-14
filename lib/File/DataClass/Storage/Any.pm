@@ -100,10 +100,10 @@ sub validate_params {
 # Private methods
 
 sub _build_stores {
-   my $self = shift; my $stores = {}; my $extensions = $self->_extensions;
+   my $self = shift; my $stores = {};
 
-   for my $extn (keys %{ $extensions }) {
-      my $class = $extensions->{ $extn }->[ 0 ];
+   for my $extn (keys %{ EXTENSIONS() }) {
+      my $class = EXTENSIONS()->{ $extn }->[ 0 ];
 
       if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
       else { $class = $self->storage_base.q(::).$class }
@@ -127,11 +127,6 @@ sub _get_store_from_extension {
       or throw error => 'Extension [_1] has no store', args => [ $extn ];
 
    return $store;
-}
-
-sub _extensions {
-   return { '.json' => [ q(JSON) ],
-            '.xml'  => [ q(XML::Simple), q(XML::Bare) ], };
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -191,12 +186,6 @@ Selects storage class using the extension on the path
 =head2 update
 
 =head2 validate_params
-
-=head2 _extensions
-
-Returns a hash ref whose keys are the supported extensions and whose values
-are an array ref of storage subclasses that implement reading/writing files
-with that extension
 
 =head1 Configuration and Environment
 

@@ -105,6 +105,10 @@ sub dump {
    return $self->storage->dump( $path, $args->{data} || {} );
 }
 
+sub extensions {
+   return EXTENSIONS;
+}
+
 sub load {
    my ($self, @paths) = @_; $paths[ 0 ] or $paths[ 0 ] = $self->path;
 
@@ -354,6 +358,13 @@ representation
 Dumps the data structure to a file. Path defaults to the one specified in
 the schema definition. Returns the data that was written to the file if
 successful
+
+=head2 extensions
+
+   \%extension_map = $self->extensions;
+
+Returns a hash ref that maps filename extensions (keys) onto storage
+subclasses (values)
 
 =head2 load
 
