@@ -66,7 +66,7 @@ sub _merge_attr_arrays {
    my ($self, $to, $from) = @_; my $updated = FALSE;
 
    for (0 .. $#{ $to }) {
-      if ($from->[ $_ ]) {
+      if (defined $from->[ $_ ]) {
          my $res = $self->_merge_attr( \$to->[ $_ ], $from->[ $_ ] );
 
          $updated ||= $res;
@@ -85,7 +85,7 @@ sub _merge_attr_hashes {
    my ($self, $to, $from) = @_; my $updated = FALSE;
 
    for (keys %{ $to }) {
-      if ($from->{ $_ }) {
+      if (defined $from->{ $_ }) {
          my $res = $self->_merge_attr( \$to->{ $_ }, $from->{ $_ } );
 
          $updated ||= $res;
@@ -95,7 +95,7 @@ sub _merge_attr_hashes {
 
    if (keys %{ $from } > keys %{ $to }) {
       for (keys %{ $from }) {
-         if ($from->{ $_ } and not exists $to->{ $_ }) {
+         if (defined $from->{ $_ } and not exists $to->{ $_ }) {
             $to->{ $_ } = $from->{ $_ }; $updated = TRUE;
          }
       }
