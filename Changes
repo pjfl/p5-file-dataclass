@@ -1,6 +1,8 @@
 Revision history for File::DataClass
 
 0.11.
+         - Fixed F::Gettext::Storage::PO using name for msgid
+         - Fixed gettext caching in F::DC::Storage::WithLanguage
          - Fixed bug in F::DC::HashMerge. Will update undef to 0
          - Made EXTENSIONS available in F::DC::Schema
          - Replace F::DC::Util with F::DC::Functions

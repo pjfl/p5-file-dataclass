@@ -95,9 +95,11 @@ sub load {
          merge_hash_data $data, $red;
       }
 
-      $path_mtime = __load_gettext( $data, $self->_gettext( $path ) );
+      $path_mtime = $self->_load_gettext( $data, $path );
       $path_mtime and $path_mtime > $newest and $newest = $path_mtime;
    }
+
+   $self->cache->set( $key, $data, $self->meta_pack( $newest ) );
 
    return $data;
 }
@@ -199,18 +201,10 @@ sub _gettext {
    return $gettext;
 }
 
-# Private subroutines
+sub _load_gettext {
+   my ($self, $data, $path) = @_;
 
-sub __get_attributes {
-   my ($condition, $source) = @_;
-
-   return grep { not m{ \A _ }msx
-                 and $_ ne q(name)
-                 and $condition->( $_ ) } @{ $source->attributes || [] };
-}
-
-sub __load_gettext {
-   my ($data, $gettext) = @_; $gettext->path->is_file or return;
+   my $gettext = $self->_gettext( $path ); $gettext->path->is_file or return;
 
    my $gettext_data = $gettext->load->{ $gettext->source_name };
 
@@ -225,6 +219,16 @@ sub __load_gettext {
    }
 
    return $gettext->path->stat->{mtime};
+}
+
+# Private subroutines
+
+sub __get_attributes {
+   my ($condition, $source) = @_;
+
+   return grep { not m{ \A _ }msx
+                 and $_ ne q(name)
+                 and $condition->( $_ ) } @{ $source->attributes || [] };
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -121,8 +121,12 @@ sub _write_filter {
 
    $po->{ NUL() } = $self->_header_deflate( $po_header );
 
-   for my $rec (map  { $po->{ $_ } }
-                sort { __original_order( $po, $a, $b ) } keys %{ $po }) {
+   for my $key (sort { __original_order( $po, $a, $b ) } keys %{ $po }) {
+      my $rec = $po->{ $key };
+
+      $rec->{name} and not $rec->{msgid}
+         and $rec->{msgid} = delete $rec->{name};
+
       for my $attr_name (grep { exists $rec->{ $_ } } @{ $attrs }) {
          my $values = $rec->{ $attr_name }; defined $values or next;
 
@@ -160,7 +164,7 @@ sub _default_po_header {
    my $lang       = $defaults->{lang      };
    my $team       = $defaults->{team      };
    my $translator = $defaults->{translator};
-   my $rev_date   = __time2str( "%Y-%m-%d %H:%M +%Z" );
+   my $rev_date   = __time2str( "%Y-%m-%d %H:%M%z" );
    my $year       = __time2str( "%Y" );
 
    return {
@@ -232,6 +236,11 @@ sub _header_deflate {
                   <=> $self->_get_po_header_key( $b )->[ 0 ] }
               keys %{ $msgstr_ref }) {
       $msgstr .= $self->_get_po_header_key( $k )->[ 1 ];
+
+#      if ($k eq q(po_revision_date)) {
+#         $msgstr .= ': '.__time2str( "%Y-%m-%d %H:%M%z" )."\n";
+#      }
+#      else { $msgstr .= ': '.($msgstr_ref->{ $k } || NUL)."\n" }
       $msgstr .= ': '.($msgstr_ref->{ $k } || NUL)."\n";
    }
 
