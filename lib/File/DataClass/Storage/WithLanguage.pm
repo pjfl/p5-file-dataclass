@@ -11,6 +11,7 @@ use File::Basename qw(basename);
 use File::DataClass::Constants;
 use File::DataClass::Functions qw(is_stale merge_hash_data throw);
 use File::Gettext;
+use Try::Tiny;
 
 has 'gettext' => is => 'ro', isa => 'Object',  lazy => TRUE,
    builder    => '_build_gettext';
@@ -147,15 +148,20 @@ sub _create_or_update {
                      msgid   => $result->name,
                      msgstr  => [ $msgstr ], };
 
-      $attrs->{name} = $rs->storage->make_key( $attrs );
+      $attrs->{name} = $rs->storage->make_key( $attrs ); my $name;
 
-      my $name   = $updating ? $rs->create_or_update( $attrs )
-                             : $rs->create( $attrs );
+      try {
+         $name = $updating ? $rs->create_or_update( $attrs )
+                           : $rs->create( $attrs );
+      }
+      catch { $_->class ne q(NothingUpdated) and throw $_ };
 
       $updated ||= $name ? TRUE : FALSE;
    }
 
-   $updating and not $updated and throw 'Nothing updated';
+   $updating and not $updated
+      and throw class => q(NothingUpdated), error => 'Nothing updated',
+                level => 4;
 
    $updated and $path->touch; return $updated;
 }

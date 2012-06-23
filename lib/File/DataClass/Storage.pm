@@ -164,7 +164,8 @@ sub update {
    defined $updating or $updating = TRUE; $cond ||= sub { TRUE };
 
    my $updated = $self->create_or_update( $path, $result, $updating, $cond )
-      or throw 'Nothing updated';
+      or throw class => 'NothingUpdated', error => 'Nothing updated',
+               level => 5;
 
    return $updated;
 }
