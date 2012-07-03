@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
 0.11.
+         - Added email_address method to F::MailAlias
          - Add class attribute to F::DC::Exception
          - F::DC::Storage::WithLanguage does not throw if no lang dep updates
          - Fixed F::Gettext::Storage::PO using name for msgid

@@ -18,32 +18,39 @@ use File::Spec::Functions qw(catfile);
 extends qw(File::DataClass::Schema);
 
 has 'mail_domain'    => is => 'ro', isa => 'Str',
-   lazy              => TRUE,   builder => '_build_mail_domain';
+   builder           => '_build_mail_domain', lazy => TRUE;
+
 has 'newaliases'     => is => 'ro', isa => 'ArrayRef',
    default           => sub { [ q(newaliases) ] };
+
 has 'system_aliases' => is => 'ro', isa => 'ArrayRef',
    default           => sub { [ NUL, qw(etc mail aliases) ] };
 
-has 'commit'     => is => 'rw', isa => 'Bool',
-   default       => FALSE;
-has 'commit_cmd' => is => 'ro', isa => 'ArrayRef',
-   default       => sub { return [ qw(svn ci -m "Updated") ] };
 
-has 'root_update'       => is => 'rw', isa => 'Bool',
-   default              => FALSE;
+has 'commit'     => is => 'rw', isa => 'Bool', default => FALSE;
+
+has 'commit_cmd' => is => 'ro', isa => 'ArrayRef',
+   default       => sub { [ qw(svn ci -m "Updated") ] };
+
+
+has 'root_update'       => is => 'rw', isa => 'Bool', default => FALSE;
+
 has 'root_update_cmd'   => is => 'ro', isa => 'Maybe[Str]';
+
 has 'root_update_attrs' => is => 'ro', isa => 'ArrayRef',
-   default              => sub { return [ qw(-S -n -c update_mail_aliases) ] };
+   default              => sub { [ qw(-qnc update_mail_aliases) ] };
+
 
 has '+result_source_attributes' =>
-   default          => sub { return {
-      aliases       => {
-         attributes => [ qw(comment created owner recipients) ],
-         defaults   => { comment => [ '-' ], recipients => [] } }, } };
+   default           => sub { {
+      aliases        => {
+         attributes  => [ qw(comment created owner recipients) ],
+         defaults    => { comment => [ '-' ], recipients => [] } }, } };
+
+has 'source_name'    => is => 'ro', isa => 'Str', default => q(aliases);
+
 has '+storage_class' =>
    default           => q(+File::MailAlias::Storage);
-
-has 'source_name' => is => 'ro', isa => 'Str', default => q(aliases);
 
 around 'BUILDARGS' => sub {
    my ($next, $self, $car, @cdr) = @_;
@@ -92,6 +99,16 @@ sub delete {
    my $out  = $self->_run_update_cmd;
 
    return ($name, $out);
+}
+
+sub email_address {
+   my ($self, $username) = @_; $username or return NUL; my $alias;
+
+   exists $self->aliases_map->{ $username }
+      and $alias = $self->find( $username )
+      and return $alias->recipients->[ 0 ];
+
+   return $username.q(@).$self->mail_domain;
 }
 
 sub find {
@@ -249,6 +266,13 @@ section on the stash
 Deletes the named mail alias. Calls L</update_as_root> via the C<suid>
 wrapper. Adds the text from the wrapper call to the results section on
 the stash
+
+=head2 email_address
+
+   $email_address = $alias_obj->email_address( $username );
+
+Takes a user returns a guess as to what the users email address might
+be
 
 =head2 find
 
