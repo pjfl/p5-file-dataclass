@@ -4,7 +4,7 @@ package File::DataClass;
 
 use strict;
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
@@ -33,7 +33,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 =head1 Version
 
-This document describes File::DataClass version 0.10.$Revision$
+This document describes File::DataClass version 0.11.$Revision$
 
 =head1 Synopsis
 

@@ -4,7 +4,7 @@ package File::DataClass::Storage::Any;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use File::Basename             qw(basename);

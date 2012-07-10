@@ -4,7 +4,7 @@ package File::DataClass::Functions;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.10.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.11.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::MOP;
 use File::DataClass::Constants;
@@ -112,7 +112,7 @@ File::DataClass::Functions - <One-line description of module's purpose>
 
 =head1 Version
 
-0.10.$Revision$
+0.11.$Revision$
 
 =head1 Synopsis
 
