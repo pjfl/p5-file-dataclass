@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-         - Changed message in inc/CPANTesting
+         - Updated inc::Bob to 1.4
+         - Changed OS unsupported message in inc/CPANTesting
 
 0.11.401 2012-07-10
          - Added email_address method to F::MailAlias
