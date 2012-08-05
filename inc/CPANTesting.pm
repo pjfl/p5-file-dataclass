@@ -12,10 +12,10 @@ sub broken_toolchain {
 }
 
 sub exceptions {
-   $osname eq q(cygwin)     and return 'Cygwin not supported';
-   $osname eq q(mirbsd)     and return 'Mirbsd not supported';
-   $osname eq q(mswin32)    and return 'Mswin  not supported';
-   $osname eq q(netbsd)     and return 'Netbsd not supported';
+   $osname eq q(cygwin)     and return 'Cygwin OS unsupported';
+   $osname eq q(mirbsd)     and return 'Mirbsd OS unsupported';
+   $osname eq q(mswin32)    and return 'Mswin  OS unsupported';
+   $osname eq q(netbsd)     and return 'Netbsd OS unsupported';
    $uname =~ m{ slack64 }mx and return 'Stopped Bingos slack64';
    return 0;
 }
