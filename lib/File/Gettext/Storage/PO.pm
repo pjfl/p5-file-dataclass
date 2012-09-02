@@ -427,7 +427,7 @@ __END__
 
 =head1 Name
 
-File::Gettext::Storage::PO - Storage class for GNU gettext portable object format
+File::Gettext::Storage::PO - Storage class for GNU Gettext portable object format
 
 =head1 Version
 
@@ -443,7 +443,7 @@ File::Gettext::Storage::PO - Storage class for GNU gettext portable object forma
 
 =head2 make_key
 
-Concatenates the I<msgctxt> and I<msgid> attributes to form the hash key
+Concatenates the C<msgctxt> and C<msgid> attributes to form the hash key
 
 =head1 Configuration and Environment
 

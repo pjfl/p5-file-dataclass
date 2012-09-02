@@ -269,11 +269,11 @@ Defines the attributes
 
 =over 3
 
-=item B<lang>
+=item C<lang>
 
 Two character language code
 
-=item B<storage>
+=item C<storage>
 
 Instance of L<File::DataClass::Storage>
 

@@ -10,7 +10,7 @@ sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN { my $reason; $reason = CPANTesting::should_abort and whimper $reason; }
 
-use version; our $VERSION = qv( '1.4' );
+use version; our $VERSION = qv( '1.5' );
 
 use File::Spec::Functions;
 use Module::Build;
@@ -70,6 +70,17 @@ sub __get_cleanup_list {
             map { ( q(*/) x $_ ).q(*~) } 0..5 ];
 }
 
+sub __get_git_repository {
+   my ($info, $repo, $vcs); require Git::Class;
+
+   $vcs = Git::Class::Worktree->new( path => q(.) )
+      and $info = $vcs->git( q(remote) )
+      and $repo = ($info !~ m{ \A file: }mx) ? $info : undef
+      and return $repo;
+
+   return;
+}
+
 sub __get_no_index {
    my $p = shift;
 
@@ -85,15 +96,13 @@ sub __get_notes {
    return $notes;
 }
 
-sub __get_repository {
-   # Accessor for the SVN repository information
-   require SVN::Class;
+sub __get_repository { # Accessor for the VCS repository information
+   my $repo;
 
-   my $file = SVN::Class->svn_dir( q(.) ) or return;
-   my $info = $file->info or return;
-   my $repo = $info->root !~ m{ \A file: }mx ? $info->root : undef;
+   -d q(.svn) and $repo = __get_svn_repository() and return $repo;
+   -d q(.git) and $repo = __get_git_repository() and return $repo;
 
-   return $repo;
+   return;
 }
 
 sub __get_resources {
@@ -109,10 +118,22 @@ sub __get_resources {
    $p->{home_page} and $resources->{homepage} = $p->{home_page};
    $resources->{license} ||= q(http://dev.perl.org/licenses/);
 
+   # Only get repository info when authoring a distribution
    -f q(MANIFEST.SKIP) and $repo = __get_repository
       and $resources->{repository} = $repo;
 
    return { resources => $resources };
+}
+
+sub __get_svn_repository {
+   my ($info, $repo, $vcs); require SVN::Class;
+
+   $vcs = SVN::Class::svn_dir( q(.) )
+      and $info = $vcs->info
+      and $repo = ($info->root !~ m{ \A file: }mx) ? $info->root : undef
+      and return $repo;
+
+   return;
 }
 
 1;

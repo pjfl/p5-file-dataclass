@@ -18,7 +18,6 @@ use File::Spec;
 use File::DataClass::Cache;
 use File::DataClass::ResultSource;
 use File::DataClass::Storage;
-use IPC::SRLock;
 
 extends qw(File::DataClass);
 
@@ -39,16 +38,10 @@ has 'debug'                    => is => 'ro', isa => Bool,
    default                     => FALSE;
 
 has 'lock'                     => is => 'ro', isa => Lock,
-   builder                     => '_build_lock', lazy => TRUE;
-
-has 'lock_attributes'          => is => 'ro', isa => HashRef,
-   default                     => sub { {} };
-
-has 'lock_class'               => is => 'ro', isa => ClassName | DummyClass,
-   default                     => q(IPC::SRLock);
+   default                     => sub { Class::Null->new }, lazy => TRUE;
 
 has 'log'                      => is => 'ro', isa => Object,
-   default                     => sub { Class::Null->new };
+   default                     => sub { Class::Null->new }, lazy => TRUE;
 
 has 'path'                     => is => 'rw', isa => Path,
    coerce                      => TRUE;
@@ -84,11 +77,7 @@ has 'tempdir'                  => is => 'ro', isa => Directory,
 around 'BUILDARGS' => sub {
    my ($next, $class, @args) = @_; my $attr = $class->$next( @args );
 
-   my $builder = delete $attr->{builder}
-              || delete $attr->{ioc_obj}; # Deprecated
-
-   $builder or return $attr;
-
+   my $builder = delete $attr->{builder} or return $attr;
    my $config  = $builder->can( q(config) ) ? $builder->config : {};
 
    merge_attributes $attr, $builder, [ qw(debug lock log tempdir) ];
@@ -169,18 +158,6 @@ sub _build_cache {
    return $self->F_DC_Cache->{ $ns } = $self->cache_class->new( $attrs );
 }
 
-sub _build_lock {
-   my $self = shift; my $lock = $self->F_DC_Lock; $lock and return $lock;
-
-   $self->lock_class eq q(none) and return Class::Null->new;
-
-   my $attrs = $self->lock_attributes;
-
-   $attrs->{ $_ } ||= $self->$_() for (qw(debug log tempdir));
-
-   return $self->F_DC_Lock( $self->lock_class->new( $attrs ) );
-}
-
 sub _build_source_registrations {
    my $self = shift; my $sources = {};
 
@@ -258,91 +235,83 @@ Defines these attributes
 
 =over 3
 
-=item B<cache>
+=item C<cache>
 
 Instantiates and returns the L<Cache|File::DataClass/Cache> class
 attribute. Built on demand
 
-=item B<cache_attributes>
+=item C<cache_attributes>
 
 Passed to the L<Cache::Cache> constructor
 
-=item B<debug>
+=item C<debug>
 
 Writes debug information to the log object if set to true
 
-=item B<exception_class>
+=item C<exception_class>
 
 A classname that is expected to have a class method C<throw>. Defaults to
 L<File::DataClass::Exception> and is of type C<File::DataClass::Exception>
 
-=item B<builder>
+=item C<builder>
 
 An optional object that provides these methods; C<debug>,
 C<exception_class>, C<lock>, C<log>, and C<tempdir>. Their values are
 or'ed with values in the attributes hash before being passed to the
 constructor
 
-=item B<lock>
+=item C<lock>
 
-Instantiates and returns the L<Lock|File::DataClass/Lock> class
+Defaults to L<Class::Null>. Can be set via the C<builder>
 attribute. Built on demand
 
-=item B<lock_attributes>
-
-Passed to the L<IPC::SRLock> constructor
-
-=item B<lock_class>
-
-Defaults to L<IPC::SRLock>
-
-=item B<log>
+=item C<log>
 
 Log object. Typically an instance of L<Log::Handler>
 
-=item B<path>
+=item C<path>
 
 Path to the file. This is a L<File::DataClass::IO> object that can be
 coerced from either a string or an array ref
 
-=item B<perms>
+=item C<perms>
 
 Permissions to set on the file if it is created. Defaults to
 L<PERMS|File::DataClass::Constants/PERMS>
 
-=item B<result_source_attributes>
+=item C<result_source_attributes>
 
 A hash ref of result sources. See L<File::DataClass::ResultSource>
 
-=item B<result_source_class>
+=item C<result_source_class>
 
 The class name used to create result sources when the source registration
 attribute is instantiated. Acts as a schema wide default of not overridden
-in the B<result_source_attributes>
+in the C<result_source_attributes>
 
-=item B<source_registrations>
+=item C<source_registrations>
 
-A hash ref or resgistered result sources, i.e. the keys of the
-B<result_source_attributes> hash
+A hash ref or registered result sources, i.e. the keys of the
+C<result_source_attributes> hash
 
-=item B<storage>
+=item C<storage>
 
 An instance of a subclass of L<File::DataClass::Storage>
 
-=item B<storage_attributes>
+=item C<storage_attributes>
 
 Attributes passed to the storage object's constructor
 
-=item B<storage_base>
+=item C<storage_base>
 
 If the storage class is only a partial classname then this attribute is
 prepended to it
 
-=item B<storage_class>
+=item C<storage_class>
 
 The name of the storage class to instantiate
 
-=item B<tempdir>
+=item C<tempdir>
 
 Temporary directory used to store the cache and lock objects disk
 representation
@@ -402,7 +371,7 @@ Reads a file in one format and writes it back out in another format
 
 =head1 Diagnostics
 
-Setting the B<debug> attribute to true will cause the log object's
+Setting the C<debug> attribute to true will cause the log object's
 debug method to be called with useful information
 
 =head1 Dependencies

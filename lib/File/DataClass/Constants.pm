@@ -81,69 +81,69 @@ Exports a list of subroutines each of which returns a constants value
 
 =head1 Subroutines/Methods
 
-=head2 ARRAY
+=head2 C<ARRAY>
 
 String ARRAY
 
-=head2 CODE
+=head2 C<CODE>
 
 String CODE
 
-=head2 CYGWIN
+=head2 C<CYGWIN>
 
-The devil's spawn with compatability library loaded
+The devil's spawn with compatibility library loaded
 
-=head2 EVIL
+=head2 C<EVIL>
 
 The devil's spawn
 
-=head2 EXCEPTION_CLASS
+=head2 C<EXCEPTION_CLASS>
 
 The class to use when throwing exceptions
 
-=head2 EXTENSIONS
+=head2 C<EXTENSIONS>
 
 Hash ref that map filename extensions (keys) onto storage subclasses (values)
 
-=head2 FALSE
+=head2 C<FALSE>
 
 Digit 0
 
-=head2 HASH
+=head2 C<HASH>
 
 String HASH
 
-=head2 LANG
+=head2 C<LANG>
 
-Default language code, en
+Default language code, C<en>
 
-=head2 LOCALIZE
+=head2 C<LOCALIZE>
 
 The character sequence that introduces a localization substitution
 parameter. Left square bracket underscore
 
-=head2 NO_UMASK_STACK
+=head2 C<NO_UMASK_STACK>
 
 Prevent the IO object from pushing and restoring umasks by pushing this
 value onto the I<_umask> array ref attribute
 
-=head2 NUL
+=head2 C<NUL>
 
 Empty string
 
-=head2 PERMS
+=head2 C<PERMS>
 
 Default file creation permissions
 
-=head2 SPC
+=head2 C<SPC>
 
 Space character
 
-=head2 STAT_FIELDS
+=head2 C<STAT_FIELDS>
 
 The list of fields returned by the core C<stat> function
 
-=head2 TRUE
+=head2 C<TRUE>
 
 Digit 1
 

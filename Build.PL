@@ -28,7 +28,6 @@ Bob->new( {
       'IO::Dir'                => 1.05,
       'IO::File'               => 1.13,
       'IPC::Cmd'               => 0.68,
-      'IPC::SRLock'            => q(0.7.0),
       'JSON'                   => 2.16,
       'Lingua::EN::NameParse'  => 1.28,
       'MealMaster'             => 0.28,

@@ -404,30 +404,30 @@ Defines these attributes
 
 =over 3
 
-=item B<list_class>
+=item C<list_class>
 
 List class name, defaults to L<File::DataClass::List>
 
-=item B<result_class>
+=item C<result_class>
 
 Result class name, defaults to L<File::DataClass::Result>
 
-=item B<source>
+=item C<source>
 
 An object reference to the L<File::DataClass::ResultSource> instance
 that created this result set
 
-=item B<_iterator>
+=item C<_iterator>
 
-Contains the integer count of the position within the B<_results> hash.
+Contains the integer count of the position within the C<_results> hash.
 Incremented by each call to L</next>
 
-=item B<_operators>
+=item C<_operators>
 
 A hash ref of coderefs that implement the comparison operations performed
 by the L</search> method
 
-=item B<_results>
+=item C<_results>
 
 An array of result objects. Produced by calling L</search>
 
@@ -446,16 +446,16 @@ Returns all the elements that are returned by the L</search> call
    $new_element_name = $rs->create( $args );
 
 Creates and inserts an new element. The C<$args> hash requires these
-keys; I<name> of the element to create and I<fields> is a hash
+keys; C<name> of the element to create and C<fields> is a hash
 containing the attributes of the new element. Missing attributes are
-defaulted from the I<defaults> attribute of the
+defaulted from the C<defaults> attribute of the
 L<File::DataClass::Schema> object. Returns the new element's name
 
 =head2 create_or_update
 
    $element_name = $rs->create_or_update( $args );
 
-Creates a new element if it does not already exist, updates the existsing
+Creates a new element if it does not already exist, updates the existing
 one if it does. Calls L</find_and_update>
 
 =head2 delete
@@ -515,9 +515,9 @@ Attribute L<File::DataClass::Schema/path>
    $added = $rs->push( { name => $name, list => $list, items => $items } );
 
 Adds items to the attribute list. The C<$args> hash requires these
-keys; I<name> the element to edit, I<list> the attribute of the named
-element containing the list of existing items, I<req> the request
-object and I<items> the field on the request object containing the
+keys; C<name> the element to edit, C<list> the attribute of the named
+element containing the list of existing items, C<req> the request
+object and C<items> the field on the request object containing the
 list of new items
 
 =head2 reset

@@ -959,7 +959,7 @@ heavy OO overloading. Only has methods for files and directories
 
 =head1 Subroutines/Methods
 
-If any errors occur the L</throw> method in the B<exception_class> is
+If any errors occur the L</throw> method in the C<exception_class> is
 called. If that is not defined the module throws an L<Exception::Class>
 of its own
 
@@ -975,7 +975,7 @@ The constructor can be called with these method signatures:
 =item $io = File::DataClass::IO->new( { name => $pathname, ... } )
 
 A hash ref containing a list of key value pairs which are the object's
-attributes (where I<name> is the pathname)
+attributes (where C<name> is the pathname)
 
 =item $io = File::DataClass::IO->new( $pathname, [ $mode, $perms ] )
 
@@ -1048,7 +1048,7 @@ Opens the file in append mode and calls L</println> with the passed args
 
    $io = io( q(path_to_file) )->assert;
 
-Sets the private attribute B<_assert> to true. Causes the open methods
+Sets the private attribute C<_assert> to true. Causes the open methods
 to create the path to the directory before the file/directory is
 opened
 
@@ -1077,18 +1077,18 @@ calls L</open> passing in the optional arguments
 
 Implements atomic file updates by writing to a temporary file and then
 renaming it on closure. This method uses the pattern in the
-I<_atomic_infix> attribute to compute the temporary pathname
+C<_atomic_infix> attribute to compute the temporary pathname
 
 =head2 atomic_suffix
 
-Syntatic sugar. See L</atomix_infix>
+Syntactic sugar. See L</atomix_infix>
 
 =head2 atomic_infix
 
-Defaults to I<B_*> (prefix). The I<*> is replaced by the filename to
+Defaults to C<B_*> (prefix). The C<*> is replaced by the filename to
 create a temporary file for atomic updates. If the value does not
-contain a I<*> then it is appended to the filename instead
-(suffix). Attribute name I<_atomic_infix>
+contain a C<*> then it is appended to the filename instead
+(suffix). Attribute name C<_atomic_infix>
 
 =head2 basename
 
@@ -1142,7 +1142,7 @@ with the one that is supplied
    $io = $io->chmod( q(0644) );
 
 Changes the permission on the file to the selected value. Permission values
-can be eithe octal or string
+can be either octal or string
 
 =head2 chomp
 
@@ -1222,12 +1222,12 @@ Returns true if the pathname exists and is zero bytes in size
    $io = io( q(path_to_file) )->encoding( $encoding );
 
 Apply the given encoding to the open file handle and store it on the
-B<_encoding> attribute
+C<_encoding> attribute
 
 =head2 error_check
 
 Tests to see if the open file handle is showing an error and if it is
-it L</throw>s an I<eIOError>
+it L</throw>s an C<eIOError>
 
 =head2 exists
 
@@ -1254,8 +1254,8 @@ pathname in turn. It should return true if the entry is wanted
 =head2 getline
 
 Asserts the file open for reading. Get one line from the file
-handle. Chomp the line if the I<_chomp> attribute is true. Check for
-errors. Close the file if the I<autoclose> attribute is true and end
+handle. Chomp the line if the C<_chomp> attribute is true. Check for
+errors. Close the file if the C<autoclose> attribute is true and end
 of file has been read past
 
 =head2 getlines
@@ -1266,7 +1266,7 @@ an array of lines
 =head2 _init
 
 Sets default values for some attributes, takes two optional arguments;
-I<type> and I<name>
+C<type> and C<name>
 
 =over 3
 
@@ -1295,10 +1295,10 @@ soon after
 
 =item type
 
-Defaults to false. Set by the L</dir> and L</file> methods to I<dir> and
-I<file> respectively. The L</dir> method is called by the L</next>
+Defaults to false. Set by the L</dir> and L</file> methods to C<dir> and
+C<file> respectively. The L</dir> method is called by the L</next>
 method. The L</file> method is called by the L</assert_open> method if
-the I<type> attribute is false
+the C<type> attribute is false
 
 =back
 
@@ -1314,35 +1314,35 @@ Return true if the pathname is absolute
 
    $bool = io( q(path_to_file) )->is_dir;
 
-Tests to see if the I<IO> object is a directory
+Tests to see if the C<IO> object is a directory
 
 =head2 is_executable
 
    $bool = io( q(path_to_file) )->is_executable;
 
-Tests to see if the I<IO> object is executable
+Tests to see if the C<IO> object is executable
 
 =head2 is_file
 
    $bool = io( q(path_to_file) )->is_file;
 
-Tests to see if the I<IO> object is a file
+Tests to see if the C<IO> object is a file
 
 =head2 is_readable
 
    $bool = io( q(path_to_file) )->is_readable;
 
-Tests to see if the I<IO> object is readable
+Tests to see if the C<IO> object is readable
 
 =head2 is_reading
 
-Returns true if this I<IO> object is in one of the read modes
+Returns true if this C<IO> object is in one of the read modes
 
 =head2 is_writable
 
    $bool = io( q(path_to_file) )->is_writable;
 
-Tests to see if the I<IO> object is writable
+Tests to see if the C<IO> object is writable
 
 =head2 length
 
@@ -1369,7 +1369,7 @@ Create the specified path
 
 =head2 next
 
-Calls L</dir> if the I<type> is not already set. Asserts the directory
+Calls L</dir> if the C<type> is not already set. Asserts the directory
 open for reading and then calls L</read_dir> to get the first/next
 entry. It returns an IO object for that entry
 
@@ -1383,34 +1383,34 @@ L</assert_open>
 
 =head2 _open_dir
 
-If the I<_assert> attribute is true calls L</assert_dirpath> to create the
+If the C<_assert> attribute is true calls L</assert_dirpath> to create the
 directory path if it does not exist. Opens the directory and stores the
-handle on the I<io_handle> attribute
+handle on the C<io_handle> attribute
 
 =head2 _open_file
 
 Opens the pathname with the given mode and permissions. Calls
-L</assert_filepath> if I<assert> is true. Mode defaults to the I<mode>
-attribute value which defaults to I<r>. Permissions defaults to the
-I<_perms> attribute value. Throws B<eCannotOpen> on error. If the open
+L</assert_filepath> if C<assert> is true. Mode defaults to the C<mode>
+attribute value which defaults to C<r>. Permissions defaults to the
+C<_perms> attribute value. Throws C<eCannotOpen> on error. If the open
 succeeds L</set_lock> and L</set_binmode> are called
 
 =head2 pathname
 
    $pathname = $io->pathname( $pathname );
 
-Sets and returns then I<name> attribute
+Sets and returns then C<name> attribute
 
 =head2 perms
 
    $io = io( q(path_to_file) )->perms( $perms );
 
-Stores the given permissions on the I<_perms> attribute
+Stores the given permissions on the C<_perms> attribute
 
 =head2 print
 
 Asserts that the file is open for writing and then prints passed list
-of args to the open file handle. Throws I<ePrintError> if the C<print>
+of args to the open file handle. Throws C<ePrintError> if the C<print>
 statement fails
 
 =head2 println
@@ -1496,7 +1496,7 @@ line of the given file
 
 =head2 tempfile
 
-Create a randomly named temporary file in the I<name>
+Create a randomly named temporary file in the C<name>
 directory. The file name is prefixed with the creating processes id
 and the temporary directory defaults to F</tmp>
 
@@ -1516,7 +1516,7 @@ Delete the specified file
 
 =head2 unlock
 
-Calls C<flock> on the open file handle with the I<LOCK_UN> option to
+Calls C<flock> on the open file handle with the C<LOCK_UN> option to
 release the L<Fcntl> lock if one was set. Called by the L</close> method
 
 =head2 utf8
@@ -1558,7 +1558,7 @@ None
 
 =head1 Incompatibilities
 
-On MSWin32 and Cygwin platforms there is a race condition when the atomic
+On C<MSWin32> and C<Cygwin> platforms there is a race condition when the atomic
 write option is used. This is caused by the filesystem which does not allow
 an open file to be renamed
 

@@ -1,6 +1,10 @@
 Revision history for File::DataClass
 
-         - Updated inc::Bob to 1.4
+         - Removed deprecated ioc_obj attribute
+         - Allow CPAN testing to run on more platforms
+         - Removed dependency on IPC::SRLock
+         - Added spelling tests
+         - Updated inc::Bob to 1.5
          - Changed OS unsupported message in inc/CPANTesting
 
 0.11.401 2012-07-10

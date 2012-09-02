@@ -53,7 +53,7 @@ __END__
 
 =head1 Name
 
-File::UnixAuth - Result source definitions for the Unix auth files
+File::UnixAuth - Result source definitions for the Unix authentication files
 
 =head1 Version
 

@@ -78,9 +78,9 @@ Defines these attributes
 
 =over 3
 
-=item B<lang>
+=item C<lang>
 
-The two character language code, e.g. de.
+The two character language code, e.g. C<de>.
 
 =back
 

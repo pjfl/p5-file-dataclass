@@ -171,9 +171,9 @@ accessor methods are called
 
 =head2 merge_hash_data
 
-   merge_hash_data $existsing, $new;
+   merge_hash_data $existing, $new;
 
-Uses L<Hash::Merge> to merge data from the new hash ref in with the existsing
+Uses L<Hash::Merge> to merge data from the new hash ref in with the existing
 
 =head2 throw
 

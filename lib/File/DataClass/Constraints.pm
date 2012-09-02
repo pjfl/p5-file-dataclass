@@ -20,7 +20,7 @@ subtype Cache, as Object,
    };
 
 subtype DummyClass, as Str,
-   where   { $_ eq q(none) }, message { "Class $_ is not 'none'" };
+   where   { $_ eq q(none) }, message { "Class ${_} is not 'none'" };
 
 subtype HashRefOfBools, as HashRef;
 
@@ -103,33 +103,33 @@ Defines these subtypes
 
 =over 3
 
-=item B<Cache>
+=item C<Cache>
 
 Is a L<File::DataClass::Cache>
 
-=item B<Exception>
+=item C<Exception>
 
 Can C<throw>
 
-=item B<Lock>
+=item C<Lock>
 
 Is a L<Class::Null> or can C<set> and C<reset>
 
-=item B<Path>
+=item C<Path>
 
 Is a L<File::DataClass::IO>. Can be coerced from either a string or
 an array ref
 
-=item B<Result>
+=item C<Result>
 
 Is a L<File::DataClass::Result>
 
-=item B<Directory>
+=item C<Directory>
 
 Subtype of C<Path> which is a directory. Can be coerced from
 either a string or an array ref
 
-=item B<File>
+=item C<File>
 
 Subtype of C<Path> which is a file. Can be coerced from either a
 string or an array ref
