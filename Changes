@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.12.406 2012-09-02
          - Removed deprecated ioc_obj attribute
          - Allow CPAN testing to run on more platforms
          - Removed dependency on IPC::SRLock
