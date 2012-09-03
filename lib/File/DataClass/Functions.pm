@@ -108,7 +108,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Functions - <One-line description of module's purpose>
+File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
@@ -119,6 +119,8 @@ File::DataClass::Functions - <One-line description of module's purpose>
    use File::DataClass::Functions qw(list of functions to import);
 
 =head1 Description
+
+Common functions used in this distribution
 
 =head1 Subroutines/Methods
 

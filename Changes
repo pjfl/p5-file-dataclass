@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - Abstract and description POD fix for F:D:Functions
+
 0.12.406 2012-09-02
          - Removed deprecated ioc_obj attribute
          - Allow CPAN testing to run on more platforms
