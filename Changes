@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+0.12.409 2012-09-06
+         - Added missing dependency on parent
          - Abstract and description POD fix for F:D:Functions
 
 0.12.406 2012-09-02

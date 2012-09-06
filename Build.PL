@@ -13,6 +13,7 @@ Bob->new( {
       'namespace::autoclean'   => 0.13,
       'namespace::clean'       => 0.22,
       'overload'               => 1.04,
+      'parent'                 => 0.224,
       'version'                => 0.74,
       'Cache::FastMmap'        => 1.36,
       'Carp'                   => 0,
