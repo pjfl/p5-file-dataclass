@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.12.411 2012-10-27
+         - Fixed write filter bug in XML::Bare
+
 0.12.409 2012-09-06
          - Added missing dependency on parent
          - Abstract and description POD fix for F:D:Functions

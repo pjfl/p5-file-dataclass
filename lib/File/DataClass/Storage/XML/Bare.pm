@@ -71,7 +71,14 @@ sub _write_filter {
    my $padding = $PADDING x $level;
 
    if (ref $data eq ARRAY) {
-      $xml .= $padding.__bracket( $element, $_ )."\n" for (sort @{ $data });
+      for my $value (@{ $data }) {
+         if (ref $value) {
+            $xml .= "${padding}<${element}>\n";
+            $xml .= $self->_write_filter( $level, NUL, $value );
+            $xml .= "${padding}</${element}>\n";
+         }
+         else { $xml .= $padding.__bracket( $element, $value )."\n" }
+      }
    }
    elsif (ref $data eq HASH) {
       $padding = $PADDING x ($level + 1);
@@ -81,10 +88,10 @@ sub _write_filter {
 
          if (ref $value eq HASH) {
             for (sort keys %{ $value }) {
-               $xml .= $padding.q(<).$key.q(>)."\n";
+               $xml .= "${padding}<${key}>\n";
                $xml .= $padding.$PADDING.__bracket( q(name), $_ )."\n";
                $xml .= $self->_write_filter( $level + 1, NUL, $value->{ $_ } );
-               $xml .= $padding.q(</).$key.q(>)."\n";
+               $xml .= "${padding}</${key}>\n";
             }
          }
          else { $xml .= $self->_write_filter( $level + 1, $key, $value ) }
@@ -95,7 +102,7 @@ sub _write_filter {
    }
 
    if ($level == 0 && $element) {
-      $xml = q(<).$element.q(>)."\n".$xml.q(</).$element.q(>)."\n";
+      $xml = "<${element}>\n${xml}</${element}>\n";
    }
 
    return $xml;
@@ -106,7 +113,7 @@ sub _write_filter {
 sub __bracket {
    my ($k, $v) = @_; $BORKED and $v =~ s{ [&] }{&amp;}gmsx;
 
-   return q(<).$k.q(>).$v.q(</).$k.q(>);
+   return "<${k}>${v}</${k}>";
 }
 
 sub __coerce_array {
