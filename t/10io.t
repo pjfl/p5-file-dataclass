@@ -84,6 +84,10 @@ is( io()->file->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ),
     'Catfile 2' );
 is( io()->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ), 'Catfile 3' );
 
+is io( [ qw(t mydir dir1) ] )->dirname, catdir( qw(t mydir) ), 'Dirname';
+
+ok io( [ qw(t mydir dir1) ] )->parent->is_dir, 'Parent';
+
 # Absolute/relative
 
 my $io = io( $PROGRAM_NAME )->absolute;

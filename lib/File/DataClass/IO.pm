@@ -653,6 +653,10 @@ sub _open_file {
    return $self;
 }
 
+sub parent {
+   my $self = shift; return $self->_constructor( $self->dirname );
+}
+
 sub pathname {
    my ($self, @rest) = @_; return $self->name( @rest );
 }
@@ -1394,6 +1398,12 @@ L</assert_filepath> if C<assert> is true. Mode defaults to the C<mode>
 attribute value which defaults to C<r>. Permissions defaults to the
 C<_perms> attribute value. Throws C<eCannotOpen> on error. If the open
 succeeds L</set_lock> and L</set_binmode> are called
+
+=head2 parent
+
+   $parent_io_object = $self->parent;
+
+Return L</dirname> as an IO object
 
 =head2 pathname
 
