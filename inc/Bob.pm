@@ -10,7 +10,7 @@ sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN { my $reason; $reason = CPANTesting::should_abort and whimper $reason; }
 
-use version; our $VERSION = qv( '1.5' );
+use version; our $VERSION = qv( '1.6' );
 
 use File::Spec::Functions;
 use Module::Build;
@@ -90,9 +90,10 @@ sub __get_no_index {
 sub __get_notes {
    my $p = shift; my $notes = exists $p->{notes} ? $p->{notes} : {};
 
-   $notes->{create_readme_pod} = $p->{create_readme_pod} || 0;
-   $notes->{stop_tests} = CPANTesting::test_exceptions( $p );
-
+   $notes->{create_readme_pod} = $p->{create_readme_pod} // 0;
+   $notes->{is_cpan_testing  } = CPANTesting::is_testing();
+   $notes->{stop_tests       } = CPANTesting::test_exceptions( $p );
+   $notes->{version          } = $VERSION;
    return $notes;
 }
 

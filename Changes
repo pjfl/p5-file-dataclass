@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+0.13.416 2012-11-07
+         - Updated inc::Bob to 1.6
          - Fixed nasty bug in IO::umask_pop
          - Added IO::parent
 

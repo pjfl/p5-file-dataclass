@@ -4,7 +4,7 @@ package File::Gettext::Storage::MO;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.12.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev$ =~ /\d+/gmx );
 
 use Encode qw(decode);
 use File::DataClass::Constants;
@@ -154,7 +154,7 @@ File::Gettext::Storage::MO - Storage class for GNU gettext machine object format
 
 =head1 Version
 
-0.12.$Revision$
+0.13.$Revision$
 
 =head1 Synopsis
 
