@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+         - Fixed nasty bug in IO::umask_pop
          - Added IO::parent
 
 0.12.411 2012-10-27

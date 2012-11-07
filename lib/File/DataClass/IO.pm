@@ -137,7 +137,7 @@ sub assert_dirpath {
 
    $dir_name or return; -d $dir_name and return $dir_name;
 
-   $self->_umask_push( oct q(07777) ); my $perms = $self->_mkdir_perms;
+   my $perms = $self->_mkdir_perms; $self->_umask_push( oct q(07777) );
 
    CORE::mkdir( $dir_name, $perms )
       or File::Path::make_path( $dir_name, { mode => $perms } );
@@ -643,9 +643,12 @@ sub _open_file {
 
    $self->_assert and $self->assert_filepath;
    $self->_umask_push( $perms );
-   $self->io_handle( IO::File->new( $path, $mode ) )
-      or $self->_throw( error => 'File [_1] cannot open',
-                        args  => [ $path ] );
+
+   unless ($self->io_handle( IO::File->new( $path, $mode ) )) {
+      $self->_umask_pop;
+      $self->_throw( error => 'File [_1] cannot open', args  => [ $path ] );
+   }
+
    $self->_umask_pop;
    $self->is_open( TRUE );
    $self->set_binmode;
@@ -872,9 +875,9 @@ sub touch {
 sub _umask_pop {
    my $self = shift; my $perms = $self->_umask->[ -1 ];
 
-   ($perms and $perms != NO_UMASK_STACK) or return umask;
-   umask pop @{ $self->_umask };
-   return $perms;
+   (defined $perms and $perms != NO_UMASK_STACK) or return umask;
+
+   umask pop @{ $self->_umask }; return $perms;
 }
 
 sub _umask_push {
@@ -882,9 +885,10 @@ sub _umask_push {
 
    my $first = $self->_umask->[ 0 ];
 
-   $first and $first == NO_UMASK_STACK and return umask;
+   defined $first and $first == NO_UMASK_STACK and return umask;
 
    $perms ^= oct q(0777); push @{ $self->_umask }, umask $perms;
+
    return $perms;
 }
 
