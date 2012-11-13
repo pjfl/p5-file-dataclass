@@ -1,5 +1,5 @@
 # @(#)$Id$
-# Bob-Version: 1.6
+# Bob-Version: 1.7
 
 package CPANTesting;
 

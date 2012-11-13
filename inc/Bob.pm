@@ -10,9 +10,9 @@ sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 
 BEGIN { my $reason; $reason = CPANTesting::should_abort and whimper $reason; }
 
-use version; our $VERSION = qv( '1.6' );
+use version; our $VERSION = qv( '1.7' );
 
-use File::Spec::Functions;
+use File::Spec::Functions qw(catfile);
 use Module::Build;
 
 sub new {
@@ -49,18 +49,15 @@ sub new {
 sub __get_build_class { # Which subclass of M::B should we create?
    my $p = shift; exists $p->{build_class} and return $p->{build_class};
 
-   return Module::Build->subclass( code => q{
-      use Pod::Select;
+   my $path = catfile( qw(inc SubClass.pm) );
 
-      sub ACTION_distmeta {
-         my $self = shift;
+   -f $path or return 'Module::Build';
 
-         $self->notes->{create_readme_pod} and podselect( {
-            -output => q(README.pod) }, $self->dist_version_from );
+   open( my $fh, '<', $path ) or whimper "File ${path} cannot open: ${!}";
 
-         return $self->SUPER::ACTION_distmeta;
-      }
-   } );
+   my $code = do { local $/ = undef; <$fh> }; close( $fh );
+
+   return Module::Build->subclass( code => $code );
 }
 
 sub __get_cleanup_list {
@@ -90,7 +87,7 @@ sub __get_no_index {
 sub __get_notes {
    my $p = shift; my $notes = exists $p->{notes} ? $p->{notes} : {};
 
-   $notes->{create_readme_pod} = $p->{create_readme_pod} // 0;
+   $notes->{create_readme_pod} = $p->{create_readme_pod} || 0;
    $notes->{is_cpan_testing  } = CPANTesting::is_testing();
    $notes->{stop_tests       } = CPANTesting::test_exceptions( $p );
    $notes->{version          } = $VERSION;

@@ -1,5 +1,5 @@
 # @(#)$Id$
-# Bob-Version: 1.6
+# Bob-Version: 1.7
 
 use strict;
 use warnings;
@@ -10,7 +10,7 @@ use Sys::Hostname;
 my $host    = lc hostname;
 my $current = eval { Module::Build->current };
 my $notes   = {}; $current and $notes = $current->notes || {};
-my $version = $notes->{version} // '< 1.6';
+my $version = defined $notes->{version} ? $notes->{version} : '< 1.6';
 
 $notes->{is_cpan_testing} and warn "Host: ${host}, Bob-Version: ${version}\n";
 
