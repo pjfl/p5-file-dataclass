@@ -1,6 +1,6 @@
 Revision history for File::DataClass
 
-0.13.417 2012-11-13
+0.13.418 2012-11-13
          - Updated inc::Bob to 1.7. Removed defined ors
 
 0.13.416 2012-11-07
