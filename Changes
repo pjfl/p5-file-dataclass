@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - F::DC::Schema load and dump are now also class methods
+
 0.13.418 2012-11-13
          - Updated inc::Bob to 1.7. Removed defined ors
 
