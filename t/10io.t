@@ -7,7 +7,6 @@ use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
 
-use English qw(-no_match_vars);
 use Module::Build;
 use Test::More;
 
@@ -18,6 +17,7 @@ BEGIN {
             and plan skip_all => $current->notes->{stop_tests};
 }
 
+use English qw(-no_match_vars);
 use File::DataClass::IO;
 
 isa_ok( io( $PROGRAM_NAME ), q(File::DataClass::IO) );
@@ -303,13 +303,15 @@ $io->copy( $to ); is( $io->all, $to->all, 'Copy file' );
 
 # Chmod
 
-$io->chmod( 0777 ); $stat = $io->stat;
+if ($OSNAME ne q(MSWin32) and $OSNAME ne q(cygwin)) {
+   $io->chmod( 0777 ); $stat = $io->stat;
 
-is( (sprintf "%o", $stat->{mode} & 07777), q(777), 'chmod1' );
+   is( (sprintf "%o", $stat->{mode} & 07777), q(777), 'chmod1' );
 
-$io->chmod( 0400 ); $stat = $io->stat;
+   $io->chmod( 0400 ); $stat = $io->stat;
 
-is( (sprintf "%o", $stat->{mode} & 07777), q(400), 'chmod2' );
+   is( (sprintf "%o", $stat->{mode} & 07777), q(400), 'chmod2' );
+}
 
 # Permissions
 
