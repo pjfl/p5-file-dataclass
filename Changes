@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.13.421 2012-12-14
+         - Tried to fix tests on win32
+
 0.13.420 2012-12-12
          - Tried to fix tests on win32
          - F::DC::Schema load and dump are now also class methods

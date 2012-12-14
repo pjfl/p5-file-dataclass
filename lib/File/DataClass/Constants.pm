@@ -33,7 +33,7 @@ use Sub::Exporter -setup => {
 sub ARRAY    () { q(ARRAY)    }
 sub CODE     () { q(CODE)     }
 sub CYGWIN   () { q(cygwin)   }
-sub EVIL     () { q(MSWin32)  }
+sub EVIL     () { q(mswin32)  }
 sub FALSE    () { 0           }
 sub HASH     () { q(HASH)     }
 sub LANG     () { q(en)       }
