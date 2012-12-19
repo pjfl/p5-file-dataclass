@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.13.422 2012-12-19
+         - Passing io.t on win32. So now the remaining errors
+
 0.13.421 2012-12-14
          - Tried to fix tests on win32
 
