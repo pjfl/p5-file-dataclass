@@ -27,17 +27,19 @@ sub test {
    my $wantarray = wantarray; my ($e, $res);
 
    eval {
-      if ($wantarray) { @{ $res } = $obj->$method( @args ) }
-      else { $res = $obj->$method( @args ) }
+      if ($wantarray) { $res = [ $obj->$method( @args ) ] }
+      else            { $res =   $obj->$method( @args )   }
    };
 
-   return $e if ($e = $EVAL_ERROR);
+   $e = $EVAL_ERROR and return $e;
 
    return $wantarray ? @{ $res } : $res;
 }
 
 use File::DataClass::Schema;
 
+my $osname     = lc $OSNAME;
+my $ntfs       = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
 my $path       = catfile( qw(t default.xml) );
 my $dumped     = catfile( qw(t dumped.xml) );
 my $cache_file = catfile( qw(t file-dataclass-schema.dat) );
@@ -101,7 +103,7 @@ my $rs = test( $schema, q(resultset), q(globals) );
 
 $args = {}; $e = test( $rs, q(create), $args );
 
-ok $e =~ m{ \QNo element name specified\E }msx, 'No element name specified';
+like $e, qr{ \QNo element name specified\E }msx, 'No element name specified';
 
 $args->{name} = q(dummy); my $res = test( $rs, q(create), $args );
 
@@ -113,9 +115,13 @@ $args->{text} = q(value1); $res = test( $rs, q(create), $args );
 
 is $res, q(dummy), 'Creates dummy element and inserts';
 
+$ntfs and $schema->path->close; # See if this fixes winshite
+
 $args->{text} = q(value2); $res = test( $rs, q(update), $args );
 
 is $res, q(dummy), 'Can update';
+
+$ntfs and $schema->path->close; # See if this fixes winshite
 
 delete $args->{text}; $res = test( $rs, q(find), $args );
 
@@ -123,15 +129,17 @@ is $res->text, q(value2), 'Can find';
 
 $e = test( $rs, q(create), $args );
 
-ok $e =~ m{ already \s+ exists }mx, 'Detects already existing element';
+like $e, qr{ already \s+ exists }mx, 'Detects already existing element';
 
 $res = test( $rs, q(delete), $args );
 
 is $res, q(dummy), 'Deletes dummy element';
 
+$ntfs and $schema->path->close; # See if this fixes winshite
+
 $e = test( $rs, q(delete), $args );
 
-ok $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element';
+like $e, qr{ does \s+ not \s+ exist }mx, 'Detects non existing element';
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw(t default.xml) ],

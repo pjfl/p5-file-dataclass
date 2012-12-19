@@ -295,7 +295,6 @@ sub close {
 }
 
 sub _close_and_rename { # This creates a race condition
-   warn "CPANTesting - Winshite detected\n";
    my $self = shift; $self->unlock; my $handle = $self->io_handle;
 
    $handle and $handle->close; $handle and undef $handle;

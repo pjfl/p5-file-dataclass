@@ -16,21 +16,19 @@ BEGIN {
 
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
-
-   plan tests => 13;
 }
 
 use File::DataClass::IO;
 use Text::Diff;
 
-sub test {
+sub test ($$$) {
    my ($obj, $method, @args) = @_; local $EVAL_ERROR;
 
    my $wantarray = wantarray; my $res;
 
    eval {
-      if ($wantarray) { @{ $res } = $obj->$method( @args ) }
-      else { $res = $obj->$method( @args ) }
+      if ($wantarray) { $res = [ $obj->$method( @args ) ] }
+      else            { $res =   $obj->$method( @args )   }
    };
 
    my $e = $EVAL_ERROR; $e and return $e;
@@ -43,6 +41,8 @@ use_ok( q(File::Gettext) );
 
 use File::Gettext::Constants;
 
+my $osname  = lc $OSNAME;
+my $ntfs    = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
 my $default = catfile( qw(t default.xml) );
 my $schema  = File::DataClass::Schema::WithLanguage->new
    ( path      => $default,
@@ -57,53 +57,57 @@ my $schema  = File::DataClass::Schema::WithLanguage->new
 
 isa_ok( $schema, q(File::DataClass::Schema) );
 
-is( $schema->lang, q(en), 'Has language attribute' );
+is $schema->lang, q(en), 'Has language attribute';
 
 my $source = $schema->source( q(pages) );
 
 my $rs = $source->resultset; my $args = {};
 
-$args->{name  }  = q(dummy);
-$args->{columns} = 3;
+$args->{name} = q(dummy); $args->{columns} = 3;
+
 $args->{heading} = q(This is a heading);
 
-my $res = test( $rs, q(create), $args );
+my $res = test $rs, q(create), $args;
 
-is( $res, q(dummy), 'Creates dummy element and inserts' );
+is $res, q(dummy), 'Creates dummy element and inserts';
 
-$args->{columns} = q(2);
-$args->{heading} = q(This is a heading also);
+$args->{columns} = q(2); $args->{heading} = q(This is a heading also);
 
-$res = test( $rs, q(update), $args );
+$res = test $rs, q(update), $args;
 
-is( $res, q(dummy), 'Can update' );
+is $res, q(dummy), 'Can update';
 
-delete $args->{columns};
-delete $args->{heading};
-$res = test( $rs, q(find), $args );
+$ntfs and $schema->path->close; # See if this fixes winshite
 
-is( $res->columns, 2, 'Can find' );
+delete $args->{columns}; delete $args->{heading};
 
-my $e = test( $rs, q(create), $args );
+$res = test $rs, q(find), $args;
 
-ok( $e =~ m{ already \s+ exists }mx, 'Detects already existing element' );
+is $res->columns, 2, 'Can find';
 
-$res = test( $rs, q(delete), $args );
+$ntfs and $schema->path->close; # See if this fixes winshite
 
-is( $res, q(dummy), 'Deletes dummy element' );
+my $e = test $rs, q(create), $args;
 
-$e = test( $rs, q(delete), $args );
+ok $e =~ m{ already \s+ exists }mx, 'Detects already existing element';
 
-ok( $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element' );
+$ntfs and $schema->path->close; # See if this fixes winshite
 
-$schema->lang( q(de) );
-$args->{name  }  = q(dummy);
-$args->{columns} = 3;
-$args->{heading} = q(This is a heading);
+$res = test $rs, q(delete), $args;
 
-$res = test( $rs, q(create), $args );
+is $res, q(dummy), 'Deletes dummy element';
 
-is( $res, q(dummy), 'Creates dummy element and inserts 2' );
+$e = test $rs, q(delete), $args;
+
+ok $e =~ m{ does \s+ not \s+ exist }mx, 'Detects non existing element';
+
+$schema->lang( q(de) ); $args->{name} = q(dummy);
+
+$args->{columns} = 3; $args->{heading} = q(This is a heading);
+
+$res = test $rs, q(create), $args;
+
+is $res, q(dummy), 'Creates dummy element and inserts 2';
 
 my $data   = $schema->load;
 my $dumped = catfile( qw(t dumped.xml)   );
@@ -118,11 +122,13 @@ $data = $gettext->load;
 my $key  = 'pages.heading'.CONTEXT_SEP().'dummy';
 my $text = $data->{ 'po' }->{ $key }->{ 'msgstr' }->[ 0 ];
 
-ok( $text eq 'This is a heading', 'Dumps' );
+ok $text eq 'This is a heading', 'Dumps';
 
-$res = test( $rs, q(delete), $args );
+$res = test $rs, q(delete), $args;
 
-is( $res, q(dummy), 'Deletes dummy element 2' );
+is $res, q(dummy), 'Deletes dummy element 2';
+
+done_testing();
 
 # Cleanup
 

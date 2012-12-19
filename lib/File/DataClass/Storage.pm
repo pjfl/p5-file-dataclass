@@ -139,11 +139,9 @@ sub select {
 }
 
 sub txn_do {
-   my ($self, $path, $code_ref) = @_;
+   my ($self, $path, $code_ref) = @_; my $wantarray = wantarray;
 
-   $self->validate_params( $path, TRUE );
-
-   my $key = q(txn:).$path; my $wantarray = wantarray; my $res;
+   $self->validate_params( $path, TRUE ); my $key = q(txn:).$path; my $res;
 
    $self->_lock->set( k => $key );
 

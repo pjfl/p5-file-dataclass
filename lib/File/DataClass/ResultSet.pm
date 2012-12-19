@@ -86,11 +86,12 @@ sub find {
    return $self->_txn_do( sub { $self->_find( $name ) } );
 }
 
-sub find_and_update {
+sub find_and_update { # TODO: Why is this not private?
    my ($self, $args) = @_;
 
-   my $name   = $args->{name} or return;
-   my $result = $self->_find( $name ) or return;
+   my $name   = $args->{name} or throw 'Record name not specified';
+   my $result = $self->_find( $name )
+      or throw error => 'Record [_1] not found', args => [ $name ];
 
    for (grep { exists $args->{ $_ } } @{ $self->attributes }) {
       $result->$_( $args->{ $_ } );
@@ -134,7 +135,7 @@ sub push {
       $self->find_and_update( $attrs );
    } );
 
-   return $res ? $added : $res;
+   return $res ? $added : undef;
 }
 
 sub reset {
@@ -166,7 +167,7 @@ sub splice {
       $self->find_and_update( $attrs );
    } );
 
-   return $res ? $removed : $res;
+   return $res ? $removed : undef;
 }
 
 sub update {
@@ -174,7 +175,7 @@ sub update {
 
    my $res = $self->_txn_do( sub { $self->find_and_update( $args ) } );
 
-   return $res ? $name : $res;
+   return $res ? $name : undef;
 }
 
 # Private methods
