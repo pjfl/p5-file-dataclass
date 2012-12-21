@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.13.424 2012-12-21
          - Started using Sub::Exporter::Progressive
          - Functions is_stale always true on MSWin32, so no mtime no caching
          - Stopped using is_file when I mean exists
