@@ -26,7 +26,7 @@ BEGIN {
                      STAT_FIELDS TRUE) );
 }
 
-use Sub::Exporter -setup => {
+use Sub::Exporter::Progressive -setup => {
    exports => [ @constants ], groups => { default => [ @constants ], },
 };
 

@@ -196,7 +196,7 @@ sub _read_file {
       my $cache_mtime = $self->meta_unpack( $meta );
 
       if (is_stale $data, $cache_mtime, $path_mtime) {
-         if ($for_update and not $path->is_file) { $data = undef }
+         if ($for_update and not $path->exists) { $data = undef }
          else {
             $data = inner( $path->lock ); $path->close;
             $meta = $self->meta_pack( $path_mtime );
@@ -217,12 +217,12 @@ sub _write_file {
    my ($self, $path, $data, $create) = @_;
 
    try {
-      $create or $path->is_file
+      $create or $path->exists
          or throw error => 'File [_1] not found', args => [ $path ];
 
-      $path->is_file or $path->perms( $self->_perms );
+      $path->exists or $path->perms( $self->_perms );
 
-      if ($self->backup and $path->is_file and not $path->empty) {
+      if ($self->backup and $path->exists and not $path->empty) {
          copy( $path.NUL, $path.$self->backup ) or throw $ERRNO;
       }
 

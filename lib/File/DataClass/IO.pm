@@ -21,7 +21,7 @@ use File::Temp     ();
 use IO::File;
 use IO::Dir;
 
-use Sub::Exporter -setup => {
+use Sub::Exporter::Progressive -setup => {
    exports => [ qw(io) ], groups => { default => [ qw(io) ], },
 };
 

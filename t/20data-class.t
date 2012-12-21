@@ -115,13 +115,9 @@ $args->{text} = q(value1); $res = test( $rs, q(create), $args );
 
 is $res, q(dummy), 'Creates dummy element and inserts';
 
-$ntfs and $schema->path->close; # See if this fixes winshite
-
 $args->{text} = q(value2); $res = test( $rs, q(update), $args );
 
 is $res, q(dummy), 'Can update';
-
-$ntfs and $schema->path->close; # See if this fixes winshite
 
 delete $args->{text}; $res = test( $rs, q(find), $args );
 
@@ -134,8 +130,6 @@ like $e, qr{ already \s+ exists }mx, 'Detects already existing element';
 $res = test( $rs, q(delete), $args );
 
 is $res, q(dummy), 'Deletes dummy element';
-
-$ntfs and $schema->path->close; # See if this fixes winshite
 
 $e = test( $rs, q(delete), $args );
 

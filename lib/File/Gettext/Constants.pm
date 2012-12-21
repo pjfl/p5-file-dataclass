@@ -12,7 +12,7 @@ BEGIN {
    @_constants = ( qw(CONTEXT_SEP DIRECTORIES MAGIC_N MAGIC_V PLURAL_SEP) );
 }
 
-use Sub::Exporter -setup => {
+use Sub::Exporter::Progressive -setup => {
    exports => [ @_constants ], groups => { default => [ @_constants ], },
 };
 
