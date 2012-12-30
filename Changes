@@ -1,6 +1,6 @@
 Revision history for File::DataClass
 
-0.13.426 2012-12-30
+0.13.427 2012-12-30
          - Binmode on by default on ntfs
 
 0.13.424 2012-12-21

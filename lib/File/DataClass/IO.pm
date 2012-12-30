@@ -754,7 +754,7 @@ sub _rename_atomic {
    my $errno; File::Copy::copy( $path, $self->name ) or $errno = $ERRNO;
    eval { unlink $path };
    $errno and $self->_throw( error => 'Path [_1] copy to [_2] failed: [_3]',
-                             args  => [ $path, $self->name, $errno ];
+                             args  => [ $path, $self->name, $errno ] );
    return;
 }
 
