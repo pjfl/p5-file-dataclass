@@ -8,8 +8,8 @@ use overload '""' => sub { shift->pathname }, fallback => 1;
 use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
-use File::DataClass::Constants;
 use Moose::Util::TypeConstraints;
+use File::DataClass::Constants;
 use English      qw(-no_match_vars);
 use Fcntl        qw(:flock :seek);
 use List::Util   qw(first);
@@ -24,6 +24,9 @@ use IO::Dir;
 use Sub::Exporter::Progressive -setup => {
    exports => [ qw(io) ], groups => { default => [ qw(io) ], },
 };
+
+my $osname = lc $OSNAME;
+my $ntfs   = $osname eq EVIL || $osname eq CYGWIN ? TRUE : FALSE;
 
 enum 'File::DataClass::IO_Mode' => qw(a a+ r r+ w w+);
 enum 'File::DataClass::IO_Type' => qw(dir file);
@@ -283,10 +286,9 @@ sub clear {
 }
 
 sub close {
-   my $self = shift; $self->is_open or return $self; my $osname = lc $OSNAME;
+   my $self = shift; $self->is_open or return $self;
 
-   if ($osname eq EVIL or $osname eq CYGWIN) { $self->_close_and_rename }
-   else { $self->_rename_and_close }
+   if ($ntfs) { $self->_close_and_rename } else { $self->_rename_and_close }
 
    $self->io_handle( undef );
    $self->is_open  ( FALSE );
@@ -612,10 +614,8 @@ sub open {
    $self->is_open and $self->close;
    $self->is_dir
       and return $self->_open_dir ( $self->_open_args( $mode, $perms ) );
-   $self->is_file
-      and return $self->_open_file( $self->_open_args( $mode, $perms ) );
 
-   return $self;
+   return $self->_open_file( $self->_open_args( $mode, $perms ) );
 }
 
 sub _open_args {
@@ -741,17 +741,20 @@ sub relative {
 }
 
 sub _rename_atomic {
-   my $self = shift; my $path = $self->_get_atomic_path or return;
+   my $self = shift; my $path = $self->_get_atomic_path; -f $path or return;
 
-   -f $path or return; File::Copy::move( $path, $self->name ) and return;
+   File::Copy::move( $path, $self->name ) and return;
 
-   my $osname = lc $OSNAME; unless ($osname eq EVIL or $osname eq CYGWIN) {
-      $self->_throw( error => 'Cannot rename [_1] to [_2]: [_3]',
-                     args  => [ $path, $self->name, $ERRNO ] );
-   }
+   $ntfs or $self->_throw( error => 'Path [_1] move to [_2] failed: [_3]',
+                           args  => [ $path, $self->name, $ERRNO ] );
 
-   # Try this instead on Winshite but fail silently
-   File::Copy::copy( $path, $self->name ); eval { unlink $path };
+   # Try this instead on Winshite
+   warn 'NTFS: Path '.$self->name." move failure: ${ERRNO}\n";
+   eval { unlink $self->name };
+   my $errno; File::Copy::copy( $path, $self->name ) or $errno = $ERRNO;
+   eval { unlink $path };
+   $errno and $self->_throw( error => 'Path [_1] copy to [_2] failed: [_3]',
+                             args  => [ $path, $self->name, $errno ];
    return;
 }
 
@@ -766,7 +769,7 @@ sub rmtree {
 sub seek {
    my ($self, @rest) = @_;
 
-   $self->is_open or $self->assert_open( lc $OSNAME eq EVIL ? q(r) : q(r+) );
+   $self->is_open or $self->assert_open( $osname eq EVIL ? q(r) : q(r+) );
 
    my @sunk = $self->io_handle->seek( @rest ); $self->error_check;
 
@@ -788,7 +791,7 @@ sub set_binmode {
    elsif ($self->_binmode) {
       CORE::binmode( $self->io_handle, $self->_binmode );
    }
-   elsif ($self->_binary) {
+   elsif ($self->_binary or $ntfs) {
       CORE::binmode( $self->io_handle );
    }
 

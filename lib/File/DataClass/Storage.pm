@@ -8,7 +8,7 @@ use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use Class::Null;
-use English     qw(-no_match_vars);
+use English qw(-no_match_vars);
 use File::Copy;
 use File::DataClass::Constants;
 use File::DataClass::Functions qw(is_stale merge_hash_data throw);

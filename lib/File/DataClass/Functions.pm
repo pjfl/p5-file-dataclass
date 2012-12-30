@@ -7,21 +7,21 @@ use warnings;
 use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::MOP;
-use English      qw(-no_match_vars);
 use File::DataClass::Constants;
+use English      qw(-no_match_vars);
 use Hash::Merge  qw(merge);
 use List::Util   qw(first);
 use Scalar::Util qw(blessed);
 use Try::Tiny;
 
 my $osname = lc $OSNAME;
-my $ntfs   = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
+my $ntfs   = $osname eq EVIL || $osname eq CYGWIN ? TRUE : FALSE;
 my @_functions;
 
 BEGIN {
    @_functions = ( qw(ensure_class_loaded is_arrayref is_coderef is_hashref
-                      is_member is_stale merge_attributes merge_hash_data
-                      throw) );
+                      is_member is_stale merge_attributes
+                      merge_hash_data throw) );
 }
 
 use Sub::Exporter::Progressive -setup => {
