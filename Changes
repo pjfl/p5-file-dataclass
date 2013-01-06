@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.13.428 2013-01-06
+         - Documented the limitations of MSWin32 and Cygwin platforms
+
 0.13.427 2012-12-30
          - Binmode on by default on ntfs
 

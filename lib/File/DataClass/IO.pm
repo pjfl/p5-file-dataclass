@@ -1586,11 +1586,16 @@ On C<MSWin32> and C<Cygwin> platforms there is a race condition when the atomic
 write option is used. This is caused by the filesystem which does not allow
 an open file to be renamed
 
+On C<MSWin32> and C<Cygwin> platforms if the move in atomic write option fails
+a copy and delete is attempted. This will throw if the copy fails. These
+platforms deny rename rights on newly created files by default
+
+On C<MSWin32> and C<Cygwin> platforms C<binmode> is automatically enabled
+
 =head1 Bugs and Limitations
 
-There are no known bugs in this module.
-Please report problems to the address below.
-Patches are welcome
+There are no known bugs in this module.  Please report problems to the
+address below. Patches are welcome
 
 =head1 Acknowledgements
 

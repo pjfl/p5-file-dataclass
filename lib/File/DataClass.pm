@@ -90,13 +90,14 @@ None
 
 =head1 Incompatibilities
 
-There are no known incompatibilities in this module
+On C<MSWin32> and C<Cygwin> it is assumed that NTFS is being used and
+that it does not support C<mtime> so caching on those platforms is
+disabled
 
 =head1 Bugs and Limitations
 
-There are no known bugs in this module.
-Please report problems to the address below.
-Patches are welcome
+There are no known bugs in this module.  Please report problems to the
+address below. Patches are welcome
 
 =head1 Acknowledgements
 
