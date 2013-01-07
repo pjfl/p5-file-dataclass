@@ -5,7 +5,7 @@ package File::DataClass::IO;
 use strict;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.13.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.14.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -38,8 +38,11 @@ has 'is_utf8'       => is => 'rw', isa => 'Bool',         default => FALSE ;
 has 'mode'          => is => 'rw', isa => 'File::DataClass::IO_Mode',
    default          => q(r);
 has 'name'          => is => 'rw', isa => 'Str',          default => NUL   ;
+has '_perms'        => is => 'rw', isa => 'Num',          default => PERMS,
+   init_arg         => 'perms';
 has 'sort'          => is => 'rw', isa => 'Bool',         default => TRUE  ;
 has 'type'          => is => 'rw', isa => 'Maybe[File::DataClass::IO_Type]';
+
 has '_assert'       => is => 'rw', isa => 'Bool',         default => FALSE ;
 has '_atomic'       => is => 'rw', isa => 'Bool',         default => FALSE ;
 has '_atomic_infix' => is => 'rw', isa => 'Str',          default => q(B_*);
@@ -55,28 +58,31 @@ has '_filter'       => is => 'rw', isa => 'Maybe[CodeRef]'                 ;
 has '_lock'         => is => 'rw', isa => 'Bool',         default => FALSE ;
 has '_lock_obj'     => is => 'rw', isa => 'Maybe[Object]',
    writer           => 'lock_obj';
-has '_perms'        => is => 'rw', isa => 'Num',          default => PERMS ;
 has '_separator'    => is => 'rw', isa => 'Str',          default => $RS   ;
 has '_umask'        => is => 'rw', isa => 'ArrayRef[Num]',
    default          => sub { [] };
 
-around BUILDARGS => sub {
-   my ($next, $class, $name, $mode, $perms) = @_; my $attrs = {};
+around 'BUILDARGS' => sub {
+   my ($next, $class, $name, $mode, $perms) = @_;
 
-   $name or return $attrs; my $is_blessed = blessed $name;
+   my $attr = {}; $name or return $attr;
 
-   $is_blessed and $name->isa( __PACKAGE__ ) and return $name;
-   $is_blessed and $name .= NUL; # Stringify path object
+   if (blessed $name and $name->isa( __PACKAGE__ )) {
+      $attr = { %{ $name } }; $attr->{perms} = delete $attr->{_perms};
+   }
+   else {
+      blessed $name and $name .= NUL; # Stringify path object
 
-   my $type = ref $name;
+      ref $name eq CODE and $name = $name->(); my $type = ref $name;
 
-   $type eq CODE and $name = $name->() and $type = ref $name;
-   $type eq HASH and return $name;
+      if ($type eq HASH) { $attr = $name }
+      else { $attr->{name} = $type eq ARRAY ? File::Spec->catfile( @{ $name } )
+                                            : $name }
+   }
 
-   $attrs->{name} = $type eq ARRAY ? File::Spec->catfile( @{ $name } ) : $name;
-   $mode and $attrs->{mode} = $mode; $perms and $attrs->{_perms} = $perms;
-
-   return $attrs;
+   defined $mode  and $attr->{mode } = $mode;
+   defined $perms and $attr->{perms} = $perms;
+   return $attr;
 };
 
 sub abs2rel {
@@ -759,7 +765,12 @@ sub _rename_atomic {
 }
 
 sub rmdir {
-   my $self = shift; return rmdir $self->name;
+   my $self = shift;
+
+   CORE::rmdir $self->name
+      or $self->_throw( error => 'Path [_1] not removed: [_2]',
+                        args  => [ $self->name, $ERRNO ] );
+   return $self;
 }
 
 sub rmtree {
@@ -771,9 +782,9 @@ sub seek {
 
    $self->is_open or $self->assert_open( $osname eq EVIL ? q(r) : q(r+) );
 
-   my @sunk = $self->io_handle->seek( @rest ); $self->error_check;
+   $self->io_handle->seek( @rest ); $self->error_check;
 
-   return wantarray ? @sunk : $sunk[ 0 ];
+   return $self;
 }
 
 sub separator {
@@ -957,17 +968,17 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-0.13.$Revision$
+0.14.$Revision$
 
 =head1 Synopsis
 
    use File::DataClass::IO;
 
    # Read the first line of a file and chomp the result
-   my $line = io( q(path_name) )->chomp->getline;
+   my $line = io( 'path_name' )->chomp->getline;
 
    # Write the line to file set permissions, atomic update and fcntl locking
-   io( q(path_name), q(w), q(0644) )->atomic->lock->print( $line );
+   io( 'path_name' )->perms( oct '0644' )->atomic->lock->print( $line );
 
 =head1 Description
 
@@ -977,9 +988,8 @@ heavy OO overloading. Only has methods for files and directories
 
 =head1 Subroutines/Methods
 
-If any errors occur the L</throw> method in the C<exception_class> is
-called. If that is not defined the module throws an L<Exception::Class>
-of its own
+If any errors occur the C<throw> method in the
+L<File::DataClass::Constants/EXCEPTION_CLASS> is called
 
 Methods beginning with an _ (underscore) are deemed private and should not
 be called from outside this package
@@ -993,7 +1003,8 @@ The constructor can be called with these method signatures:
 =item $io = File::DataClass::IO->new( { name => $pathname, ... } )
 
 A hash ref containing a list of key value pairs which are the object's
-attributes (where C<name> is the pathname)
+attributes (where C<name> is the pathname, C<mode> the read/write/append flag,
+and C<perms> the permissions on the file)
 
 =item $io = File::DataClass::IO->new( $pathname, [ $mode, $perms ] )
 
@@ -1001,7 +1012,7 @@ A list of values which are taken as the pathname, mode and
 permissions. The pathname can be an array ref, a scalar, or an object
 that stringifies to a scalar path
 
-=item $io = File::DataClass::IO->new( $obj )
+=item $io = File::DataClass::IO->new( $object_ref )
 
 An object which is a L<File::DataClass::IO>
 
@@ -1009,23 +1020,23 @@ An object which is a L<File::DataClass::IO>
 
 =head2 abs2rel
 
-   $path = io( q(relative_path_to_file) )->abs2rel( q(optional_base_path) );
+   $path = io( 'relative_path_to_file' )->abs2rel( 'optional_base_path' );
 
 Makes the pathname relative. Returns a path
 
 =head2 absolute
 
-   $io = io( q(relative_path_to_file) )->absolute( q(optional_base_path) );
+   $io = io( 'relative_path_to_file' )->absolute( 'optional_base_path' );
 
-Calls L</rel2abs> without an optional base path. Returns io object
+Calls L</rel2abs> without an optional base path. Returns an IO object ref
 
 =head2 all
 
-   $lines = io( q(path_to_file) )->all;
+   $lines = io( 'path_to_file' )->all;
 
 For a file read all the lines and return them as a single scalar
 
-   @entries = io( q(path_to_directory) )->all( $level );
+   @entries = io( 'path_to_directory' )->all( $level );
 
 For directories returns a list of IO objects for all files and
 subdirectories. Excludes L<File::Spec/curdir> and L<File::Spec/updir>
@@ -1040,31 +1051,31 @@ The items returned are sorted by name unless L</sort>(0) is used
 
 =head2 all_dirs
 
-   @entries = io( q(path_to_directory) )->all_dirs( $level );
+   @entries = io( 'path_to_directory' )->all_dirs( $level );
 
 Like C<< ->all( $level ) >> but returns only directories
 
 =head2 all_files
 
-   @entries = io( q(path_to_directory) )->all_files( $level );
+   @entries = io( 'path_to_directory' )->all_files( $level );
 
 Like C<< ->all( $level ) >> but returns only files
 
 =head2 append
 
-   io( q(path_to_file) )->append( $line1, $line2, ... );
+   io( 'path_to_file' )->append( $line1, $line2, ... );
 
 Opens the file in append mode and calls L</print> with the passed args
 
 =head2 appendln
 
-   io( q(path_to_file) )->appendln( $line, $line2, ... );
+   io( 'path_to_file' )->appendln( $line, $line2, ... );
 
 Opens the file in append mode and calls L</println> with the passed args
 
 =head2 assert
 
-   $io = io( q(path_to_file) )->assert;
+   $io = io( 'path_to_file' )->assert;
 
 Sets the private attribute C<_assert> to true. Causes the open methods
 to create the path to the directory before the file/directory is
@@ -1072,26 +1083,26 @@ opened
 
 =head2 assert_dirpath
 
-   io( q(path_to_file) )->assert_dirpath;
+   io( 'path_to_file' )->assert_dirpath;
 
 Create the given directory if it doesn't already exist
 
 =head2 assert_filepath
 
-   io( q(path_to_file) )->assert_filepath;
+   io( 'path_to_file' )->assert_filepath;
 
 Calls L</assert_dirpath> on the directory part of the full pathname
 
 =head2 assert_open
 
-   $io = io( q(path_to_file) )->assert_open( $mode, $perms );
+   $io = io( 'path_to_file' )->assert_open( $mode, $perms );
 
 Calls L</file> to default the type if its not already set and then
 calls L</open> passing in the optional arguments
 
 =head2 atomic
 
-   $io = io( q(path_to_file) )->atomic;
+   $io = io( 'path_to_file' )->atomic;
 
 Implements atomic file updates by writing to a temporary file and then
 renaming it on closure. This method uses the pattern in the
@@ -1099,34 +1110,40 @@ C<_atomic_infix> attribute to compute the temporary pathname
 
 =head2 atomic_suffix
 
+   $io = io( 'path_to_file' )->atomic_suffix( '.tmp' );
+
 Syntactic sugar. See L</atomix_infix>
 
 =head2 atomic_infix
 
+   $io = io( 'path_to_file' )->atomic_infix( 'B_*' );
+
 Defaults to C<B_*> (prefix). The C<*> is replaced by the filename to
 create a temporary file for atomic updates. If the value does not
-contain a C<*> then it is appended to the filename instead
+contain a C<*> then the value is appended to the filename instead
 (suffix). Attribute name C<_atomic_infix>
 
 =head2 basename
 
-   $dirname = io( q(path_to_file) )->basename( @suffixes );
+   $dirname = io( 'path_to_file' )->basename( @suffixes );
 
 Returns the L<File::Basename> C<basename> of the passed path
 
 =head2 binary
 
-   $io = io( q(path_to_file) )->binary;
+   $io = io( 'path_to_file' )->binary;
 
 Sets binary mode
 
 =head2 binmode
 
-   $io = io( q(path_to_file) )->binmode( $layer );
+   $io = io( 'path_to_file' )->binmode( $layer );
 
 Sets binmode to the given layer
 
 =head2 block_size
+
+   $io = io( 'path_to_file' )->block_size( 1024 );
 
 Defaults to 1024. The default block size used by the L</read> method
 
@@ -1147,30 +1164,34 @@ Returns the canonical path for the object
 
 =head2 catdir
 
-Create a new C<IO> directory object by concatenating this objects pathname
+   $io = io( 'path_to_directory' )->catdir( 'additional_directory_path' );
+
+Create a new IO directory object by concatenating this objects pathname
 with the one that is supplied
 
 =head2 catfile
 
-Create a new C<IO> file object by concatenating this objects pathname
+   $io = io( 'path_to_directory' )->catfile( 'additional_file_path' );
+
+Create a new IO file object by concatenating this objects pathname
 with the one that is supplied
 
 =head2 chmod
 
-   $io = $io->chmod( q(0644) );
+   $io = io( 'path_to_file' )->chmod( '0644' );
 
 Changes the permission on the file to the selected value. Permission values
 can be either octal or string
 
 =head2 chomp
 
-   $io = io( q(path_to_file) )->chomp;
+   $io = io( 'path_to_file' )->chomp;
 
 Causes input lines to be chomped when L</getline> or L</getlines> are called
 
 =head2 chown
 
-   $io = $io->chown( $uid, $gid );
+   $io = io( 'path_to_file' )->chown( $uid, $gid );
 
 Changes user and group ownership
 
@@ -1191,7 +1212,7 @@ filename. Unlocks the file if it was locked. Closes the file handle
 
 =head2 copy
 
-   $dest_obj = $io->copy( $destination_path_or_object );
+   $dest_obj = io( 'path_to_file' )->copy( $destination_path_or_object );
 
 Copies the file to the destination. The destination can be either a path or
 and IO object. Returns the destination object
@@ -1210,7 +1231,7 @@ L</close>
 
 =head2 delete_tmp_files
 
-   io( $tempdir )->delete_tmp_files( $template );
+   $io = io( $tempdir )->delete_tmp_files( $template );
 
 Delete temporary files for this process (temporary file names include
 the process id). Temporary files are stored in the C<$tempdir>. Can override
@@ -1227,17 +1248,19 @@ Initialises the current object as a directory
 
 =head2 dirname
 
-   $dirname = io( q(path_to_file) )->dirname;
+   $dirname = io( 'path_to_file' )->dirname;
 
 Returns the L<File::Basename> C<dirname> of the passed path
 
 =head2 empty
 
+   $bool = io( 'path_to_file' )->empty;
+
 Returns true if the pathname exists and is zero bytes in size
 
 =head2 encoding
 
-   $io = io( q(path_to_file) )->encoding( $encoding );
+   $io = io( 'path_to_file' )->encoding( $encoding );
 
 Apply the given encoding to the open file handle and store it on the
 C<_encoding> attribute
@@ -1249,6 +1272,8 @@ it L</throw>s an C<eIOError>
 
 =head2 exists
 
+   $bool = io( 'path_to_file' )->exists;
+
 Returns true if the pathname exists
 
 =head2 file
@@ -1257,13 +1282,19 @@ Initializes the current object as a file
 
 =head2 filename
 
+   $filename = io( 'path_to_file' )->filename;
+
 Returns the filename part of pathname
 
 =head2 filepath
 
+   $dirname = io( 'path_to_file' )->filepath;
+
 Returns the directory part of pathname
 
 =head2 filter
+
+   $io = io( 'path_to_directory' )->filter( sub { m{ \A A_ }msx } );
 
 Takes a subroutine reference that is used by the L</all> methods to
 filter which entries are returned. Called with C<$_> set to each
@@ -1271,12 +1302,16 @@ pathname in turn. It should return true if the entry is wanted
 
 =head2 getline
 
+   $line = io( 'path_to_file' )->getline;
+
 Asserts the file open for reading. Get one line from the file
 handle. Chomp the line if the C<_chomp> attribute is true. Check for
 errors. Close the file if the C<autoclose> attribute is true and end
 of file has been read past
 
 =head2 getlines
+
+   @lines = io( 'path_to_file' )->getlines;
 
 Like L</getline> but calls L</getlines> on the file handle and returns
 an array of lines
@@ -1292,11 +1327,6 @@ C<type> and C<name>
 
 Defaults to true. Attempts to read past end of file will cause the
 object to be closed
-
-=item exception_class
-
-Defaults to undef. Can be set to the name of an class that provides
-the L</throw> method
 
 =item io_handle
 
@@ -1322,70 +1352,80 @@ the C<type> attribute is false
 
 =head2 io
 
+   $io = io( 'path_to_file' );
+
 Subroutine exported by default. Returns a new IO object
 
 =head2 is_absolute
+
+   $bool = io( 'path_to_file' )->is_absolute;
 
 Return true if the pathname is absolute
 
 =head2 is_dir
 
-   $bool = io( q(path_to_file) )->is_dir;
+   $bool = io( 'path_to_file' )->is_dir;
 
-Tests to see if the C<IO> object is a directory
+Tests to see if the IO object is a directory
 
 =head2 is_executable
 
-   $bool = io( q(path_to_file) )->is_executable;
+   $bool = io( 'path_to_file' )->is_executable;
 
-Tests to see if the C<IO> object is executable
+Tests to see if the IO object is executable
 
 =head2 is_file
 
-   $bool = io( q(path_to_file) )->is_file;
+   $bool = io( 'path_to_file' )->is_file;
 
-Tests to see if the C<IO> object is a file
+Tests to see if the IO object is a file
 
 =head2 is_readable
 
-   $bool = io( q(path_to_file) )->is_readable;
+   $bool = io( 'path_to_file' )->is_readable;
 
-Tests to see if the C<IO> object is readable
+Tests to see if the IO object is readable
 
 =head2 is_reading
 
-Returns true if this C<IO> object is in one of the read modes
+   $bool = io( 'path_to_file' )->is_reading;
+
+Returns true if this IO object is in one of the read modes
 
 =head2 is_writable
 
-   $bool = io( q(path_to_file) )->is_writable;
+   $bool = io( 'path_to_file' )->is_writable;
 
 Tests to see if the C<IO> object is writable
 
 =head2 length
 
+   $positive_int = io( 'path_to_file' )->length;
+
 Returns the length of the internal buffer
 
 =head2 lock
 
-   $io = io( q(path_to_file) )->lock;
+   $io = io( 'path_to_file' )->lock;
 
 Causes L</_open_file> to set a shared flock if its a read an exclusive
 flock for any other mode
 
 =head2 mkdir
 
-   io( q(path_to_directory) )->mkdir;
+   io( 'path_to_directory' )->mkdir;
 
 Create the specified directory
 
 =head2 mkpath
 
-   io( q(path_to_directory) )->mkpath;
+   io( 'path_to_directory' )->mkpath;
 
 Create the specified path
 
 =head2 next
+
+   $io = io( 'path_to_directory' )->next;
 
 Calls L</dir> if the C<type> is not already set. Asserts the directory
 open for reading and then calls L</read_dir> to get the first/next
@@ -1393,7 +1433,7 @@ entry. It returns an IO object for that entry
 
 =head2 open
 
-   $io = io( q(path_to_file) )->open( $mode, $perms );
+   $io = io( 'path_to_file' )->open( $mode, $perms );
 
 Calls either L</_open_dir> or L</_open_file> depending on type. You do not
 usually need to call this method directly. It is called as required by
@@ -1415,23 +1455,25 @@ succeeds L</set_lock> and L</set_binmode> are called
 
 =head2 parent
 
-   $parent_io_object = $self->parent;
+   $parent_io_object = io( 'path_to_directory' )->parent;
 
 Return L</dirname> as an IO object
 
 =head2 pathname
 
-   $pathname = $io->pathname( $pathname );
+   $pathname = io( 'path_to_file' )->pathname( $pathname );
 
 Sets and returns then C<name> attribute
 
 =head2 perms
 
-   $io = io( q(path_to_file) )->perms( $perms );
+   $io = io( 'path_to_file' )->perms( $perms );
 
 Stores the given permissions on the C<_perms> attribute
 
 =head2 print
+
+   $io = io( 'path_to_file' )->print( $line1, $line2, ... );
 
 Asserts that the file is open for writing and then prints passed list
 of args to the open file handle. Throws C<ePrintError> if the C<print>
@@ -1439,14 +1481,14 @@ statement fails
 
 =head2 println
 
-   io( q(path_to_file) )->println( $line1, $line2, ... );
+   $io = io( 'path_to_file' )->println( $line1, $line2, ... );
 
 Calls L</print> appending a newline to each of the passed list args
 that doesn't already have one
 
 =head2 read
 
-   $bytes_read = io( q(path_to_file) )->read( $buffer, $length );
+   $bytes_read = io( 'path_to_file' )->read( $buffer, $length );
 
 Asserts that the pathname is open for reading then calls L</read> on
 the open file handle. If called with args then these are passed to the
@@ -1455,45 +1497,65 @@ instead. Returns the number of bytes read
 
 =head2 read_dir
 
-Asserts that the file is open for reading. If called in an array context
-returns a list of all the entries in the directory. If called in a scalar
-context returns the first/next entry in the directory
+   @io_object_refs = io( 'path_to_directory' )->read_dir;
+   $io = io( 'path_to_directory' )->read_dir;
+
+If called in an array context returns a list of all the entries in the
+directory. If called in a scalar context returns the first/next entry
+in the directory
 
 =head2 rel2abs
 
-   $path = io( q(relative_path_to_file) )->rel2abs( q(optional_base_path) );
+   $path = io( 'relative_path_to_file' )->rel2abs( 'optional_base_path' );
 
 Makes the pathname absolute. Returns a path
 
 =head2 relative
 
+   $relative_path = io( 'path_to_file' )->relative;
+
 Calls L</abs2rel> without an optional base path
 
 =head2 rmdir
 
-Remove the director
+   $io = io( 'path_to_directory' )->rmdir;
+
+Remove the directory
 
 =head2 rmtree
+
+   $number_of_files_deleted = io( 'path_to_directory' )->rmtree;
 
 Remove the directory tree
 
 =head2 seek
 
+   $io = io( 'path_to_file' )->seek( $position, $whence );
+
 Seeks to the selected point in the file
 
 =head2 separator
+
+   $io = io( 'path_to_file' )->separator( $RS );
 
 Set the record separator used in calls to getlines and chomp
 
 =head2 set_binmode
 
+   $io = io( 'path_to_file' )->set_binmode;
+
 Sets the currently selected binmode on the open file handle
 
 =head2 set_lock
 
+   $io = io( 'path_to_file' )->set_lock;
+
 Calls L</flock> on the open file handle
 
 =head2 slurp
+
+   $lines = io( 'path_to_file' )->slurp;
+   @lines = io( 'path_to_file' )->slurp;
 
 In a scalar context calls L</all> and returns its value. In an array
 context returns the list created by splitting the scalar return value
@@ -1501,24 +1563,32 @@ on the system record separator. Will chomp each line if required
 
 =head2 splitdir
 
+   @directories = io( 'path_to_directory' )->splitdir;
+
 Proxy for L<File::Spec/splitdir>
 
 =head2 splitpath
+
+   ($volume, $directories, $file) = io( 'path_to_file' )->splitpath;
 
 Proxy for L<File::Spec/splitpath>
 
 =head2 stat
 
+   $stat_hash_ref = io( 'path_to_file' )->stat;
+
 Returns a hash of the values returned by a L</stat> call on the pathname
 
 =head2 substitute
 
-   $io = io( q(path_to_file) )->substitute( $search, $replace );
+   $io = io( 'path_to_file' )->substitute( $search, $replace );
 
 Substitutes C<$search> regular expression for C<$replace> string on each
 line of the given file
 
 =head2 tempfile
+
+   $io = io( 'path_to_temp_directory' )->tempfile( $template );
 
 Create a randomly named temporary file in the C<name>
 directory. The file name is prefixed with the creating processes id
@@ -1526,9 +1596,13 @@ and the temporary directory defaults to F</tmp>
 
 =head2 _throw
 
+   io( 'path_to_file' )->_throw( error => 'message', args => [] );
+
 Exposes the C<throw> method in the exception class
 
 =head2 touch
+
+   $io = io( 'path_to_file' )->touch;
 
 Create a zero length file if one does not already exist with given
 file system permissions which default to 0644 octal. If the file
@@ -1536,20 +1610,26 @@ already exists update it's last modified datetime stamp
 
 =head2 unlink
 
-Delete the specified file
+   $bool = io( 'path_to_file' )->unlink;
+
+Delete the specified file. Returns true if successful
 
 =head2 unlock
+
+   $io = io( 'path_to_file' )->unlock;
 
 Calls C<flock> on the open file handle with the C<LOCK_UN> option to
 release the L<Fcntl> lock if one was set. Called by the L</close> method
 
 =head2 utf8
 
+   $io = io( 'path_to_file' )->utf8;
+
 Sets the current encoding to utf8
 
 =head2 write
 
-   $bytes_written = io( q(pathname) )->write( $buffer, $length );
+   $bytes_written = io( 'pathname' )->write( $buffer, $length );
 
 Asserts that the file is open for writing then write the C<$length> bytes
 from C<$buffer>. Checks for errors and returns the number of bytes
@@ -1562,7 +1642,9 @@ None
 
 =head1 Configuration and Environment
 
-None
+L<File::DataClass::Constants> has a class attribute C<Exception_Class> which
+defaults to L<File::DataClass::Exception>. Set this attribute to the
+classname used by the L</throw> method
 
 =head1 Dependencies
 
@@ -1617,7 +1699,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2012 Peter Flanigan. All rights reserved
+Copyright (c) 2013 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
