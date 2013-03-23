@@ -10,16 +10,20 @@ use File::DataClass::Constants;
 use Lingua::EN::NameParse;
 use Moose;
 
-extends qw(File::DataClass::Storage);
+extends q(File::DataClass::Storage);
 
 augment '_read_file' => sub {
    my ($self, $rdr) = @_;
+
+   $self->encoding and $rdr->encoding( $self->encoding );
 
    return $self->_read_filter( [ $rdr->chomp->getlines ] );
 };
 
 augment '_write_file' => sub {
    my ($self, $wtr, $data) = @_;
+
+   $self->encoding and $wtr->encoding( $self->encoding );
 
    $wtr->println( @{ $self->_write_filter( $data ) } );
    return $data;
@@ -28,52 +32,52 @@ augment '_write_file' => sub {
 # Private methods
 
 sub _deflate {
-   my ($self, $hash, $id) = @_; my $attrs = $hash->{ $id };
+   my ($self, $hash, $id) = @_; my $attr = $hash->{ $id };
 
-   if (exists $attrs->{members}) {
-       $attrs->{members} = join q(,), @{ $attrs->{members} || [] };
+   if (exists $attr->{members}) {
+       $attr->{members} = join q(,), @{ $attr->{members} || [] };
    }
 
-   if (exists $attrs->{first_name}) {
-      my $gecos = $attrs->{first_name} || NUL;
+   if (exists $attr->{first_name}) {
+      my $gecos = $attr->{first_name} || NUL;
 
-      $gecos .= $attrs->{last_name} ? SPC.$attrs->{last_name} : NUL;
+      $gecos .= $attr->{last_name} ? SPC.$attr->{last_name} : NUL;
 
-      if ($attrs->{location} or $attrs->{work_phone} or $attrs->{home_phone}) {
-         $gecos .= q(,).($attrs->{location  } || q(?));
-         $gecos .= q(,).($attrs->{work_phone} || q(?));
-         $gecos .= q(,).($attrs->{home_phone} || q(?));
+      if ($attr->{location} or $attr->{work_phone} or $attr->{home_phone}) {
+         $gecos .= q(,).($attr->{location  } || q(?));
+         $gecos .= q(,).($attr->{work_phone} || q(?));
+         $gecos .= q(,).($attr->{home_phone} || q(?));
       }
 
-      $attrs->{gecos} = $gecos;
+      $attr->{gecos} = $gecos;
    }
 
    return;
 }
 
 sub _inflate {
-   my ($self, $hash, $id, $name_parser) = @_; my $attrs = $hash->{ $id };
+   my ($self, $hash, $id, $name_parser) = @_; my $attr = $hash->{ $id };
 
-   if (exists $attrs->{members}) {
-       $attrs->{members} = [ split m{ , }mx, $attrs->{members} || NUL ];
+   if (exists $attr->{members}) {
+       $attr->{members} = [ split m{ , }mx, $attr->{members} || NUL ];
    }
 
-   if (exists $attrs->{gecos}) {
+   if (exists $attr->{gecos}) {
       my %names  = ( surname_1 => NUL, );
       my @fields = qw(full_name location work_phone home_phone);
 
-      @{ $attrs }{ @fields } = split m{ , }mx, $attrs->{gecos} || NUL;
+      @{ $attr }{ @fields } = split m{ , }mx, $attr->{gecos} || NUL;
 
       # Weird logic is correct from L::EN::NP POD
-      if ($attrs->{full_name}
-          and not $name_parser->parse( $attrs->{full_name} )) {
+      if ($attr->{full_name}
+          and not $name_parser->parse( $attr->{full_name} )) {
          %names = $name_parser->components;
       }
-      else { $names{given_name_1} = $attrs->{full_name} || $id }
+      else { $names{given_name_1} = $attr->{full_name} || $id }
 
-      $attrs->{first_name} = $names{given_name_1};
-      $attrs->{last_name } = $names{surname_1   };
-      delete $attrs->{full_name}; delete $attrs->{gecos};
+      $attr->{first_name} = $names{given_name_1};
+      $attr->{last_name } = $names{surname_1   };
+      delete $attr->{full_name}; delete $attr->{gecos};
    }
 
    return;
@@ -84,15 +88,15 @@ sub _read_filter {
 
    my $source_name = $self->schema->source_name;
    my $fields      = $self->schema->source->attributes;
-   my %args        = ( auto_clean => 1, force_case => 1, lc_prefix => 1 );
+   my %args        = ( force_case => 1, lc_prefix => 1 );
    my $name_parser = Lingua::EN::NameParse->new( %args );
 
    for my $line (@{ $buf || [] }) {
-      my ($id, @rest) = split m{ : }mx, $line; my %attrs = ();
+      my ($id, @rest) = split m{ : }mx, $line; my %attr = ();
 
-      @attrs{ @{ $fields } } = @rest;
-      $attrs{ _order_by } = $order++;
-      $hash->{ $id } = \%attrs;
+      @attr{ @{ $fields } } = @rest;
+      $attr{ _order_by    } = $order++;
+      $hash->{ $id } = \%attr;
       $self->_inflate( $hash, $id, $name_parser );
    }
 
@@ -106,17 +110,15 @@ sub _write_filter {
    my $fields      = $self->schema->source->attributes;
    my $hash        = $data->{ $source_name };
 
-   $source_name eq q(passwd) and $fields = [ @{ $fields }[0..5] ];
+   $source_name eq q(passwd) and $fields = [ @{ $fields }[ 0 .. 5 ] ];
 
    for my $id (sort { __original_order( $hash, $a, $b ) } keys %{ $hash }) {
       $self->_deflate( $hash, $id );
 
-      my $attrs = $hash->{ $id }; delete $attrs->{_order_by};
-      my $line  = join q(:),
-                  map  { defined $attrs->{ $_ } ? $attrs->{ $_ } : NUL }
-                  @{ $fields };
+      my $attr = $hash->{ $id }; delete $attr->{_order_by};
+      my $line = join q(:), map { $attr->{ $_ } // NUL } @{ $fields };
 
-      push @{ $buf }, $id.q(:).$line;
+      push @{ $buf }, "${id}:${line}";
    }
 
    return $buf;

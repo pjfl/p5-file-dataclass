@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - Fixed UTF-8 handling in File::UnixAuth
+
 0.14.429 2013-01-07
          - Updated copyright year
          - Updated POD in IO.pm

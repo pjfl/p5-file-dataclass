@@ -962,6 +962,8 @@ __END__
 
 =pod
 
+=encoding utf8
+
 =head1 Name
 
 File::DataClass::IO - Better IO syntax
