@@ -16,6 +16,7 @@
 ^MANIFEST\.SKIP$
 ^MYMETA\.json$
 ^MYMETA\.yml$
+^README\.md$
 ^SIGNATURE$
 
 # Avoid Module::Build generated and utility files.
