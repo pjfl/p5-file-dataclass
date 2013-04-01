@@ -1,4 +1,4 @@
-# @(#)Ident: Bob.pm 2013-03-29 19:16 pjf ;
+# @(#)Ident: Bob.pm 2013-03-29 20:39 pjf ;
 
 package Bob;
 
@@ -33,8 +33,6 @@ sub new {
         create_license     => 1,
         create_packlist    => 0,
         create_readme      => 1,
-        create_readme_md   => defined $p->{create_readme_md}
-                              ? $p->{create_readme_md} : 1,
         dist_version_from  => $class_path,
         license            => $p->{license} || q(perl),
         meta_merge         => __get_resources( $p, $distname ),
@@ -80,7 +78,7 @@ sub __get_git_repository {
       and $repo = (split q( ), (map  { s{ : }{/}mx; s{ @ }{://}mx; $_ }
                                 grep { m{ \A origin \s+ .+ fetch }mx }
                                 split  m{ [\n]  }mx,
-                                $vcs->git( qw(remote -v) ))[ 0 ])[ 1 ]
+                                $vcs->git( qw(remote -v) ))[ 0 ] || q())[ 1 ]
       and return $repo;
 
    return;
@@ -96,7 +94,8 @@ sub __get_notes {
    my $p = shift; my $notes = exists $p->{notes} ? $p->{notes} : {};
 
    # Optionally create README.md and / or README.pod files
-   $notes->{create_readme_md } = $p->{create_readme_md } || 0;
+   $notes->{create_readme_md } = defined $p->{create_readme_md}
+                               ? $p->{create_readme_md } :  1;
    $notes->{create_readme_pod} = $p->{create_readme_pod} || 0;
    $notes->{is_cpan_testing  } = CPANTesting::is_testing();
    # Add a note to stop CPAN testing if requested in Build.PL
