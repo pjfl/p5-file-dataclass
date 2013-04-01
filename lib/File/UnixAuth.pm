@@ -4,7 +4,7 @@ package File::UnixAuth;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.14.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev$ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use File::UnixAuth::Result;
@@ -57,7 +57,7 @@ File::UnixAuth - Result source definitions for the Unix authentication files
 
 =head1 Version
 
-0.14.$Revision$
+0.15.$Revision$
 
 =head1 Synopsis
 

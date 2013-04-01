@@ -4,7 +4,7 @@ package File::DataClass::Storage::XML;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.14.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use File::DataClass::Constants;
@@ -115,7 +115,7 @@ File::DataClass::Storage::XML - Read/write XML data storage model
 
 =head1 Version
 
-0.14.$Revision$
+0.15.$Revision$
 
 =head1 Synopsis
 

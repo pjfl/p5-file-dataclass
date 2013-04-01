@@ -5,7 +5,7 @@ package File::DataClass::IO;
 use strict;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.14.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -970,7 +970,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-0.14.$Revision$
+0.15.$Revision$
 
 =head1 Synopsis
 

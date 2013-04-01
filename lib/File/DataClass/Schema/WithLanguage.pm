@@ -4,7 +4,7 @@ package File::DataClass::Schema::WithLanguage;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.14.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use File::DataClass::Constants;
@@ -62,7 +62,7 @@ File::DataClass::Schema::WithLanguage - Adds language support to the default sch
 
 =head1 Version
 
-0.14.$Revision$
+0.15.$Revision$
 
 =head1 Synopsis
 
