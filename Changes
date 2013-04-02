@@ -1,5 +1,10 @@
 Revision history for File::DataClass
 
+0.15.434 2012-04-02
+         - Updated inc::Bob to v1.9
+         - Updated Moose and MooseX::ClassAttribute dependencies to aviod
+           broken Moose 2.0800
+
 0.15.431 2013-04-01
          - Updated inc::Bob to v1.8
          - Added OctalNum constraint
