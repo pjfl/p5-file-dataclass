@@ -109,7 +109,7 @@ The API for the file IO was taken from L<IO::All>
 
 =head1 Author
 
-Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
+Peter Flanigan, C<< @ <Support at RoxSoft dot co dot uk> >>
 
 =head1 License and Copyright
 
