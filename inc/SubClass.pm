@@ -1,5 +1,5 @@
-# @(#)Ident: SubClass.pm 2013-03-27 23:41 pjf ;
-# Bob-Version: 1.8
+# @(#)Ident: SubClass.pm 2013-04-03 17:42 pjf ;
+# Bob-Version: 1.11
 
 use Pod::Select;
 
@@ -19,14 +19,42 @@ sub ACTION_distmeta {
 sub _create_readme_md {
    print "Creating README.md using Pod::Markdown\n"; require Pod::Markdown;
 
+   # Monkey patch Pod::Markdown to allow for configurable URL prefixes
+   no warnings qw(redefine); *Pod::Markdown::_resolv_link = \&_my_resolve_link;
+
    my $self   = shift;
-   my $parser = Pod::Markdown->new;
+   my $parser = Pod::Markdown->new( url_prefix => $self->notes->{url_prefix} );
    my $path   = $self->dist_version_from;
 
    open my $in,  '<', $path       or die "Path ${path} cannot open: ${!}";
+   $parser->parse_from_filehandle( $in ); close $in;
    open my $out, '>', 'README.md' or die "File README.md cannot open: ${!}";
-   $parser->parse_from_filehandle( $in );
-   print {$out} $parser->as_markdown;
-   close $in; close $out;
+   print {$out} $parser->as_markdown; close $out;
    return;
+}
+
+sub _my_resolve_link {
+   my ($self, $cmd, $arg) = @_; local $self->_private->{InsideLink} = 1;
+
+   my ($text, $inferred, $name, $section, $type) =
+      map { $_ && $self->interpolate( $_, 1 ) }
+      Pod::ParseLink::parselink( $arg );
+   my $url = q();
+
+   if    ($type eq q(url)) { $url = $name }
+   elsif ($type eq q(man)) {
+      my ($page, $part) = $name =~ m{ \A ([^\(]+) (?:[\(] (\S*) [\)])? }mx;
+      my $prefix = $self->{man_prefix} || q(http://man.he.net/man);
+
+      $url = $prefix.($part || 1).q(/).($page || $name);
+   } else {
+      my $prefix = $self->{url_prefix} || q(http://search.cpan.org/perldoc?);
+
+      $name    and $url  = "${prefix}${name}";
+      $section and $url .= "#${section}";
+   }
+
+   $url and return sprintf '[%s](%s)', ($text || $inferred), $url;
+
+   return sprintf '%s<%s>', $cmd, $arg;
 }

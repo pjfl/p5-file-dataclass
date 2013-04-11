@@ -4,7 +4,7 @@ package File::DataClass::ResultSet;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use File::DataClass::Constants;
@@ -377,7 +377,7 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
-0.15.$Revision$
+0.16.$Revision$
 
 =head1 Synopsis
 

@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+0.16.437 2013-04-11
+         - Split subclasses out into separate distributions
+         - Updated inc::Bob to v1.11
+
 0.15.434 2012-04-02
          - Updated inc::Bob to v1.9
          - Updated Moose and MooseX::ClassAttribute dependencies to aviod

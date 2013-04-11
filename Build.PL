@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev$ =~ /\d+/gmx );
 
 Bob->new( {
    module    => q(File::DataClass),
@@ -13,21 +13,17 @@ Bob->new( {
       'namespace::autoclean'       => 0.13,
       'namespace::clean'           => 0.22,
       'overload'                   => 1.04,
-      'parent'                     => 0.224,
       'version'                    => 0.74,
       'Cache::FastMmap'            => 1.36,
       'Carp'                       => 0,
       'CHI'                        => 0.33,
       'Class::Null'                => 1.09,
-      'Date::Format'               => 2.22,
-      'Encode'                     => 2.12,
       'Exception::Class'           => 1.23,
       'File::Path'                 => 2.08,
       'File::Temp'                 => 0.20,
       'Hash::Merge'                => 0.08,
       'IO::Dir'                    => 1.05,
       'IO::File'                   => 1.13,
-      'IPC::Cmd'                   => 0.68,
       'JSON'                       => 2.16,
       'Moose'                      => 2.0801,
       'MooseX::ClassAttribute'     => 0.27,
