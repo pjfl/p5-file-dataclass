@@ -619,7 +619,7 @@ sub open {
    $self->type or $self->_set_type; $self->type or $self->file;
    $self->is_open and $self->close;
    $self->is_dir
-      and return $self->_open_dir ( $self->_open_args( $mode, $perms ) );
+      and return $self->_open_dir( $self->_open_args( $mode, $perms ) );
 
    return $self->_open_file( $self->_open_args( $mode, $perms ) );
 }
