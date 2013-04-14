@@ -1,6 +1,6 @@
 Revision history for File::DataClass
 
-0.16.437 2013-04-11
+0.16.438 2013-04-14
          - Split subclasses out into separate distributions
          - Updated inc::Bob to v1.11
 
