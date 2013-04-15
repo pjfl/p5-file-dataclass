@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+0.16.442 2013-04-15
+         - Added Stauner d2777308-a5e7-11e2-83b7-87183f85d660 to list of
+           CPAN Testers who should pack up and go home
+
 0.16.438 2013-04-14
          - Split subclasses out into separate distributions
          - Updated inc::Bob to v1.11
