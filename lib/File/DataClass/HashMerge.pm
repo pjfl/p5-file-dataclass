@@ -29,7 +29,8 @@ sub merge {
       }
    }
 
-   $updated and ${ $dest_ref }->{name} = $src->{name};
+# TODO: Should this be removed? Keeps adding the name attr to records
+#   $updated and ${ $dest_ref }->{name} = $src->{name};
 
    return $updated;
 }

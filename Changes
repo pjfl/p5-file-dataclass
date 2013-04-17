@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+         - Stopped HashMerge adding the name attribute
+
 0.16.442 2013-04-15
          - Added Stauner d2777308-a5e7-11e2-83b7-87183f85d660 to list of
            CPAN Testers who should pack up and go home
