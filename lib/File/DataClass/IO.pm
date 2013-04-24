@@ -659,7 +659,7 @@ sub _open_file {
       $self->_throw( error => 'File [_1] cannot open', args  => [ $path ] );
    }
 
-   $self->_umask_pop;
+   $self->_umask_pop; CORE::chmod $perms, $path;
    $self->is_open( TRUE );
    $self->set_binmode;
    $self->set_lock;
@@ -756,8 +756,7 @@ sub _rename_atomic {
 
    # Try this instead on Winshite
    warn 'NTFS: Path '.$self->name." move failure: ${OS_ERROR}\n";
-   eval { unlink $self->name };
-   my $os_error;
+   eval { unlink $self->name }; my $os_error;
    File::Copy::copy( $path, $self->name ) or $os_error = $OS_ERROR;
    eval { unlink $path };
    $os_error and $self->_throw( error => 'Path [_1] copy to [_2] failed: [_3]',
@@ -855,9 +854,11 @@ sub stat {
 }
 
 sub substitute {
-   my ($self, $search, $replace) = @_; $search or return $self;
+   my ($self, $search, $replace) = @_;
 
-   my $wtr = io( $self->name )->atomic; $replace ||= NUL;
+   $search or return $self; $replace ||= NUL;
+
+   my $wtr = io( $self->name )->perms( $self->_untainted_perms )->atomic;
 
    for ($self->getlines) { s{ $search }{$replace}gmx; $wtr->print( $_ ) }
 
