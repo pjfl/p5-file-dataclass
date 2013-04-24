@@ -12,7 +12,8 @@ use Moose;
 
 extends qw(File::DataClass::Storage::XML);
 
-my $BORKED  = $XML::Bare::VERSION > 0.45 ? TRUE : FALSE;
+my $XBVER   = $XML::Bare::VERSION;
+my $BORKED  = $XBVER > 0.45 && $XBVER < 0.48 ? TRUE : FALSE;
 my $PADDING = q(  );
 
 augment '_read_file' => sub {
