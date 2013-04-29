@@ -8,15 +8,15 @@ use version; our $VERSION = qv( sprintf '0.17.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
-use MooseX::Types -declare => [ q(ExceptionType) ];
+use MooseX::Types -declare => [ q(ExceptionTC) ];
 use MooseX::Types::Moose       qw(ClassName);
 use File::DataClass::Exception;
 
-subtype ExceptionType, as ClassName,
-   where   { $_->can( q(throw) ) } =>
+subtype ExceptionTC, as ClassName,
+   where   { $_->can( q(throw) ) },
    message { "Class ${_} is not loaded or has no throw method" };
 
-class_has 'Exception_Class' => is => 'rw', isa => ExceptionType,
+class_has 'Exception_Class' => is => 'rw', isa => ExceptionTC,
    default                  => q(File::DataClass::Exception);
 
 my @constants;

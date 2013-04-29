@@ -9,14 +9,14 @@ use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
-use MooseX::AttributeShortcuts;
 use MooseX::Types::Common::String  qw(NonEmptySimpleStr);
 use MooseX::Types::Common::Numeric qw(PositiveInt);
 use MooseX::Types::Moose           qw(ArrayRef);
 
 # Class attributes
-class_has 'Ignore' => is => 'ro', isa => ArrayRef,
-   default         => sub { [ qw(File::DataClass::IO) ] };
+class_has 'Ignore' => is => 'ro', isa => ArrayRef, traits => [ 'Array' ],
+   default         => sub { [ qw(File::DataClass::IO) ] },
+   handles         => { ignore_class => 'push' };
 
 # Object attributes (public)
 has 'args'   => is => 'ro',   isa => ArrayRef, default => sub { [] };
@@ -30,7 +30,8 @@ has 'error'  => is => 'ro',   isa => NonEmptySimpleStr,
 has 'ignore' => is => 'ro',   isa => ArrayRef,
    default   => sub { __PACKAGE__->Ignore }, init_arg => undef;
 
-has 'leader' => is => 'lazy', isa => NonEmptySimpleStr;
+has 'leader' => is => 'ro',   isa => NonEmptySimpleStr,
+   builder   => 'build_leader', init_arg => undef, lazy => 1;
 
 has 'level'  => is => 'ro',   isa => PositiveInt, default => 1;
 
@@ -176,31 +177,19 @@ None
 
 =item L<overload>
 
-=item L<Devel::StackTrace>
-
 =item L<File::DataClass::TraitFor::ThrowingExceptions>
 
 =item L<File::DataClass::TraitFor::TracingStacks>
-
-=item L<List::Util>
 
 =item L<Moose>
 
 =item L<MooseX::ClassAttribute>
 
-=item L<MooseX::AttributeShortcuts>
-
-=item L<MooseX::Types>
-
 =item L<MooseX::Types::Common::String>
 
 =item L<MooseX::Types::Common::Numeric>
 
-=item L<MooseX::Types::LoadableClass>
-
 =item L<MooseX::Types::Moose>
-
-=item L<Scalar::Util>
 
 =back
 

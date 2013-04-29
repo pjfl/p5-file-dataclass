@@ -1,4 +1,4 @@
-# @(#)Ident: TracingStacks.pm 2013-04-29 14:52 pjf ;
+# @(#)Ident: TracingStacks.pm 2013-04-29 17:07 pjf ;
 
 package File::DataClass::TraitFor::TracingStacks;
 
@@ -6,7 +6,6 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
 
 use Moose::Role;
-use MooseX::AttributeShortcuts;
 use MooseX::Types   -declare => [ q(StackTrace) ];
 use MooseX::Types::Moose         qw(ArrayRef HashRef Object);
 use MooseX::Types::LoadableClass qw(LoadableClass);
@@ -22,12 +21,14 @@ subtype StackTrace, as Object,
                         : "Scalar ${_} is not on object reference" };
 
 # Object attributes (public)
-has 'trace'        => is => 'lazy', isa => StackTrace,
-   handles         => [ qw(frames) ], init_arg => undef;
+has 'trace'        => is => 'ro', isa => StackTrace,
+   builder         => '_build_trace', handles => [ qw(frames) ],
+   init_arg        => undef, lazy => 1;
 
-has 'trace_args'   => is => 'lazy', isa => HashRef;
+has 'trace_args'   => is => 'ro', isa => HashRef,
+   builder         => '_build_trace_args', lazy => 1;
 
-has 'trace_class'  => is => 'ro',   isa => LoadableClass, coerce => 1,
+has 'trace_class'  => is => 'ro', isa => LoadableClass, coerce => 1,
    default         => sub { q(Devel::StackTrace) };
 
 # Construction
@@ -38,7 +39,7 @@ after 'BUILD' => sub {
 };
 
 # Public methods
-sub _build_leader {
+sub build_leader {
    my $self = shift; my $level = $self->level;
 
    my @frames = $self->frames; my ($leader, $line, $package);
@@ -131,12 +132,13 @@ __END__
 
 =head1 Name
 
-File::DataClass::TraitFor::TracingStacks - One-line description of the modules purpose
+File::DataClass::TraitFor::TracingStacks - Provides a minimalist stacktrace
 
 =head1 Synopsis
 
-   use File::DataClass::TraitFor::TracingStacks;
-   # Brief but working code examples
+   use Moose;
+
+   with 'File::DataClass::TraitFor::TracingStacks';
 
 =head1 Version
 
@@ -144,9 +146,11 @@ This documents version v0.1.$Rev$ of L<File::DataClass::TraitFor::TracingStacks>
 
 =head1 Description
 
+Provides a minimalist stacktrace
+
 =head1 Configuration and Environment
 
-Requires the C<ignore> and C<attributes> in the consuming class
+Requires the C<ignore> and C<level> attributes in the consuming class
 
 Defines the following attributes;
 
@@ -173,7 +177,7 @@ A loadable class which defaults to L<Devel::StackTrace>
 
 Forces the instantiation of the C<trace> attribute
 
-=head2 _build_leader
+=head2 build_leader
 
 A builder for the C<leader> attribute defined in the consuming class
 
@@ -201,8 +205,6 @@ None
 =item L<List::Util>
 
 =item L<Moose::Role>
-
-=item L<MooseX::AttributeShortcuts>
 
 =item L<MooseX::Types>
 

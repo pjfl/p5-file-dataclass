@@ -1,4 +1,4 @@
-# @(#)Ident: ThrowingExceptions.pm 2013-04-29 14:53 pjf ;
+# @(#)Ident: ThrowingExceptions.pm 2013-04-29 16:03 pjf ;
 
 package File::DataClass::TraitFor::ThrowingExceptions;
 
@@ -52,18 +52,21 @@ __END__
 
 =head1 Name
 
-File::DataClass::TraitFor::ThrowingExceptions - One-line description of the modules purpose
+File::DataClass::TraitFor::ThrowingExceptions - Detects and throws exceptions
 
 =head1 Synopsis
 
-   use File::DataClass::TraitFor::ThrowingExceptions;
-   # Brief but working code examples
+   use Moose;
+
+   with 'File::DataClass::TraitFor::ThrowingExceptions';
 
 =head1 Version
 
 This documents version v0.1.$Rev$ of L<File::DataClass::TraitFor::ThrowingExceptions>
 
 =head1 Description
+
+Detects and throws exceptions
 
 =head1 Configuration and Environment
 

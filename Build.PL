@@ -26,7 +26,6 @@ Bob->new( {
       'IO::File'                     => 1.13,
       'JSON'                         => 2.16,
       'Moose'                        => 2.0801,
-      'MooseX::AttributeShortcuts'   => 0.014,
       'MooseX::ClassAttribute'       => 0.27,
       'MooseX::Types'                => 0.25,
       'MooseX::Types::Common'        => 0.001002,
