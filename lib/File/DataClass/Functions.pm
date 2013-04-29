@@ -4,7 +4,7 @@ package File::DataClass::Functions;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.16.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.17.%d', q$Rev$ =~ /\d+/gmx );
 
 use Class::MOP;
 use File::DataClass::Constants;
@@ -117,7 +117,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-0.16.$Revision$
+0.17.$Revision$
 
 =head1 Synopsis
 
