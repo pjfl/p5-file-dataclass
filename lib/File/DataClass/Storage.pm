@@ -41,7 +41,7 @@ sub create_or_update {
 
       not $updating and exists $data->{ $element }->{ $name }
          and throw error => 'File [_1] element [_2] already exists',
-                   args  => [ $path, $name ], level => 4;
+                   args  => [ $path, $name ], level => 2;
 
       $updated = File::DataClass::HashMerge->merge
          ( \$data->{ $element }->{ $name }, $result, $filter );
@@ -149,7 +149,7 @@ sub txn_do {
       if ($wantarray) { @{ $res } = $code_ref->() }
       else { $res = $code_ref->() }
    }
-   catch { $self->_lock->reset( k => $key ); throw error => $_, level => 7 };
+   catch { $self->_lock->reset( k => $key ); throw error => $_, level => 4 };
 
    $self->_lock->reset( k => $key );
 
@@ -163,7 +163,7 @@ sub update {
 
    my $updated = $self->create_or_update( $path, $result, $updating, $cond )
       or throw class => 'NothingUpdated', error => 'Nothing updated',
-               level => 5;
+               level => 2;
 
    return $updated;
 }
@@ -171,13 +171,13 @@ sub update {
 sub validate_params {
    my ($self, $path, $element) = @_;
 
-   $path or throw error => 'No file path specified', level => 4;
+   $path or throw error => 'No file path specified', level => 2;
 
    blessed $path or throw error => 'Path [_1] is not blessed',
-                          args  => [ $path ], level => 4;
+                          args  => [ $path ], level => 2;
 
    $element or throw error => 'Path [_1] no element specified',
-                     args  => [ $path ], level => 4;
+                     args  => [ $path ], level => 2;
 
    return;
 }
@@ -223,7 +223,7 @@ sub _write_file {
       $path->exists or $path->perms( $self->_perms );
 
       if ($self->backup and $path->exists and not $path->empty) {
-         copy( $path.NUL, $path.$self->backup ) or throw $ERRNO;
+         copy( $path.NUL, $path.$self->backup ) or throw $OS_ERROR;
       }
 
       try   { $data = inner( $path->atomic->lock, $data ); $path->close }

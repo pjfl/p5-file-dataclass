@@ -356,7 +356,7 @@ sub _validate_params {
    my ($self, $args) = @_; $args ||= {};
 
    my $name = $args->{name}
-      or throw error => 'No element name specified', level => 4;
+      or throw error => 'No element name specified', level => 2;
 
    return $name;
 }

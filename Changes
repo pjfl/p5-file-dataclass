@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.17.447 2012-04-29
+         - Enhanced Exception class
+
 0.16.446 2012-04-24
          - Preserve execute permission during substitute method
 
