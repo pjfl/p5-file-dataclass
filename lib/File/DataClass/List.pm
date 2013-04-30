@@ -1,10 +1,10 @@
-# @(#)$Id$
+# @(#)$Ident: List.pm 2013-04-29 23:54 pjf ;
 
 package File::DataClass::List;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.17.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::Types::Moose qw(ArrayRef Bool HashRef Undef);
@@ -31,7 +31,7 @@ File::DataClass::List - List response class
 
 =head1 Version
 
-0.17.$Revision$
+This document describes version v0.18.$Rev: 0 $
 
 =head1 Synopsis
 

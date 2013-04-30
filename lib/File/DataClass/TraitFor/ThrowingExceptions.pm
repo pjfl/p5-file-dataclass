@@ -3,7 +3,7 @@
 package File::DataClass::TraitFor::ThrowingExceptions;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use English qw(-no_match_vars);
@@ -62,7 +62,7 @@ File::DataClass::TraitFor::ThrowingExceptions - Detects and throws exceptions
 
 =head1 Version
 
-This documents version v0.1.$Rev$ of L<File::DataClass::TraitFor::ThrowingExceptions>
+This documents version v0.1.$Rev: 0 $ of L<File::DataClass::TraitFor::ThrowingExceptions>
 
 =head1 Description
 

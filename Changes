@@ -1,74 +1,77 @@
 Revision history for File::DataClass
 
-0.17.450 2012-04-29
-         - Enhanced Exception class
+0.18.0    2013-04-30 01:13:07
+          - Switched from SVN to Git
 
-0.16.446 2012-04-24
-         - Preserve execute permission during substitute method
+0.17.450  2012-04-29
+          - Enhanced Exception class
 
-0.16.445 2012-04-24
-         - XML::Bare 0.48 reverts to old &amp; behaviour
-         - Stopped HashMerge adding the name attribute
+0.16.446  2012-04-24
+          - Preserve execute permission during substitute method
 
-0.16.442 2013-04-15
-         - Added Stauner d2777308-a5e7-11e2-83b7-87183f85d660 to list of
-           CPAN Testers who should pack up and go home
+0.16.445  2012-04-24
+          - XML::Bare 0.48 reverts to old &amp; behaviour
+          - Stopped HashMerge adding the name attribute
 
-0.16.438 2013-04-14
-         - Split subclasses out into separate distributions
-         - Updated inc::Bob to v1.11
+0.16.442  2013-04-15
+          - Added Stauner d2777308-a5e7-11e2-83b7-87183f85d660 to list of
+            CPAN Testers who should pack up and go home
 
-0.15.434 2012-04-02
-         - Updated inc::Bob to v1.9
-         - Updated Moose and MooseX::ClassAttribute dependencies to aviod
-           broken Moose 2.0800
+0.16.438  2013-04-14
+          - Split subclasses out into separate distributions
+          - Updated inc::Bob to v1.11
 
-0.15.431 2013-04-01
-         - Updated inc::Bob to v1.8
-         - Added OctalNum constraint
-         - Fixed UTF-8 handling in File::UnixAuth
+0.15.434  2012-04-02
+          - Updated inc::Bob to v1.9
+          - Updated Moose and MooseX::ClassAttribute dependencies to aviod
+            broken Moose 2.0800
 
-0.14.429 2013-01-07
-         - Updated copyright year
-         - Updated POD in IO.pm
-         - Fixed bug in IO::rmdir. Now throws on error
-         - Modernised t/10io.t
+0.15.431  2013-04-01
+          - Updated inc::Bob to v1.8
+          - Added OctalNum constraint
+          - Fixed UTF-8 handling in File::UnixAuth
 
-0.13.428 2013-01-06
-         - Documented the limitations of MSWin32 and Cygwin platforms
+0.14.429  2013-01-07
+          - Updated copyright year
+          - Updated POD in IO.pm
+          - Fixed bug in IO::rmdir. Now throws on error
+          - Modernised t/10io.t
 
-0.13.427 2012-12-30
-         - Binmode on by default on ntfs
+0.13.428  2013-01-06
+          - Documented the limitations of MSWin32 and Cygwin platforms
 
-0.13.424 2012-12-21
-         - Started using Sub::Exporter::Progressive
-         - Functions is_stale always true on MSWin32, so no mtime no caching
-         - Stopped using is_file when I mean exists
+0.13.427  2012-12-30
+          - Binmode on by default on ntfs
 
-0.13.422 2012-12-19
-         - Passing io.t on win32. So now the remaining errors
+0.13.424  2012-12-21
+          - Started using Sub::Exporter::Progressive
+          - Functions is_stale always true on MSWin32, so no mtime no caching
+          - Stopped using is_file when I mean exists
 
-0.13.421 2012-12-14
-         - Tried to fix tests on win32
+0.13.422  2012-12-19
+          - Passing io.t on win32. So now the remaining errors
 
-0.13.420 2012-12-12
-         - Tried to fix tests on win32
-         - F::DC::Schema load and dump are now also class methods
+0.13.421  2012-12-14
+          - Tried to fix tests on win32
 
-0.13.418 2012-11-13
-         - Updated inc::Bob to 1.7. Removed defined ors
+0.13.420  2012-12-12
+          - Tried to fix tests on win32
+          - F::DC::Schema load and dump are now also class methods
 
-0.13.416 2012-11-07
-         - Updated inc::Bob to 1.6
-         - Fixed nasty bug in IO::umask_pop
-         - Added IO::parent
+0.13.418  2012-11-13
+          - Updated inc::Bob to 1.7. Removed defined ors
 
-0.12.411 2012-10-27
-         - Fixed write filter bug in XML::Bare
+0.13.416  2012-11-07
+          - Updated inc::Bob to 1.6
+          - Fixed nasty bug in IO::umask_pop
+          - Added IO::parent
 
-0.12.409 2012-09-06
-         - Added missing dependency on parent
-         - Abstract and description POD fix for F:D:Functions
+0.12.411  2012-10-27
+          - Fixed write filter bug in XML::Bare
+
+0.12.409  2012-09-06
+          - Added missing dependency on parent
+          - Abstract and description POD fix for F:D:Functions
 
 0.12.406 2012-09-02
          - Removed deprecated ioc_obj attribute

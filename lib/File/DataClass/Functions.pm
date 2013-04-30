@@ -1,10 +1,10 @@
-# @(#)$Id$
+# @(#)$Ident: Functions.pm 2013-04-29 23:54 pjf ;
 
 package File::DataClass::Functions;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.17.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
 use Class::MOP;
 use File::DataClass::Constants;
@@ -117,7 +117,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-0.17.$Revision$
+This document describes version v0.18.$Rev: 0 $
 
 =head1 Synopsis
 

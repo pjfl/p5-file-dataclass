@@ -3,7 +3,7 @@
 package File::DataClass::TraitFor::TracingStacks;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use MooseX::Types   -declare => [ q(StackTrace) ];
@@ -142,7 +142,7 @@ File::DataClass::TraitFor::TracingStacks - Provides a minimalist stacktrace
 
 =head1 Version
 
-This documents version v0.1.$Rev$ of L<File::DataClass::TraitFor::TracingStacks>
+This documents version v0.1.$Rev: 0 $ of L<File::DataClass::TraitFor::TracingStacks>
 
 =head1 Description
 

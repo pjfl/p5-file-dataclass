@@ -1,8 +1,8 @@
-# @(#)$Id$
+# @(#)Ident: 03podcoverage.t 2013-04-30 00:03 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.17.%d', q$Rev$ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 0 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -11,14 +11,13 @@ use English qw(-no_match_vars);
 use Test::More;
 
 BEGIN {
-   if (!-e catfile( $Bin, updir, q(MANIFEST.SKIP) )) {
-      plan skip_all => 'POD coverage test only for developers';
-   }
+   $ENV{AUTHOR_TESTING}
+      or plan skip_all => 'POD coverage test only for developers';
 }
 
-eval { use Test::Pod::Coverage 1.04; };
+eval "use Test::Pod::Coverage 1.04";
 
-plan skip_all => 'Test::Pod::Coverage 1.04 required' if ($EVAL_ERROR);
+$EVAL_ERROR and plan skip_all => 'Test::Pod::Coverage 1.04 required';
 
 all_pod_coverage_ok();
 
