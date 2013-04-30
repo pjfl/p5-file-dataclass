@@ -1,4 +1,4 @@
-# @(#)Ident: 01always_pass.t 2013-04-22 22:47 pjf ;
+# @(#)Ident: 01always_pass.t 2013-04-30 01:34 pjf ;
 # Bob-Version: 1.12
 
 use strict;

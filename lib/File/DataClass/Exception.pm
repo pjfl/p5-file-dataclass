@@ -1,11 +1,11 @@
-# @(#)$Ident: Exception.pm 2013-04-29 23:54 pjf ;
+# @(#)$Ident: Exception.pm 2013-04-30 01:31 pjf ;
 
 package File::DataClass::Exception;
 
 # Package namespace::autoclean does not play nice with overload
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->as_string }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
@@ -82,7 +82,7 @@ File::DataClass::Exception - Exception handling
 
 =head1 Version
 
-This documents version v0.18.$Rev: 0 $ of L<File::DataClass::Exception>
+This documents version v0.18.$Rev: 1 $ of L<File::DataClass::Exception>
 
 =head1 Synopsis
 

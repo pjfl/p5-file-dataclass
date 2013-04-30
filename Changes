@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-0.18.0    2013-04-30 01:13:07
+0.18.1    2013-04-30 02:36:30
+          - Enabled automatic Rev keyword expansion
           - Switched from SVN to Git
 
 0.17.450  2012-04-29
