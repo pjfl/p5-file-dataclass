@@ -1,9 +1,9 @@
-# @(#)Ident: PrependingErrorLeader.pm 2013-04-30 21:09 pjf ;
+# @(#)Ident: PrependingErrorLeader.pm 2013-04-30 22:01 pjf ;
 
 package File::DataClass::TraitFor::PrependingErrorLeader;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 5 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use MooseX::Types::Common::Numeric qw(PositiveInt);
@@ -75,7 +75,8 @@ File::DataClass::TraitFor::PrependingErrorLeader - Prepends a leader to the exce
 
 =head1 Version
 
-This documents version v0.18.$Rev: 3 $ of L<File::DataClass::TraitFor::PrependingErrorLeader>
+This documents version v0.18.$Rev: 5 $
+of L<File::DataClass::TraitFor::PrependingErrorLeader>
 
 =head1 Description
 
