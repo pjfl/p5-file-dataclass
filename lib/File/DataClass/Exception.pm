@@ -1,11 +1,11 @@
-# @(#)$Ident: Exception.pm 2013-04-30 20:57 pjf ;
+# @(#)$Ident: Exception.pm 2013-04-30 21:40 pjf ;
 
 package File::DataClass::Exception;
 
 # Package namespace::autoclean does not play nice with overload
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->as_string }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 4 $ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
@@ -23,10 +23,6 @@ has 'args'  => is => 'ro', isa => ArrayRef,          default => sub { [] };
 has 'class' => is => 'ro', isa => NonEmptySimpleStr, default => __PACKAGE__;
 
 has 'error' => is => 'ro', isa => NonEmptySimpleStr, default => 'Unknown error';
-
-with q(File::DataClass::TraitFor::ThrowingExceptions);
-with q(File::DataClass::TraitFor::TracingStacks);
-with q(File::DataClass::TraitFor::PrependingErrorLeader);
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -71,11 +67,11 @@ __END__
 
 =head1 Name
 
-File::DataClass::Exception - Exception handling
+File::DataClass::Exception - Base class for exception handling
 
 =head1 Version
 
-This documents version v0.18.$Rev: 3 $ of L<File::DataClass::Exception>
+This documents version v0.18.$Rev: 4 $ of L<File::DataClass::Exception>
 
 =head1 Synopsis
 
@@ -90,13 +86,13 @@ This documents version v0.18.$Rev: 3 $ of L<File::DataClass::Exception>
    }
 
    # OR
-   use File::DataClass::Exception;
+   use File::DataClass::Exception::Simple;
 
    sub some_method {
       my $self = shift;
 
       eval { this_will_fail };
-      File::DataClass::Exception->throw_on_error;
+      File::DataClass::Exception::Simple->throw_on_error;
    }
 
    # THEN
@@ -173,12 +169,6 @@ None
 =item L<namespace::clean>
 
 =item L<overload>
-
-=item L<File::DataClass::TraitFor::PrependingErrorLeader>
-
-=item L<File::DataClass::TraitFor::ThrowingExceptions>
-
-=item L<File::DataClass::TraitFor::TracingStacks>
 
 =item L<Moose>
 

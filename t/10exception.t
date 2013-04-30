@@ -1,8 +1,8 @@
-# @(#)Ident: 10exception.t 2013-04-30 20:16 pjf ;
+# @(#)Ident: 10exception.t 2013-04-30 21:43 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 4 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -19,9 +19,10 @@ BEGIN {
 }
 
 use Class::Null;
-use File::DataClass::Exception;
 
-my $class = 'File::DataClass::Exception'; $EVAL_ERROR = undef;
+use_ok 'File::DataClass::Exception::Simple';
+
+my $class = 'File::DataClass::Exception::Simple'; $EVAL_ERROR = undef;
 
 eval { $class->throw_on_error }; my $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
@@ -34,7 +35,7 @@ $e = $EVAL_ERROR; $EVAL_ERROR = undef; my $min_level = $e->level;
 is ref $e, $class, 'Good class';
 like $e, qr{ \A main \[\d+ / $min_level \] }mx, 'Package and default level';
 like $e, qr{ PracticeKill \s* \z   }mx, 'Throws error message';
-is $e->class, $class, 'Default error class';
+is $e->class, 'File::DataClass::Exception', 'Default error class';
 
 my ($line1, $line2, $line3);
 
