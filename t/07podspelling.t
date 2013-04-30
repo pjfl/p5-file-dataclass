@@ -1,8 +1,8 @@
-# @(#)Ident: 07podspelling.t 2013-04-30 01:34 pjf ;
+# @(#)Ident: 07podspelling.t 2013-04-30 22:10 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 6 $ =~ /\d+/gmx );
 use File::Spec::Functions qw(catdir catfile updir);
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -66,6 +66,7 @@ NTFS
 nulled
 oo
 pathname
+Prepends
 println
 resultset
 rmtree
