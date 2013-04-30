@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-0.18.2    2013-04-30 20:14:52
+0.18.3    2013-04-30 22:12:30
+          - Extracted F:DC:TraitFor::PrependingErrorLeader
           - Tightened F:DC:Exception and Traits
           - Enabled automatic Rev keyword expansion
           - Switched from SVN to Git

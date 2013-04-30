@@ -1,18 +1,15 @@
-# @(#)Ident: TracingStacks.pm 2013-04-30 18:11 pjf ;
+# @(#)Ident: TracingStacks.pm 2013-04-30 21:08 pjf ;
 
 package File::DataClass::TraitFor::TracingStacks;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use MooseX::Types   -declare => [ q(Tracer) ];
-use MooseX::Types::Moose         qw(ArrayRef HashRef Object);
 use MooseX::Types::LoadableClass qw(LoadableClass);
+use MooseX::Types::Moose         qw(HashRef Object);
 use Scalar::Util                 qw(weaken);
-use List::Util                   qw(first);
-
-requires qw(ignore level);
 
 # Type constraints
 subtype Tracer, as Object,
@@ -39,26 +36,6 @@ after 'BUILD' => sub {
 };
 
 # Public methods
-sub build_leader {
-   my $self = shift; my $level = $self->level;
-
-   my @frames = $self->frames; my ($leader, $line, $package);
-
-   $level >= scalar @frames and $level = scalar @frames - 1;
-
-   do {
-      if ($frames[ $level ] and $package = $frames[ $level ]->package) {
-         $line    = $frames[ $level ]->line;
-         $leader  = $package; $leader =~ s{ :: }{-}gmx;
-         $leader .= "[${line}][${level}]: "; $level++;
-      }
-      else { $leader = $package = q() }
-   }
-   while ($package and __is_member( $package, $self->ignore) );
-
-   return $leader;
-}
-
 sub stacktrace {
    my ($self, $skip) = @_; my ($l_no, @lines, %seen, $subr);
 
@@ -116,15 +93,6 @@ sub _build_trace_args {
             frame_filter     => $_[ 0 ]->trace_frame_filter, };
 }
 
-# Private functions
-sub __is_member {
-   my ($candidate, @args) = @_; $candidate or return;
-
-   $args[ 0 ] && ref $args[ 0 ] eq q(ARRAY) and @args = @{ $args[ 0 ] };
-
-   return (first { $_ eq $candidate } @args) ? 1 : 0;
-}
-
 1;
 
 __END__
@@ -145,15 +113,13 @@ File::DataClass::TraitFor::TracingStacks - Provides a minimalist stacktrace
 
 =head1 Version
 
-This documents version v0.18.$Rev: 2 $ of L<File::DataClass::TraitFor::TracingStacks>
+This documents version v0.18.$Rev: 3 $ of L<File::DataClass::TraitFor::TracingStacks>
 
 =head1 Description
 
 Provides a minimalist stacktrace
 
 =head1 Configuration and Environment
-
-Requires the C<ignore> and C<level> attributes in the consuming class
 
 Defines the following attributes;
 
@@ -180,10 +146,6 @@ A loadable class which defaults to L<Devel::StackTrace>
 
 Forces the instantiation of the C<trace> attribute
 
-=head2 build_leader
-
-A builder for the C<leader> attribute defined in the consuming class
-
 =head2 stacktrace
 
    $lines = $self->stacktrace( $num_lines_to_skip );
@@ -194,7 +156,7 @@ from the stack
 =head2 trace_frame_filter
 
 Lifted from L<StackTrace::Auto> this methods filters out frames from the
-raw stacktrace that are not of interest. If is very clever
+raw stacktrace that are not of interest. It is very clever
 
 =head1 Diagnostics
 
@@ -206,15 +168,13 @@ None
 
 =item L<namespace::autoclean>
 
-=item L<List::Util>
-
 =item L<Moose::Role>
 
 =item L<MooseX::Types>
 
-=item L<MooseX::Types::Moose>
-
 =item L<MooseX::Types::LoadableClass>
+
+=item L<MooseX::Types::Moose>
 
 =item L<Scalar::Util>
 
