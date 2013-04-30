@@ -1,11 +1,11 @@
-# @(#)$Ident: Exception.pm 2013-04-30 01:31 pjf ;
+# @(#)$Ident: Exception.pm 2013-04-30 17:09 pjf ;
 
 package File::DataClass::Exception;
 
 # Package namespace::autoclean does not play nice with overload
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->as_string }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.15.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
@@ -40,7 +40,7 @@ with q(File::DataClass::TraitFor::TracingStacks);
 
 # Construction
 around 'BUILDARGS' => sub {
-   my ($next, $self, @args) = @_; my $attr = __get_attr( @args );
+   my ($next, $self, @args) = @_; my $attr = __build_attr_from( @args );
 
    $attr->{error} and $attr->{error} .= q() and chomp $attr->{error};
 
@@ -49,22 +49,26 @@ around 'BUILDARGS' => sub {
 
 # Public methods
 sub as_string {
-   my $self = shift; my $text = $self->error or return;
+   my $self = shift; my $error = $self->error or return;
 
    # Expand positional parameters of the form [_<n>]
-   0 > index $text, q([_)  and return $self->leader.$text;
+   0 > index $error, q([_)  and return $self->leader.$error;
 
    my @args = map { $_ // '[?]' } @{ $self->args }, map { '[?]' } 0 .. 9;
 
-   $text =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
+   $error =~ s{ \[ _ (\d+) \] }{$args[ $1 - 1 ]}gmx;
 
-   return $self->leader.$text;
+   return $self->leader.$error;
+}
+
+sub is_one_of_us {
+   return $_[ 1 ] && blessed $_[ 1 ] && $_[ 1 ]->isa( __PACKAGE__ );
 }
 
 # Private functions
-sub __get_attr {
+sub __build_attr_from {
    return ($_[ 0 ] && ref $_[ 0 ] eq q(HASH)) ? { %{ $_[ 0 ] } }
-        : (defined $_[ 1 ])                   ? { @_ }
+        :        (defined $_[ 1 ])            ? { @_ }
                                               : { error => $_[ 0 ] };
 }
 
@@ -82,7 +86,7 @@ File::DataClass::Exception - Exception handling
 
 =head1 Version
 
-This documents version v0.18.$Rev: 1 $ of L<File::DataClass::Exception>
+This documents version v0.18.$Rev: 2 $ of L<File::DataClass::Exception>
 
 =head1 Synopsis
 
@@ -164,6 +168,18 @@ to pop before calculating the C<leader> attribute
    $error_text = $self->as_string;
 
 This is what the object stringifies to, including the C<leader> attribute
+
+=head2 is_one_of_us
+
+   $bool = $self->is_one_of_us( $string_or_exception_object_ref );
+
+Class method which detects instances of this exception class
+
+=head2 __build_attr_from
+
+   $hash_ref = __build_attr_from( @args );
+
+Function that coerces a hash ref from whatever is passed to it
 
 =head1 Diagnostics
 

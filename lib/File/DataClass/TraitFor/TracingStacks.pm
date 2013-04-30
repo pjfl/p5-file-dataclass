@@ -1,12 +1,12 @@
-# @(#)Ident: TracingStacks.pm 2013-04-29 17:07 pjf ;
+# @(#)Ident: TracingStacks.pm 2013-04-30 18:11 pjf ;
 
 package File::DataClass::TraitFor::TracingStacks;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moose::Role;
-use MooseX::Types   -declare => [ q(StackTrace) ];
+use MooseX::Types   -declare => [ q(Tracer) ];
 use MooseX::Types::Moose         qw(ArrayRef HashRef Object);
 use MooseX::Types::LoadableClass qw(LoadableClass);
 use Scalar::Util                 qw(weaken);
@@ -15,21 +15,21 @@ use List::Util                   qw(first);
 requires qw(ignore level);
 
 # Type constraints
-subtype StackTrace, as Object,
+subtype Tracer, as Object,
    where   { $_->can( q(frames) ) },
    message { blessed $_ ? 'Object '.(blessed $_).' is missing a frames method'
                         : "Scalar ${_} is not on object reference" };
 
 # Object attributes (public)
-has 'trace'        => is => 'ro', isa => StackTrace,
-   builder         => '_build_trace', handles => [ qw(frames) ],
-   init_arg        => undef, lazy => 1;
+has 'trace'       => is => 'ro', isa => Tracer,
+   builder        => '_build_trace', handles => [ qw(frames) ],
+   init_arg       => undef, lazy => 1;
 
-has 'trace_args'   => is => 'ro', isa => HashRef,
-   builder         => '_build_trace_args', lazy => 1;
+has 'trace_args'  => is => 'ro', isa => HashRef,
+   builder        => '_build_trace_args', lazy => 1;
 
-has 'trace_class'  => is => 'ro', isa => LoadableClass, coerce => 1,
-   default         => sub { q(Devel::StackTrace) };
+has 'trace_class' => is => 'ro', isa => LoadableClass, coerce => 1,
+   default        => sub { q(Devel::StackTrace) };
 
 # Construction
 sub BUILD {}
@@ -44,10 +44,13 @@ sub build_leader {
 
    my @frames = $self->frames; my ($leader, $line, $package);
 
+   $level >= scalar @frames and $level = scalar @frames - 1;
+
    do {
-      if ($package = $frames[ $level ]->package) {
-         $line   = $frames[ $level ]->line;
-         $leader = "${package}[${line}][${level}]: "; $level++;
+      if ($frames[ $level ] and $package = $frames[ $level ]->package) {
+         $line    = $frames[ $level ]->line;
+         $leader  = $package; $leader =~ s{ :: }{-}gmx;
+         $leader .= "[${line}][${level}]: "; $level++;
       }
       else { $leader = $package = q() }
    }
@@ -142,7 +145,7 @@ File::DataClass::TraitFor::TracingStacks - Provides a minimalist stacktrace
 
 =head1 Version
 
-This documents version v0.1.$Rev: 0 $ of L<File::DataClass::TraitFor::TracingStacks>
+This documents version v0.18.$Rev: 2 $ of L<File::DataClass::TraitFor::TracingStacks>
 
 =head1 Description
 
@@ -185,7 +188,8 @@ A builder for the C<leader> attribute defined in the consuming class
 
    $lines = $self->stacktrace( $num_lines_to_skip );
 
-Return the stack trace. Defaults to skipping zero lines of output
+Returns a minimalist stack trace. Defaults to skipping zero frames
+from the stack
 
 =head2 trace_frame_filter
 

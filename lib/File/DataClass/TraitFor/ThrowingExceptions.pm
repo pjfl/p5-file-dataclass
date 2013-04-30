@@ -1,45 +1,39 @@
-# @(#)Ident: ThrowingExceptions.pm 2013-04-29 16:03 pjf ;
+# @(#)Ident: ThrowingExceptions.pm 2013-04-30 17:10 pjf ;
 
 package File::DataClass::TraitFor::ThrowingExceptions;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use English qw(-no_match_vars);
 
+requires qw(is_one_of_us);
+
 # Public methods
 sub caught {
-   my ($self, @args) = @_; my $attr = __get_attr( @args );
+   my ($self, @args) = @_; my $attr = __build_attr_from( @args );
 
    my $error = $attr->{error} ||= $EVAL_ERROR; $error or return;
 
-   return __is_one_of_us( $error ) ? $error : $self->new( $attr );
+   return $self->is_one_of_us( $error ) ? $error : $self->new( $attr );
 }
 
 sub throw {
    my ($self, @args) = @_;
 
-   die __is_one_of_us( $args[ 0 ] ) ? $args[ 0 ] : $self->new( @args );
+   die $self->is_one_of_us( $args[ 0 ] ) ? $args[ 0 ] : $self->new( @args );
 }
 
 sub throw_on_error {
-   my ($self, @args) = @_; my $e;
-
-   $e = $self->caught( @args ) and $self->throw( $e );
-
-   return;
+   my $self = shift; my $e; $e = $self->caught( @_ ) and die $e; return;
 }
 
 # Private functions
-sub __get_attr {
+sub __build_attr_from {
    return ($_[ 0 ] && ref $_[ 0 ] eq q(HASH)) ? { %{ $_[ 0 ] } }
-        : (defined $_[ 1 ])                   ? { @_ }
+        :        (defined $_[ 1 ])            ? { @_ }
                                               : { error => $_[ 0 ] };
-}
-
-sub __is_one_of_us {
-   return $_[ 0 ] && blessed $_[ 0 ] && $_[ 0 ]->isa( __PACKAGE__ );
 }
 
 1;
@@ -62,13 +56,15 @@ File::DataClass::TraitFor::ThrowingExceptions - Detects and throws exceptions
 
 =head1 Version
 
-This documents version v0.1.$Rev: 0 $ of L<File::DataClass::TraitFor::ThrowingExceptions>
+This documents version v0.18.$Rev: 2 $ of L<File::DataClass::TraitFor::ThrowingExceptions>
 
 =head1 Description
 
 Detects and throws exceptions
 
 =head1 Configuration and Environment
+
+Requires the consuming class to have the class method C<is_one_of_us>
 
 Defines no attributes
 
