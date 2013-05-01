@@ -1,11 +1,11 @@
-# @(#)$Ident: Exception.pm 2013-04-30 21:40 pjf ;
+# @(#)$Ident: Exception.pm 2013-05-01 17:23 pjf ;
 
 package File::DataClass::Exception;
 
 # Package namespace::autoclean does not play nice with overload
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->as_string }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 4 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 10 $ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
@@ -71,7 +71,7 @@ File::DataClass::Exception - Base class for exception handling
 
 =head1 Version
 
-This documents version v0.18.$Rev: 4 $ of L<File::DataClass::Exception>
+This documents version v0.18.$Rev: 10 $ of L<File::DataClass::Exception>
 
 =head1 Synopsis
 
@@ -102,7 +102,7 @@ This documents version v0.18.$Rev: 4 $ of L<File::DataClass::Exception>
 =head1 Description
 
 An exception class that supports error messages with placeholders, a
-L<File::DataClass::TraitFor::ThrowingExceptions/throw> method with
+L<File::DataClass::Exception::TraitFor::Throwing/throw> method with
 automatic re-throw upon detection of self, conditional throw if an
 exception was caught and a simplified stacktrace
 

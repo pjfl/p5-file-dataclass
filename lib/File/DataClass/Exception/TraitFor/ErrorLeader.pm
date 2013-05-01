@@ -1,9 +1,9 @@
-# @(#)Ident: ErrorLeader.pm 2013-05-01 17:09 pjf ;
+# @(#)Ident: ErrorLeader.pm 2013-05-01 17:32 pjf ;
 
 package File::DataClass::Exception::TraitFor::ErrorLeader;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 10 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use MooseX::Types::Common::Numeric qw(PositiveInt);
@@ -75,7 +75,7 @@ File::DataClass::Exception::TraitFor::ErrorLeader - Prepends a leader to the exc
 
 =head1 Version
 
-This documents version v0.18.$Rev: 8 $
+This documents version v0.18.$Rev: 10 $
 of L<File::DataClass::Exception::TraitFor::ErrorLeader>
 
 =head1 Description
@@ -86,9 +86,6 @@ Prepends a one line stack summary to the exception error message
 
 Requires the C<as_string> method and the C<ignore> attribute in the
 consuming class
-
-Modifies C<as_string> in the consuming class. Prepends the C<leader> attribute
-to the return value
 
 Defines the following attributes;
 
@@ -104,6 +101,9 @@ A positive integer which defaults to one. How many additional stack frames
 to pop before calculating the C<leader> attribute
 
 =back
+
+Modifies C<as_string> in the consuming class. Prepends the C<leader>
+attribute to the return value
 
 =head1 Subroutines/Methods
 

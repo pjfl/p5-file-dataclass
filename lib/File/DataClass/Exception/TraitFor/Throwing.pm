@@ -1,9 +1,9 @@
-# @(#)Ident: Throwing.pm 2013-05-01 17:09 pjf ;
+# @(#)Ident: Throwing.pm 2013-05-01 17:34 pjf ;
 
 package File::DataClass::Exception::TraitFor::Throwing;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 10 $ =~ /\d+/gmx );
 
 use Carp      ();
 use English qw(-no_match_vars);
@@ -99,7 +99,7 @@ File::DataClass::Exception::TraitFor::Throwing - Detects and throws exceptions
 
 =head1 Version
 
-This documents version v0.18.$Rev: 8 $ of
+This documents version v0.18.$Rev: 10 $ of
 L<File::DataClass::Exception::TraitFor::Throwing>
 
 =head1 Description
@@ -110,7 +110,18 @@ Detects and throws exceptions
 
 Requires the consuming class to have the class method C<is_one_of_us>
 
-Defines no attributes
+Defines the following list of attributes;
+
+=over 3
+
+=item C<previous_exception>
+
+May hold a reference to the previous exception in this thread
+
+=back
+
+Modifies C<BUILD> in the consuming class. Caches the new exception for
+use by the C<previous_exception> attribute in the next exception thrown
 
 =head1 Subroutines/Methods
 

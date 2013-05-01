@@ -1,8 +1,8 @@
-# @(#)Ident: 10exception.t 2013-05-01 15:45 pjf ;
+# @(#)Ident: 10exception.t 2013-05-01 17:45 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 10 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -83,7 +83,8 @@ $line1 = __LINE__; eval {
 
 $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
-is $e->previous_exception->class, 'nonDefault', 'Previous exception';
+is $e->class, 'testPrevious', 'Current exception class';
+is $e->previous_exception->class, 'nonDefault', 'Previous exception class';
 
 done_testing;
 
