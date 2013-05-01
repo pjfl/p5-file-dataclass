@@ -1,9 +1,9 @@
-# @(#)Ident: TracingStacks.pm 2013-04-30 21:08 pjf ;
+# @(#)Ident: TracingStacks.pm 2013-05-01 16:46 pjf ;
 
 package File::DataClass::TraitFor::TracingStacks;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use MooseX::Types   -declare => [ q(Tracer) ];
@@ -31,23 +31,22 @@ has 'trace_class' => is => 'ro', isa => LoadableClass, coerce => 1,
 # Construction
 sub BUILD {}
 
-after 'BUILD' => sub {
+before 'BUILD' => sub {
    my $self = shift; $self->trace; return;
 };
 
 # Public methods
 sub stacktrace {
-   my ($self, $skip) = @_; my ($l_no, @lines, %seen, $subr);
+   my ($self, $skip) = @_; my (@lines, %seen, $subr);
 
    for my $frame (reverse $self->frames) {
-      unless ($l_no = $seen{ $frame->package } and $l_no == $frame->line) {
-         my $symbol = $subr || $frame->package;
+      my $package = $frame->package; my $l_no;
 
-         $seen{ $frame->package } = $frame->line;
+      unless ($l_no = $seen{ $package } and $l_no == $frame->line) {
+         $seen{ $package } = $frame->line;
 
-         if ($symbol !~ m{ :: __ANON__ \z }mx) {
-            push @lines, join q( ), $symbol, 'line', $frame->line;
-         }
+         my $symbol = $subr || $package; $symbol !~ m{ :: __ANON__ \z }mx
+            and push @lines, join q( ), $symbol, 'line', $frame->line;
       }
 
       $subr = $frame->subroutine;
@@ -113,7 +112,7 @@ File::DataClass::TraitFor::TracingStacks - Provides a minimalist stacktrace
 
 =head1 Version
 
-This documents version v0.18.$Rev: 3 $ of L<File::DataClass::TraitFor::TracingStacks>
+This documents version v0.18.$Rev: 8 $ of L<File::DataClass::TraitFor::TracingStacks>
 
 =head1 Description
 
@@ -155,7 +154,7 @@ from the stack
 
 =head2 trace_frame_filter
 
-Lifted from L<StackTrace::Auto> this methods filters out frames from the
+Lifted from L<StackTrace::Auto> this method filters out frames from the
 raw stacktrace that are not of interest. It is very clever
 
 =head1 Diagnostics

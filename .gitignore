@@ -5,6 +5,7 @@ cover_db/
 Build
 !Build/
 Build.bat
+.directory
 .last_cover_stats
 LICENSE
 Makefile

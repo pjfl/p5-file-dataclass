@@ -1,8 +1,8 @@
-# @(#)Ident: 10exception.t 2013-04-30 21:43 pjf ;
+# @(#)Ident: 10exception.t 2013-05-01 15:45 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 4 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 8 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -75,6 +75,15 @@ is $e->class, 'nonDefault', 'Specific error class';
 
 like $e, qr{ main\[ $line1 / 1 \]:\scat:\sflap\scannot\sopen:\s\[\?\] }mx,
    'Placeholer substitution';
+
+$line1 = __LINE__; eval {
+   $class->throw( args  => [ 'flap' ],
+                  class => 'testPrevious',
+                  error => 'cat: [_1] cannot open: [_2]', ) };
+
+$e = $EVAL_ERROR; $EVAL_ERROR = undef;
+
+is $e->previous_exception->class, 'nonDefault', 'Previous exception';
 
 done_testing;
 
