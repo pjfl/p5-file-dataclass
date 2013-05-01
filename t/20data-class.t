@@ -1,8 +1,8 @@
-# @(#)$Ident: 20data-class.t 2013-04-30 22:12 pjf ;
+# @(#)$Ident: 20data-class.t 2013-05-01 19:40 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 6 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 11 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -56,7 +56,7 @@ my $e = test( $schema, qw(load nonexistant_file) );
 like $e, qr{ \QFile nonexistant_file cannot open\E }msx,
     'Cannot open nonexistant_file';
 
-is ref $e, 'File::DataClass::Exception::Simple', 'Default exception class';
+is ref $e, 'File::DataClass::Exception', 'Default exception class';
 
 ok -f $cache_file, 'Cache file found'; ! -f $cache_file and warn "${e}\n";
 

@@ -1,9 +1,9 @@
-# @(#)Ident: TracingStacks.pm 2013-05-01 17:32 pjf ;
+# @(#)Ident: TracingStacks.pm 2013-05-01 19:43 pjf ;
 
 package File::DataClass::Exception::TraitFor::TracingStacks;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 10 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 11 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use MooseX::Types   -declare => [ q(Tracer) ];
@@ -112,7 +112,7 @@ File::DataClass::Exception::TraitFor::TracingStacks - Provides a minimalist stac
 
 =head1 Version
 
-This documents version v0.18.$Rev: 10 $ of
+This documents version v0.18.$Rev: 11 $ of
 L<File::DataClass::Exception::TraitFor::TracingStacks>
 
 =head1 Description
@@ -144,6 +144,10 @@ Modifies C<BUILD> in the consuming class. Forces the instantiation of
 the C<trace> attribute
 
 =head1 Subroutines/Methods
+
+=head2 BUILD
+
+Default subroutine enable method modifiers
 
 =head2 stacktrace
 

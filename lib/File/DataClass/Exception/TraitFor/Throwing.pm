@@ -1,9 +1,9 @@
-# @(#)Ident: Throwing.pm 2013-05-01 17:34 pjf ;
+# @(#)Ident: Throwing.pm 2013-05-01 20:10 pjf ;
 
 package File::DataClass::Exception::TraitFor::Throwing;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 10 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 11 $ =~ /\d+/gmx );
 
 use Carp      ();
 use English qw(-no_match_vars);
@@ -26,16 +26,12 @@ after 'BUILD' => sub {
 
 # Public methods
 sub caught {
-   my ($self, @args) = @_;
-
-   $self->_is_object_ref( @args ) and return $self;
+   my ($self, @args) = @_; $self->_is_object_ref( @args ) and return $self;
 
    my $attr  = __build_attr_from( @args );
    my $error = $attr->{error} ||= $EVAL_ERROR; $error or return;
 
-   $self->is_one_of_us( $error ) and return $error;
-
-   return $self->new( $attr );
+   return $self->is_one_of_us( $error ) ? $error : $self->new( $attr );
 }
 
 sub throw {
@@ -43,8 +39,7 @@ sub throw {
 
    $self->_is_object_ref( @args )    and die $self;
    $self->is_one_of_us( $args[ 0 ] ) and die $args[ 0 ];
-
-   die $self->new( @args );
+                                         die $self->new( @args );
 }
 
 sub throw_on_error {
@@ -99,7 +94,7 @@ File::DataClass::Exception::TraitFor::Throwing - Detects and throws exceptions
 
 =head1 Version
 
-This documents version v0.18.$Rev: 10 $ of
+This documents version v0.18.$Rev: 11 $ of
 L<File::DataClass::Exception::TraitFor::Throwing>
 
 =head1 Description
@@ -124,6 +119,10 @@ Modifies C<BUILD> in the consuming class. Caches the new exception for
 use by the C<previous_exception> attribute in the next exception thrown
 
 =head1 Subroutines/Methods
+
+=head2 BUILD
+
+Default subroutine enable method modifiers
 
 =head2 caught
 

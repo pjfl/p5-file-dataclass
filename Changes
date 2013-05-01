@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-0.18.10   2013-05-01 18:46:31
+0.18.11   2013-05-01 21:44:47
+          - Switched Simple for Base
           - Added tests for previous_exception
           - Renamed exception traits
           - Added previous_exception to F:DC:TraitFor::ThrowingExceptions
