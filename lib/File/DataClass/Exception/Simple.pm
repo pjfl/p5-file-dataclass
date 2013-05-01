@@ -1,16 +1,16 @@
-# @(#)Ident: Simple.pm 2013-04-30 21:47 pjf ;
+# @(#)Ident: Simple.pm 2013-05-01 17:04 pjf ;
 
 package File::DataClass::Exception::Simple;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 4 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 9 $ =~ /\d+/gmx );
 
 use Moose;
 
 extends q(File::DataClass::Exception);
-with    q(File::DataClass::TraitFor::ThrowingExceptions);
-with    q(File::DataClass::TraitFor::TracingStacks);
-with    q(File::DataClass::TraitFor::PrependingErrorLeader);
+with    q(File::DataClass::Exception::TraitFor::Throwing);
+with    q(File::DataClass::Exception::TraitFor::TracingStacks);
+with    q(File::DataClass::Exception::TraitFor::ErrorLeader);
 
 __PACKAGE__->meta->make_immutable;
 
@@ -34,7 +34,7 @@ File::DataClass::Exception::Simple - Applies roles to base class
 
 =head1 Version
 
-This documents version v0.18.$Rev: 4 $ of L<File::DataClass::Exception::Simple>
+This documents version v0.18.$Rev: 9 $ of L<File::DataClass::Exception::Simple>
 
 =head1 Description
 

@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
 0.18.6    2013-04-30 23:14:09
+          - Renamed exception traits
           - Added previous_exception to F:DC:TraitFor::ThrowingExceptions
           - Updated README.md
           - Fixed spelling

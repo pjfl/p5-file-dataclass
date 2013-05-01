@@ -1,6 +1,6 @@
-# @(#)Ident: ThrowingExceptions.pm 2013-05-01 16:49 pjf ;
+# @(#)Ident: Throwing.pm 2013-05-01 17:09 pjf ;
 
-package File::DataClass::TraitFor::ThrowingExceptions;
+package File::DataClass::Exception::TraitFor::Throwing;
 
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 8 $ =~ /\d+/gmx );
@@ -89,17 +89,18 @@ __END__
 
 =head1 Name
 
-File::DataClass::TraitFor::ThrowingExceptions - Detects and throws exceptions
+File::DataClass::Exception::TraitFor::Throwing - Detects and throws exceptions
 
 =head1 Synopsis
 
    use Moose;
 
-   with 'File::DataClass::TraitFor::ThrowingExceptions';
+   with 'File::DataClass::Exception::TraitFor::Throwing';
 
 =head1 Version
 
-This documents version v0.18.$Rev: 8 $ of L<File::DataClass::TraitFor::ThrowingExceptions>
+This documents version v0.18.$Rev: 8 $ of
+L<File::DataClass::Exception::TraitFor::Throwing>
 
 =head1 Description
 

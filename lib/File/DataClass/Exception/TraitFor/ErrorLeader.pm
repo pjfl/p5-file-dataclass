@@ -1,6 +1,6 @@
-# @(#)Ident: PrependingErrorLeader.pm 2013-05-01 00:19 pjf ;
+# @(#)Ident: ErrorLeader.pm 2013-05-01 17:09 pjf ;
 
-package File::DataClass::TraitFor::PrependingErrorLeader;
+package File::DataClass::Exception::TraitFor::ErrorLeader;
 
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 8 $ =~ /\d+/gmx );
@@ -65,18 +65,18 @@ __END__
 
 =head1 Name
 
-File::DataClass::TraitFor::PrependingErrorLeader - Prepends a leader to the exception
+File::DataClass::Exception::TraitFor::ErrorLeader - Prepends a leader to the exception
 
 =head1 Synopsis
 
    use Moose;
 
-   with 'File::DataClass::TraitFor::PrependingErrorLeader';
+   with 'File::DataClass::Exception::TraitFor::ErrorLeader';
 
 =head1 Version
 
 This documents version v0.18.$Rev: 8 $
-of L<File::DataClass::TraitFor::PrependingErrorLeader>
+of L<File::DataClass::Exception::TraitFor::ErrorLeader>
 
 =head1 Description
 

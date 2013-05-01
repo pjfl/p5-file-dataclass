@@ -1,6 +1,6 @@
-# @(#)Ident: TracingStacks.pm 2013-05-01 16:46 pjf ;
+# @(#)Ident: TracingStacks.pm 2013-05-01 17:09 pjf ;
 
-package File::DataClass::TraitFor::TracingStacks;
+package File::DataClass::Exception::TraitFor::TracingStacks;
 
 use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 8 $ =~ /\d+/gmx );
@@ -102,17 +102,18 @@ __END__
 
 =head1 Name
 
-File::DataClass::TraitFor::TracingStacks - Provides a minimalist stacktrace
+File::DataClass::Exception::TraitFor::TracingStacks - Provides a minimalist stacktrace
 
 =head1 Synopsis
 
    use Moose;
 
-   with 'File::DataClass::TraitFor::TracingStacks';
+   with 'File::DataClass::Exception::TraitFor::TracingStacks';
 
 =head1 Version
 
-This documents version v0.18.$Rev: 8 $ of L<File::DataClass::TraitFor::TracingStacks>
+This documents version v0.18.$Rev: 8 $ of
+L<File::DataClass::Exception::TraitFor::TracingStacks>
 
 =head1 Description
 
