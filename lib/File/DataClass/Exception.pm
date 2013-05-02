@@ -3,7 +3,7 @@
 package File::DataClass::Exception;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 11 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::ClassAttribute;
@@ -65,7 +65,7 @@ File::DataClass::Exception - Consumes the base class and applies roles
 
 =head1 Version
 
-This documents version v0.18.$Rev: 11 $ of L<File::DataClass::Exception>
+This documents version v0.19.$Rev: 1 $ of L<File::DataClass::Exception>
 
 =head1 Description
 

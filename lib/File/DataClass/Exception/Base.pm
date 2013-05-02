@@ -1,22 +1,22 @@
-# @(#)$Ident: Base.pm 2013-05-01 20:21 pjf ;
+# @(#)$Ident: Base.pm 2013-05-02 04:20 pjf ;
 
 package File::DataClass::Exception::Base;
 
 # Package namespace::autoclean does not play nice with overload
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->as_string }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 11 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::Types::Common::String qw(NonEmptySimpleStr);
-use MooseX::Types::Moose          qw(ArrayRef);
+use MooseX::Types::Moose          qw(ArrayRef Str);
 
 # Object attributes (public)
 has 'args'  => is => 'ro', isa => ArrayRef,          default => sub { [] };
 
 has 'class' => is => 'ro', isa => NonEmptySimpleStr, default => __PACKAGE__;
 
-has 'error' => is => 'ro', isa => NonEmptySimpleStr, default => 'Unknown error';
+has 'error' => is => 'ro', isa => Str,               default => 'Unknown error';
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -61,7 +61,7 @@ File::DataClass::Exception::Base - Base class for exception handling
 
 =head1 Version
 
-This documents version v0.18.$Rev: 11 $ of L<File::DataClass::Exception::Base>
+This documents version v0.19.$Rev: 1 $ of L<File::DataClass::Exception::Base>
 
 =head1 Synopsis
 

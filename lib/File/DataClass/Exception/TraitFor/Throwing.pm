@@ -3,7 +3,7 @@
 package File::DataClass::Exception::TraitFor::Throwing;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.18.%d', q$Rev: 11 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Carp      ();
 use English qw(-no_match_vars);
@@ -94,7 +94,7 @@ File::DataClass::Exception::TraitFor::Throwing - Detects and throws exceptions
 
 =head1 Version
 
-This documents version v0.18.$Rev: 11 $ of
+This documents version v0.19.$Rev: 1 $ of
 L<File::DataClass::Exception::TraitFor::Throwing>
 
 =head1 Description
