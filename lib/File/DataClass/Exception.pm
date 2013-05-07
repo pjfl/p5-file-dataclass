@@ -1,22 +1,30 @@
-# @(#)Ident: Exception.pm 2013-05-06 15:51 pjf ;
+# @(#)Ident: Exception.pm 2013-05-07 19:54 pjf ;
 
 package File::DataClass::Exception;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
 use Moose;
+use Moose::Util          qw(apply_all_roles);
 use MooseX::ClassAttribute;
 use MooseX::Types::Moose qw(ArrayRef);
+
+extends q(File::DataClass::Exception::Base);
 
 class_has 'Ignore' => is => 'ro', isa => ArrayRef, traits => [ 'Array' ],
    default         => sub { [ qw(File::DataClass::IO) ] },
    handles         => { ignore_class => 'push' },  reader => 'ignore';
 
-extends q(File::DataClass::Exception::Base);
-with    q(File::DataClass::Exception::TraitFor::Throwing);
-with    q(File::DataClass::Exception::TraitFor::TracingStacks);
-with    q(File::DataClass::Exception::TraitFor::ErrorLeader);
+class_has 'Traits' => is => 'ro', isa => ArrayRef, traits => [ 'Array' ],
+   default         => sub { [ __PACKAGE__.'::TraitFor::Throwing',
+                              __PACKAGE__.'::TraitFor::TracingStacks',
+                              __PACKAGE__.'::TraitFor::ErrorLeader', ] },
+   reader          => 'traits';
+
+apply_all_roles( __PACKAGE__, @{  __PACKAGE__->traits } );
+
+sub BUILD {}
 
 sub is_one_of_us {
    return $_[ 1 ] && blessed $_[ 1 ] && $_[ 1 ]->isa( __PACKAGE__ );
@@ -64,7 +72,7 @@ File::DataClass::Exception - Consumes the base class and applies roles
 
 =head1 Version
 
-This documents version v0.19.$Rev: 3 $ of L<File::DataClass::Exception>
+This documents version v0.20.$Rev: 0 $ of L<File::DataClass::Exception>
 
 =head1 Description
 

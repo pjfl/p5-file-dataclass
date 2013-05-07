@@ -1,15 +1,17 @@
-# @(#)Ident: TracingStacks.pm 2013-05-07 18:13 pjf ;
+# @(#)Ident: TracingStacks.pm 2013-05-07 19:51 pjf ;
 
 package File::DataClass::Exception::TraitFor::TracingStacks;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 5 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use MooseX::Types   -declare => [ q(Tracer) ];
 use MooseX::Types::LoadableClass qw(LoadableClass);
 use MooseX::Types::Moose         qw(HashRef Object);
 use Scalar::Util                 qw(weaken);
+
+requires qw(BUILD);
 
 # Type constraints
 subtype Tracer, as Object,
@@ -29,8 +31,6 @@ has 'trace_class' => is => 'ro', isa => LoadableClass, coerce => 1,
    default        => sub { q(Devel::StackTrace) };
 
 # Construction
-sub BUILD {}
-
 before 'BUILD' => sub {
    my $self = shift; $self->trace; return;
 };
@@ -115,7 +115,7 @@ File::DataClass::Exception::TraitFor::TracingStacks - Provides a minimalist stac
 
 =head1 Version
 
-This documents version v0.19.$Rev: 5 $ of
+This documents version v0.20.$Rev: 0 $ of
 L<File::DataClass::Exception::TraitFor::TracingStacks>
 
 =head1 Description

@@ -5,7 +5,7 @@ package File::DataClass::Exception::Base;
 # Package namespace::autoclean does not play nice with overload
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->as_string }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
 use Moose;
 use MooseX::Types::Common::String qw(NonEmptySimpleStr);
@@ -61,7 +61,7 @@ File::DataClass::Exception::Base - Base class for exception handling
 
 =head1 Version
 
-This documents version v0.19.$Rev: 1 $ of L<File::DataClass::Exception::Base>
+This documents version v0.20.$Rev: 0 $ of L<File::DataClass::Exception::Base>
 
 =head1 Synopsis
 

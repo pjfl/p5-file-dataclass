@@ -3,7 +3,7 @@
 package File::DataClass::Exception::TraitFor::ErrorLeader;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 5 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use MooseX::Types::Common::Numeric qw(PositiveOrZeroInt);
@@ -75,7 +75,7 @@ File::DataClass::Exception::TraitFor::ErrorLeader - Prepends a leader to the exc
 
 =head1 Version
 
-This documents version v0.19.$Rev: 5 $
+This documents version v0.20.$Rev: 0 $
 of L<File::DataClass::Exception::TraitFor::ErrorLeader>
 
 =head1 Description
