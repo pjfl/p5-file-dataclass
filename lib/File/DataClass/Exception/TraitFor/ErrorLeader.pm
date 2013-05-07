@@ -1,16 +1,16 @@
-# @(#)Ident: ErrorLeader.pm 2013-05-07 16:29 pjf ;
+# @(#)Ident: ErrorLeader.pm 2013-05-07 18:04 pjf ;
 
 package File::DataClass::Exception::TraitFor::ErrorLeader;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 4 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 5 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use MooseX::Types::Common::Numeric qw(PositiveOrZeroInt);
 use MooseX::Types::Common::String  qw(SimpleStr);
 use List::Util                     qw(first);
 
-requires qw(as_string frames ignore subroutine_filter);
+requires qw(as_string filtered_frames ignore);
 
 # Object methods (public)
 has 'leader' => is => 'ro', isa => SimpleStr,
@@ -27,10 +27,9 @@ around 'as_string' => sub {
 
 # Private methods
 sub _build_leader {
-   my $self = shift; my $level = $self->level; my ($leader, $line, $package);
+   my $self = shift; my $level = $self->level;
 
-   my @frames = grep { $self->subroutine_filter( $_->subroutine ) }
-                $self->frames;
+   my @frames = $self->filtered_frames; my ($leader, $line, $package);
 
    $level >= scalar @frames and $level = scalar @frames - 1;
 
@@ -76,7 +75,7 @@ File::DataClass::Exception::TraitFor::ErrorLeader - Prepends a leader to the exc
 
 =head1 Version
 
-This documents version v0.19.$Rev: 4 $
+This documents version v0.19.$Rev: 5 $
 of L<File::DataClass::Exception::TraitFor::ErrorLeader>
 
 =head1 Description
