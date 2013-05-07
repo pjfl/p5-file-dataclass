@@ -1,4 +1,4 @@
-# @(#)Ident: 10exception.t 2013-05-07 16:10 pjf ;
+# @(#)Ident: 10exception.t 2013-05-07 21:39 pjf ;
 
 use strict;
 use warnings;
@@ -21,6 +21,8 @@ BEGIN {
 use Class::Null;
 
 use_ok 'File::DataClass::Exception';
+
+File::DataClass::Exception->add_roles( 'ErrorLeader' );
 
 my $class = 'File::DataClass::Exception'; $EVAL_ERROR = undef;
 

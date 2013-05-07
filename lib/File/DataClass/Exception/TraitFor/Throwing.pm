@@ -1,4 +1,4 @@
-# @(#)Ident: Throwing.pm 2013-05-07 19:51 pjf ;
+# @(#)Ident: Throwing.pm 2013-05-07 22:39 pjf ;
 
 package File::DataClass::Exception::TraitFor::Throwing;
 
@@ -101,6 +101,9 @@ Detects and throws exceptions
 
 =head1 Configuration and Environment
 
+Modifies C<BUILD> in the consuming class. Caches the new exception for
+use by the C<previous_exception> attribute in the next exception thrown
+
 Requires the consuming class to have the class method C<is_one_of_us>
 
 Defines the following list of attributes;
@@ -113,14 +116,7 @@ May hold a reference to the previous exception in this thread
 
 =back
 
-Modifies C<BUILD> in the consuming class. Caches the new exception for
-use by the C<previous_exception> attribute in the next exception thrown
-
 =head1 Subroutines/Methods
-
-=head2 BUILD
-
-Default subroutine enable method modifiers
 
 =head2 caught
 

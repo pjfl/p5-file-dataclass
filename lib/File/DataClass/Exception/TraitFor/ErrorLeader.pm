@@ -1,4 +1,4 @@
-# @(#)Ident: ErrorLeader.pm 2013-05-07 18:04 pjf ;
+# @(#)Ident: ErrorLeader.pm 2013-05-07 22:37 pjf ;
 
 package File::DataClass::Exception::TraitFor::ErrorLeader;
 
@@ -69,9 +69,9 @@ File::DataClass::Exception::TraitFor::ErrorLeader - Prepends a leader to the exc
 
 =head1 Synopsis
 
-   use Moose;
+   use File::DataClass::Exception;
 
-   with 'File::DataClass::Exception::TraitFor::ErrorLeader';
+   File::DataClass::Exception->add_roles( 'ErrorLeader' );
 
 =head1 Version
 
@@ -123,9 +123,7 @@ None
 
 =item L<List::Util>
 
-=item L<MooseX::Types::Common::Numeric>
-
-=item L<MooseX::Types::Common::String>
+=item L<MooseX::Types::Common>
 
 =back
 

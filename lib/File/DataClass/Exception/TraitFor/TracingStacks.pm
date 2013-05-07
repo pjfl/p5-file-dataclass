@@ -1,4 +1,4 @@
-# @(#)Ident: TracingStacks.pm 2013-05-07 19:51 pjf ;
+# @(#)Ident: TracingStacks.pm 2013-05-07 22:54 pjf ;
 
 package File::DataClass::Exception::TraitFor::TracingStacks;
 
@@ -13,7 +13,6 @@ use Scalar::Util                 qw(weaken);
 
 requires qw(BUILD);
 
-# Type constraints
 subtype Tracer, as Object,
    where   { $_->can( q(frames) ) },
    message { blessed $_ ? 'Object '.(blessed $_).' is missing a frames method'
@@ -47,9 +46,8 @@ sub stacktrace {
       my $package = $frame->package; my $l_no;
 
       unless ($l_no = $seen{ $package } and $l_no == $frame->line) {
-         $seen{ $package } = $frame->line; my $symbol = $subr || $package;
-
-         push @lines, join q( ), $symbol, 'line', $frame->line;
+         push @lines, join q( ), $subr || $package, 'line', $frame->line;
+         $seen{ $package } = $frame->line;
       }
 
       $subr = $frame->subroutine;
@@ -124,6 +122,9 @@ Provides a minimalist stacktrace
 
 =head1 Configuration and Environment
 
+Modifies C<BUILD> in the consuming class. Forces the instantiation of
+the C<trace> attribute
+
 Defines the following attributes;
 
 =over 3
@@ -143,14 +144,7 @@ A loadable class which defaults to L<Devel::StackTrace>
 
 =back
 
-Modifies C<BUILD> in the consuming class. Forces the instantiation of
-the C<trace> attribute
-
 =head1 Subroutines/Methods
-
-=head2 BUILD
-
-Default subroutine enable method modifiers
 
 =head2 filtered_frames
 

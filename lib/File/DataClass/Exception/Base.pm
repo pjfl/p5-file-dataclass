@@ -1,4 +1,4 @@
-# @(#)$Ident: Base.pm 2013-05-02 04:20 pjf ;
+# @(#)$Ident: Base.pm 2013-05-07 22:49 pjf ;
 
 package File::DataClass::Exception::Base;
 
@@ -8,8 +8,17 @@ use overload '""' => sub { shift->as_string }, fallback => 1;
 use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
 use Moose;
-use MooseX::Types::Common::String qw(NonEmptySimpleStr);
+use Moose::Util                   qw(ensure_all_roles);
+use MooseX::ClassAttribute;
+use MooseX::Types::Common::String qw(NonEmptySimpleStr SimpleStr);
 use MooseX::Types::Moose          qw(ArrayRef Str);
+
+class_has 'Ignore'    => is => 'ro', isa => ArrayRef, traits => [ 'Array' ],
+   default            => sub { [ qw(File::DataClass::IO) ] },
+   handles            => { ignore_class => 'push' },  reader => 'ignore';
+
+class_has 'Namespace' => is => 'rw', isa => SimpleStr,
+   default            => q(), reader => 'namespace';
 
 # Object attributes (public)
 has 'args'  => is => 'ro', isa => ArrayRef,          default => sub { [] };
@@ -28,6 +37,18 @@ around 'BUILDARGS' => sub {
 };
 
 # Public methods
+sub add_roles { # Ensure all roles have been applied
+   my ($self, @roles) = @_; my $ns = $self->namespace || "${self}::TraitFor";
+
+   my @classes = map { substr( $_, 0, 1 ) eq '+'
+                     ? substr( $_, 1    ) : "${ns}::${_}" } @roles;
+
+   $self->meta->make_mutable;
+   ensure_all_roles( $self, @classes );
+   $self->meta->make_immutable;
+   return;
+}
+
 sub as_string { # Expand positional parameters of the form [_<n>]
    my $self = shift; my $error = $self->error or return;
 
@@ -41,7 +62,7 @@ sub as_string { # Expand positional parameters of the form [_<n>]
 }
 
 # Private functions
-sub __build_attr_from {
+sub __build_attr_from { # Coerce a hash ref from whatever was passed
    return ($_[ 0 ] && ref $_[ 0 ] eq q(HASH)) ? { %{ $_[ 0 ] } }
         :        (defined $_[ 1 ])            ? { @_ }
                                               : { error => $_[ 0 ] };
@@ -75,6 +96,16 @@ Base class for exception handling
 
 =head1 Configuration and Environment
 
+The C<< File::DataClass::Exception->Ignore >> class attribute is an
+array ref of methods whose presence should be ignored by the error
+message leader. It does the 'Array' trait where C<push> implements the
+C<ignore_class> method
+
+The C<< File::DataClass::Exception->Namespace >> class attribute is a
+simple string that is used in place of the default,
+C<File::DataClass::Exception::TraitFor> trait namespace if it is
+supplied
+
 Defines the following list of read only attributes;
 
 =over 3
@@ -98,6 +129,12 @@ starting at one
 =back
 
 =head1 Subroutines/Methods
+
+=head2 add_roles
+
+   $self->add_roles( 'ErrorLeader', ... );
+
+Ensures that the specified role is applied to the composing class
 
 =head2 as_string
 
@@ -127,7 +164,7 @@ None
 
 =item L<MooseX::ClassAttribute>
 
-=item L<MooseX::Types::Common::String>
+=item L<MooseX::Types::Common>
 
 =item L<MooseX::Types::Moose>
 

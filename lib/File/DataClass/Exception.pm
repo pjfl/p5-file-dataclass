@@ -1,4 +1,4 @@
-# @(#)Ident: Exception.pm 2013-05-07 19:54 pjf ;
+# @(#)Ident: Exception.pm 2013-05-07 22:53 pjf ;
 
 package File::DataClass::Exception;
 
@@ -6,23 +6,10 @@ use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
 
 use Moose;
-use Moose::Util          qw(apply_all_roles);
-use MooseX::ClassAttribute;
-use MooseX::Types::Moose qw(ArrayRef);
 
 extends q(File::DataClass::Exception::Base);
-
-class_has 'Ignore' => is => 'ro', isa => ArrayRef, traits => [ 'Array' ],
-   default         => sub { [ qw(File::DataClass::IO) ] },
-   handles         => { ignore_class => 'push' },  reader => 'ignore';
-
-class_has 'Traits' => is => 'ro', isa => ArrayRef, traits => [ 'Array' ],
-   default         => sub { [ __PACKAGE__.'::TraitFor::Throwing',
-                              __PACKAGE__.'::TraitFor::TracingStacks',
-                              __PACKAGE__.'::TraitFor::ErrorLeader', ] },
-   reader          => 'traits';
-
-apply_all_roles( __PACKAGE__, @{  __PACKAGE__->traits } );
+with    q(File::DataClass::Exception::TraitFor::Throwing);
+with    q(File::DataClass::Exception::TraitFor::TracingStacks);
 
 sub BUILD {}
 
@@ -42,7 +29,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Exception - Consumes the base class and applies roles
+File::DataClass::Exception - Moose exception class composed from traits
 
 =head1 Synopsis
 
@@ -81,21 +68,23 @@ L<File::DataClass::Exception::TraitFor::Throwing/throw> method with
 automatic re-throw upon detection of self, conditional throw if an
 exception was caught and a simplified stacktrace
 
-Error objects are overloaded to stringify to the full error message
-plus a leader
-
 Applies exception roles to the exception base class
 L<File::DataClass::Exception::Base>. See L</Dependencies> for the list of
 roles that are applied
 
+Error objects are overloaded to stringify to the full error message
+plus a leader if the optional C<ErrorLeader> role has been applied
+
 =head1 Configuration and Environment
 
-The C<< File::DataClass::Exception->Ignore >> class attribute is an
-array ref of methods whose presence should be ignored by the error
-message leader. It does the 'Array' trait where C<push> implements the
-C<ignore_class> method
+Calls to C<File::DataClass::Exception->add_roles> applies the
+specified list of optional roles
 
 =head1 Subroutines/Methods
+
+=head2 BUILD
+
+Does nothing placeholder that allows the applied roles to modify it
 
 =head2 is_one_of_us
 
@@ -119,8 +108,6 @@ None
 
 =item L<File::DataClass::Exception::TraitFor::TracingStacks>
 
-=item L<File::DataClass::Exception::TraitFor::ErrorLeader>
-
 =item L<Moose>
 
 =back
@@ -138,6 +125,8 @@ Patches are welcome
 =head1 Acknowledgements
 
 Larry Wall - For the Perl programming language
+
+L<Throwable::Error> - Lifted the stack frame filter from here
 
 =head1 Author
 
