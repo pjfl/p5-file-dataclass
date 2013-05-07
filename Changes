@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
 0.19.1    2013-05-02 15:11:09
+          - Added subroutine_filter to TracingStacks
           - Tidied exception class
           - Exception error type now a string
 

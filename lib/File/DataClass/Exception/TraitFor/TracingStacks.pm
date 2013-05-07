@@ -1,9 +1,9 @@
-# @(#)Ident: TracingStacks.pm 2013-05-01 19:43 pjf ;
+# @(#)Ident: TracingStacks.pm 2013-05-07 17:28 pjf ;
 
 package File::DataClass::Exception::TraitFor::TracingStacks;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.19.%d', q$Rev: 4 $ =~ /\d+/gmx );
 
 use Moose::Role;
 use MooseX::Types   -declare => [ q(Tracer) ];
@@ -45,7 +45,7 @@ sub stacktrace {
       unless ($l_no = $seen{ $package } and $l_no == $frame->line) {
          $seen{ $package } = $frame->line;
 
-         my $symbol = $subr || $package; $symbol !~ m{ :: __ANON__ \z }mx
+         my $symbol = $subr || $package; $self->subroutine_filter( $symbol )
             and push @lines, join q( ), $symbol, 'line', $frame->line;
       }
 
@@ -55,6 +55,13 @@ sub stacktrace {
    defined $skip or $skip = 0; pop @lines while ($skip--);
 
    return wantarray ? reverse @lines : (join "\n", reverse @lines)."\n";
+}
+
+sub subroutine_filter {
+   my ($self, $subr) = @_;
+
+   $subr =~ m{ :: __ANON__ \z }mx and return 0;
+   return 1;
 }
 
 sub trace_frame_filter { # Lifted from StackTrace::Auto
@@ -112,7 +119,7 @@ File::DataClass::Exception::TraitFor::TracingStacks - Provides a minimalist stac
 
 =head1 Version
 
-This documents version v0.19.$Rev: 1 $ of
+This documents version v0.19.$Rev: 4 $ of
 L<File::DataClass::Exception::TraitFor::TracingStacks>
 
 =head1 Description
@@ -155,6 +162,14 @@ Default subroutine enable method modifiers
 
 Returns a minimalist stack trace. Defaults to skipping zero frames
 from the stack
+
+=head2 subroutine_filter
+
+   $bool = $self->subroutine_filter( $subroutine_name );
+
+Returns true if the frames subroutine name does not match against the
+list of subroutines to suppress. Currently subroutine names matching
+C<__ANON__> are filtered out
 
 =head2 trace_frame_filter
 
