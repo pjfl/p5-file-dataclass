@@ -1,8 +1,8 @@
-# @(#)Ident: 10exception.t 2013-05-07 21:39 pjf ;
+# @(#)Ident: 10exception.t 2013-05-08 21:05 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 7 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -13,16 +13,11 @@ use Test::More;
 
 BEGIN {
    my $current = eval { Module::Build->current };
-
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 }
 
-use Class::Null;
-
 use_ok 'File::DataClass::Exception';
-
-File::DataClass::Exception->add_roles( 'ErrorLeader' );
 
 my $class = 'File::DataClass::Exception'; $EVAL_ERROR = undef;
 
@@ -37,7 +32,7 @@ $e = $EVAL_ERROR; $EVAL_ERROR = undef; my $min_level = $e->level;
 is ref $e, $class, 'Good class';
 like $e, qr{ \A main \[\d+ / $min_level \] }mx, 'Package and default level';
 like $e, qr{ PracticeKill \s* \z   }mx, 'Throws error message';
-is $e->class, "${class}::Base", 'Default error class';
+is $e->class, "${class}", 'Default error class';
 
 my ($line1, $line2, $line3);
 

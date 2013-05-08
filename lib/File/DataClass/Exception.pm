@@ -1,21 +1,21 @@
-# @(#)Ident: Exception.pm 2013-05-07 22:53 pjf ;
+# @(#)Ident: Exception.pm 2013-05-08 20:59 pjf ;
 
 package File::DataClass::Exception;
 
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 7 $ =~ /\d+/gmx );
 
 use Moose;
+use MooseX::Types::Moose qw(Str);
 
-extends q(File::DataClass::Exception::Base);
-with    q(File::DataClass::Exception::TraitFor::Throwing);
-with    q(File::DataClass::Exception::TraitFor::TracingStacks);
+extends q(Unexpected);
+with    q(Unexpected::TraitFor::ErrorLeader);
 
-sub BUILD {}
+__PACKAGE__->ignore_class( 'File::DataClass::IO' );
 
-sub is_one_of_us {
-   return $_[ 1 ] && blessed $_[ 1 ] && $_[ 1 ]->isa( __PACKAGE__ );
-}
+has '+class' => default => __PACKAGE__;
+
+has 'out'    => is => 'ro', isa => Str, default => q();
 
 __PACKAGE__->meta->make_immutable;
 
@@ -59,7 +59,7 @@ File::DataClass::Exception - Moose exception class composed from traits
 
 =head1 Version
 
-This documents version v0.20.$Rev: 0 $ of L<File::DataClass::Exception>
+This documents version v0.20.$Rev: 7 $ of L<File::DataClass::Exception>
 
 =head1 Description
 
@@ -68,29 +68,68 @@ L<File::DataClass::Exception::TraitFor::Throwing/throw> method with
 automatic re-throw upon detection of self, conditional throw if an
 exception was caught and a simplified stacktrace
 
-Applies exception roles to the exception base class
-L<File::DataClass::Exception::Base>. See L</Dependencies> for the list of
-roles that are applied
+Applies exception roles to the exception base class L<Unexpected>. See
+L</Dependencies> for the list of roles that are applied
 
 Error objects are overloaded to stringify to the full error message
 plus a leader if the optional C<ErrorLeader> role has been applied
 
 =head1 Configuration and Environment
 
-Calls to C<File::DataClass::Exception->add_roles> applies the
-specified list of optional roles
+Ignores L<File::DataClass::IO> when creating exception leaders
+
+Overrides the C<class> attribute setting it's value to this class
+
+Defines these attributes;
+
+=over 3
+
+=item C<out>
+
+A string containing the output from whatever was being called before
+it threw
+
+=back
 
 =head1 Subroutines/Methods
 
-=head2 BUILD
+=head2 as_string
 
-Does nothing placeholder that allows the applied roles to modify it
+   $printable_string = $e->as_string
 
-=head2 is_one_of_us
+What an instance of this class stringifies to
 
-   $bool = $class->is_one_of_us( $string_or_exception_object_ref );
+=head2 caught
 
-Class method which detects instances of this exception class
+   $e = IPC::SRLock::Exception->caught( $error );
+
+Catches and returns a thrown exception or generates a new exception if
+C<EVAL_ERROR> has been set or if an error string was passed in
+
+=head2 stacktrace
+
+   $lines = $e->stacktrace( $num_lines_to_skip );
+
+Return the stack trace. Defaults to skipping zero lines of output
+Skips anonymous stack frames, minimalist
+
+=head2 throw
+
+   IPC::SRLock::Exception->throw( $error );
+
+Create (or re-throw) an exception to be caught by the L</caught> method. If
+the passed parameter is a reference it is re-thrown. If a single scalar
+is passed it is taken to be an error message code, a new exception is
+created with all other parameters taking their default values. If more
+than one parameter is passed the it is treated as a list and used to
+instantiate the new exception. The C<error> attribute must be provided
+in this case
+
+=head2 throw_on_error
+
+   IPC::SRLock::Exception->throw_on_error( $error );
+
+Calls L</caught> and if the was an exception L</throw>s it
 
 =head1 Diagnostics
 
@@ -102,13 +141,11 @@ None
 
 =item L<namespace::autoclean>
 
-=item L<File::DataClass::Exception::Base>
-
-=item L<File::DataClass::Exception::TraitFor::Throwing>
-
-=item L<File::DataClass::Exception::TraitFor::TracingStacks>
-
 =item L<Moose>
+
+=item L<MooseX::Types::Moose>
+
+=item L<Unexpected>
 
 =back
 
