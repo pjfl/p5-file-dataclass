@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-0.20.8    2013-05-11 09:47:31
+0.20.9    2013-05-15 21:01:29
+          - Added File::Path as a prereq again
           - Updated prereqs in Build.PL
           - Exception class depends on Unexpected
           - Fixed spelling test
