@@ -1,10 +1,10 @@
-# @(#)$Ident: Any.pm 2013-04-30 01:32 pjf ;
+# @(#)$Ident: Any.pm 2013-05-16 00:07 pjf ;
 
 package File::DataClass::Storage::Any;
 
 use strict;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 10 $ =~ /\d+/gmx );
 
 use Moose;
 use File::Basename             qw(basename);
@@ -16,19 +16,19 @@ use File::DataClass::Storage;
 has 'schema' => is => 'ro', isa => 'Object', required => TRUE, weak_ref => TRUE,
    handles   => [ qw(cache storage_attributes storage_base), ];
 
-has 'stores' => is => 'ro', isa => 'HashRef', lazy => TRUE,
-   builder   => '_build_stores';
+
+has '_stores' => is => 'ro', isa => 'HashRef', default => sub { {} };
 
 sub create_or_update {
-   return shift->_get_store_from_extension( $_[ 0 ] )->create_or_update( @_ );
+   return shift->_get_store_from_path( $_[ 0 ] )->create_or_update( @_ );
 }
 
 sub delete {
-   return shift->_get_store_from_extension( $_[ 0 ] )->delete( @_ );
+   return shift->_get_store_from_path( $_[ 0 ] )->delete( @_ );
 }
 
 sub dump {
-   return shift->_get_store_from_extension( $_[ 0 ] )->dump( @_ );
+   return shift->_get_store_from_path( $_[ 0 ] )->dump( @_ );
 }
 
 sub extn {
@@ -40,7 +40,7 @@ sub extn {
 }
 
 sub insert {
-   return shift->_get_store_from_extension( $_[ 0 ] )->insert( @_ );
+   return shift->_get_store_from_path( $_[ 0 ] )->insert( @_ );
 }
 
 sub load {
@@ -54,7 +54,7 @@ sub load {
    $data = {}; $newest = 0;
 
    for my $path (@paths) {
-      my $store = $self->_get_store_from_extension( $path );
+      my $store = $self->_get_store_from_path( $path );
       my ($red, $path_mtime) = $store->read_file( $path, FALSE ); $red or next;
 
       $path_mtime > $newest and $newest = $path_mtime;
@@ -78,52 +78,51 @@ sub meta_unpack {
 };
 
 sub read_file {
-   return shift->_get_store_from_extension( $_[ 0 ] )->read_file( @_ );
+   return shift->_get_store_from_path( $_[ 0 ] )->read_file( @_ );
 }
 
 sub select {
-   return shift->_get_store_from_extension( $_[ 0 ] )->select( @_ );
+   return shift->_get_store_from_path( $_[ 0 ] )->select( @_ );
 }
 
 sub txn_do {
-   return shift->_get_store_from_extension( $_[ 0 ] )->txn_do( @_ );
+   return shift->_get_store_from_path( $_[ 0 ] )->txn_do( @_ );
 }
 
 sub update {
-   return shift->_get_store_from_extension( $_[ 0 ] )->update( @_ );
+   return shift->_get_store_from_path( $_[ 0 ] )->update( @_ );
 }
 
 sub validate_params {
-   return shift->_get_store_from_extension( $_[ 0 ] )->validate_params( @_ );
+   return shift->_get_store_from_path( $_[ 0 ] )->validate_params( @_ );
 }
 
 # Private methods
 
-sub _build_stores {
-   my $self = shift; my $stores = {};
+sub _get_store_from_extension {
+   my ($self, $extn) = @_; my $stores = $self->_stores;
 
-   for my $extn (keys %{ EXTENSIONS() }) {
-      my $class = EXTENSIONS()->{ $extn }->[ 0 ];
+   exists $stores->{ $extn } and return $stores->{ $extn };
 
-      if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
-      else { $class = $self->storage_base.q(::).$class }
+   my $class = EXTENSIONS()->{ $extn }->[ 0 ]
+      or throw error => 'Extension [_1] has no class', args => [ $extn ];
 
-      ensure_class_loaded $class;
+   if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
+   else { $class = $self->storage_base."::${class}" }
 
-      $stores->{ $extn } = $class->new( { %{ $self->storage_attributes },
-                                          schema => $self->schema } );
-   }
+   ensure_class_loaded $class;
 
-   return $stores;
+   return $stores->{ $extn } = $class->new( { %{ $self->storage_attributes },
+                                              schema => $self->schema } );
 }
 
-sub _get_store_from_extension {
-   my ($self, $path) = @_; my $file = basename( NUL.$path );
+sub _get_store_from_path {
+   my ($self, $path) = @_; my $file = basename( "${path}" );
 
    my $extn = (split m{ \. }mx, $file)[ -1 ]
       or throw error => 'File [_1] has no extension', args => [ $file ];
 
-   my $store = $self->stores->{ q(.).$extn }
+   my $store = $self->_get_store_from_extension( ".${extn}" )
       or throw error => 'Extension [_1] has no store', args => [ $extn ];
 
    return $store;
@@ -145,7 +144,7 @@ File::DataClass::Storage::Any - Selects storage class using the extension on the
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.20.$Rev: 10 $
 
 =head1 Synopsis
 
