@@ -1,8 +1,8 @@
-# @(#)$Ident: 20data-class.t 2013-05-01 19:40 pjf ;
+# @(#)$Ident: 20data-class.t 2013-05-17 15:37 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 11 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -13,7 +13,6 @@ use Test::More;
 
 BEGIN {
    my $current = eval { Module::Build->current };
-
    $current and $current->notes->{stop_tests}
             and plan skip_all => $current->notes->{stop_tests};
 }
@@ -104,8 +103,6 @@ $args->{name} = q(dummy); my $res = test( $rs, q(create), $args );
 
 ok ! defined $res, 'Creates dummy element but does not insert';
 
-my $source = $schema->source( q(globals) );
-
 $args->{text} = q(value1); $res = test( $rs, q(create), $args );
 
 is $res, q(dummy), 'Creates dummy element and inserts';
@@ -187,10 +184,9 @@ ok ! $diff, 'Can translate from XML to JSON';
    sub tempdir { $_[ 0 ]->{tempdir} }
 }
 
-use Exception::Class ( q(MyException) );
 use File::DataClass::Constants ();
 
-File::DataClass::Constants->Exception_Class( q(MyException) );
+File::DataClass::Constants->Exception_Class( q(Unexpected) );
 
 $schema = File::DataClass::Schema->new
    ( builder => Dummy->new, path => [ qw(t default.xml) ] );
@@ -202,10 +198,9 @@ is $schema->tempdir, q(t), 'IOC tempdir';
 
 $e = test( $schema, qw(load nonexistant_file) );
 
-is ref $e, q(MyException), 'Non default exception class';
+is ref $e, q(Unexpected), 'Non default exception class';
 
 # Cleanup
-
 io( $dumped     )->unlink;
 io( $translate  )->unlink;
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
