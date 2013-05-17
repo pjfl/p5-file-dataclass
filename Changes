@@ -1,6 +1,6 @@
 Revision history for File::DataClass
 
-0.20.10   2013-05-16 01:10:09
+0.20.12   2013-05-17 17:05:53
           - Fixed defined/false bug in ::HashMerge
           - Delayed loading storage class for Any
           - Added File::Path as a prereq again
