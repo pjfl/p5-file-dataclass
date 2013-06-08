@@ -1,9 +1,9 @@
-# @(#)$Ident: Build.PL 2013-05-17 15:13 pjf ;
+# @(#)$Ident: Build.PL 2013-06-08 13:16 pjf ;
 
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 11 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 13 $ =~ /\d+/gmx );
 
 Bob->new( {
    module    => q(File::DataClass),
@@ -27,7 +27,7 @@ Bob->new( {
       'XML::Bare'                  => 0.47,
       'XML::DTD'                   => 0.10,
       'XML::Simple'                => 2.18,
-      'Unexpected'                 => q(0.1.0), },
+      'Unexpected'                 => q(0.3.0), },
    recommends          => {
       'App::cpanminus' => 1.6005, },
    configure_requires  => {
