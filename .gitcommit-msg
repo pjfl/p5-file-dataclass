@@ -1,9 +1,9 @@
 #!/usr/bin/env perl
-# @(#)$Ident: gitcommit-msg 2013-06-08 16:53 pjf ;
+# @(#)$Ident: gitcommit-msg 2013-06-08 17:20 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( '0.1' );
+use version; our $VERSION = qv( '0.2' );
 
 use English qw(-no_match_vars);
 

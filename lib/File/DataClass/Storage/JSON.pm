@@ -1,13 +1,13 @@
-# @(#)$Ident: JSON.pm 2013-04-30 01:32 pjf ;
+# @(#)$Ident: JSON.pm 2013-06-08 22:27 pjf ;
 
 package File::DataClass::Storage::JSON;
 
-use strict;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 
-use Moose;
 use JSON qw();
+use Moo;
+use MooX::Augment -class;
 
 extends qw(File::DataClass::Storage);
 
@@ -32,10 +32,6 @@ augment '_write_file' => sub {
    $wtr->print( $json->pretty->utf8( 0 )->encode( $data ) ); return $data;
 };
 
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
-
 1;
 
 __END__
@@ -48,11 +44,11 @@ File::DataClass::Storage::JSON - Read/write JSON data storage model
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.21.$Rev: 16 $
 
 =head1 Synopsis
 
-   use Moose;
+   use Moo;
 
    extends qw(File::DataClass::Schema);
 
@@ -61,6 +57,18 @@ This document describes version v0.20.$Rev: 0 $
 =head1 Description
 
 Uses L<JSON> to read and write JSON files
+
+=head1 Configuration and Environment
+
+Defines the following attributes;
+
+=over 3
+
+=item C<extn>
+
+The extension appended to filenames. Defaults to F<.json>
+
+=back
 
 =head1 Subroutines/Methods
 
@@ -73,10 +81,6 @@ Calls L<JSON/decode> to parse the input
 Calls L<JSON/encode> to generate the output
 
 =head1 Diagnostics
-
-None
-
-=head1 Configuration and Environment
 
 None
 

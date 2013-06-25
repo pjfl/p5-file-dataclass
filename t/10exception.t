@@ -1,8 +1,8 @@
-# @(#)Ident: 10exception.t 2013-05-08 21:05 pjf ;
+# @(#)Ident: 10exception.t 2013-06-08 17:51 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 7 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -11,10 +11,13 @@ use English qw(-no_match_vars);
 use Module::Build;
 use Test::More;
 
+my $reason;
+
 BEGIN {
-   my $current = eval { Module::Build->current };
-   $current and $current->notes->{stop_tests}
-            and plan skip_all => $current->notes->{stop_tests};
+   my $builder = eval { Module::Build->current };
+
+   $builder and $reason = $builder->notes->{stop_tests};
+   $reason  and $reason =~ m{ \A TESTS: }mx and plan skip_all => $reason;
 }
 
 use_ok 'File::DataClass::Exception';

@@ -1,31 +1,31 @@
-# @(#)$Ident: XML.pm 2013-04-30 01:32 pjf ;
+# @(#)$Ident: XML.pm 2013-06-09 18:06 pjf ;
 
 package File::DataClass::Storage::XML;
 
-use strict;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 
-use Moose;
 use File::DataClass::Constants;
-use File::DataClass::Constraints qw(HashRefOfBools);
-use MooseX::Types::Moose qw(ArrayRef Str);
+use File::DataClass::Types  qw( HashRefOfBools );
+use Moo;
+use Unexpected::Types       qw( ArrayRef Str );
 use XML::DTD;
 
-extends qw(File::DataClass::Storage);
+extends q(File::DataClass::Storage);
 
 has '+extn'     => default => q(.xml);
 
-has 'root_name' => is => 'ro', isa => Str,            default => 'config';
+has 'root_name' => is => 'ro', isa => Str, default => 'config';
+
 
 has '_arrays'   => is => 'rw', isa => HashRefOfBools, default => sub { {} },
-   init_arg     => 'force_array',                     coerce  => TRUE;
+   init_arg     => 'force_array', coerce => HashRefOfBools->coercion;
 
-has '_dtd'      => is => 'rw', isa => ArrayRef,       default => sub { [] },
+has '_dtd'      => is => 'rw', isa => ArrayRef, default => sub { [] },
    init_arg     => 'dtd';
 
 around 'meta_pack' => sub {
-   my ($next, $self, @args) = @_; my $packed = $self->$next( @args );
+   my ($orig, $self, @args) = @_; my $packed = $orig->( $self, @args );
 
    $self->_dtd and $packed->{_dtd} = $self->_dtd;
 
@@ -33,15 +33,14 @@ around 'meta_pack' => sub {
 };
 
 around 'meta_unpack' => sub {
-   my ($next, $self, $packed) = @_; $packed ||= {};
+   my ($orig, $self, $packed) = @_; $packed ||= {};
 
    $self->_dtd( exists $packed->{_dtd} ? delete $packed->{_dtd} : [] );
 
-   return $self->$next( $packed );
+   return $orig->( $self, $packed );
 };
 
 # Private methods
-
 sub _create_or_update {
    my ($self, $path, $element_obj, $overwrite, $condition) = @_;
 
@@ -99,10 +98,6 @@ sub _is_in_dtd {
    return exists $elements{ $candidate };
 }
 
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
-
 1;
 
 __END__
@@ -115,12 +110,36 @@ File::DataClass::Storage::XML - Read/write XML data storage model
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.21.$Rev: 16 $
 
 =head1 Synopsis
 
 This is an abstract base class. See one of the subclasses for a
 concrete example
+
+=head1 Configuration and Environment
+
+Defines the following attributes;
+
+=over 3
+
+=item C<extn>
+
+The extension appended to filenames. Defaults to F<.xml>
+
+=item C<meta_pack>
+
+Adds the DTD to the meta data
+
+=item C<meta_unpack>
+
+Extracts the DTD from the meta data
+
+=item C<root_name>
+
+Defaults to C<config>. The name of the outer containing element
+
+=back
 
 =head1 Description
 
@@ -131,10 +150,6 @@ Implements the basic storage methods for reading and writing XML files
 No public methods
 
 =head1 Diagnostics
-
-None
-
-=head1 Configuration and Environment
 
 None
 

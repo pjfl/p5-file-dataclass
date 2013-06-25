@@ -1,21 +1,26 @@
-# @(#)Ident: 21hash-merge.t 2013-05-17 16:02 pjf ;
+# @(#)Ident: 21hash-merge.t 2013-06-08 18:03 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 11 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 16 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, q(lib) );
 
-use English qw(-no_match_vars);
 use Module::Build;
 use Test::More;
 
+my $reason;
+
 BEGIN {
-   my $current = eval { Module::Build->current };
-   $current and $current->notes->{stop_tests}
-            and plan skip_all => $current->notes->{stop_tests};
+   my $builder = eval { Module::Build->current };
+
+   $builder and $reason = $builder->notes->{stop_tests};
+   $reason  and $reason =~ m{ \A TESTS: }mx and plan skip_all => $reason;
 }
+
+use English qw(-no_match_vars);
+use File::DataClass::Schema;
 
 sub test {
    my ($obj, $method, @args) = @_; my $wantarray = wantarray; local $EVAL_ERROR;
@@ -27,7 +32,6 @@ sub test {
    $EVAL_ERROR and return $EVAL_ERROR; return $wantarray ? @{ $res } : $res;
 }
 
-use File::DataClass::Schema;
 
 my $schema = File::DataClass::Schema->new
    ( cache_class              => 'none',

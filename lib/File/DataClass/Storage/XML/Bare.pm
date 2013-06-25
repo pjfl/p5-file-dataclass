@@ -1,14 +1,14 @@
-# @(#)$Ident: Bare.pm 2013-04-30 01:32 pjf ;
+# @(#)$Ident: Bare.pm 2013-06-08 21:08 pjf ;
 
 package File::DataClass::Storage::XML::Bare;
 
-use strict;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
+use Moo;
+use MooX::Augment -class;
 use XML::Bare;
-use Moose;
 
 extends qw(File::DataClass::Storage::XML);
 
@@ -38,7 +38,6 @@ augment '_write_file' => sub {
 };
 
 # Private methods
-
 sub _read_filter {
    # Turn the structure returned by XML::Bare into one returned by XML::Simple
    my ($self, $arrays, $data) = @_;
@@ -110,7 +109,6 @@ sub _write_filter {
 }
 
 # Private subroutines
-
 sub __bracket {
    my ($k, $v) = @_; $BORKED and $v =~ s{ [&] }{&amp;}gmsx;
 
@@ -158,10 +156,6 @@ sub __promote {
    return;
 }
 
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
-
 1;
 
 __END__
@@ -174,11 +168,11 @@ File::DataClass::Storage::XML::Bare - Read/write XML data storage model
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.21.$Rev: 16 $
 
 =head1 Synopsis
 
-   use Moose;
+   use Moo;
 
    extends qw(File::DataClass::Schema);
 

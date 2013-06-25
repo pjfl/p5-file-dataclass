@@ -1,96 +1,121 @@
-# @(#)$Ident: IO.pm 2013-04-30 01:31 pjf ;
+# @(#)$Ident: IO.pm 2013-06-20 19:54 pjf ;
 
 package File::DataClass::IO;
 
-use strict;
+use 5.01;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 
-use Moose;
-use Moose::Util::TypeConstraints;
+use English                    qw( -no_match_vars );
+use Exporter 5.57              qw( import );
+use Fcntl                      qw( :flock :seek );
+use File::Basename               ( );
+use File::Copy                   ( );
 use File::DataClass::Constants;
-use English      qw(-no_match_vars);
-use Fcntl        qw(:flock :seek);
-use List::Util   qw(first);
-use File::Basename ();
-use File::Copy     ();
-use File::Path     ();
-use File::Spec     ();
-use File::Temp     ();
-use IO::File;
+use File::DataClass::Functions qw( is_arrayref is_coderef is_hashref );
+use File::Path                   ( );
+use File::Spec                   ( );
+use File::Temp                   ( );
 use IO::Dir;
+use IO::File;
+use List::Util                 qw( first );
+use Moo;
+use Scalar::Util               qw( blessed );
+use Type::Utils                qw( enum );
+use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
+                                   PositiveInt RegexpRef SimpleStr Str );
 
-use Sub::Exporter::Progressive -setup => {
-   exports => [ qw(io) ], groups => { default => [ qw(io) ], },
-};
+our @EXPORT   = qw( io );
 
-my $osname = lc $OSNAME;
-my $ntfs   = $osname eq EVIL || $osname eq CYGWIN ? TRUE : FALSE;
+my @ARG_NAMES = qw( name mode perms );
+my $IO_MODE   = enum 'IO_Mode' => [ qw( a a+ r r+ w w+ ) ];
+my $IO_TYPE   = enum 'IO_Type' => [ qw( dir file ) ];
+my $LC_OSNAME = lc $OSNAME;
+my $NTFS      = $LC_OSNAME eq EVIL || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
 
-enum 'File::DataClass::IO_Mode' => qw(a a+ r r+ w w+);
-enum 'File::DataClass::IO_Type' => qw(dir file);
+# Public attributes
+has 'autoclose'     => is => 'lazy', isa => Bool,           default => TRUE  ;
+has 'io_handle'     => is => 'rwp',  isa => Maybe[Object]                    ;
+has 'is_open'       => is => 'rwp',  isa => Bool,           default => FALSE ;
+has 'is_utf8'       => is => 'rwp',  isa => Bool,           default => FALSE ;
+has 'mode'          => is => 'rwp',  isa => $IO_MODE,       default => 'r'   ;
+has 'name'          => is => 'rwp',  isa => SimpleStr,      default => NUL,
+   coerce           => \&__coerce_name,                     lazy    => TRUE  ;
+has '_perms'        => is => 'rwp',  isa => PositiveInt,    default => PERMS,
+   init_arg         => 'perms'                                               ;
+has 'sort'          => is => 'lazy', isa => Bool,           default => TRUE  ;
+has 'type'          => is => 'rwp',  isa => Maybe[$IO_TYPE]                  ;
 
-has 'autoclose'     => is => 'rw', isa => 'Bool',         default => TRUE  ;
-has 'io_handle'     => is => 'rw', isa => 'Maybe[Object]'                  ;
-has 'is_open'       => is => 'rw', isa => 'Bool',         default => FALSE ;
-has 'is_utf8'       => is => 'rw', isa => 'Bool',         default => FALSE ;
-has 'mode'          => is => 'rw', isa => 'File::DataClass::IO_Mode',
-   default          => q(r);
-has 'name'          => is => 'rw', isa => 'Str',          default => NUL   ;
-has '_perms'        => is => 'rw', isa => 'Num',          default => PERMS,
-   init_arg         => 'perms';
-has 'sort'          => is => 'rw', isa => 'Bool',         default => TRUE  ;
-has 'type'          => is => 'rw', isa => 'Maybe[File::DataClass::IO_Type]';
-
-has '_assert'       => is => 'rw', isa => 'Bool',         default => FALSE ;
-has '_atomic'       => is => 'rw', isa => 'Bool',         default => FALSE ;
-has '_atomic_infix' => is => 'rw', isa => 'Str',          default => q(B_*);
-has '_binary'       => is => 'rw', isa => 'Bool',         default => FALSE ;
-has '_binmode'      => is => 'rw', isa => 'Str',          default => NUL   ;
-has '_block_size'   => is => 'rw', isa => 'Int',          default => 1024  ;
-has '_chomp'        => is => 'rw', isa => 'Bool',         default => FALSE ;
-has '_deep'         => is => 'rw', isa => 'Bool',         default => FALSE ;
-has '_dir_pattern'  => is => 'ro', isa => 'RegexpRef',    lazy    => TRUE,
-   builder          => '_build__dir_pattern';
-has '_encoding'     => is => 'rw', isa => 'Str',          default => NUL   ;
-has '_filter'       => is => 'rw', isa => 'Maybe[CodeRef]'                 ;
-has '_lock'         => is => 'rw', isa => 'Bool',         default => FALSE ;
-has '_lock_obj'     => is => 'rw', isa => 'Maybe[Object]',
-   writer           => 'lock_obj';
-has '_separator'    => is => 'rw', isa => 'Str',          default => $RS   ;
-has '_umask'        => is => 'rw', isa => 'ArrayRef[Num]',
+# Private attributes
+has '_assert'       => is => 'rw',   isa => Bool,           default => FALSE ;
+has '_atomic'       => is => 'rw',   isa => Bool,           default => FALSE ;
+has '_atomic_infix' => is => 'rw',   isa => SimpleStr,      default => 'B_*' ;
+has '_binary'       => is => 'rw',   isa => Bool,           default => FALSE ;
+has '_binmode'      => is => 'rw',   isa => SimpleStr,      default => NUL   ;
+has '_block_size'   => is => 'rw',   isa => PositiveInt,    default => 1024  ;
+has '_chomp'        => is => 'rw',   isa => Bool,           default => FALSE ;
+has '_deep'         => is => 'rw',   isa => Bool,           default => FALSE ;
+has '_dir_pattern'  => is => 'lazy', isa => RegexpRef                        ;
+has '_encoding'     => is => 'rw',   isa => SimpleStr,      default => NUL   ;
+has '_filter'       => is => 'rw',   isa => Maybe[CodeRef]                   ;
+has '_lock'         => is => 'rw',   isa => Bool,           default => FALSE ;
+has '_lock_obj'     => is => 'rw',   isa => Maybe[Object],
+   writer           => 'lock_obj'                                            ;
+has '_separator'    => is => 'rw',   isa => Str,            default => $RS   ;
+has '_umask'        => is => 'rw',   isa => ArrayRef[Int],
    default          => sub { [] };
 
+# Construction
 around 'BUILDARGS' => sub {
-   my ($next, $class, $name, $mode, $perms) = @_;
-
-   my $attr = {}; $name or return $attr;
-
-   if (blessed $name and $name->isa( __PACKAGE__ )) {
-      $attr = { %{ $name } }; $attr->{perms} = delete $attr->{_perms};
-   }
-   else {
-      blessed $name and $name .= NUL; # Stringify path object
-
-      ref $name eq CODE and $name = $name->(); my $type = ref $name;
-
-      if ($type eq HASH) { $attr = $name }
-      else { $attr->{name} = $type eq ARRAY ? File::Spec->catfile( @{ $name } )
-                                            : $name }
-   }
-
-   defined $mode  and $attr->{mode } = $mode;
-   defined $perms and $attr->{perms} = $perms;
-   return $attr;
+   my ($orig, $class, @args) = @_; return __build_attr_from( @args );
 };
 
+sub __build_attr_from {
+   return      ( not defined $_[ 0 ] ) ? {}
+        :    __is_one_of_us( $_[ 0 ] ) ? __clone_one_of_us( $_[ 0 ] )
+        :       ( is_hashref $_[ 0 ] ) ? { %{ $_[ 0 ] } }
+        : __have_defined_args( 1, @_ ) ? { __inline_args( 1, @_ ) }
+        :       ( is_hashref $_[ 1 ] ) ? { name => $_[ 0 ], %{ $_[ 1 ] } }
+        : __have_defined_args( 2, @_ ) ? { __inline_args( 2, @_ ) }
+        : __have_defined_args( 3, @_ ) ? { __inline_args( 3, @_ ) }
+                                       : { @_ };
+}
+
+sub __clone_one_of_us {
+   my $y = { %{ $_[ 0 ] } }; $y->{perms} = delete $y->{_perms}; return $y;
+}
+
+sub __coerce_name {
+   my $x = $_[ 0 ]; defined $x or return;
+
+   is_coderef  $x and $x  = $x->();
+   blessed     $x and $x .= NUL;
+   is_arrayref $x and $x  = File::Spec->catfile( @{ $x } );
+   return $x;
+}
+
+sub __have_defined_args {
+   return (shift) == scalar grep { defined } @_;
+}
+
+sub __inline_args {
+   my $x = shift; return (map { $ARG_NAMES[ $_ ] => $_[ $_ ] } 0 .. $x - 1);
+}
+
+sub __is_one_of_us {
+   return (blessed $_[ 0 ]) && $_[ 0 ]->isa( __PACKAGE__ );
+}
+
+# Public and private methods
 sub abs2rel {
    my ($self, $base) = @_; return File::Spec->abs2rel( $self->name, $base );
 }
 
 sub absolute {
-   my ($self, $base) = @_; $self->name( $self->rel2abs( $base ) ); return $self;
+   my $self = shift; $self->_set_name( $self->rel2abs( $_[ 0 ] ) );
+
+   return $self;
 }
 
 sub all {
@@ -120,21 +145,21 @@ sub _all_file_contents {
 }
 
 sub append {
-   my ($self, @rest) = @_;
+   my ($self, @args) = @_;
 
    if ($self->is_open and not $self->is_reading) { $self->seek( 0, SEEK_END ) }
    else { $self->assert_open( q(a) ) }
 
-   return $self->_print( @rest );
+   return $self->_print( @args );
 }
 
 sub appendln {
-   my ($self, @rest) = @_;
+   my ($self, @args) = @_;
 
    if ($self->is_open and not $self->is_reading) { $self->seek( 0, SEEK_END ) }
    else { $self->assert_open( q(a) ) }
 
-   return $self->_println( @rest );
+   return $self->_println( @args );
 }
 
 sub assert {
@@ -294,18 +319,18 @@ sub clear {
 sub close {
    my $self = shift; $self->is_open or return $self;
 
-   if ($ntfs) { $self->_close_and_rename } else { $self->_rename_and_close }
+   if ($NTFS) { $self->_close_and_rename } else { $self->_rename_and_close }
 
-   $self->io_handle( undef );
-   $self->is_open  ( FALSE );
-   $self->mode     ( q(r)  );
+   $self->_set_io_handle( undef );
+   $self->_set_is_open  ( FALSE );
+   $self->_set_mode     ( q(r)  );
    return $self;
 }
 
 sub _close_and_rename { # This creates a race condition
    my $self = shift; $self->unlock; my $handle = $self->io_handle;
 
-   $handle and $handle->close; $handle and undef $handle;
+   $handle and $handle->close; $handle and delete $self->{io_handle};
 
    $self->_atomic and $self->_rename_atomic;
 
@@ -317,13 +342,13 @@ sub _rename_and_close { # This does not create a race condition
 
    my $handle = $self->io_handle; $handle and $handle->close;
 
-   $handle and undef $handle;
+   $handle and delete $self->{io_handle};
 
    return $self;
 }
 
 sub _constructor {
-   my ($self, @rest) = @_; return (blessed $self)->new( @rest );
+   my ($self, @args) = @_; return (blessed $self)->new( @args );
 }
 
 sub copy {
@@ -368,7 +393,7 @@ sub DEMOLISH {
 }
 
 sub dir {
-   my ($self, @rest) = @_; return $self->_init( q(dir), @rest );
+   my ($self, @args) = @_; return $self->_init( q(dir), @args );
 }
 
 sub dirname {
@@ -395,7 +420,7 @@ sub encoding {
       $self->_throw( 'No encoding value passed to '.__PACKAGE__.'::encoding' );
    $self->is_open and CORE::binmode( $self->io_handle, ":encoding($encoding)" );
    $self->_encoding( $encoding );
-   $self->is_utf8( $encoding eq q(utf8) ? TRUE : FALSE );
+   $self->_set_is_utf8( $encoding eq q(utf8) ? TRUE : FALSE );
    return $self;
 }
 
@@ -413,7 +438,7 @@ sub exists {
 }
 
 sub file {
-   my ($self, @rest) = @_; return $self->_init( q(file), @rest );
+   my ($self, @args) = @_; return $self->_init( q(file), @args );
 }
 
 sub filename {
@@ -502,15 +527,19 @@ sub getlines {
 sub _init {
    my ($self, $type, $name) = @_;
 
-   $self->autoclose( TRUE  );
-   $self->io_handle( undef );
-   $self->is_open  ( FALSE );
-   $self->name     ( $name ) if ($name);
-   $self->mode     ( q(r)  );
-   $self->sort     ( TRUE  );
-   $self->type     ( $type );
+   $self->_set_io_handle( undef );
+   $self->_set_is_open  ( FALSE );
+   $self->_set_name     ( $name ) if ($name);
+   $self->_set_mode     ( 'r'   );
+   $self->_set_type     ( $type );
 
    return $self;
+}
+
+sub _init_type_from_fs {
+   my $self = shift;
+
+   return -f $self->name ? $self->file : -d _ ? $self->dir : undef;
 }
 
 sub io {
@@ -522,7 +551,7 @@ sub is_absolute {
 }
 
 sub is_dir {
-   my $self = shift; $self->type or $self->_set_type or return FALSE;
+   my $self = shift; $self->type or $self->_init_type_from_fs or return FALSE;
 
    return $self->type && $self->type eq q(dir) ? TRUE : FALSE;
 }
@@ -532,7 +561,7 @@ sub is_executable {
 }
 
 sub is_file {
-   my $self = shift; $self->type or $self->_set_type;
+   my $self = shift; $self->type or $self->_init_type_from_fs;
 
    return $self->type && $self->type eq q(file) ? TRUE : FALSE;
 }
@@ -616,7 +645,7 @@ sub open {
       and q(+) eq (substr $self->mode, 1, 1) || NUL
       and $self->seek( 0, 0 )
       and return $self;
-   $self->type or $self->_set_type; $self->type or $self->file;
+   $self->type or $self->_init_type_from_fs; $self->type or $self->file;
    $self->is_open and $self->close;
    $self->is_dir
       and return $self->_open_dir( $self->_open_args( $mode, $perms ) );
@@ -634,33 +663,32 @@ sub _open_args {
 
    $perms = $self->_untainted_perms || $perms || $self->_perms;
 
-   return ($pathname, $self->mode( $mode ), $self->_perms( $perms ));
+   return ($pathname, $self->_set_mode( $mode ), $self->_set__perms( $perms ));
 }
 
 sub _open_dir {
    my ($self, $path) = @_;
 
    $self->_assert and $self->assert_dirpath( $path );
-   $self->io_handle( IO::Dir->new( $path ) )
+   $self->_set_io_handle( IO::Dir->new( $path ) )
       or $self->_throw( error => 'Directory [_1] cannot open',
                         args  => [ $path ] );
-   $self->is_open( TRUE );
+   $self->_set_is_open( TRUE );
    return $self;
 }
 
 sub _open_file {
    my ($self, $path, $mode, $perms) = @_;
 
-   $self->_assert and $self->assert_filepath;
-   $self->_umask_push( $perms );
+   $self->_assert and $self->assert_filepath; $self->_umask_push( $perms );
 
-   unless ($self->io_handle( IO::File->new( $path, $mode ) )) {
+   unless ($self->_set_io_handle( IO::File->new( $path, $mode ) )) {
       $self->_umask_pop;
       $self->_throw( error => 'File [_1] cannot open', args  => [ $path ] );
    }
 
    $self->_umask_pop; CORE::chmod $perms, $path;
-   $self->is_open( TRUE );
+   $self->_set_is_open( TRUE );
    $self->set_binmode;
    $self->set_lock;
    return $self;
@@ -671,23 +699,23 @@ sub parent {
 }
 
 sub pathname {
-   my ($self, @rest) = @_; return $self->name( @rest );
+   return $_[ 0 ]->name;
 }
 
 sub perms {
    my ($self, $perms) = @_;
 
-   defined $perms and $self->_perms( $perms ); return $self;
+   defined $perms and $self->_set__perms( $perms ); return $self;
 }
 
 sub print {
-   my ($self, @rest) = @_; return $self->assert_open( q(w) )->_print( @rest );
+   my ($self, @args) = @_; return $self->assert_open( q(w) )->_print( @args );
 }
 
 sub _print {
-   my ($self, @rest) = @_;
+   my ($self, @args) = @_;
 
-   for (@rest) {
+   for (@args) {
       print {$self->io_handle} $_
          or $self->_throw( error => 'IO error [_1]', args  => [ $OS_ERROR ] );
    }
@@ -696,20 +724,20 @@ sub _print {
 }
 
 sub println {
-   my ($self, @rest) = @_; return $self->assert_open( q(w) )->_println( @rest );
+   my ($self, @args) = @_; return $self->assert_open( q(w) )->_println( @args );
 }
 
 sub _println {
-   my ($self, @rest) = @_;
+   my ($self, @args) = @_;
 
-   return $self->_print( map { m{ [\n] \z }mx ? ($_) : ($_, "\n") } @rest );
+   return $self->_print( map { m{ [\n] \z }mx ? ($_) : ($_, "\n") } @args );
 }
 
 sub read {
-   my ($self, @rest) = @_; $self->assert_open;
+   my ($self, @args) = @_; $self->assert_open;
 
-   my $length = @rest || $self->is_dir
-              ? $self->io_handle->read( @rest )
+   my $length = @args || $self->is_dir
+              ? $self->io_handle->read( @args )
               : $self->io_handle->read( ${ $self->buffer },
                                         $self->_block_size, $self->length );
 
@@ -743,7 +771,7 @@ sub rel2abs {
 }
 
 sub relative {
-   my $self = shift; $self->name( $self->abs2rel ); return $self;
+   my $self = shift; $self->_set_name( $self->abs2rel ); return $self;
 }
 
 sub _rename_atomic {
@@ -751,7 +779,7 @@ sub _rename_atomic {
 
    File::Copy::move( $path, $self->name ) and return;
 
-   $ntfs or $self->_throw( error => 'Path [_1] move to [_2] failed: [_3]',
+   $NTFS or $self->_throw( error => 'Path [_1] move to [_2] failed: [_3]',
                            args  => [ $path, $self->name, $OS_ERROR ] );
 
    # Try this instead on Winshite
@@ -774,15 +802,15 @@ sub rmdir {
 }
 
 sub rmtree {
-   my ($self, @rest) = @_; return File::Path::remove_tree( $self->name, @rest );
+   my ($self, @args) = @_; return File::Path::remove_tree( $self->name, @args );
 }
 
 sub seek {
-   my ($self, @rest) = @_;
+   my ($self, @args) = @_;
 
-   $self->is_open or $self->assert_open( $osname eq EVIL ? q(r) : q(r+) );
+   $self->is_open or $self->assert_open( $LC_OSNAME eq EVIL ? q(r) : q(r+) );
 
-   $self->io_handle->seek( @rest ); $self->error_check;
+   $self->io_handle->seek( @args ); $self->error_check;
 
    return $self;
 }
@@ -802,7 +830,7 @@ sub set_binmode {
    elsif ($self->_binmode) {
       CORE::binmode( $self->io_handle, $self->_binmode );
    }
-   elsif ($self->_binary or $ntfs) {
+   elsif ($self->_binary or $NTFS) {
       CORE::binmode( $self->io_handle );
    }
 
@@ -817,12 +845,6 @@ sub set_lock {
    flock $self->io_handle, $self->mode eq q(r) ? LOCK_SH : LOCK_EX;
 
    return $self;
-}
-
-sub _set_type {
-   my $self = shift;
-
-   return -f $self->name ? $self->file : -d _ ? $self->dir : undef;
 }
 
 sub slurp {
@@ -874,20 +896,20 @@ sub tempfile {
    $tmpfh   = File::Temp->new
       ( DIR => $tempdir, TEMPLATE => (sprintf $tmplt, $PID) );
    $self->_init( q(file), $tmpfh->filename );
-   $self->io_handle( $tmpfh );
-   $self->is_open( TRUE );
-   $self->mode( q(w+) );
+   $self->_set_io_handle( $tmpfh );
+   $self->_set_is_open( TRUE );
+   $self->_set_mode( q(w+) );
    return $self;
 }
 
 sub _throw {
-   my ($self, @rest) = @_; eval { $self->unlock; };
+   my ($self, @args) = @_; eval { $self->unlock; };
 
-   EXCEPTION_CLASS->throw( @rest ); return; # Not reached
+   EXCEPTION_CLASS->throw( @args ); return; # Not reached
 }
 
 sub touch {
-   my ($self, @rest) = @_; $self->name or return;
+   my $self = shift; $self->name or return;
 
    if (-e $self->name) { my $now = time; utime $now, $now, $self->name }
    else { $self->_open_file( $self->_open_args( q(w) ) )->close }
@@ -942,21 +964,16 @@ sub utf8 {
 }
 
 sub write {
-   my ($self, @rest) = @_; $self->assert_open( q(w) );
+   my ($self, @args) = @_; $self->assert_open( q(w) );
 
-   my $length = @rest
-              ? $self->io_handle->write( @rest )
+   my $length = @args
+              ? $self->io_handle->write( @args )
               : $self->io_handle->write( ${ $self->buffer }, $self->length );
 
    $self->error_check;
-   scalar @rest or $self->clear;
+   scalar @args or $self->clear;
    return $length;
 }
-
-__PACKAGE__->meta->make_immutable;
-
-no Moose::Util::TypeConstraints;
-no Moose;
 
 1;
 
@@ -972,7 +989,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.21.$Rev: 16 $
 
 =head1 Synopsis
 
@@ -990,6 +1007,57 @@ This is a simplified re-write of L<IO::All> with additional functionality
 from L<IO::AtomicFile>. Provides the same minimalist API but without the
 heavy OO overloading. Only has methods for files and directories
 
+=head1 Configuration and Environment
+
+L<File::DataClass::Constants> has a class attribute C<Exception_Class> which
+defaults to L<File::DataClass::Exception>. Set this attribute to the
+classname used by the L</throw> method
+
+Defined the following attributes;
+
+=over 3
+
+=item C<autoclose>
+
+Defaults to true. Attempts to read past end of file will cause the
+object to be closed
+
+=item C<io_handle>
+
+Defaults to undef. This is set when the object is actually opened
+
+=item C<is_open>
+
+Defaults to false. Set to true when the object is opened
+
+=item C<is_utf8>
+
+Boolean should set to true if the file is C<UTF8> encoded. Defaults for false
+
+=item C<mode>
+
+File open mode. Defaults to 'r' for reading. Can any one of; 'a',
+'a+', 'r', 'r+', 'w', or 'w+'
+
+=item C<name>
+
+Defaults to undef. This must be set in the call to the constructor or
+soon after
+
+=item C<sort>
+
+Boolean defaults to true. If the IO object is a directory then sort
+the listings
+
+=item C<type>
+
+Defaults to false. Set by the L</dir> and L</file> methods to C<dir> and
+C<file> respectively. The L</dir> method is called by the L</next>
+method. The L</file> method is called by the L</assert_open> method if
+the C<type> attribute is false
+
+=back
+
 =head1 Subroutines/Methods
 
 If any errors occur the C<throw> method in the
@@ -998,9 +1066,10 @@ L<File::DataClass::Constants/EXCEPTION_CLASS> is called
 Methods beginning with an _ (underscore) are deemed private and should not
 be called from outside this package
 
-=head2 new
+=head2 BUILDARGS
 
-The constructor can be called with these method signatures:
+Constructs the attribute hash passed to the constructor method. The
+constructor can be called with these method signatures:
 
 =over 3
 
@@ -1325,35 +1394,6 @@ an array of lines
 Sets default values for some attributes, takes two optional arguments;
 C<type> and C<name>
 
-=over 3
-
-=item autoclose
-
-Defaults to true. Attempts to read past end of file will cause the
-object to be closed
-
-=item io_handle
-
-Defaults to undef. This is set when the object is actually opened
-
-=item is_open
-
-Defaults to false. Set to true when the object is opened
-
-=item name
-
-Defaults to undef. This must be set in the call to the constructor or
-soon after
-
-=item type
-
-Defaults to false. Set by the L</dir> and L</file> methods to C<dir> and
-C<file> respectively. The L</dir> method is called by the L</next>
-method. The L</file> method is called by the L</assert_open> method if
-the C<type> attribute is false
-
-=back
-
 =head2 io
 
    $io = io( 'path_to_file' );
@@ -1465,9 +1505,9 @@ Return L</dirname> as an IO object
 
 =head2 pathname
 
-   $pathname = io( 'path_to_file' )->pathname( $pathname );
+   $pathname = io( 'path_to_file' )->pathname;
 
-Sets and returns then C<name> attribute
+Returns then C<name> attribute
 
 =head2 perms
 
@@ -1644,12 +1684,6 @@ used. In this case the buffer contents are nulled out after the write
 
 None
 
-=head1 Configuration and Environment
-
-L<File::DataClass::Constants> has a class attribute C<Exception_Class> which
-defaults to L<File::DataClass::Exception>. Set this attribute to the
-classname used by the L</throw> method
-
 =head1 Dependencies
 
 =over 3
@@ -1658,11 +1692,15 @@ classname used by the L</throw> method
 
 =item L<overload>
 
+=item L<Exporter>
+
 =item L<File::DataClass::Constants>
 
-=item L<File::DataClass::Exception>
+=item L<Moo>
 
-=item L<Moose>
+=item L<Type::Utils>
+
+=item L<Unexpected::Types>
 
 =back
 

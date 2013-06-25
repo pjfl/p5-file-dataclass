@@ -1,41 +1,39 @@
-# @(#)$Ident: ResultSource.pm 2013-04-30 01:31 pjf ;
+# @(#)$Ident: ResultSource.pm 2013-06-08 20:59 pjf ;
 
 package File::DataClass::ResultSource;
 
-use strict;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 
-use Moose;
 use File::DataClass::Constants;
-
 use File::DataClass::ResultSet;
+use Moo;
+use Unexpected::Types qw(ArrayRef ClassName HashRef Object SimpleStr Str);
 
-has 'attributes'           => is => 'ro', isa => 'ArrayRef[Str]',
+has 'attributes'           => is => 'ro', isa => ArrayRef[Str],
    default                 => sub { [] };
 
-has 'defaults'             => is => 'ro', isa => 'HashRef',
+has 'defaults'             => is => 'ro', isa => HashRef,
    default                 => sub { {} };
 
-has 'name'                 => is => 'ro', isa => 'Str',
+has 'name'                 => is => 'ro', isa => SimpleStr,
    default                 => NUL;
 
-has 'label_attr'           => is => 'ro', isa => 'Str',
+has 'label_attr'           => is => 'ro', isa => SimpleStr,
    default                 => NUL;
 
-has 'resultset_attributes' => is => 'ro', isa => 'HashRef',
+has 'resultset_attributes' => is => 'ro', isa => HashRef,
    default                 => sub { {} };
 
-has 'resultset_class'      => is => 'ro', isa => 'ClassName',
-   default                 => q(File::DataClass::ResultSet);
+has 'resultset_class'      => is => 'ro', isa => ClassName,
+   default                 => 'File::DataClass::ResultSet';
 
-has 'schema'               => is => 'ro', isa => 'Object',
+has 'schema'               => is => 'ro', isa => Object,
+   handles                 => [ qw(path storage) ],
    required                => TRUE, weak_ref => TRUE,
-   handles                 => [ qw(path storage) ];
 
 
-has '_attributes' => is => 'ro', isa => 'HashRef',
-   builder        => '_build_attributes', init_arg => undef, lazy => TRUE;
+has '_attributes' => is => 'lazy', isa => HashRef, init_arg => undef;
 
 sub columns {
    return @{ $_[ 0 ]->attributes };
@@ -56,7 +54,6 @@ sub resultset {
 }
 
 # Private methods
-
 sub _build_attributes {
    my $self = shift; my $attr = {};
 
@@ -64,10 +61,6 @@ sub _build_attributes {
 
    return $attr;
 }
-
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
 
 1;
 
@@ -81,7 +74,7 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.21.$Rev: 16 $
 
 =head1 Synopsis
 

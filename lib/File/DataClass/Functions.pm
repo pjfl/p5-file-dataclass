@@ -1,43 +1,37 @@
-# @(#)$Ident: Functions.pm 2013-04-30 01:31 pjf ;
+# @(#)$Ident: Functions.pm 2013-06-18 01:23 pjf ;
 
 package File::DataClass::Functions;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 
-use Class::MOP;
+use Class::Load    qw( is_class_loaded load_class );
+use English        qw( -no_match_vars );
+use Exporter 5.57  qw( import );
 use File::DataClass::Constants;
-use English      qw(-no_match_vars);
-use Hash::Merge  qw(merge);
-use List::Util   qw(first);
-use Scalar::Util qw(blessed);
+use Hash::Merge    qw( merge );
+use List::Util     qw( first );
+use Scalar::Util   qw( blessed );
 use Try::Tiny;
 
-my $osname = lc $OSNAME;
-my $ntfs   = $osname eq EVIL || $osname eq CYGWIN ? TRUE : FALSE;
-my @_functions;
+our @EXPORT_OK   = qw( ensure_class_loaded is_arrayref is_coderef is_hashref
+                       is_member is_stale merge_attributes
+                       merge_hash_data throw );
+our %EXPORT_TAGS =   ( all => [ @EXPORT_OK ], );
 
-BEGIN {
-   @_functions = ( qw(ensure_class_loaded is_arrayref is_coderef is_hashref
-                      is_member is_stale merge_attributes
-                      merge_hash_data throw) );
-}
+my $LC_OSNAME    = lc $OSNAME;
+my $NTFS         = $LC_OSNAME eq EVIL || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
 
-use Sub::Exporter::Progressive -setup => {
-   exports => [ @_functions ], groups => { default => [], },
-};
-
-# Private functions
-
+# Public functions
 sub ensure_class_loaded ($;$) {
    my ($class, $opts) = @_; $opts ||= {};
 
-   my $package_defined = sub { Class::MOP::is_class_loaded( $class ) };
+   my $package_defined = sub { is_class_loaded( $class ) };
 
    not $opts->{ignore_loaded} and $package_defined->() and return 1;
 
-   try   { Class::MOP::load_class( $class ) } catch { throw( $_ ) };
+   try { load_class( $class ) } catch { throw( $_ ) };
 
    $package_defined->()
       or throw( error => 'Class [_1] loaded but package undefined',
@@ -69,7 +63,7 @@ sub is_member (;@) {
 sub is_stale (;$$$) {
    my ($data, $cache_mtime, $path_mtime) = @_;
 
-   $ntfs and return 1; # Assume NTFS does not support mtime
+   $NTFS and return 1; # Assume NTFS does not support mtime
 
    return ! defined $data || ! defined $path_mtime || ! defined $cache_mtime
          || $path_mtime > $cache_mtime
@@ -117,7 +111,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.21.$Rev: 16 $
 
 =head1 Synopsis
 
@@ -202,15 +196,11 @@ None
 
 =over 3
 
-=item L<Class::MOP>
+=item L<Class::Load>
+
+=item L<Exporter>
 
 =item L<Hash::Merge>
-
-=item L<List::Util>
-
-=item L<Scalar::Util>
-
-=item L<Sub::Exporter>
 
 =item L<Try::Tiny>
 

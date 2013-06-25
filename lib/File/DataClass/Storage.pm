@@ -1,27 +1,29 @@
-# @(#)$Ident: Storage.pm 2013-04-30 01:31 pjf ;
+# @(#)$Ident: Storage.pm 2013-06-14 11:21 pjf ;
 
 package File::DataClass::Storage;
 
-use strict;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 
-use Moose;
 use Class::Null;
-use English qw(-no_match_vars);
+use English                    qw( -no_match_vars );
 use File::Copy;
 use File::DataClass::Constants;
-use File::DataClass::Functions qw(is_stale merge_hash_data throw);
+use File::DataClass::Functions qw( is_stale merge_hash_data throw );
 use File::DataClass::HashMerge;
+use Moo;
+use MooX::Augment -class;
+use Scalar::Util               qw( blessed );
 use Try::Tiny;
+use Unexpected::Types          qw( Object Str );
 
-has 'backup'   => is => 'ro', isa => 'Str', default => NUL;
+has 'backup'   => is => 'ro', isa => Str, default => NUL;
 
-has 'encoding' => is => 'ro', isa => 'Str', default => NUL;
+has 'encoding' => is => 'ro', isa => Str, default => NUL;
 
-has 'extn'     => is => 'ro', isa => 'Str', default => NUL;
+has 'extn'     => is => 'ro', isa => Str, default => NUL;
 
-has 'schema'   => is => 'ro', isa => 'Object',
+has 'schema'   => is => 'ro', isa => Object,
    handles     => { _cache => q(cache), _debug => q(debug), _lock => q(lock),
                     _log   => q(log),   _perms => q(perms) }, required => TRUE,
    weak_ref    => TRUE;
@@ -239,7 +241,6 @@ sub _write_file {
 }
 
 # Private subroutines
-
 sub __get_src_attributes {
    my ($cond, $src) = @_;
 
@@ -247,10 +248,6 @@ sub __get_src_attributes {
                  and $_ ne q(name)
                  and $cond->( $_ ) } keys %{ $src };
 }
-
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
 
 1;
 
@@ -264,13 +261,40 @@ File::DataClass::Storage - Storage base class
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.21.$Rev: 16 $
 
 =head1 Synopsis
 
 =head1 Description
 
 Storage base class
+
+=head1 Configuration and Environment
+
+Defines the following attributes;
+
+=over 3
+
+=item C<backup>
+
+Extension appended to the file name. Used to create a backup of the updated
+file. Defaults to the null string so no backup created
+
+=item C<encoding>
+
+Used by subclasses to encode/decode the file data on ouput/input. Defaults
+to the null string
+
+=item C<extn>
+
+The filename extension for this type of file. Usually overridden in the
+subclass. Default to the null string
+
+=item C<schema>
+
+A weakened schema object reference
+
+=back
 
 =head1 Subroutines/Methods
 
@@ -339,10 +363,6 @@ an error otherwise. Path is an instance of L<File::DataClass::IO>
 =head2 validate_params
 
 =head1 Diagnostics
-
-None
-
-=head1 Configuration and Environment
 
 None
 

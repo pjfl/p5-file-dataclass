@@ -1,13 +1,13 @@
-# @(#)$Ident: Simple.pm 2013-04-30 01:32 pjf ;
+# @(#)$Ident: Simple.pm 2013-06-08 15:17 pjf ;
 
 package File::DataClass::Storage::XML::Simple;
 
-use strict;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 
-use Moose;
 use File::DataClass::Constants;
+use Moo;
+use MooX::Augment -class;
 use XML::Simple;
 
 extends qw(File::DataClass::Storage::XML);
@@ -35,10 +35,6 @@ augment '_write_file' => sub {
    return $data;
 };
 
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
-
 1;
 
 __END__
@@ -51,11 +47,11 @@ File::DataClass::Storage::XML::Simple - Read/write XML data storage model
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.21.$Rev: 16 $
 
 =head1 Synopsis
 
-   use Moose;
+   use Moo;
 
    extends qw(File::DataClass::Schema);
 

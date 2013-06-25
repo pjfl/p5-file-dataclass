@@ -1,7 +1,15 @@
 Revision history for File::DataClass
 
-0.20.13   2013-06-08 14:24:31
-          - Worked around overload bug in Unexpected
+0.21.16   2013-06-25 15:57:50
+          - Removed ::Constraints
+          - Switched to Exporter for speed
+          - Refactored ::Types
+          - Made ::IO::name lazy
+          - Renamed ::Constraints to ::Types
+          - Mooified the rest
+          - Mooified ::IO
+
+0.20.15   2013-06-25 15:36:17
           - Fixed defined/false bug in ::HashMerge
           - Delayed loading storage class for Any
           - Added File::Path as a prereq again

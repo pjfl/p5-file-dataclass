@@ -1,34 +1,34 @@
-# @(#)$Ident: ResultSet.pm 2013-04-30 01:31 pjf ;
+# @(#)$Ident: ResultSet.pm 2013-06-08 20:58 pjf ;
 
 package File::DataClass::ResultSet;
 
-use strict;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 
-use Moose;
 use File::DataClass::Constants;
 use File::DataClass::Functions qw(is_arrayref is_member throw);
 use File::DataClass::List;
 use File::DataClass::Result;
+use Moo;
+use Scalar::Util               qw(blessed);
+use Unexpected::Types          qw(ArrayRef ClassName HashRef Int Object);
 
-has 'list_class'   => is => 'ro', isa => 'ClassName',
-   default         => q(File::DataClass::List);
+has 'list_class'   => is => 'ro',   isa => ClassName,
+   default         => 'File::DataClass::List';
 
-has 'result_class' => is => 'ro', isa => 'ClassName',
-   default         => q(File::DataClass::Result);
+has 'result_class' => is => 'ro',   isa => ClassName,
+   default         => 'File::DataClass::Result';
 
-has 'source'       => is => 'ro', isa => 'Object',
-   required        => TRUE,  weak_ref => TRUE,
-   handles         => [ qw(attributes defaults label_attr path storage) ];
+has 'source'       => is => 'ro',   isa => Object,
+   handles         => [ qw(attributes defaults label_attr path storage) ],
+   required        => TRUE, weak_ref => TRUE;
 
-has '_iterator'    => is => 'rw', isa => 'Int',
-   default         => 0,     init_arg => undef;
 
-has '_operators'   => is => 'ro', isa => 'HashRef',
-   lazy            => TRUE,   builder => '_build__operators';
+has '_iterator'    => is => 'rw',   isa => Int, default => 0, init_arg => undef;
 
-has '_results'     => is => 'rw', isa => 'ArrayRef',
+has '_operators'   => is => 'lazy', isa => HashRef;
+
+has '_results'     => is => 'rw',   isa => ArrayRef,
    default         => sub { [] }, init_arg => undef;
 
 sub all {
@@ -179,7 +179,6 @@ sub update {
 }
 
 # Private methods
-
 sub _build__operators {
    return {
       q(eq) => sub { return $_[0] eq $_[1] },
@@ -361,10 +360,6 @@ sub _validate_params {
    return $name;
 }
 
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
-
 1;
 
 __END__
@@ -377,7 +372,7 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.21.$Rev: 16 $
 
 =head1 Synopsis
 

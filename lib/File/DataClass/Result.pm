@@ -1,15 +1,16 @@
-# @(#)$Ident: Result.pm 2013-04-30 01:32 pjf ;
+# @(#)$Ident: Result.pm 2013-06-16 21:48 pjf ;
 
 package File::DataClass::Result;
 
-use strict;
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
 
-use Moose;
+use Moo;
+use Scalar::Util      qw(blessed);
+use Unexpected::Types qw(Object Str);
 
-has 'name'       => is => 'rw', isa => 'Str',    required => 1;
-has '_resultset' => is => 'ro', isa => 'Object', required => 1,
+has 'name'       => is => 'rw', isa => Str,    required => 1;
+has '_resultset' => is => 'ro', isa => Object, required => 1,
    handles       => { _path    => q(path), _source => q(source),
                       _storage => q(storage) };
 
@@ -44,8 +45,6 @@ sub update {
    return $_[ 0 ]->_storage->update( $_[ 0 ]->_path, $_[ 0 ] );
 }
 
-no Moose;
-
 1;
 
 __END__
@@ -58,7 +57,7 @@ File::DataClass::Result - Result object definition
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.21.$Rev: 16 $
 
 =head1 Synopsis
 
@@ -117,7 +116,9 @@ None
 
 =over 3
 
-=item L<Moose>
+=item L<Moo>
+
+=item L<Unexpected::Types>
 
 =back
 
