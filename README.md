@@ -4,7 +4,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 # Version
 
-This document describes version v0.20.$Rev: 12 $ of [File::DataClass](https://metacpan.org/module/File::DataClass)
+This document describes version v0.20.$Rev: 15 $ of [File::DataClass](https://metacpan.org/module/File::DataClass)
 
 # Synopsis
 
@@ -24,24 +24,24 @@ This document describes version v0.20.$Rev: 12 $ of [File::DataClass](https://me
 
 # Description
 
-Provides CRUD methods for structured data stored in files of different formats
+Provides methods for manipulating structured data stored in files of
+different formats
 
 The documentation for this distribution starts in the class
 [File::DataClass::Schema](https://metacpan.org/module/File::DataClass::Schema)
 
 # Configuration and Environment
 
-Defines these class attributes. They are set on first use when an instance
-of [File::DataClass::Schema](https://metacpan.org/module/File::DataClass::Schema) is created
-
-- __Cache__
-
-    This is a [Cache::Cache](https://metacpan.org/module/Cache::Cache) object which is used to cache the results of
-    reading a file. Maybe of type `Cache`
+Defines no attributes
 
 # Subroutines/Methods
 
-None
+## F\_DC\_Cache
+
+    $hash_ref_of_CHI_objects = File::DataClass->F_DC_Cache;
+
+A class method which returns a hash ref of [CHI](https://metacpan.org/module/CHI) objects which are
+used to cache the results of reading files
 
 # Diagnostics
 
@@ -49,8 +49,7 @@ None
 
 # Dependencies
 
-- [namespace::autoclean](https://metacpan.org/module/namespace::autoclean)
-- [MooseX::ClassAttribute](https://metacpan.org/module/MooseX::ClassAttribute)
+- [Moo](https://metacpan.org/module/Moo)
 
 # Incompatibilities
 

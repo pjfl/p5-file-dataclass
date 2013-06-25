@@ -1,8 +1,8 @@
-# @(#)Ident: 07podspelling.t 2013-05-07 23:15 pjf ;
+# @(#)Ident: 07podspelling.t 2013-06-08 22:33 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 6 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 15 $ =~ /\d+/gmx );
 use File::Spec::Functions qw(catdir catfile updir);
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -44,6 +44,7 @@ ingy
 appendln
 autoclose
 api
+buildargs
 canonpath
 classname
 datetime
@@ -52,6 +53,7 @@ dirname
 dtd
 extn
 filename
+filenames
 filepath
 getline
 getlines

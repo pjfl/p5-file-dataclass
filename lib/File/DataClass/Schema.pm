@@ -1,77 +1,76 @@
-# @(#)$Ident: Schema.pm 2013-04-30 01:31 pjf ;
+# @(#)$Ident: Schema.pm 2013-06-16 21:45 pjf ;
 
 package File::DataClass::Schema;
 
-use strict;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 15 $ =~ /\d+/gmx );
 
-use Moose;
 use Class::Null;
-use File::DataClass::Constants;
-use File::DataClass::Constraints qw(Cache Directory DummyClass Lock Path);
-use File::DataClass::Functions   qw(ensure_class_loaded merge_attributes throw);
-use File::DataClass::IO;
-use MooseX::Types::Moose         qw(Bool ClassName HashRef Num Object Str);
-use File::Spec;
-
 use File::DataClass::Cache;
+use File::DataClass::Constants;
+use File::DataClass::Functions qw( ensure_class_loaded merge_attributes throw );
+use File::DataClass::IO;
 use File::DataClass::ResultSource;
 use File::DataClass::Storage;
+use File::DataClass::Types     qw( Bool Cache ClassName Directory DummyClass
+                                   HashRef Lock Num Object Path Str );
+use File::Spec;
+use Moo;
+use Scalar::Util               qw( blessed );
 
-extends qw(File::DataClass);
+extends q(File::DataClass);
 
-has 'cache'                    => is => 'ro', isa => Cache,
-   builder                     => '_build_cache', lazy => TRUE;
+has 'cache'                    => is => 'lazy', isa => Cache;
 
-has 'cache_attributes'         => is => 'ro', isa => HashRef,
+has 'cache_attributes'         => is => 'ro',   isa => HashRef,
    default                     => sub { {
       driver                   => q(FastMmap),
       page_size                => 131072,
       num_pages                => 89,
       unlink_on_exit           => TRUE, } };
 
-has 'cache_class'              => is => 'ro', isa => ClassName | DummyClass,
-   default                     => q(File::DataClass::Cache);
+has 'cache_class'              => is => 'ro',   isa => ClassName | DummyClass,
+   default                     => 'File::DataClass::Cache';
 
-has 'debug'                    => is => 'ro', isa => Bool, default => FALSE;
+has 'debug'                    => is => 'ro',   isa => Bool, default => FALSE;
 
-has 'lock'                     => is => 'ro', isa => Lock,
-   default                     => sub { Class::Null->new }, lazy => TRUE;
+has 'lock'                     => is => 'lazy', isa => Lock,
+   default                     => sub { Class::Null->new };
 
-has 'log'                      => is => 'ro', isa => Object,
-   default                     => sub { Class::Null->new }, lazy => TRUE;
+has 'log'                      => is => 'lazy', isa => Object,
+   default                     => sub { Class::Null->new };
 
-has 'path'                     => is => 'rw', isa => Path, coerce => TRUE;
+has 'path'                     => is => 'rw',   isa => Path,
+   coerce                      => Path->coercion;
 
-has 'perms'                    => is => 'rw', isa => Num, default => PERMS;
+has 'perms'                    => is => 'rw',   isa => Num, default => PERMS;
 
-has 'result_source_attributes' => is => 'ro', isa => HashRef,
+has 'result_source_attributes' => is => 'ro',   isa => HashRef,
    default                     => sub { {} };
 
-has 'result_source_class'      => is => 'ro', isa => ClassName,
-   default                     => q(File::DataClass::ResultSource);
+has 'result_source_class'      => is => 'ro',   isa => ClassName,
+   default                     => 'File::DataClass::ResultSource';
 
-has 'source_registrations'     => is => 'ro', isa => HashRef[Object],
-   builder                     => '_build_source_registrations', lazy => TRUE;
+has 'source_registrations'     => is => 'lazy', isa => HashRef[Object];
 
-has 'storage'                  => is => 'rw', isa => Object,
+has 'storage'                  => is => 'rw',   isa => Object,
    builder                     => '_build_storage', lazy => TRUE;
 
-has 'storage_attributes'       => is => 'ro', isa => HashRef,
+has 'storage_attributes'       => is => 'ro',   isa => HashRef,
    default                     => sub { {} };
 
-has 'storage_base'             => is => 'ro', isa => ClassName,
-   default                     => q(File::DataClass::Storage);
+has 'storage_base'             => is => 'ro',   isa => ClassName,
+   default                     => 'File::DataClass::Storage';
 
-has 'storage_class'            => is => 'rw', isa => Str,
-   default                     => q(XML::Simple);
+has 'storage_class'            => is => 'rw',   isa => Str,
+   default                     => 'XML::Simple', lazy => TRUE;
 
-has 'tempdir'                  => is => 'ro', isa => Directory, coerce => TRUE,
-   default                     => File::Spec->tmpdir;
+has 'tempdir'                  => is => 'ro',   isa => Directory,
+   coerce                      => Directory->coercion,
+   default                     => sub { File::Spec->tmpdir };
 
 around 'BUILDARGS' => sub {
-   my ($next, $class, @args) = @_; my $attr = $class->$next( @args );
+   my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
 
    my $builder = delete $attr->{builder} or return $attr;
    my $config  = $builder->can( q(config) ) ? $builder->config : {};
@@ -139,7 +138,6 @@ sub translate {
 }
 
 # Private methods
-
 sub _build_cache {
    my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
 
@@ -192,10 +190,6 @@ sub _constructor {
    return $class->new( $attr );
 }
 
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
-
 1;
 
 __END__
@@ -208,7 +202,7 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.20.$Rev: 15 $
 
 =head1 Synopsis
 
@@ -250,6 +244,11 @@ attribute. Built on demand
 =item C<cache_attributes>
 
 Passed to the L<Cache::Cache> constructor
+
+=item C<cache_class>
+
+Classname used to create the cache object. Defaults to
+L<File::DataClass::Cache>
 
 =item C<debug>
 
@@ -327,6 +326,10 @@ representation
 
 =head1 Subroutines/Methods
 
+=head2 BUILDARGS
+
+Constructs the attribute hash passed to the constructor method
+
 =head2 dump
 
    $schema->dump( { path => $to_file, data => $data_hash } );
@@ -385,7 +388,7 @@ debug method to be called with useful information
 
 =over 3
 
-=item L<namespace::autoclean>
+=item L<namespace::sweep>
 
 =item L<Class::Null>
 
@@ -403,9 +406,11 @@ debug method to be called with useful information
 
 =item L<File::DataClass::Storage>
 
+=item L<File::DataClass::Types>
+
 =item L<IPC::SRLock>
 
-=item L<Moose>
+=item L<Moo>
 
 =back
 

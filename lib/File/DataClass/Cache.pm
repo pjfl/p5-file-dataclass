@@ -1,38 +1,38 @@
-# @(#)$Ident: Cache.pm 2013-04-30 01:30 pjf ;
+# @(#)$Ident: Cache.pm 2013-06-20 23:32 pjf ;
 
 package File::DataClass::Cache;
 
-use strict;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 15 $ =~ /\d+/gmx );
 
-use Moose;
-use File::DataClass::Constants;
-use File::DataClass::Functions qw(throw);
 use CHI;
+use File::DataClass::Constants;
+use File::DataClass::Functions qw( merge_attributes throw );
+use File::DataClass::Types     qw( Cache );
+use Moo;
+use Unexpected::Types          qw( Bool ClassName HashRef Object Str );
 
-has 'cache'            => is => 'ro', isa => 'Object',
-   builder             => '_build_cache', lazy => TRUE;
+has 'cache'            => is => 'lazy', isa => Object;
 
-has 'cache_attributes' => is => 'ro', isa => 'HashRef',
-   default             => sub { return {} };
+has 'cache_attributes' => is => 'ro',   isa => HashRef,
+   default             => sub { {} };
 
-has 'cache_class'      => is => 'ro', isa => 'ClassName', default => q(CHI);
+has 'cache_class'      => is => 'ro',   isa => ClassName, default => 'CHI';
 
-has 'debug'            => is => 'ro', isa => 'Bool', default => FALSE;
+has 'debug'            => is => 'ro',   isa => Bool,      default => FALSE;
 
-has 'log'              => is => 'ro', isa => 'Object',
+has 'log'              => is => 'ro',   isa => Object,
    default             => sub { Class::Null->new };
 
 
-has '_mtimes_key'      => is => 'ro', isa => 'Str', default => q(_mtimes);
+has '_mtimes_key'      => is => 'ro',   isa => Str, default => '_mtimes';
 
-around BUILDARGS => sub {
-   my ($next, $class, @rest) = @_; my $attr = $class->$next( @rest );
+around 'BUILDARGS' => sub {
+   my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
 
-   my $ioc = delete $attr->{builder} or return $attr;
+   my $builder = delete $attr->{builder} or return $attr;
 
-   $attr->{ $_ } ||= $ioc->$_() for (grep { $ioc->can( $_ ) } qw(debug log));
+   merge_attributes $attr, $builder, [ qw(debug log) ];
 
    return $attr;
 };
@@ -40,11 +40,11 @@ around BUILDARGS => sub {
 sub get {
    my ($self, $key) = @_; $key .= NUL;
 
-   my $cached = $key    ? $self->cache->get( $key ) : FALSE;
-   my $data   = $cached ? $cached->{data}           : undef;
-   my $meta   = $cached ? $cached->{meta}           : { mtime => undef };
+   my $cached = $key ? $self->cache->get( $key ) : FALSE;
 
-   return ($data, $meta);
+   $cached and return ($cached->{data}, $cached->{meta});
+
+   return (undef, { mtime => undef });
 }
 
 sub get_by_paths {
@@ -105,7 +105,6 @@ sub set_mtime {
 }
 
 # Private methods
-
 sub _build_cache {
    my $self = shift; my $attr = $self->cache_attributes; my $log = $self->log;
 
@@ -129,10 +128,6 @@ sub _get_key_and_newest {
    return ($key, $valid ? $newest : undef);
 }
 
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
-
 1;
 
 __END__
@@ -145,18 +140,17 @@ File::DataClass::Cache - Adds extra methods to the CHI API
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.20.$Rev: 15 $
 
 =head1 Synopsis
 
    package File::DataClass::Schema;
 
-   use Moose;
-   use File::DataClass::Constraints qw(Cache);
+   use Moo;
+   use File::DataClass::Types qw(Cache);
    use File::DataClass::Cache;
 
-   has 'cache'            => is => 'ro', isa => Cache,
-      lazy                => TRUE,   builder => '_build_cache';
+   has 'cache'            => is => 'lazy', isa => Cache;
 
    has 'cache_attributes' => is => 'ro', isa => 'HashRef',
       default             => sub { return {} };
@@ -187,21 +181,33 @@ The class defines these attributes
 
 =over 3
 
-=item B<cache>
+=item C<cache>
 
 An instance of the L<CHI> cache object
 
-=item B<cache_attributes>
+=item C<cache_attributes>
 
 A hash ref passed to the L<CHI> constructor
 
-=item B<cache_class>
+=item C<cache_class>
 
 The class name of the cache object, defaults to L<CHI>
+
+=item C<debug>
+
+Boolean which defaults to false
+
+=item C<log>
+
+Log object which defaults to L<Class::Null>
 
 =back
 
 =head1 Subroutines/Methods
+
+=head2 BUILDARGS
+
+Constructs the attribute hash passed to the constructor method.
 
 =head2 get
 

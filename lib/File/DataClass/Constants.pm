@@ -1,35 +1,19 @@
-# @(#)$Ident: Constants.pm 2013-05-01 19:39 pjf ;
+# @(#)$Ident: Constants.pm 2013-06-17 23:35 pjf ;
 
 package File::DataClass::Constants;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 15 $ =~ /\d+/gmx );
 
-use Moose;
-use MooseX::ClassAttribute;
-use MooseX::Types -declare => [ q(ExceptionTC) ];
-use MooseX::Types::Moose       qw(ClassName);
+use Exporter 5.57 qw( import );
 use File::DataClass::Exception;
 
-subtype ExceptionTC, as ClassName,
-   where   { $_->can( q(throw) ) },
-   message { "Class ${_} is not loaded or has no throw method" };
+our @EXPORT = qw( ARRAY CODE CYGWIN EVIL EXCEPTION_CLASS EXTENSIONS FALSE
+                  HASH LANG LOCALIZE NO_UMASK_STACK NUL PERMS SPC
+                  STAT_FIELDS TRUE );
 
-class_has 'Exception_Class' => is => 'rw', isa => ExceptionTC,
-   default                  => q(File::DataClass::Exception);
-
-my @constants;
-
-BEGIN {
-   @constants = ( qw(ARRAY CODE CYGWIN EVIL EXCEPTION_CLASS EXTENSIONS FALSE
-                     HASH LANG LOCALIZE NO_UMASK_STACK NUL PERMS SPC
-                     STAT_FIELDS TRUE) );
-}
-
-use Sub::Exporter::Progressive -setup => {
-   exports => [ @constants ], groups => { default => [ @constants ], },
-};
+my $Exception_Class = 'File::DataClass::Exception';
 
 sub ARRAY    () { q(ARRAY)    }
 sub CODE     () { q(CODE)     }
@@ -51,10 +35,14 @@ sub NO_UMASK_STACK  () { -1 }
 sub STAT_FIELDS     () { qw(device inode mode nlink uid gid device_id
                             size atime mtime ctime blksize blocks) }
 
-__PACKAGE__->meta->make_immutable;
+sub Exception_Class {
+   my ($self, $class) = @_; defined $class or return $Exception_Class;
 
-no MooseX::ClassAttribute;
-no Moose::Util::TypeConstraints;
+   $class->can( q(throw) )
+       or die "Class ${class} is not loaded or has no throw method";
+
+   return $Exception_Class = $class;
+}
 
 1;
 
@@ -68,7 +56,7 @@ File::DataClass::Constants - Definitions of constant values
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.20.$Rev: 15 $
 
 =head1 Synopsis
 
@@ -81,6 +69,11 @@ This document describes version v0.20.$Rev: 0 $
 Exports a list of subroutines each of which returns a constants value
 
 =head1 Subroutines/Methods
+
+=head2 Exception_Class
+
+Class method. An accessor/mutator for the classname returned by the
+L</EXCEPTION_CLASS> method
 
 =head2 C<ARRAY>
 
@@ -160,9 +153,9 @@ None
 
 =over 3
 
-=item L<MooseX::ClassAttribute>
+=item L<Exporter>
 
-=item L<Sub::Exporter>
+=item L<File::DataClass::Exception>
 
 =back
 

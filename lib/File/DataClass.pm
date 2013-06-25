@@ -1,24 +1,17 @@
-# @(#)$Ident: DataClass.pm 2013-05-17 16:05 pjf ;
+# @(#)$Ident: DataClass.pm 2013-06-17 22:25 pjf ;
 
 package File::DataClass;
 
-use 5.01;
-use strict;
-use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 12 $ =~ /\d+/gmx );
+use 5.010001;
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 15 $ =~ /\d+/gmx );
 
-use Moose;
-use MooseX::ClassAttribute;
-use MooseX::Types::Moose qw(HashRef);
-use File::DataClass::Constraints qw(Cache);
+use Moo;
 
-class_has 'F_DC_Cache' => is => 'ro', isa => HashRef[Cache],
-   default             => sub { {} };
+my $F_DC_Cache = {};
 
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
-no MooseX::ClassAttribute;
+sub F_DC_Cache {
+   return $F_DC_Cache;
+}
 
 1;
 
@@ -32,7 +25,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 12 $ of L<File::DataClass>
+This document describes version v0.20.$Rev: 15 $ of L<File::DataClass>
 
 =head1 Synopsis
 
@@ -52,28 +45,24 @@ This document describes version v0.20.$Rev: 12 $ of L<File::DataClass>
 
 =head1 Description
 
-Provides CRUD methods for structured data stored in files of different formats
+Provides methods for manipulating structured data stored in files of
+different formats
 
 The documentation for this distribution starts in the class
 L<File::DataClass::Schema>
 
 =head1 Configuration and Environment
 
-Defines these class attributes. They are set on first use when an instance
-of L<File::DataClass::Schema> is created
-
-=over 3
-
-=item B<Cache>
-
-This is a L<Cache::Cache> object which is used to cache the results of
-reading a file. Maybe of type C<Cache>
-
-=back
+Defines no attributes
 
 =head1 Subroutines/Methods
 
-None
+=head2 F_DC_Cache
+
+   $hash_ref_of_CHI_objects = File::DataClass->F_DC_Cache;
+
+A class method which returns a hash ref of L<CHI> objects which are
+used to cache the results of reading files
 
 =head1 Diagnostics
 
@@ -83,9 +72,7 @@ None
 
 =over 3
 
-=item L<namespace::autoclean>
-
-=item L<MooseX::ClassAttribute>
+=item L<Moo>
 
 =back
 

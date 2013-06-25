@@ -1,23 +1,18 @@
-# @(#)$Ident: List.pm 2013-04-30 01:31 pjf ;
+# @(#)$Ident: List.pm 2013-06-09 15:52 pjf ;
 
 package File::DataClass::List;
 
-use strict;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 15 $ =~ /\d+/gmx );
 
-use Moose;
-use MooseX::Types::Moose qw(ArrayRef Bool HashRef Undef);
-use File::DataClass::Constraints qw(Result);
+use Moo;
+use Unexpected::Types       qw( ArrayRef Bool HashRef Undef );
+use File::DataClass::Types  qw( Result );
 
 has 'found'  => is => 'ro', isa => Bool,     default => 0;
 has 'labels' => is => 'ro', isa => HashRef,  default => sub { return {} };
 has 'list'   => is => 'ro', isa => ArrayRef, default => sub { return [] };
 has 'result' => is => 'ro', isa => Result | Undef;
-
-__PACKAGE__->meta->make_immutable;
-
-no Moose;
 
 1;
 
@@ -31,7 +26,7 @@ File::DataClass::List - List response class
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 0 $
+This document describes version v0.20.$Rev: 15 $
 
 =head1 Synopsis
 
@@ -80,7 +75,7 @@ None
 
 =over 3
 
-=item L<File::DataClass::Constraints>
+=item L<File::DataClass::Types>
 
 =back
 

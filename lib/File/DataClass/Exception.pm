@@ -1,12 +1,12 @@
-# @(#)Ident: Exception.pm 2013-05-08 20:59 pjf ;
+# @(#)Ident: Exception.pm 2013-06-16 21:47 pjf ;
 
 package File::DataClass::Exception;
 
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 7 $ =~ /\d+/gmx );
+use namespace::sweep;
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 15 $ =~ /\d+/gmx );
 
-use Moose;
-use MooseX::Types::Moose qw(Str);
+use Moo;
+use Unexpected::Types qw(Str);
 
 extends q(Unexpected);
 with    q(Unexpected::TraitFor::ErrorLeader);
@@ -16,8 +16,6 @@ __PACKAGE__->ignore_class( 'File::DataClass::IO' );
 has '+class' => default => __PACKAGE__;
 
 has 'out'    => is => 'ro', isa => Str, default => q();
-
-__PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -29,7 +27,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Exception - Moose exception class composed from traits
+File::DataClass::Exception - Exception class composed from traits
 
 =head1 Synopsis
 
@@ -59,7 +57,7 @@ File::DataClass::Exception - Moose exception class composed from traits
 
 =head1 Version
 
-This documents version v0.20.$Rev: 7 $ of L<File::DataClass::Exception>
+This documents version v0.20.$Rev: 15 $ of L<File::DataClass::Exception>
 
 =head1 Description
 
@@ -83,6 +81,10 @@ Overrides the C<class> attribute setting it's value to this class
 Defines these attributes;
 
 =over 3
+
+=item C<class>
+
+Defaults the "class" of a thrown exception to L<File::DataClass::Exception>
 
 =item C<out>
 
@@ -139,11 +141,9 @@ None
 
 =over 3
 
-=item L<namespace::autoclean>
+=item L<namespace::sweep>
 
-=item L<Moose>
-
-=item L<MooseX::Types::Moose>
+=item L<Moo>
 
 =item L<Unexpected>
 

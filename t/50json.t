@@ -1,33 +1,33 @@
-# @(#)$Ident: 50json.t 2013-04-30 01:34 pjf ;
+# @(#)$Ident: 50json.t 2013-06-08 18:06 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 15 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
 
-use English qw(-no_match_vars);
 use Module::Build;
 use Test::More;
 
+my $reason;
+
 BEGIN {
-   my $current = eval { Module::Build->current };
+   my $builder = eval { Module::Build->current };
 
-   $current and $current->notes->{stop_tests}
-            and plan skip_all => $current->notes->{stop_tests};
-
-   plan tests => 4;
+   $builder and $reason = $builder->notes->{stop_tests};
+   $reason  and $reason =~ m{ \A TESTS: }mx and plan skip_all => $reason;
 }
 
+use English qw(-no_match_vars);
 use File::DataClass::IO;
 use Text::Diff;
 
 use_ok( q(File::DataClass::Schema) );
 
-my $args   = { path           => q(t/default.json),
-               storage_class  => q(JSON),
-               tempdir        => q(t), };
+my $args   = { path          => q(t/default.json),
+               storage_class => q(JSON),
+               tempdir       => q(t), };
 my $schema = File::DataClass::Schema->new( $args );
 
 isa_ok( $schema, q(File::DataClass::Schema) );
@@ -46,8 +46,9 @@ $diff = diff catfile( qw(t default.json) ), $dumped;
 
 ok( !$diff, 'Load and dump roundtrips 2' );
 
-# Cleanup
+done_testing;
 
+# Cleanup
 io( $dumped )->unlink;
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;

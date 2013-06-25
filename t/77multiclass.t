@@ -1,8 +1,8 @@
-# @(#)$Ident: 77multiclass.t 2013-04-30 01:35 pjf ;
+# @(#)$Ident: 77multiclass.t 2013-06-08 18:05 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 0 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 15 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -10,11 +10,13 @@ use lib catdir( $Bin, updir, q(lib) );
 use Module::Build;
 use Test::More;
 
-BEGIN {
-   my $current = eval { Module::Build->current };
+my $reason;
 
-   $current and $current->notes->{stop_tests}
-            and plan skip_all => $current->notes->{stop_tests};
+BEGIN {
+   my $builder = eval { Module::Build->current };
+
+   $builder and $reason = $builder->notes->{stop_tests};
+   $reason  and $reason =~ m{ \A TESTS: }mx and plan skip_all => $reason;
 }
 
 use File::DataClass::IO;
@@ -33,13 +35,12 @@ my $data = $schema->load( $json, $xml );
 like $data->{ '_cvs_default' }, qr{ default.xml \s 474 }mx, 'Json file';
 like $data->{ '_cvs_lang_default' }, qr{ default_en.xml \s 572 }mx, 'XML File';
 
-# Cleanup
+done_testing;
 
+# Cleanup
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
 io( catfile( qw(t file-dataclass-schema.dat) ) )->unlink;
-
-done_testing;
 
 # Local Variables:
 # mode: perl
