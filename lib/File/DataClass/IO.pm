@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-06-20 19:54 pjf ;
+# @(#)$Ident: IO.pm 2013-06-26 17:11 pjf ;
 
 package File::DataClass::IO;
 
-use 5.01;
+use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 17 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -71,15 +71,17 @@ around 'BUILDARGS' => sub {
    my ($orig, $class, @args) = @_; return __build_attr_from( @args );
 };
 
-sub __build_attr_from {
-   return      ( not defined $_[ 0 ] ) ? {}
-        :    __is_one_of_us( $_[ 0 ] ) ? __clone_one_of_us( $_[ 0 ] )
-        :       ( is_hashref $_[ 0 ] ) ? { %{ $_[ 0 ] } }
-        : __have_defined_args( 1, @_ ) ? { __inline_args( 1, @_ ) }
-        :       ( is_hashref $_[ 1 ] ) ? { name => $_[ 0 ], %{ $_[ 1 ] } }
-        : __have_defined_args( 2, @_ ) ? { __inline_args( 2, @_ ) }
-        : __have_defined_args( 3, @_ ) ? { __inline_args( 3, @_ ) }
-                                       : { @_ };
+sub __build_attr_from { # Differentiate constructor method signatures
+   my $n = 0; $n++ while (defined $_[ $n ]);
+
+   return               ( $n == 0 ) ? {}
+        : __is_one_of_us( $_[ 0 ] ) ? __clone_one_of_us( $_[ 0 ] )
+        :     is_hashref( $_[ 0 ] ) ? { %{ $_[ 0 ] } }
+        :               ( $n == 1 ) ? { __inline_args( 1, @_ ) }
+        :     is_hashref( $_[ 1 ] ) ? { name => $_[ 0 ], %{ $_[ 1 ] } }
+        :               ( $n == 2 ) ? { __inline_args( 2, @_ ) }
+        :               ( $n == 3 ) ? { __inline_args( 3, @_ ) }
+                                    : { @_ };
 }
 
 sub __clone_one_of_us {
@@ -93,10 +95,6 @@ sub __coerce_name {
    blessed     $x and $x .= NUL;
    is_arrayref $x and $x  = File::Spec->catfile( @{ $x } );
    return $x;
-}
-
-sub __have_defined_args {
-   return (shift) == scalar grep { defined } @_;
 }
 
 sub __inline_args {
@@ -989,7 +987,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 16 $
+This document describes version v0.21.$Rev: 17 $
 
 =head1 Synopsis
 
@@ -1001,6 +999,15 @@ This document describes version v0.21.$Rev: 16 $
    # Write the line to file set permissions, atomic update and fcntl locking
    io( 'path_name' )->perms( oct '0644' )->atomic->lock->print( $line );
 
+   # Constructor methods signatures
+   my $obj = io( $obj );       # clone
+   my $obj = io( $hash_ref );
+   my $obj = io( $name );      # can be coderef, object ref, arrayref or string
+   my $obj = io( $name, $hash_ref );
+   my $obj = io( $name, $mode );
+   my $obj = io( $name, $mode, $perms );
+   my $obj = io( name => $name, mode => $mode, ... );
+
 =head1 Description
 
 This is a simplified re-write of L<IO::All> with additional functionality
@@ -1011,9 +1018,9 @@ heavy OO overloading. Only has methods for files and directories
 
 L<File::DataClass::Constants> has a class attribute C<Exception_Class> which
 defaults to L<File::DataClass::Exception>. Set this attribute to the
-classname used by the L</throw> method
+classname used by the L</_throw> method
 
-Defined the following attributes;
+Defines the following attributes;
 
 =over 3
 
@@ -1051,10 +1058,10 @@ the listings
 
 =item C<type>
 
-Defaults to false. Set by the L</dir> and L</file> methods to C<dir> and
+Defaults to undefined. Set by the L</dir> and L</file> methods to C<dir> and
 C<file> respectively. The L</dir> method is called by the L</next>
 method. The L</file> method is called by the L</assert_open> method if
-the C<type> attribute is false
+the C<type> attribute is undefined
 
 =back
 
