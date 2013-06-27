@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-06-26 17:11 pjf ;
+# @(#)$Ident: IO.pm 2013-06-26 23:31 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 17 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 18 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -249,7 +249,7 @@ sub buffer {
    my $self = shift;
 
    if (@_) {
-      my $buffer_ref  = ref $_[0] ? $_[0] : \$_[0];
+      my $buffer_ref  = ref $_[ 0 ] ? $_[ 0 ] : \$_[ 0 ];
 
       defined ${ $buffer_ref } or ${ $buffer_ref } = NUL;
       $self->{buffer} = $buffer_ref;
@@ -685,7 +685,8 @@ sub _open_file {
       $self->_throw( error => 'File [_1] cannot open', args  => [ $path ] );
    }
 
-   $self->_umask_pop; CORE::chmod $perms, $path;
+   $self->_umask_pop;
+   CORE::chmod $perms, $path; # Not necessary on normal systems
    $self->_set_is_open( TRUE );
    $self->set_binmode;
    $self->set_lock;
@@ -951,8 +952,7 @@ sub unlock {
 sub _untainted_perms {
    my $self = shift; $self->exists or return; my $perms = 0;
 
-   # Taint mode workaround
-   $self->stat->{mode} =~ m{ \A (.*) \z }mx and $perms = $1;
+   $self->stat->{mode} =~ m{ \A (\d+) \z }mx and $perms = $1;
 
    return $perms & oct q(07777);
 }
@@ -987,7 +987,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 17 $
+This document describes version v0.21.$Rev: 18 $
 
 =head1 Synopsis
 
