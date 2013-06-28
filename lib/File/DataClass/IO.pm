@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-06-26 23:31 pjf ;
+# @(#)$Ident: IO.pm 2013-06-28 15:10 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 18 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 19 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -322,6 +322,7 @@ sub close {
    $self->_set_io_handle( undef );
    $self->_set_is_open  ( FALSE );
    $self->_set_mode     ( q(r)  );
+   $self->_chomp        ( FALSE );
    return $self;
 }
 
@@ -791,6 +792,10 @@ sub _rename_atomic {
    return;
 }
 
+sub reset {
+   return $_[ 0 ]->close;
+}
+
 sub rmdir {
    my $self = shift;
 
@@ -987,7 +992,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 18 $
+This document describes version v0.21.$Rev: 19 $
 
 =head1 Synopsis
 
@@ -1566,6 +1571,12 @@ Makes the pathname absolute. Returns a path
    $relative_path = io( 'path_to_file' )->relative;
 
 Calls L</abs2rel> without an optional base path
+
+=head2 reset
+
+   $io = io( 'path_to_file' )->reset;
+
+Alias for L</close>
 
 =head2 rmdir
 
