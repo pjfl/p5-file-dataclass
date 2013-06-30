@@ -1,25 +1,25 @@
-# @(#)$Ident: Cache.pm 2013-06-20 23:32 pjf ;
+# @(#)$Ident: Cache.pm 2013-06-30 15:26 pjf ;
 
 package File::DataClass::Cache;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 21 $ =~ /\d+/gmx );
 
-use CHI;
 use File::DataClass::Constants;
 use File::DataClass::Functions qw( merge_attributes throw );
 use File::DataClass::Types     qw( Cache );
 use Moo;
-use Unexpected::Types          qw( Bool ClassName HashRef Object Str );
+use Unexpected::Types          qw( Bool ClassName HashRef
+                                   LoadableClass Object Str );
 
 has 'cache'            => is => 'lazy', isa => Object;
 
 has 'cache_attributes' => is => 'ro',   isa => HashRef,
    default             => sub { {} };
 
-has 'cache_class'      => is => 'ro',   isa => ClassName, default => 'CHI';
+has 'cache_class'      => is => 'lazy', isa => LoadableClass, default => 'CHI';
 
-has 'debug'            => is => 'ro',   isa => Bool,      default => FALSE;
+has 'debug'            => is => 'ro',   isa => Bool, default => FALSE;
 
 has 'log'              => is => 'ro',   isa => Object,
    default             => sub { Class::Null->new };
@@ -140,7 +140,7 @@ File::DataClass::Cache - Adds extra methods to the CHI API
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 16 $
+This document describes version v0.21.$Rev: 21 $
 
 =head1 Synopsis
 
