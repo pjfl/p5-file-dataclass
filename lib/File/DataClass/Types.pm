@@ -1,11 +1,11 @@
-# @(#)$Ident: Types.pm 2013-06-22 22:15 pjf ;
+# @(#)$Ident: Types.pm 2013-06-30 00:42 pjf ;
 
 package File::DataClass::Types;
 
 use strict;
 use warnings;
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.20.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 20 $ =~ /\d+/gmx );
 
 use File::DataClass::IO;
 use Scalar::Util            qw( blessed dualvar );
@@ -134,7 +134,7 @@ File::DataClass::Types - Role defining package constraints
 
 =head1 Version
 
-This document describes version v0.20.$Rev: 16 $
+This document describes version v0.21.$Rev: 20 $
 
 =head1 Synopsis
 

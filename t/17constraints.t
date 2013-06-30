@@ -1,8 +1,8 @@
-# @(#)Ident: 17constraints.t 2013-06-15 20:37 pjf ;
+# @(#)Ident: 17constraints.t 2013-06-30 00:43 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 20 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, q(lib) );
