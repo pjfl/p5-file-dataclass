@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-06-30 15:53 pjf ;
+# @(#)$Ident: IO.pm 2013-06-30 20:36 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 21 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 22 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -188,7 +188,8 @@ sub assert_filepath {
 
    (undef, $dir) = File::Spec->splitpath( $self->name );
 
-   return $self->assert_dirpath( $dir );
+   $self->assert_dirpath( $dir );
+   return $self;
 }
 
 sub assert_open {
@@ -992,7 +993,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 21 $
+This document describes version v0.21.$Rev: 22 $
 
 =head1 Synopsis
 
@@ -1168,13 +1169,13 @@ opened
 
 =head2 assert_dirpath
 
-   io( 'path_to_file' )->assert_dirpath;
+   $dir_name = io( 'path_to_file' )->assert_dirpath;
 
 Create the given directory if it doesn't already exist
 
 =head2 assert_filepath
 
-   io( 'path_to_file' )->assert_filepath;
+   $io = io( 'path_to_file' )->assert_filepath;
 
 Calls L</assert_dirpath> on the directory part of the full pathname
 
