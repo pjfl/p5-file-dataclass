@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-06-30 20:36 pjf ;
+# @(#)$Ident: IO.pm 2013-07-02 14:57 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 22 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 23 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -695,7 +695,11 @@ sub _open_file {
 }
 
 sub parent {
-   my $self = shift; return $self->_constructor( $self->dirname );
+   my ($self, $count) = @_; my $parent = $self; $count ||= 1;
+
+   $parent = $self->_constructor( $parent->dirname ) while ($count--);
+
+   return $parent;
 }
 
 sub pathname {
@@ -993,7 +997,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 22 $
+This document describes version v0.21.$Rev: 23 $
 
 =head1 Synopsis
 
@@ -1512,9 +1516,9 @@ succeeds L</set_lock> and L</set_binmode> are called
 
 =head2 parent
 
-   $parent_io_object = io( 'path_to_directory' )->parent;
+   $parent_io_object = io( 'path_to_file_or_directory' )->parent( $count );
 
-Return L</dirname> as an IO object
+Return L</dirname> as an IO object. Repeat C<$count> times
 
 =head2 pathname
 

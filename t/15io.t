@@ -1,11 +1,11 @@
-# @(#)$Ident: 15io.t 2013-06-08 17:52 pjf ;
+# @(#)$Ident: 15io.t 2013-07-02 14:55 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
-use File::Spec::Functions;
-use FindBin qw( $Bin );
-use lib catdir( $Bin, updir, q(lib) );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 23 $ =~ /\d+/gmx );
+use File::Spec::Functions   qw( catdir catfile curdir updir );
+use FindBin                 qw( $Bin );
+use lib                 catdir( $Bin, updir, 'lib' );
 
 use Module::Build;
 use Test::More;
@@ -108,6 +108,8 @@ subtest 'File::Spec::Functions' => sub {
    is io()->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ), 'Catfile 3';
    is io( [ qw(t mydir dir1) ] )->dirname, catdir( qw(t mydir) ), 'Dirname';
    ok io( [ qw(t mydir dir1) ] )->parent->is_dir, 'Parent';
+   is io( [ qw(t mydir dir1) ] )->parent( 2 ), 't', 'Parent with count';
+   is io( [ qw(t mydir dir1) ] )->parent( 5 ), curdir, 'Parent count limited';
 };
 
 subtest 'Absolute/relative pathname conversions' => sub {
