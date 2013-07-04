@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-07-02 14:57 pjf ;
+# @(#)$Ident: IO.pm 2013-07-04 19:05 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 23 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 24 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -13,7 +13,7 @@ use Fcntl                      qw( :flock :seek );
 use File::Basename               ( );
 use File::Copy                   ( );
 use File::DataClass::Constants;
-use File::DataClass::Functions qw( is_arrayref is_coderef is_hashref );
+use File::DataClass::Functions qw( is_arrayref is_coderef is_hashref thread_id);
 use File::Path                   ( );
 use File::Spec                   ( );
 use File::Temp                   ( );
@@ -62,6 +62,7 @@ has '_filter'       => is => 'rw',   isa => Maybe[CodeRef]                   ;
 has '_lock'         => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_lock_obj'     => is => 'rw',   isa => Maybe[Object],
    writer           => 'lock_obj'                                            ;
+has '_no_follow'    => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_separator'    => is => 'rw',   isa => Str,            default => $RS   ;
 has '_umask'        => is => 'rw',   isa => ArrayRef[Int],
    default          => sub { [] };
@@ -75,7 +76,7 @@ sub __build_attr_from { # Differentiate constructor method signatures
    my $n = 0; $n++ while (defined $_[ $n ]);
 
    return               ( $n == 0 ) ? {}
-        : __is_one_of_us( $_[ 0 ] ) ? __clone_one_of_us( $_[ 0 ] )
+        : __is_one_of_us( $_[ 0 ] ) ? __clone_one_of_us( @_ )
         :     is_hashref( $_[ 0 ] ) ? { %{ $_[ 0 ] } }
         :               ( $n == 1 ) ? { __inline_args( 1, @_ ) }
         :     is_hashref( $_[ 1 ] ) ? { name => $_[ 0 ], %{ $_[ 1 ] } }
@@ -85,20 +86,35 @@ sub __build_attr_from { # Differentiate constructor method signatures
 }
 
 sub __clone_one_of_us {
-   my $y = { %{ $_[ 0 ] } }; $y->{perms} = delete $y->{_perms}; return $y;
+   my $clone = { %{ $_[ 0 ] } }; $clone->{perms} = delete $clone->{_perms};
+
+   is_hashref $_[ 1 ] and $clone = { %{ $clone }, %{ $_[ 1 ] } };
+
+   return $clone;
 }
 
 sub __coerce_name {
-   my $x = $_[ 0 ]; defined $x or return;
+   my $name = shift;
 
-   is_coderef  $x and $x  = $x->();
-   blessed     $x and $x .= NUL;
-   is_arrayref $x and $x  = File::Spec->catfile( @{ $x } );
-   return $x;
+   defined     $name           or  return;
+   is_coderef  $name           and $name  =  $name->();
+   blessed     $name           and $name .=  NUL;
+   is_arrayref $name           and $name  =  File::Spec->catfile( @{ $name } );
+   CURDIR eq   $name           and $name  =  Cwd::getcwd;
+   TILDE eq substr $name, 0, 1 and $name  =  __expand_tilde( $name );
+   $name !~ m{ \A [/\\] \z }mx and $name  =~ s{ [/\\] \z }{}mx;
+   return $name;
+}
+
+sub __expand_tilde {
+  (my $path = $_[ 0 ]) =~ m{ \A ([~] [^/\\]*) .* }mx; my ($dir) = glob( $1 );
+
+   $path =~ s{ \A ([~] [^/\\]*) }{$dir}mx;
+   return $path;
 }
 
 sub __inline_args {
-   my $x = shift; return (map { $ARG_NAMES[ $_ ] => $_[ $_ ] } 0 .. $x - 1);
+   my $n = shift; return (map { $ARG_NAMES[ $_ ] => $_[ $_ ] } 0 .. $n - 1);
 }
 
 sub __is_one_of_us {
@@ -363,8 +379,12 @@ sub copy {
    return $to;
 }
 
+sub cwd {
+   require Cwd; return $_[ 0 ]->_constructor( Cwd::getcwd() );
+}
+
 sub deep {
-   my $self = shift; $self->_deep( TRUE ); return $self;
+   $_[ 0 ]->_deep( TRUE ); return $_[ 0 ];
 }
 
 sub delete {
@@ -461,9 +481,9 @@ sub filter {
 }
 
 sub _find {
-   my ($self, $files, $dirs, $level) = @_;
+   my ($self, $files, $dirs, $level) = @_; my (@all, $io);
 
-   my $filter = $self->_filter; my (@all, $io);
+   my $filter = $self->_filter; my $follow = not $self->_no_follow;
 
    defined $level or $level = $self->_deep ? 0 : 1;
 
@@ -474,7 +494,7 @@ sub _find {
          and ((not defined $filter) or (map { $filter->() } ($io))[ 0 ])
          and push @all, $io;
 
-      $is_dir and $level != 1
+      $is_dir and (not $io->is_link or $follow) and $level != 1
          and push @all, $io->_find( $files, $dirs, $level ? $level - 1 : 0 );
    }
 
@@ -484,12 +504,15 @@ sub _find {
 sub _get_atomic_path {
    my $self = shift; my $path = $self->filepath; my $file;
 
-   if ($self->_atomic_infix =~ m{ \* }mx) {
-      my $name = $self->filename;
+   my $infix = $self->_atomic_infix; my $tid = thread_id;
 
-      ($file = $self->_atomic_infix) =~ s{ \* }{$name}mx;
+   $infix =~ m{ \%P }mx and $infix =~ s{ \%P }{$PID}gmx;
+   $infix =~ m{ \%T }mx and $infix =~ s{ \%T }{$tid}gmx;
+
+   if ($infix =~ m{ \* }mx) {
+      my $name = $self->filename; ($file = $infix) =~ s{ \* }{$name}mx;
    }
-   else { $file = $self->filename.$self->_atomic_infix }
+   else { $file = $self->filename.$infix }
 
    return $path ? File::Spec->catfile( $path, $file ) : $file;
 }
@@ -565,6 +588,12 @@ sub is_file {
    return $self->type && $self->type eq q(file) ? TRUE : FALSE;
 }
 
+sub is_link {
+   my $self = shift; $self->type or $self->_init_type_from_fs or return FALSE;
+
+   return -l $self->name ? TRUE : FALSE;
+}
+
 sub is_readable {
    my $self = shift; return $self->name && -r $self->name ? TRUE : FALSE;
 }
@@ -577,6 +606,27 @@ sub is_reading {
 
 sub is_writable {
    my $self = shift; return $self->name && -w $self->name ? TRUE : FALSE;
+}
+
+sub iterator {
+   my $self = shift; my $deep = $self->_deep; my @dirs = ( $self );
+
+   my $filter = $self->_filter; my $follow = not $self->_no_follow;
+
+   return sub {
+      while (@dirs) {
+         while (defined (my $path = $dirs[ 0 ]->next)) {
+            $deep and $path->is_dir and ($follow or not $path->is_link)
+               and push @dirs, $path;
+            (not defined $filter or (map { $filter->() } ($path))[ 0 ])
+               and return $path;
+         }
+
+         shift @dirs;
+      }
+
+      return;
+   };
 }
 
 sub length {
@@ -631,6 +681,10 @@ sub next {
    defined $self->_filter and $io->filter( $self->_filter );
 
    return $io;
+}
+
+sub no_follow {
+   $_[ 0 ]->_no_follow( TRUE ); return $_[ 0 ];
 }
 
 sub open {
@@ -754,6 +808,8 @@ sub read_dir {
    my $self = shift; my $dir_pat = $self->_dir_pattern; my $name;
 
    $self->type or $self->dir; $self->assert_open;
+
+   $self->is_link and $self->_no_follow and $self->close and return;
 
    if (wantarray) {
       my @names = grep { $_ !~ $dir_pat } $self->io_handle->read;
@@ -918,11 +974,11 @@ sub _throw {
 }
 
 sub touch {
-   my $self = shift; $self->name or return;
+   my ($self, $time) = @_; $self->name or return; $time //= time;
 
-   if (-e $self->name) { my $now = time; utime $now, $now, $self->name }
-   else { $self->_open_file( $self->_open_args( q(w) ) )->close }
+   -e $self->name or $self->_open_file( $self->_open_args( q(w) ) )->close;
 
+   utime $time, $time, $self->name;
    return $self;
 }
 
@@ -997,7 +1053,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 23 $
+This document describes version v0.21.$Rev: 24 $
 
 =head1 Synopsis
 
@@ -1059,7 +1115,8 @@ File open mode. Defaults to 'r' for reading. Can any one of; 'a',
 =item C<name>
 
 Defaults to undef. This must be set in the call to the constructor or
-soon after
+soon after. Can be a C<coderef>, an C<objectref>, an C<arrayref>, or
+a scalar. After coercion to a scalar leading tilde expansion takes place
 
 =item C<sort>
 
@@ -1099,8 +1156,8 @@ and C<perms> the permissions on the file)
 =item $io = File::DataClass::IO->new( $pathname, [ $mode, $perms ] )
 
 A list of values which are taken as the pathname, mode and
-permissions. The pathname can be an array ref, a scalar, or an object
-that stringifies to a scalar path
+permissions. The pathname can be an array ref, a coderef, a scalar,
+or an object that stringifies to a scalar path
 
 =item $io = File::DataClass::IO->new( $object_ref )
 
@@ -1213,6 +1270,10 @@ create a temporary file for atomic updates. If the value does not
 contain a C<*> then the value is appended to the filename instead
 (suffix). Attribute name C<_atomic_infix>
 
+If the value contains C<%P> it will be replaced with the process id
+
+If the value contains C<%T> it will be replaces with the thread id
+
 =head2 basename
 
    $dirname = io( 'path_to_file' )->basename( @suffixes );
@@ -1306,6 +1367,13 @@ filename. Unlocks the file if it was locked. Closes the file handle
 
 Copies the file to the destination. The destination can be either a path or
 and IO object. Returns the destination object
+
+=head2 cwd
+
+   $current_working_directory = io()->cwd;
+
+Returns the current working directory wrapped in a L<File::DataClass::IO>
+object
 
 =head2 deep
 
@@ -1441,6 +1509,12 @@ Tests to see if the IO object is executable
 
 Tests to see if the IO object is a file
 
+=head2 is_link
+
+   $bool = io( 'path_to_file' )->is_link;
+
+Returns true if the IO object is a symbolic link
+
 =head2 is_readable
 
    $bool = io( 'path_to_file' )->is_readable;
@@ -1458,6 +1532,15 @@ Returns true if this IO object is in one of the read modes
    $bool = io( 'path_to_file' )->is_writable;
 
 Tests to see if the C<IO> object is writable
+
+=head2 iterator
+
+   $code_ref = io( 'path_to_directory' )->iterator;
+
+When called the coderef iterates over the directory listing. If C<deep> is
+true then the iterator will visit all subdirectories. If C<no_follow> is
+true then symbolic links to directories will no be followed. A L</filter>
+may also be applied
 
 =head2 length
 
@@ -1491,6 +1574,13 @@ Create the specified path
 Calls L</dir> if the C<type> is not already set. Asserts the directory
 open for reading and then calls L</read_dir> to get the first/next
 entry. It returns an IO object for that entry
+
+=head2 no_follow
+
+   $io = io( 'path_to_directory' )->no_follow;
+
+Defaults to false. If set to true do not follow symbolic links when
+performing recursive directory searches
 
 =head2 open
 
@@ -1669,11 +1759,12 @@ Exposes the C<throw> method in the exception class
 
 =head2 touch
 
-   $io = io( 'path_to_file' )->touch;
+   $io = io( 'path_to_file' )->touch( $time );
 
 Create a zero length file if one does not already exist with given
 file system permissions which default to 0644 octal. If the file
-already exists update it's last modified datetime stamp
+already exists update it's last modified datetime stamp. If a value
+for C<$time> is provided use that instead if the C<CORE::time>
 
 =head2 unlink
 
@@ -1755,6 +1846,11 @@ For the Perl programming language
 =item Ingy döt Net <ingy@cpan.org>
 
 For IO::All from which I took the API and some tests
+
+=item L<Path::Tiny>
+
+Lifted the following features; tilde expansion, thread id in atomic
+file name, not following symlinks and tests
 
 =back
 

@@ -1,8 +1,8 @@
-# @(#)Ident: 07podspelling.t 2013-06-08 22:33 pjf ;
+# @(#)Ident: 07podspelling.t 2013-07-04 13:26 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 17 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 24 $ =~ /\d+/gmx );
 use File::Spec::Functions qw(catdir catfile updir);
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -47,6 +47,7 @@ api
 buildargs
 canonpath
 classname
+cwd
 datetime
 dir
 dirname

@@ -1,9 +1,9 @@
-# @(#)$Ident: Build.PL 2013-06-26 17:15 pjf ;
+# @(#)$Ident: Build.PL 2013-07-04 16:25 pjf ;
 
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 17 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 24 $ =~ /\d+/gmx );
 
 Bob->new( {
    module    => q(File::DataClass),
@@ -34,7 +34,9 @@ Bob->new( {
       'Module::Build'    => 0.4004, },
    build_requires        => {
       'version'          => 0.88,
+      'File::pushd'      => 1.00,
       'Module::Build'    => 0.4004,
+      'Test::Deep'       => 0.108,
       'Text::Diff'       => 1.37, },
 } )->create_build_script; # Goal!
 

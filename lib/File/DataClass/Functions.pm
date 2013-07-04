@@ -1,10 +1,10 @@
-# @(#)$Ident: Functions.pm 2013-06-18 01:23 pjf ;
+# @(#)$Ident: Functions.pm 2013-07-04 01:41 pjf ;
 
 package File::DataClass::Functions;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 24 $ =~ /\d+/gmx );
 
 use Class::Load    qw( is_class_loaded load_class );
 use English        qw( -no_match_vars );
@@ -17,7 +17,7 @@ use Try::Tiny;
 
 our @EXPORT_OK   = qw( ensure_class_loaded is_arrayref is_coderef is_hashref
                        is_member is_stale merge_attributes
-                       merge_hash_data throw );
+                       merge_hash_data thread_id throw );
 our %EXPORT_TAGS =   ( all => [ @EXPORT_OK ], );
 
 my $LC_OSNAME    = lc $OSNAME;
@@ -95,6 +95,10 @@ sub merge_hash_data ($$) {
    return;
 }
 
+sub thread_id {
+   return exists $INC{ 'threads.pm' } ? threads->tid() : 0;
+}
+
 sub throw (;@) {
    EXCEPTION_CLASS->throw( @_ );
 }
@@ -111,7 +115,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 16 $
+This document describes version v0.21.$Rev: 24 $
 
 =head1 Synopsis
 
@@ -175,6 +179,13 @@ accessor methods are called
    merge_hash_data $existing, $new;
 
 Uses L<Hash::Merge> to merge data from the new hash ref in with the existing
+
+=head2 thread_id
+
+   $thread_id = thread_id;
+
+Returns the current thread id or zero if the the L<threads> module has
+not been loaded
 
 =head2 throw
 

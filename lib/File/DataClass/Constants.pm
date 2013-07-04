@@ -1,22 +1,23 @@
-# @(#)$Ident: Constants.pm 2013-06-17 23:35 pjf ;
+# @(#)$Ident: Constants.pm 2013-07-04 14:57 pjf ;
 
 package File::DataClass::Constants;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 24 $ =~ /\d+/gmx );
 
 use Exporter 5.57 qw( import );
 use File::DataClass::Exception;
 
-our @EXPORT = qw( ARRAY CODE CYGWIN EVIL EXCEPTION_CLASS EXTENSIONS FALSE
-                  HASH LANG LOCALIZE NO_UMASK_STACK NUL PERMS SPC
-                  STAT_FIELDS TRUE );
+our @EXPORT = qw( ARRAY CODE CURDIR CYGWIN EVIL EXCEPTION_CLASS EXTENSIONS
+                  FALSE HASH LANG LOCALIZE NO_UMASK_STACK NUL PERMS SPC
+                  STAT_FIELDS TILDE TRUE );
 
 my $Exception_Class = 'File::DataClass::Exception';
 
 sub ARRAY    () { q(ARRAY)    }
 sub CODE     () { q(CODE)     }
+sub CURDIR   () { q(.)        }
 sub CYGWIN   () { q(cygwin)   }
 sub EVIL     () { q(mswin32)  }
 sub FALSE    () { 0           }
@@ -26,6 +27,7 @@ sub LOCALIZE () { q([_)       }
 sub NUL      () { q()         }
 sub PERMS    () { oct q(0660) }
 sub SPC      () { q( )        }
+sub TILDE    () { q(~)        }
 sub TRUE     () { 1           }
 
 sub EXCEPTION_CLASS () { __PACKAGE__->Exception_Class }
@@ -56,7 +58,7 @@ File::DataClass::Constants - Definitions of constant values
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 16 $
+This document describes version v0.21.$Rev: 24 $
 
 =head1 Synopsis
 
@@ -82,6 +84,10 @@ String ARRAY
 =head2 C<CODE>
 
 String CODE
+
+=head2 C<CURDIR>
+
+Symbol representing the current working directory. A dot
 
 =head2 C<CYGWIN>
 
@@ -136,6 +142,10 @@ Space character
 =head2 C<STAT_FIELDS>
 
 The list of fields returned by the core C<stat> function
+
+=head2 C<TILDE>
+
+The (~) tilde character
 
 =head2 C<TRUE>
 
