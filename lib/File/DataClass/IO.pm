@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-07-04 22:38 pjf ;
+# @(#)$Ident: IO.pm 2013-07-05 12:46 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 25 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 27 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -13,7 +13,8 @@ use Fcntl                      qw( :flock :seek );
 use File::Basename               ( );
 use File::Copy                   ( );
 use File::DataClass::Constants;
-use File::DataClass::Functions qw( is_arrayref is_coderef is_hashref thread_id);
+use File::DataClass::Functions qw( first_char is_arrayref
+                                   is_coderef is_hashref thread_id);
 use File::Path                   ( );
 use File::Spec                   ( );
 use File::Temp                   ( );
@@ -96,13 +97,13 @@ sub __clone_one_of_us {
 sub __coerce_name {
    my $name = shift;
 
-   defined     $name           or  return;
-   is_coderef  $name           and $name  =  $name->();
-   blessed     $name           and $name .=  NUL;
-   is_arrayref $name           and $name  =  File::Spec->catfile( @{ $name } );
-   CURDIR eq   $name           and $name  =  Cwd::getcwd;
-   TILDE eq substr $name, 0, 1 and $name  =  __expand_tilde( $name );
-   $name !~ m{ \A [/\\] \z }mx and $name  =~ s{ [/\\] \z }{}mx;
+   defined     $name          or  return;
+   is_coderef  $name          and $name  =  $name->();
+   blessed     $name          and $name .=  NUL;
+   is_arrayref $name          and $name  =  File::Spec->catfile( @{ $name } );
+   CURDIR eq   $name          and $name  =  Cwd::getcwd;
+   first_char  $name eq TILDE and $name  =  __expand_tilde( $name );
+   length      $name > 1      and $name  =~ s{ [/\\] \z }{}mx;
    return $name;
 }
 
@@ -557,7 +558,9 @@ sub is_absolute {
 }
 
 sub is_dir {
-   my $self = shift; $self->type or $self->_init_type_from_fs or return FALSE;
+   my $self = shift; $self->name or return FALSE;
+
+   $self->type or $self->_init_type_from_fs or return FALSE;
 
    return $self->type && $self->type eq q(dir) ? TRUE : FALSE;
 }
@@ -567,15 +570,15 @@ sub is_executable {
 }
 
 sub is_file {
-   my $self = shift; $self->type or $self->_init_type_from_fs;
+   my $self = shift; $self->name or return FALSE;
+
+   $self->type or $self->_init_type_from_fs;
 
    return $self->type && $self->type eq q(file) ? TRUE : FALSE;
 }
 
 sub is_link {
-   my $self = shift; $self->type or $self->_init_type_from_fs or return FALSE;
-
-   return -l $self->name ? TRUE : FALSE;
+   return $_[ 0 ]->name && -l $_[ 0 ]->name ? TRUE : FALSE;
 }
 
 sub is_readable {
@@ -795,7 +798,7 @@ sub read_dir {
       $self->close; return @names;
    }
 
-   while (not $name or $name =~ $dir_pat) {
+   while (not defined $name or $name =~ $dir_pat) {
       unless (defined ($name = $self->io_handle->read)) {
          $self->close; return;
       }
@@ -1028,7 +1031,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 25 $
+This document describes version v0.21.$Rev: 27 $
 
 =head1 Synopsis
 
@@ -1041,9 +1044,10 @@ This document describes version v0.21.$Rev: 25 $
    io( 'path_name' )->perms( oct '0644' )->atomic->lock->print( $line );
 
    # Constructor methods signatures
-   my $obj = io( $obj );       # clone
+   my $obj = io( $obj );            # clone
+   my $obj = io( $obj, $hash_ref ); # clone and merge
    my $obj = io( $hash_ref );
-   my $obj = io( $name );      # can be coderef, object ref, arrayref or string
+   my $obj = io( $name );           # coderef, object ref, arrayref or string
    my $obj = io( $name, $hash_ref );
    my $obj = io( $name, $mode );
    my $obj = io( $name, $mode, $perms );
@@ -1824,8 +1828,8 @@ For IO::All from which I took the API and some tests
 
 =item L<Path::Tiny>
 
-Lifted the following features; tilde expansion, thread id in atomic
-file name, not following symlinks and tests
+Lifted the following features; iterator, tilde expansion, thread id in atomic
+file name, not following symlinks and some tests
 
 =back
 

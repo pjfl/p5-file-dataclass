@@ -1,10 +1,10 @@
-# @(#)$Ident: Functions.pm 2013-07-04 01:41 pjf ;
+# @(#)$Ident: Functions.pm 2013-07-05 11:26 pjf ;
 
 package File::DataClass::Functions;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 24 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 27 $ =~ /\d+/gmx );
 
 use Class::Load    qw( is_class_loaded load_class );
 use English        qw( -no_match_vars );
@@ -15,8 +15,8 @@ use List::Util     qw( first );
 use Scalar::Util   qw( blessed );
 use Try::Tiny;
 
-our @EXPORT_OK   = qw( ensure_class_loaded is_arrayref is_coderef is_hashref
-                       is_member is_stale merge_attributes
+our @EXPORT_OK   = qw( ensure_class_loaded first_char is_arrayref is_coderef
+                       is_hashref is_member is_stale merge_attributes
                        merge_hash_data thread_id throw );
 our %EXPORT_TAGS =   ( all => [ @EXPORT_OK ], );
 
@@ -38,6 +38,10 @@ sub ensure_class_loaded ($;$) {
                 args  => [ $class ] );
 
    return 1;
+}
+
+sub first_char ($) {
+   return substr $_[ 0 ], 0, 1;
 }
 
 sub is_arrayref (;$) {
@@ -115,7 +119,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 24 $
+This document describes version v0.21.$Rev: 27 $
 
 =head1 Synopsis
 
@@ -132,6 +136,12 @@ Common functions used in this distribution
    ensure_class_loaded( $some_class, \%options );
 
 Require the requested class, throw an error if it doesn't load
+
+=head2 first_char
+
+   $single_char = first_char $some_string;
+
+Returns the first character of C<$string>
 
 =head2 is_arrayref
 
