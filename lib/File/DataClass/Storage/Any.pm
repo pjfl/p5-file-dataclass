@@ -1,9 +1,9 @@
-# @(#)$Ident: Any.pm 2013-06-16 21:49 pjf ;
+# @(#)$Ident: Any.pm 2013-07-19 13:13 pjf ;
 
 package File::DataClass::Storage::Any;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 28 $ =~ /\d+/gmx );
 
 use File::Basename             qw(basename);
 use File::DataClass::Constants;
@@ -32,11 +32,6 @@ sub dump {
 }
 
 sub extn {
-   return sub {
-      my $path = shift || NUL; my ($extn) = $path =~ m{ \. ([^\.]+) \z }mx;
-
-      return $extn ? q(.).$extn : NUL;
-   };
 }
 
 sub insert {
@@ -139,7 +134,7 @@ File::DataClass::Storage::Any - Selects storage class using the extension on the
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 16 $
+This document describes version v0.21.$Rev: 28 $
 
 =head1 Synopsis
 
