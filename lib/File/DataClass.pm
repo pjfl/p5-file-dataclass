@@ -3,7 +3,7 @@
 package File::DataClass;
 
 use 5.010001;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 29 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 
@@ -25,7 +25,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 29 $ of L<File::DataClass>
+This document describes version v0.22.$Rev: 1 $ of L<File::DataClass>
 
 =head1 Synopsis
 

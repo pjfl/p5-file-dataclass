@@ -1,9 +1,9 @@
-# @(#)$Ident: Build.PL 2013-07-11 14:13 pjf ;
+# @(#)$Ident: Build.PL 2013-07-28 17:34 pjf ;
 
 use strict;
 use warnings;
 use inc::Bob; # Module::Build subclass
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 28 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 Bob->new( {
    module    => 'File::DataClass',
@@ -13,7 +13,7 @@ Bob->new( {
       'namespace::clean' => 0.23,
       'namespace::sweep' => 0.006,
       'Cache::FastMmap'  => 1.36,
-      'CHI'              => 0.42,
+      'CHI'              => 0.58,
       'Class::Load'      => 0.18,
       'Class::Method::ModifiersX::Augment' => 0.001,
       'Class::Null'      => 2.101420,
