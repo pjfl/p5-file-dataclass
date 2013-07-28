@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-0.21.16   2013-06-25 15:57:50
+0.21.29   2013-07-28 14:58:25
+          - Fixed precedence bug in ::ResultSouce::has_column
           - ::IO parent takes an optional count
           - Lazy load CHI. Added reset to ::IO
           - Updated synopsis for ::IO

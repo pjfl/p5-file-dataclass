@@ -1,9 +1,9 @@
-# @(#)$Ident: ResultSource.pm 2013-06-08 20:59 pjf ;
+# @(#)$Ident: ResultSource.pm 2013-07-28 13:42 pjf ;
 
 package File::DataClass::ResultSource;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 29 $ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use File::DataClass::ResultSet;
@@ -40,9 +40,9 @@ sub columns {
 }
 
 sub has_column {
-   my $attr = $_[ 0 ]->_attributes; my $key = $_[ 1 ] || q(_invalid_key_);
+   my $attr = $_[ 0 ]->_attributes; my $key = $_[ 1 ] || '_invalid_key_';
 
-   return exists $attr->{ $key } and $attr->{ $key } ? TRUE : FALSE;
+   return exists $attr->{ $key } && defined $attr->{ $key } ? TRUE : FALSE;
 }
 
 sub resultset {
@@ -54,7 +54,7 @@ sub resultset {
 }
 
 # Private methods
-sub _build_attributes {
+sub _build__attributes {
    my $self = shift; my $attr = {};
 
    $attr->{ $_ } = TRUE for (@{ $self->attributes });
@@ -74,7 +74,7 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
 =head1 Version
 
-This document describes version v0.21.$Rev: 16 $
+This document describes version v0.21.$Rev: 29 $
 
 =head1 Synopsis
 

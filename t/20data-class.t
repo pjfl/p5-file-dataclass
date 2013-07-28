@@ -1,8 +1,8 @@
-# @(#)$Ident: 20data-class.t 2013-06-08 17:48 pjf ;
+# @(#)$Ident: 20data-class.t 2013-07-28 13:52 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 16 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.21.%d', q$Rev: 29 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -129,6 +129,10 @@ is $res, q(dummy), 'Deletes dummy element';
 $e = test( $rs, q(delete), $args );
 
 like $e, qr{ does \s+ not \s+ exist }mx, 'Detects non existing element';
+
+is $rs->source->has_column( 'text' ), 1, 'Has column - true';
+
+is $rs->source->has_column( 'nochance' ), 0, 'Has column - false';
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw(t default.xml) ],
