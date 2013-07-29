@@ -1,6 +1,9 @@
 Revision history for File::DataClass
 
-0.22.3    2013-07-29 12:45:46
+0.22.4    2013-07-29 19:24:34
+          - Aborting Bingoes failed see df276fba-f57c-11e2-8c80-50d7c5c10595
+            No choice but to send this smoker to sleep 10 while 1.
+            Chris Williams, put my pause id in your stop list
           - Added missing dependency on MooX::ClassStash
           - Fixed unwanted Moose loading in ::Result
           - Depends on Moo version of CHI
