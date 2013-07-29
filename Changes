@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-0.22.1    2013-07-28 18:37:23
+0.22.2    2013-07-29 12:36:20
+          - Fixed unwanted Moose loading in ::Result
           - Depends on Moo version of CHI
 
 0.21.29   2013-07-28 14:58:25

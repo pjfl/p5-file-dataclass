@@ -1,31 +1,34 @@
-# @(#)$Ident: Result.pm 2013-06-16 21:48 pjf ;
+# @(#)$Ident: Result.pm 2013-07-29 11:25 pjf ;
 
 package File::DataClass::Result;
 
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moo;
-use Scalar::Util      qw(blessed);
-use Unexpected::Types qw(Object Str);
+use MooX::ClassStash;
+use Scalar::Util      qw( blessed );
+use Unexpected::Types qw( ArrayRef HashRef Maybe Object Str );
 
 has 'name'       => is => 'rw', isa => Str,    required => 1;
+
 has '_resultset' => is => 'ro', isa => Object, required => 1,
-   handles       => { _path    => q(path), _source => q(source),
-                      _storage => q(storage) };
+   handles       => { _path    => 'path', _source => 'source',
+                      _storage => 'storage' };
 
 sub BUILD {
-   my ($self, $args) = @_; my $class = blessed $self;
+   my ($self, $args) = @_;
 
-   my %types = ( qw(SCALAR Maybe[Str] ARRAY  Maybe[ArrayRef]
-                    HASH   Maybe[HashRef]) );
+   my $class = blessed $self; my $meta = $class->class_stash;
+
+   my %types = ( 'SCALAR', Maybe[Str], 'ARRAY',  Maybe[ArrayRef],
+                 'HASH',   Maybe[HashRef] );
 
    for (@{ $self->_source->attributes }) {
       my $type = ref $self->_source->defaults->{ $_ } || ref $args->{ $_ };
 
-      $class->meta->has_attribute( $_ )
-         or $class->meta->add_attribute
-            ( $_ => ( is => 'rw', isa => $types{ $type || q(SCALAR) } ) );
+      $meta->has_attribute( $_ ) or $meta->add_attribute
+         ( $_ => ( is => 'rw', isa => $types{ $type || q(SCALAR) } ) );
 
       defined $args->{ $_ } and $self->$_( $args->{ $_ } );
    }
@@ -57,7 +60,7 @@ File::DataClass::Result - Result object definition
 
 =head1 Version
 
-This document describes version v0.22.$Rev: 1 $
+This document describes version v0.22.$Rev: 2 $
 
 =head1 Synopsis
 
