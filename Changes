@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-0.22.2    2013-07-29 12:36:20
+0.22.3    2013-07-29 12:45:46
+          - Added missing dependency on MooX::ClassStash
           - Fixed unwanted Moose loading in ::Result
           - Depends on Moo version of CHI
 
