@@ -1,9 +1,9 @@
-# @(#)$Ident: DataClass.pm 2013-07-30 10:16 pjf ;
+# @(#)$Ident: DataClass.pm 2013-07-30 13:20 pjf ;
 
 package File::DataClass;
 
 use 5.010001;
-use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 5 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 7 $ =~ /\d+/gmx );
 
 use Moo;
 
@@ -25,7 +25,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 =head1 Version
 
-This document describes version v0.22.$Rev: 5 $ of L<File::DataClass>
+This document describes version v0.22.$Rev: 7 $ of L<File::DataClass>
 
 =head1 Synopsis
 
