@@ -1,8 +1,8 @@
-# @(#)$Ident: 15io.t 2013-07-04 19:00 pjf ;
+# @(#)$Ident: 15io.t 2013-07-30 08:44 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 5 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile curdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -257,7 +257,8 @@ subtest 'Create and detect empty subdirectories and files' => sub {
    my $path = catfile( qw(t output file) ); $io = io( $path ); $io->touch( 0 );
 
    ok -e $path, 'Touch a file into existance';
-   is $io->stat->{mtime}, 0, 'Sets modidification date/time';
+   $osname eq q(mswin32)
+      or is $io->stat->{mtime}, 0, 'Sets modidification date/time';
    ok $io->empty, 'The file is empty';
 };
 
@@ -367,7 +368,7 @@ SKIP: {
 }
 
 subtest 'Iterators and follow / not follow symlinks' => sub {
-   $Config{d_symlink} or plan skip => 'No symlink support', 5;
+   $Config{d_symlink} or skip => 'No symlink support', 5;
 
    my $wd       = tempd;
    my @tree     = qw( aaaa.txt bbbb.txt cccc/dddd.txt cccc/eeee/ffff.txt
