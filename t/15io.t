@@ -1,8 +1,8 @@
-# @(#)$Ident: 15io.t 2013-07-30 08:44 pjf ;
+# @(#)$Ident: 15io.t 2013-07-30 10:17 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 5 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 6 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile curdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -368,7 +368,7 @@ SKIP: {
 }
 
 subtest 'Iterators and follow / not follow symlinks' => sub {
-   $Config{d_symlink} or skip => 'No symlink support', 5;
+   $Config{d_symlink} or skip 'No symlink support', 5;
 
    my $wd       = tempd;
    my @tree     = qw( aaaa.txt bbbb.txt cccc/dddd.txt cccc/eeee/ffff.txt
