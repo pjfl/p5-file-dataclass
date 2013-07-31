@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-0.22.7    2013-07-30 14:21:48
+0.22.8    2013-07-31 10:50:12
+          - Fixed no symlink support test skipping
           - New method for CPANTesting min Perl ver
           - Skip more tests on windows
           - Added fremen and frogman to tier gruber

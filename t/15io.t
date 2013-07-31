@@ -1,8 +1,8 @@
-# @(#)$Ident: 15io.t 2013-07-30 10:17 pjf ;
+# @(#)$Ident: 15io.t 2013-07-31 09:46 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 6 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 8 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile curdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -367,74 +367,78 @@ SKIP: {
    };
 }
 
-subtest 'Iterators and follow / not follow symlinks' => sub {
-   $Config{d_symlink} or skip 'No symlink support', 5;
+SKIP: {
+   $Config{d_symlink} or skip 'No symlink support', 1;
 
-   my $wd       = tempd;
-   my @tree     = qw( aaaa.txt bbbb.txt cccc/dddd.txt cccc/eeee/ffff.txt
-                      gggg.txt );
-   my @follow   = qw( aaaa.txt bbbb.txt cccc gggg.txt pppp qqqq.txt
-                      cccc/dddd.txt cccc/eeee cccc/eeee/ffff.txt
-                      pppp/ffff.txt );
-   my @nofollow = qw( aaaa.txt bbbb.txt cccc gggg.txt pppp qqqq.txt
-                      cccc/dddd.txt cccc/eeee cccc/eeee/ffff.txt );
+   subtest 'Iterators and follow / not follow symlinks' => sub {
+      my $wd       = tempd;
+      my @tree     = qw( aaaa.txt bbbb.txt cccc/dddd.txt cccc/eeee/ffff.txt
+                         gggg.txt );
+      my @follow   = qw( aaaa.txt bbbb.txt cccc gggg.txt pppp qqqq.txt
+                         cccc/dddd.txt cccc/eeee cccc/eeee/ffff.txt
+                         pppp/ffff.txt );
+      my @nofollow = qw( aaaa.txt bbbb.txt cccc gggg.txt pppp qqqq.txt
+                         cccc/dddd.txt cccc/eeee cccc/eeee/ffff.txt );
 
-   $_->touch for (map { io( $_ )->assert_filepath } @tree);
+      $_->touch for (map { io( $_ )->assert_filepath } @tree);
 
-   symlink io( [ 'cccc', 'eeee' ] ), io( 'pppp' );
-   symlink io( [ 'aaaa.txt'     ] ), io( 'qqqq.txt' );
+      symlink io( [ 'cccc', 'eeee' ] ), io( 'pppp' );
+      symlink io( [ 'aaaa.txt'     ] ), io( 'qqqq.txt' );
 
-   subtest 'Follow' => sub {
-      my $dir = io( '.' )->deep; my @files;
+      subtest 'Follow' => sub {
+         my $dir = io( '.' )->deep; my @files;
 
-      for my $f (map { $_->relative( $dir ) } $dir->all) {
-         push @files, "${f}";
-      }
+         for my $f (map { $_->relative( $dir ) } $dir->all) {
+            push @files, "${f}";
+         }
 
-      cmp_deeply( [ sort @files ], [ sort @follow ], 'Follow symlinks' )
-         or diag explain \@files;
+         cmp_deeply( [ sort @files ], [ sort @follow ], 'Follow symlinks' )
+            or diag explain \@files;
+      };
+
+      subtest 'No follow' => sub {
+         my $dir = io( '.' )->deep->no_follow; my @files;
+
+         for my $f (map { $_->relative( $dir ) } $dir->all) {
+            push @files, "${f}";
+         }
+
+         cmp_deeply( [ sort @files ], [ sort @nofollow ],
+                     "Don't follow symlinks" ) or diag explain \@files;
+      };
+
+      subtest 'Follow - iterator' => sub {
+         my $io = io( '.' )->deep; my $iter = $io->iterator; my @files;
+
+         while (my $f = $iter->()) { push @files, $f->relative( $io )->name }
+
+         cmp_deeply( [ sort @files ], [ sort @follow ], 'Follow symlinks' )
+            or diag explain \@files;
+      };
+
+      subtest 'No Follow - iterator' => sub {
+         my $io = io( '.' )->deep->no_follow; my $iter = $io->iterator;
+         my @files;
+
+         while (my $f = $iter->()) { push @files, $f->relative( $io )->name }
+
+         cmp_deeply( [ sort @files ], [ sort @nofollow ],
+                     "Don't follow symlinks" ) or diag explain \@files;
+      };
+
+      subtest 'Follow - iterator with filter' => sub {
+         my $io = io( '.' )->deep->filter( sub { m{ ffff.txt }mx } );
+
+         my $iter = $io->iterator; my @files;
+
+         while (my $f = $iter->()) { push @files, $f->relative( $io )->name }
+
+         cmp_deeply( [ sort @files ],
+                     [ 'cccc/eeee/ffff.txt', 'pppp/ffff.txt', ],
+                     'Follow symlinks with filter' ) or diag explain \@files;
+      };
    };
-
-   subtest 'No follow' => sub {
-      my $dir = io( '.' )->deep->no_follow; my @files;
-
-      for my $f (map { $_->relative( $dir ) } $dir->all) {
-         push @files, "${f}";
-      }
-
-      cmp_deeply( [ sort @files ], [ sort @nofollow ], "Don't follow symlinks" )
-         or diag explain \@files;
-   };
-
-   subtest 'Follow - iterator' => sub {
-      my $io = io( '.' )->deep; my $iter = $io->iterator; my @files;
-
-      while (my $f = $iter->()) { push @files, $f->relative( $io )->name }
-
-      cmp_deeply( [ sort @files ], [ sort @follow ], 'Follow symlinks' )
-         or diag explain \@files;
-   };
-
-   subtest 'No Follow - iterator' => sub {
-      my $io = io( '.' )->deep->no_follow; my $iter = $io->iterator; my @files;
-
-      while (my $f = $iter->()) { push @files, $f->relative( $io )->name }
-
-      cmp_deeply( [ sort @files ], [ sort @nofollow ], "Don't follow symlinks" )
-         or diag explain \@files;
-   };
-
-   subtest 'Follow - iterator with filter' => sub {
-      my $io = io( '.' )->deep->filter( sub { m{ ffff.txt }mx } );
-
-      my $iter = $io->iterator; my @files;
-
-      while (my $f = $iter->()) { push @files, $f->relative( $io )->name }
-
-      cmp_deeply( [ sort @files ], [ 'cccc/eeee/ffff.txt', 'pppp/ffff.txt', ],
-                  'Follow symlinks with filter' ) or diag explain \@files;
-   };
-};
+}
 
 # Cleanup
 io( catdir( qw(t output) ) )->rmtree;
