@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.23.1    2013-08-06 18:18:12
+          - POD updates
+
 0.22.9    2013-08-02 20:04:28
           - Updated toolchain
           - Fixed no symlink support test skipping

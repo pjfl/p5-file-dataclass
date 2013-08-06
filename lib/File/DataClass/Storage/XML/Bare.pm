@@ -3,7 +3,7 @@
 package File::DataClass::Storage::XML::Bare;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.23.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use Moo;
@@ -168,7 +168,7 @@ File::DataClass::Storage::XML::Bare - Read/write XML data storage model
 
 =head1 Version
 
-This document describes version v0.22.$Rev: 1 $
+This document describes version v0.23.$Rev: 1 $
 
 =head1 Synopsis
 

@@ -4,7 +4,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 # Version
 
-This document describes version v0.22.$Rev: 8 $ of [File::DataClass](https://metacpan.org/module/File::DataClass)
+This document describes version v0.23.$Rev: 1 $ of [File::DataClass](https://metacpan.org/module/File::DataClass)
 
 # Synopsis
 
@@ -29,6 +29,9 @@ different formats
 
 The documentation for this distribution starts in the class
 [File::DataClass::Schema](https://metacpan.org/module/File::DataClass::Schema)
+
+[File::DataClass::IO](https://metacpan.org/module/File::DataClass::IO) is a [Moo](https://metacpan.org/module/Moo) based implementation of [IO::All](https://metacpan.org/module/IO::All)s API.
+It implements the file and directory methods only
 
 # Configuration and Environment
 
@@ -59,8 +62,9 @@ disabled
 
 # Bugs and Limitations
 
-There are no known bugs in this module.  Please report problems to the
-address below. Patches are welcome
+There are no known bugs in this module. Please report problems to
+http://rt.cpan.org/NoAuth/Bugs.html?Dist=File-DataClass. Patches are
+welcome
 
 # Acknowledgements
 

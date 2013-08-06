@@ -1,9 +1,9 @@
-# @(#)$Ident: DataClass.pm 2013-08-02 19:03 pjf ;
+# @(#)$Ident: DataClass.pm 2013-08-06 17:14 pjf ;
 
 package File::DataClass;
 
 use 5.010001;
-use version; our $VERSION = qv( sprintf '0.22.%d', q$Rev: 9 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.23.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 
@@ -25,7 +25,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 =head1 Version
 
-This document describes version v0.22.$Rev: 9 $ of L<File::DataClass>
+This document describes version v0.23.$Rev: 1 $ of L<File::DataClass>
 
 =head1 Synopsis
 
@@ -50,6 +50,9 @@ different formats
 
 The documentation for this distribution starts in the class
 L<File::DataClass::Schema>
+
+L<File::DataClass::IO> is a L<Moo> based implementation of L<IO::All>s API.
+It implements the file and directory methods only
 
 =head1 Configuration and Environment
 
@@ -84,8 +87,9 @@ disabled
 
 =head1 Bugs and Limitations
 
-There are no known bugs in this module.  Please report problems to the
-address below. Patches are welcome
+There are no known bugs in this module. Please report problems to
+http://rt.cpan.org/NoAuth/Bugs.html?Dist=File-DataClass. Patches are
+welcome
 
 =head1 Acknowledgements
 
