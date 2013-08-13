@@ -3,7 +3,7 @@
 package File::DataClass::List;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.23.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Unexpected::Types       qw( ArrayRef Bool HashRef Undef );
@@ -26,7 +26,7 @@ File::DataClass::List - List response class
 
 =head1 Version
 
-This document describes version v0.23.$Rev: 1 $
+This document describes version v0.24.$Rev: 1 $
 
 =head1 Synopsis
 

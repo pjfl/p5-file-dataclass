@@ -22,8 +22,9 @@
 ^MYMETA\.json$
 ^MYMETA\.yml$
 ^README\.md$
+^README\.mkdn$
 ^README\.textile$
-^SIGNATURE$
+#^SIGNATURE$
 ^Debian_CPANTS.txt$
 ^nytprof/
 ^nytprof.out$
@@ -60,3 +61,4 @@ Thumbs.db
 
 # Avoid archives of this distribution
 \bFile-DataClass-v?[\d\.\_]+
+\bFile-DataClass-?[\d\.\_]+

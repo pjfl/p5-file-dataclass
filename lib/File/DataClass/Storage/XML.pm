@@ -1,15 +1,14 @@
-# @(#)$Ident: XML.pm 2013-06-09 18:06 pjf ;
+# @(#)$Ident: XML.pm 2013-08-13 17:41 pjf ;
 
 package File::DataClass::Storage::XML;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.23.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use File::DataClass::Types  qw( HashRefOfBools );
 use Moo;
 use Unexpected::Types       qw( ArrayRef Str );
-use XML::DTD;
 
 extends q(File::DataClass::Storage);
 
@@ -65,11 +64,9 @@ sub _dtd_parse {
       $1 and push @{ $self->_dtd }, $1;
    }
 
-   my $dtd = XML::DTD->new; $dtd->sread( join NUL, @{ $self->_dtd } );
-
-   for my $el (map { $dtd->element( $_ ) } @{ $dtd->elementnames }) {
-      $el->{CMPNTTYPE} eq q(element) and $el->{CONTENTSPEC}->{eltname} eq ARRAY
-         and $self->_arrays->{ $el->{NAME} } = TRUE;
+   for (@{ $self->_dtd }) {
+      m{ \A <!ELEMENT \s+ (\S+) \s+ \(ARRAY\) }mx
+         and $self->_arrays->{ $1 } = TRUE
    }
 
    return $data;
@@ -110,7 +107,7 @@ File::DataClass::Storage::XML - Read/write XML data storage model
 
 =head1 Version
 
-This document describes version v0.23.$Rev: 1 $
+This document describes version v0.24.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -158,8 +155,6 @@ None
 =over 3
 
 =item L<File::DataClass::Storage>
-
-=item L<XML::DTD>
 
 =back
 

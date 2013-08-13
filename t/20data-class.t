@@ -1,8 +1,8 @@
-# @(#)$Ident: 20data-class.t 2013-07-28 13:52 pjf ;
+# @(#)$Ident: 20data-class.t 2013-08-13 17:25 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.23.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions;
 use FindBin qw( $Bin );
 use lib catdir( $Bin, updir, q(lib) );
@@ -64,16 +64,14 @@ ok -f $cache_file, 'Cache file found'; ! -f $cache_file and warn "${e}\n";
 
 my $data = test( $schema, qw(load t/default.xml t/default_en.xml) );
 
-ok exists $data->{ '_cvs_default' }
-   && $data->{ '_cvs_default' } =~ m{ @\(\#\)\$Id: }mx,
+like $data->{ '_cvs_default' } || q(), qr{ @\(\#\)\$Id: }mx,
    'Has reference element 1';
 
-ok exists $data->{ '_cvs_lang_default' }
-   && $data->{ '_cvs_lang_default' } =~ m{ @\(\#\)\$Id: }mx,
+like $data->{ '_cvs_lang_default' } || q(), qr{ @\(\#\)\$Id: }mx,
    'Has reference element 2';
 
 ok exists $data->{levels}
-   && ref $data->{levels}->{entrance}->{acl} eq q(ARRAY), 'Detects arrays';
+   && ref $data->{levels}->{entrance}->{acl} eq 'ARRAY', 'Detects arrays';
 
 $data = $schema->load( $path ); my $args = { data => $data, path => $dumped };
 

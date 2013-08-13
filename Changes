@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.24.1    2013-08-13 18:57:59
+          - Converted to dist.ini. Dropped XML::DTD
+
 0.23.2    2013-08-07 14:12:19
           - Reset min perl testing to original behaviour
           - POD updates
