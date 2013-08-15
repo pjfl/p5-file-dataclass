@@ -61,4 +61,3 @@ Thumbs.db
 
 # Avoid archives of this distribution
 \bFile-DataClass-v?[\d\.\_]+
-\bFile-DataClass-?[\d\.\_]+
