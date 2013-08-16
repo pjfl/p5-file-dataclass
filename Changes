@@ -1,6 +1,7 @@
 Revision history for File::DataClass
 
-0.24.1    2013-08-13 18:57:59
+0.24.3    2013-08-16 23:45:37
+          - Updated toolchain
           - Converted to dist.ini. Dropped XML::DTD
 
 0.23.2    2013-08-07 14:12:19

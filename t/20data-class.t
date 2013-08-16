@@ -1,25 +1,25 @@
-# @(#)$Ident: 20data-class.t 2013-08-13 17:25 pjf ;
+# @(#)$Ident: 20data-class.t 2013-08-16 22:19 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 1 $ =~ /\d+/gmx );
-use File::Spec::Functions;
-use FindBin qw( $Bin );
-use lib catdir( $Bin, updir, q(lib) );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use File::Spec::Functions   qw( catdir catfile updir );
+use FindBin                 qw( $Bin );
+use lib                 catdir( $Bin, updir, 'lib' );
 
 use Module::Build;
 use Test::More;
 
-my $reason;
+my $notes = {}; my $perl_ver;
 
 BEGIN {
    my $builder = eval { Module::Build->current };
-
-   $builder and $reason = $builder->notes->{stop_tests};
-   $reason  and $reason =~ m{ \A TESTS: }mx and plan skip_all => $reason;
+      $builder and $notes = $builder->notes;
+      $perl_ver = $notes->{min_perl_version} || 5.008;
 }
 
-use English qw(-no_match_vars);
+use Test::Requires "${perl_ver}";
+use English qw( -no_match_vars );
 use File::DataClass::IO;
 use Text::Diff;
 
@@ -37,23 +37,23 @@ use File::DataClass::Schema;
 
 my $osname     = lc $OSNAME;
 my $ntfs       = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
-my $path       = catfile( qw(t default.xml) );
-my $dumped     = catfile( qw(t dumped.xml) );
-my $cache_file = catfile( qw(t file-dataclass-schema.dat) );
+my $path       = catfile( qw( t default.xml ) );
+my $dumped     = catfile( qw( t dumped.xml ) );
+my $cache_file = catfile( qw( t file-dataclass-schema.dat ) );
 my $schema     = File::DataClass::Schema->new
-   ( cache_class => q(none),               lock_class => q(none),
-     path        => [ qw(t default.xml) ], tempdir    => q(t) );
+   ( cache_class => 'none',                  lock_class => 'none',
+     path        => [ qw( t default.xml ) ], tempdir    => 't' );
 
-isa_ok $schema, q(File::DataClass::Schema);
+isa_ok $schema, 'File::DataClass::Schema';
 
 ok ! -f $cache_file, 'Cache file not created';
 
 $schema = File::DataClass::Schema->new
-   ( path => [ qw(t default.xml) ], tempdir => q(t) );
+   ( path => [ qw( t default.xml ) ], tempdir => 't' );
 
 ok ! -f $cache_file, 'Cache file not created too early';
 
-my $e = test( $schema, qw(load nonexistant_file) );
+my $e = test( $schema, qw( load nonexistant_file ) );
 
 like $e, qr{ \QFile nonexistant_file cannot open\E }msx,
     'Cannot open nonexistant_file';

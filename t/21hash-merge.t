@@ -1,26 +1,27 @@
-# @(#)Ident: 21hash-merge.t 2013-06-08 18:03 pjf ;
+# @(#)Ident: 21hash-merge.t 2013-08-16 22:18 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 3 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
-use lib                 catdir( $Bin, updir, q(lib) );
+use lib                 catdir( $Bin, updir, 'lib' );
 
 use Module::Build;
 use Test::More;
 
-my $reason;
+my $notes = {}; my $perl_ver;
 
 BEGIN {
    my $builder = eval { Module::Build->current };
-
-   $builder and $reason = $builder->notes->{stop_tests};
-   $reason  and $reason =~ m{ \A TESTS: }mx and plan skip_all => $reason;
+      $builder and $notes = $builder->notes;
+      $perl_ver = $notes->{min_perl_version} || 5.008;
 }
 
-use English qw(-no_match_vars);
-use File::DataClass::Schema;
+use Test::Requires "${perl_ver}";
+use English qw( -no_match_vars );
+
+use_ok 'File::DataClass::Schema';
 
 sub test {
    my ($obj, $method, @args) = @_; my $wantarray = wantarray; local $EVAL_ERROR;
@@ -36,43 +37,41 @@ sub test {
 my $schema = File::DataClass::Schema->new
    ( cache_class              => 'none',
      lock_class               => 'none',
-     path                     => [ qw(t default.json) ],
+     path                     => [ qw( t default.json ) ],
      result_source_attributes => {
         keys                  => {
-           attributes         => [ qw(vals) ],
+           attributes         => [ qw( vals ) ],
            defaults           => { vals => {} }, }, },
      storage_class            => 'JSON',
-     tempdir                  => q(t), );
+     tempdir                  => 't', );
 
 my $rs   = test( $schema, 'resultset', 'keys' );
 my $args = { name => 'dummy', vals => { k1 => 'v1' } };
-my $res  = test( $rs, q(create), $args );
+my $res  = test( $rs, 'create', $args );
 
 is $res, q(dummy), 'Creates dummy element and inserts';
 
-delete $args->{vals}; $res = test( $rs, q(find), $args );
+delete $args->{vals}; $res = test( $rs, 'find', $args );
 
 is $res->vals->{k1}, 'v1', 'Finds defined value';
 
-$args->{vals}->{k1} = 0; $res = test( $rs, q(update), $args );
+$args->{vals}->{k1} = 0; $res = test( $rs, 'update', $args );
 
-delete $args->{vals}; $res = test( $rs, q(find), $args );
+delete $args->{vals}; $res = test( $rs, 'find', $args );
 
 is $res->vals->{k1}, 0, 'Update with false value';
 
-$args->{vals}->{k1} = undef; $res = test( $rs, q(update), $args );
+$args->{vals}->{k1} = undef; $res = test( $rs, 'update', $args );
 
-delete $args->{vals}; $res = test( $rs, q(find), $args );
+delete $args->{vals}; $res = test( $rs, 'find', $args );
 
 ok( (not exists $res->vals->{k1}), 'Delete attribute from hash' );
 
-$res = test( $rs, q(delete), $args );
+$res = test( $rs, 'delete', $args );
 
-is $res, q(dummy), 'Deletes dummy element';
+is $res, 'dummy', 'Deletes dummy element';
 
 done_testing;
-
-#print qx{ cat t/default.json };
 
 # Local Variables:
 # mode: perl

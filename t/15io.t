@@ -1,8 +1,8 @@
-# @(#)$Ident: 15io.t 2013-07-31 09:46 pjf ;
+# @(#)$Ident: 15io.t 2013-08-16 22:25 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 3 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile curdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -10,29 +10,29 @@ use lib                 catdir( $Bin, updir, 'lib' );
 use Module::Build;
 use Test::More;
 
-my $reason;
+my $notes = {}; my $perl_ver;
 
 BEGIN {
    my $builder = eval { Module::Build->current };
-
-   $builder and $reason = $builder->notes->{stop_tests};
-   $reason  and $reason =~ m{ \A TESTS: }mx and plan skip_all => $reason;
+      $builder and $notes = $builder->notes;
+      $perl_ver = $notes->{min_perl_version} || 5.008;
 }
 
+use Test::Requires "${perl_ver}";
 use Config;
 use Cwd;
 use English     qw( -no_match_vars );
-use File::DataClass::Constants;
-use File::DataClass::IO;
 use File::pushd qw( tempd );
 use Test::Deep  qw( cmp_deeply );
 
-isa_ok( io( $PROGRAM_NAME ), q(File::DataClass::IO) );
+use_ok 'File::DataClass::Constants';
+use_ok 'File::DataClass::IO';
+isa_ok( io( $PROGRAM_NAME ), 'File::DataClass::IO' );
 
 my $io; my $osname = lc $OSNAME;
 
-sub p { join q(;), grep { not m{ \.svn }mx } @_ }
-sub f { my $s = shift; $osname eq q(mswin32) and $s =~ s/\//\\/g; return $s }
+sub p { join ';', grep { not m{ \.svn }mx } @_ }
+sub f { my $s = shift; $osname eq 'mswin32' and $s =~ s/\//\\/g; return $s }
 
 subtest 'Deliberate errors' => sub {
    eval { io( 'quack' )->slurp };
@@ -441,7 +441,7 @@ SKIP: {
 }
 
 # Cleanup
-io( catdir( qw(t output) ) )->rmtree;
+io( catdir( qw( t output ) ) )->rmtree;
 
 done_testing;
 
