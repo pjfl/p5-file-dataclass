@@ -1,8 +1,8 @@
-# @(#)$Ident: 15io.t 2013-08-16 22:25 pjf ;
+# @(#)$Ident: 15io.t 2013-08-16 22:47 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 4 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile curdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -24,8 +24,8 @@ use Cwd;
 use English     qw( -no_match_vars );
 use File::pushd qw( tempd );
 use Test::Deep  qw( cmp_deeply );
+use File::DataClass::Constants;
 
-use_ok 'File::DataClass::Constants';
 use_ok 'File::DataClass::IO';
 isa_ok( io( $PROGRAM_NAME ), 'File::DataClass::IO' );
 
