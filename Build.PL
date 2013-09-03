@@ -1,9 +1,9 @@
-# @(#)$Ident: DZ_Build.PL 2013-08-15 13:04 pjf ;
+# @(#)$Ident: Build.PL 2013-08-26 21:23 pjf ;
 
 use strict;
 use warnings;
 
-use Module::Build;
+use Module::Build ##{ $meta2{prereqs}->{configure}->{requires}->{'Module::Build'} ##};
 
 sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 

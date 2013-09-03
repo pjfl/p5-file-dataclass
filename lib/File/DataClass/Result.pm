@@ -3,7 +3,7 @@
 package File::DataClass::Result;
 
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use MooX::ClassStash;
@@ -60,7 +60,7 @@ File::DataClass::Result - Result object definition
 
 =head1 Version
 
-This document describes version v0.24.$Rev: 1 $
+This document describes version v0.25.$Rev: 1 $
 
 =head1 Synopsis
 

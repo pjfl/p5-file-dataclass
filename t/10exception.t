@@ -1,8 +1,8 @@
-# @(#)Ident: 10exception.t 2013-08-16 21:56 pjf ;
+# @(#)Ident: 10exception.t 2013-08-28 22:52 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -36,7 +36,6 @@ $e = $EVAL_ERROR; $EVAL_ERROR = undef; my $min_level = $e->level;
 is ref $e, $class, 'Good class';
 like $e, qr{ \A main \[\d+ / $min_level \] }mx, 'Package and default level';
 like $e, qr{ PracticeKill \s* \z   }mx, 'Throws error message';
-is $e->class, "${class}", 'Default error class';
 
 my ($line1, $line2, $line3);
 
@@ -67,25 +66,20 @@ like $e, qr{ \A main \[ $line1 / $level \] }mx, 'Specific leader level';
 
 $line1 = __LINE__; eval {
    $class->throw( args  => [ 'flap' ],
-                  class => 'nonDefault',
                   error => 'cat: [_1] cannot open: [_2]', ) };
 
 $e = $EVAL_ERROR; $EVAL_ERROR = undef;
-
-is $e->class, 'nonDefault', 'Specific error class';
 
 like $e, qr{ main\[ $line1 / \d+ \]:\scat:\sflap\scannot\sopen:\s\[\?\] }mx,
    'Placeholer substitution';
 
-$line1 = __LINE__; eval {
-   $class->throw( args  => [ 'flap' ],
-                  class => 'testPrevious',
-                  error => 'cat: [_1] cannot open: [_2]', ) };
+$line1 = __LINE__; eval { $class->throw( error => 'Current', ) };
 
 $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
-is $e->class, 'testPrevious', 'Current exception class';
-is $e->previous_exception->class, 'nonDefault', 'Previous exception class';
+like $e->as_string, qr{ Current }mx, 'Current exception';
+like $e->previous_exception->as_string, qr{ cannot \s open }mx,
+   'Previous exception class';
 
 done_testing;
 

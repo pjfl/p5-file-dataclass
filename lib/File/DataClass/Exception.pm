@@ -1,21 +1,19 @@
-# @(#)Ident: Exception.pm 2013-07-19 12:46 pjf ;
+# @(#)Ident: Exception.pm 2013-08-28 22:55 pjf ;
 
 package File::DataClass::Exception;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.24.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
-use Unexpected::Types qw(Str);
+use Unexpected::Types qw( Str );
 
 extends q(Unexpected);
 with    q(Unexpected::TraitFor::ErrorLeader);
 
 __PACKAGE__->ignore_class( 'File::DataClass::IO' );
 
-has '+class' => default => __PACKAGE__;
-
-has 'out'    => is => 'ro', isa => Str, default => q();
+has 'out' => is => 'ro', isa => Str, default => q();
 
 1;
 
@@ -31,7 +29,7 @@ File::DataClass::Exception - Exception class composed from traits
 
 =head1 Synopsis
 
-   use File::DataClass::Functions qw(throw);
+   use File::DataClass::Functions qw( throw );
    use Try::Tiny;
 
    sub some_method {
@@ -57,7 +55,7 @@ File::DataClass::Exception - Exception class composed from traits
 
 =head1 Version
 
-This documents version v0.24.$Rev: 1 $ of L<File::DataClass::Exception>
+This documents version v0.25.$Rev: 1 $ of L<File::DataClass::Exception>
 
 =head1 Description
 
@@ -76,15 +74,9 @@ plus a leader if the optional C<ErrorLeader> role has been applied
 
 Ignores L<File::DataClass::IO> when creating exception leaders
 
-Overrides the C<class> attribute setting it's value to this class
-
 Defines these attributes;
 
 =over 3
-
-=item C<class>
-
-Defaults the "class" of a thrown exception to L<File::DataClass::Exception>
 
 =item C<out>
 
@@ -103,7 +95,7 @@ What an instance of this class stringifies to
 
 =head2 caught
 
-   $e = IPC::SRLock::Exception->caught( $error );
+   $e = File::DataClass::Exception->caught( $error );
 
 Catches and returns a thrown exception or generates a new exception if
 C<EVAL_ERROR> has been set or if an error string was passed in
@@ -117,7 +109,7 @@ Skips anonymous stack frames, minimalist
 
 =head2 throw
 
-   IPC::SRLock::Exception->throw( $error );
+   File::DataClass::Exception->throw( $error );
 
 Create (or re-throw) an exception to be caught by the L</caught> method. If
 the passed parameter is a reference it is re-thrown. If a single scalar
@@ -129,7 +121,7 @@ in this case
 
 =head2 throw_on_error
 
-   IPC::SRLock::Exception->throw_on_error( $error );
+   File::DataClass::Exception->throw_on_error( $error );
 
 Calls L</caught> and if the was an exception L</throw>s it
 
