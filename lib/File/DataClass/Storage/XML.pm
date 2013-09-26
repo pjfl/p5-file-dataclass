@@ -1,18 +1,17 @@
-# @(#)$Ident: XML.pm 2013-08-13 17:41 pjf ;
+# @(#)$Ident: XML.pm 2013-09-13 17:51 pjf ;
 
 package File::DataClass::Storage::XML;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
-use File::DataClass::Types  qw( HashRefOfBools );
+use File::DataClass::Types  qw( ArrayRef HashRefOfBools Str );
 use Moo;
-use Unexpected::Types       qw( ArrayRef Str );
 
 extends q(File::DataClass::Storage);
 
-has '+extn'     => default => q(.xml);
+has '+extn'     => default => '.xml';
 
 has 'root_name' => is => 'ro', isa => Str, default => 'config';
 
@@ -107,7 +106,7 @@ File::DataClass::Storage::XML - Read/write XML data storage model
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 

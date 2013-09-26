@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-07-05 12:46 pjf ;
+# @(#)$Ident: IO.pm 2013-09-25 19:06 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -14,7 +14,7 @@ use File::Basename               ( );
 use File::Copy                   ( );
 use File::DataClass::Constants;
 use File::DataClass::Functions qw( first_char is_arrayref
-                                   is_coderef is_hashref thread_id);
+                                   is_coderef is_hashref thread_id );
 use File::Path                   ( );
 use File::Spec                   ( );
 use File::Temp                   ( );
@@ -97,20 +97,21 @@ sub __clone_one_of_us {
 sub __coerce_name {
    my $name = shift;
 
-   defined     $name          or  return;
-   is_coderef  $name          and $name  =  $name->();
-   blessed     $name          and $name .=  NUL;
-   is_arrayref $name          and $name  =  File::Spec->catfile( @{ $name } );
-   CURDIR eq   $name          and $name  =  Cwd::getcwd;
-   first_char  $name eq TILDE and $name  =  __expand_tilde( $name );
-   length      $name > 1      and $name  =~ s{ [/\\] \z }{}mx;
+   not defined $name          and return;
+   is_coderef  $name          and $name =  $name->();
+   blessed     $name          and $name =  "${name}";
+   is_arrayref $name          and $name =  File::Spec->catfile( @{ $name } );
+   CURDIR eq   $name          and $name =  Cwd::getcwd;
+   first_char  $name eq TILDE and $name =  __expand_tilde( $name );
+   length      $name > 1      and $name =~ s{ [/\\] \z }{}mx;
    return $name;
 }
 
 sub __expand_tilde {
-  (my $path = $_[ 0 ]) =~ m{ \A ([~] [^/\\]*) .* }mx; my ($dir) = glob( $1 );
+  (my $path = $_[ 0 ]) =~ m{ \A ([~] [^/\\]*) .* }mx;
 
-   $path =~ s{ \A ([~] [^/\\]*) }{$dir}mx;
+   my ($dir) = glob( $1 ); $path =~ s{ \A ([~] [^/\\]*) }{$dir}mx;
+
    return $path;
 }
 
@@ -161,7 +162,7 @@ sub append {
    my ($self, @args) = @_;
 
    if ($self->is_open and not $self->is_reading) { $self->seek( 0, SEEK_END ) }
-   else { $self->assert_open( q(a) ) }
+   else { $self->assert_open( 'a' ) }
 
    return $self->_print( @args );
 }
@@ -170,7 +171,7 @@ sub appendln {
    my ($self, @args) = @_;
 
    if ($self->is_open and not $self->is_reading) { $self->seek( 0, SEEK_END ) }
-   else { $self->assert_open( q(a) ) }
+   else { $self->assert_open( 'a' ) }
 
    return $self->_println( @args );
 }
@@ -184,7 +185,7 @@ sub assert_dirpath {
 
    $dir_name or return; -d $dir_name and return $dir_name;
 
-   my $perms = $self->_mkdir_perms; $self->_umask_push( oct q(07777) );
+   my $perms = $self->_mkdir_perms; $self->_umask_push( oct '07777' );
 
    CORE::mkdir( $dir_name, $perms )
       or File::Path::make_path( $dir_name, { mode => $perms } );
@@ -208,7 +209,7 @@ sub assert_filepath {
 }
 
 sub assert_open {
-   return $_[ 0 ]->open( $_[ 1 ] || q(r), $_[ 2 ] );
+   return $_[ 0 ]->open( $_[ 1 ] || 'r', $_[ 2 ] );
 }
 
 sub atomic {
@@ -273,7 +274,7 @@ sub _build__dir_pattern {
    my $self = shift; my ($curdir, $pat, $updir);
 
    $pat  = "\Q$curdir\E" if ($curdir = File::Spec->curdir);
-   $pat .= q(|)          if ($updir  = File::Spec->updir and $pat);
+   $pat .= '|'           if ($updir  = File::Spec->updir and $pat);
    $pat .= "\Q$updir\E"  if ($updir);
 
    return qr{ \A $pat \z }mx;
@@ -329,14 +330,14 @@ sub close {
 
    $self->_set_io_handle( undef );
    $self->_set_is_open  ( FALSE );
-   $self->_set_mode     ( q(r)  );
+   $self->_set_mode     ( 'r'   );
    return $self;
 }
 
 sub _close_and_rename { # This creates a race condition
-   my $self = shift; $self->unlock; my $handle = $self->io_handle;
+   my $self = shift; my $handle; $self->unlock;
 
-   $handle and $handle->close; $handle and delete $self->{io_handle};
+   if ($handle = $self->io_handle) { $handle->close; delete $self->{io_handle} }
 
    $self->_atomic and $self->_rename_atomic;
 
@@ -344,11 +345,11 @@ sub _close_and_rename { # This creates a race condition
 }
 
 sub _rename_and_close { # This does not create a race condition
-   my $self = shift; $self->_atomic and $self->_rename_atomic; $self->unlock;
+   my $self = shift; my $handle;
 
-   my $handle = $self->io_handle; $handle and $handle->close;
+   $self->_atomic and $self->_rename_atomic; $self->unlock;
 
-   $handle and delete $self->{io_handle};
+   if ($handle = $self->io_handle) { $handle->close; delete $self->{io_handle} }
 
    return $self;
 }
@@ -389,7 +390,7 @@ sub delete {
 sub delete_tmp_files {
    my ($self, $tmplt) = @_;
 
-   $tmplt ||= q(%6.6d....); my $pat = sprintf $tmplt, $PID;
+   $tmplt ||= '%6.6d....'; my $pat = sprintf $tmplt, $PID;
 
    while (my $entry = $self->next) {
       $entry->filename =~ m{ \A $pat \z }mx and unlink $entry->pathname;
@@ -403,7 +404,7 @@ sub DEMOLISH {
 }
 
 sub dir {
-   return shift->_init( q(dir), @_ );
+   return shift->_init( 'dir', @_ );
 }
 
 sub dirname {
@@ -423,19 +424,19 @@ sub empty {
 sub encoding {
    my ($self, $encoding) = @_;
 
-   $encoding and lc $encoding eq q(utf-8) and $encoding = q(utf8);
+   $encoding and lc $encoding eq 'utf-8' and $encoding = 'utf8';
    $encoding or
       $self->_throw( 'No encoding value passed to '.__PACKAGE__.'::encoding' );
    $self->is_open and CORE::binmode( $self->io_handle, ":encoding($encoding)" );
    $self->_encoding( $encoding );
-   $self->_set_is_utf8( $encoding eq q(utf8) ? TRUE : FALSE );
+   $self->_set_is_utf8( $encoding eq 'utf8' ? TRUE : FALSE );
    return $self;
 }
 
 sub error_check {
    my $self = shift;
 
-   $self->io_handle->can( q(error) ) or return;
+   $self->io_handle->can( 'error' ) or return;
    $self->io_handle->error or return;
    $self->_throw( error => 'IO error [_1]', args => [ $OS_ERROR ] );
    return;
@@ -446,7 +447,7 @@ sub exists {
 }
 
 sub file {
-   return shift->_init( q(file), @_ );
+   return shift->_init( 'file', @_ );
 }
 
 sub filename {
@@ -509,7 +510,7 @@ sub getline {
 
    {  local $RS = $separator || $self->_separator;
       $line = $self->io_handle->getline;
-      $self->_chomp and defined $line and CORE::chomp $line;
+      defined $line and $self->_chomp and CORE::chomp $line;
    }
 
    $self->error_check;
@@ -562,7 +563,7 @@ sub is_dir {
 
    $self->type or $self->_init_type_from_fs or return FALSE;
 
-   return $self->type && $self->type eq q(dir) ? TRUE : FALSE;
+   return $self->type && $self->type eq 'dir' ? TRUE : FALSE;
 }
 
 sub is_executable {
@@ -574,7 +575,7 @@ sub is_file {
 
    $self->type or $self->_init_type_from_fs;
 
-   return $self->type && $self->type eq q(file) ? TRUE : FALSE;
+   return $self->type && $self->type eq 'file' ? TRUE : FALSE;
 }
 
 sub is_link {
@@ -625,7 +626,7 @@ sub lock {
 sub mkdir {
    my ($self, $perms) = @_; $perms ||= $self->_mkdir_perms;
 
-   $self->_umask_push( oct q(07777) );
+   $self->_umask_push( oct '07777' );
 
    CORE::mkdir( $self->name, $perms );
 
@@ -639,13 +640,13 @@ sub mkdir {
 sub _mkdir_perms {
    my $perms = $_[ 1 ] || $_[ 0 ]->_perms;
 
-   return (($perms & oct q(0444)) >> 2) | $perms;
+   return (($perms & oct '0444') >> 2) | $perms;
 }
 
 sub mkpath {
    my ($self, $perms) = @_; $perms ||= $self->_mkdir_perms;
 
-   $self->_umask_push( oct q(07777) );
+   $self->_umask_push( oct '07777' );
 
    File::Path::make_path( $self->name, { mode => $perms } );
 
@@ -657,9 +658,7 @@ sub mkpath {
 }
 
 sub next {
-   my $self = shift; my $name;
-
-   defined ($name = $self->read_dir) or return;
+   my $self = shift; defined (my $name = $self->read_dir) or return;
 
    my $io = $self->_constructor( [ $self->name, $name ] );
 
@@ -679,8 +678,8 @@ sub open {
       and (substr $mode, 0, 1) eq (substr $self->mode, 0, 1)
       and return $self;
    $self->is_open
-      and q(r) eq (substr $mode, 0, 1)
-      and q(+) eq (substr $self->mode, 1, 1) || NUL
+      and 'r' eq (substr $mode, 0, 1)
+      and '+' eq (substr $self->mode, 1, 1) || NUL
       and $self->seek( 0, 0 )
       and return $self;
    $self->type or $self->_init_type_from_fs; $self->type or $self->file;
@@ -750,7 +749,7 @@ sub perms {
 }
 
 sub print {
-   return shift->assert_open( q(w) )->_print( @_ );
+   return shift->assert_open( 'w' )->_print( @_ );
 }
 
 sub _print {
@@ -765,7 +764,7 @@ sub _print {
 }
 
 sub println {
-   return shift->assert_open( q(w) )->_println( @_ );
+   return shift->assert_open( 'w' )->_println( @_ );
 }
 
 sub _println {
@@ -833,8 +832,12 @@ sub _rename_atomic {
    return;
 }
 
-sub reset { # TODO: Add the other bools that can be reset to their defaults
-   $_[ 0 ]->close; $_[ 0 ]->_chomp( FALSE ); return $_[ 0 ];
+sub reset {
+   my $self = shift; $self->close;
+
+   $self->_assert( FALSE ); $self->_atomic( FALSE ); $self->_chomp    ( FALSE );
+   $self->_deep  ( FALSE ); $self->_lock  ( FALSE ); $self->_no_follow( FALSE );
+   return $self;
 }
 
 sub rmdir {
@@ -853,7 +856,7 @@ sub rmtree {
 sub seek {
    my ($self, @args) = @_;
 
-   $self->is_open or $self->assert_open( $LC_OSNAME eq EVIL ? q(r) : q(r+) );
+   $self->is_open or $self->assert_open( $LC_OSNAME eq EVIL ? 'r' : 'r+' );
 
    $self->io_handle->seek( @args ); $self->error_check;
 
@@ -885,7 +888,7 @@ sub set_lock {
 
    $self->_lock_obj and return $self->_lock_obj->set( k => $self->name );
 
-   flock $self->io_handle, $self->mode eq q(r) ? LOCK_SH : LOCK_EX;
+   flock $self->io_handle, $self->mode eq 'r' ? LOCK_SH : LOCK_EX;
 
    return $self;
 }
@@ -935,13 +938,13 @@ sub tempfile {
 
    ($tempdir = $self->name and -d $tempdir) or $tempdir = File::Spec->tmpdir;
 
-   $tmplt ||= q(%6.6dXXXX);
+   $tmplt ||= '%6.6dXXXX';
    $tmpfh   = File::Temp->new
       ( DIR => $tempdir, TEMPLATE => (sprintf $tmplt, $PID) );
-   $self->_init( q(file), $tmpfh->filename );
+   $self->_init( 'file', $tmpfh->filename );
    $self->_set_io_handle( $tmpfh );
    $self->_set_is_open( TRUE );
-   $self->_set_mode( q(w+) );
+   $self->_set_mode( 'w+' );
    return $self;
 }
 
@@ -954,7 +957,7 @@ sub _throw {
 sub touch {
    my ($self, $time) = @_; $self->name or return; $time //= time;
 
-   -e $self->name or $self->_open_file( $self->_open_args( q(w) ) )->close;
+   -e $self->name or $self->_open_file( $self->_open_args( 'w' ) )->close;
 
    utime $time, $time, $self->name;
    return $self;
@@ -975,7 +978,7 @@ sub _umask_push {
 
    defined $first and $first == NO_UMASK_STACK and return umask;
 
-   $perms ^= oct q(0777); push @{ $self->_umask }, umask $perms;
+   $perms ^= oct '0777'; push @{ $self->_umask }, umask $perms;
 
    return $perms;
 }
@@ -998,15 +1001,15 @@ sub _untainted_perms {
 
    $self->stat->{mode} =~ m{ \A (\d+) \z }mx and $perms = $1;
 
-   return $perms & oct q(07777);
+   return $perms & oct '07777';
 }
 
 sub utf8 {
-   $_[ 0 ]->encoding( q(utf8) ); return $_[ 0 ];
+   $_[ 0 ]->encoding( 'utf8' ); return $_[ 0 ];
 }
 
 sub write {
-   my ($self, @args) = @_; $self->assert_open( q(w) );
+   my ($self, @args) = @_; $self->assert_open( 'w' );
 
    my $length = @args
               ? $self->io_handle->write( @args )
@@ -1031,7 +1034,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -1793,7 +1796,7 @@ None
 
 =item L<Type::Utils>
 
-=item L<Unexpected::Types>
+=item L<Unexpected>
 
 =back
 

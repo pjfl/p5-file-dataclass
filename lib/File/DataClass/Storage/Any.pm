@@ -1,17 +1,17 @@
-# @(#)$Ident: Any.pm 2013-07-19 13:13 pjf ;
+# @(#)$Ident: Any.pm 2013-09-25 12:23 pjf ;
 
 package File::DataClass::Storage::Any;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
-use File::Basename             qw(basename);
+use File::Basename             qw( basename );
 use File::DataClass::Constants;
-use File::DataClass::Functions qw(ensure_class_loaded is_stale merge_hash_data
-                                  throw);
+use File::DataClass::Functions qw( ensure_class_loaded is_stale merge_file_data
+                                   throw );
 use File::DataClass::Storage;
+use File::DataClass::Types     qw( Object HashRef );
 use Moo;
-use Unexpected::Types          qw(Object HashRef);
 
 has 'schema'  => is => 'ro', isa => Object, required => TRUE, weak_ref => TRUE,
    handles    => [ qw(cache storage_attributes storage_base), ];
@@ -53,7 +53,7 @@ sub load {
       my ($red, $path_mtime) = $store->read_file( $path, FALSE ); $red or next;
 
       $path_mtime > $newest and $newest = $path_mtime;
-      merge_hash_data $data, $red;
+      merge_file_data $data, $red;
    }
 
    $self->cache->set_by_paths( \@paths, $data, $self->meta_pack( $newest ) );
@@ -134,7 +134,7 @@ File::DataClass::Storage::Any - Selects storage class using the extension on the
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -199,8 +199,6 @@ None
 =item L<File::DataClass::Storage>
 
 =item L<Moo>
-
-=item L<Unexpected::Types>
 
 =back
 

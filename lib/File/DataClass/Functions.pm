@@ -1,10 +1,10 @@
-# @(#)$Ident: Functions.pm 2013-07-05 11:26 pjf ;
+# @(#)$Ident: Functions.pm 2013-09-25 12:28 pjf ;
 
 package File::DataClass::Functions;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Class::Load    qw( is_class_loaded load_class );
 use English        qw( -no_match_vars );
@@ -17,7 +17,7 @@ use Try::Tiny;
 
 our @EXPORT_OK   = qw( ensure_class_loaded first_char is_arrayref is_coderef
                        is_hashref is_member is_stale merge_attributes
-                       merge_hash_data thread_id throw );
+                       merge_file_data thread_id throw );
 our %EXPORT_TAGS =   ( all => [ @EXPORT_OK ], );
 
 my $LC_OSNAME    = lc $OSNAME;
@@ -45,15 +45,15 @@ sub first_char ($) {
 }
 
 sub is_arrayref (;$) {
-   return $_[ 0 ] && ref $_[ 0 ] eq q(ARRAY) ? 1 : 0;
+   return $_[ 0 ] && ref $_[ 0 ] eq 'ARRAY' ? 1 : 0;
 }
 
 sub is_coderef (;$) {
-   return $_[ 0 ] && ref $_[ 0 ] eq q(CODE) ? 1 : 0;
+   return $_[ 0 ] && ref $_[ 0 ] eq 'CODE' ? 1 : 0;
 }
 
 sub is_hashref (;$) {
-   return $_[ 0 ] && ref $_[ 0 ] eq q(HASH) ? 1 : 0;
+   return $_[ 0 ] && ref $_[ 0 ] eq 'HASH' ? 1 : 0;
 }
 
 sub is_member (;@) {
@@ -87,7 +87,7 @@ sub merge_attributes ($$;$) {
    return $dest;
 }
 
-sub merge_hash_data ($$) {
+sub merge_file_data ($$) {
    my ($existing, $new) = @_;
 
    for (keys %{ $new }) {
@@ -119,7 +119,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -184,9 +184,9 @@ returned. The C<$dest> hash values take precedence over the C<$src>
 hash values. The C<$src> hash may be an object in which case its
 accessor methods are called
 
-=head2 merge_hash_data
+=head2 merge_file_data
 
-   merge_hash_data $existing, $new;
+   merge_file_data $existing, $new;
 
 Uses L<Hash::Merge> to merge data from the new hash ref in with the existing
 

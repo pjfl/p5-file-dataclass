@@ -1,17 +1,17 @@
-# @(#)$Ident: ResultSet.pm 2013-06-08 20:58 pjf ;
+# @(#)$Ident: ResultSet.pm 2013-09-13 17:55 pjf ;
 
 package File::DataClass::ResultSet;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
-use File::DataClass::Functions qw(is_arrayref is_member throw);
+use File::DataClass::Functions qw( is_arrayref is_member throw );
 use File::DataClass::List;
 use File::DataClass::Result;
+use File::DataClass::Types     qw( ArrayRef ClassName HashRef Int Object );
 use Moo;
-use Scalar::Util               qw(blessed);
-use Unexpected::Types          qw(ArrayRef ClassName HashRef Int Object);
+use Scalar::Util               qw( blessed );
 
 has 'list_class'   => is => 'ro',   isa => ClassName,
    default         => 'File::DataClass::List';
@@ -20,7 +20,7 @@ has 'result_class' => is => 'ro',   isa => ClassName,
    default         => 'File::DataClass::Result';
 
 has 'source'       => is => 'ro',   isa => Object,
-   handles         => [ qw(attributes defaults label_attr path storage) ],
+   handles         => [ qw( attributes defaults label_attr path storage ) ],
    required        => TRUE, weak_ref => TRUE;
 
 
@@ -115,11 +115,9 @@ sub list {
 }
 
 sub next {
-   my $self = shift; my $index = $self->_iterator || 0;
+   my $self = shift; my $index = $self->_iterator; $self->_results or return;
 
-   $self->_results and $self->_iterator( $index + 1 );
-
-   return $self->_results ? $self->_results->[ $index ] : undef;
+   $self->_iterator( $index + 1 ); return $self->_results->[ $index ];
 }
 
 sub push {
@@ -372,7 +370,7 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 

@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.26.1    2013-09-26 17:02:33
+          - Increased test coverage
+
 0.25.1    2013-09-03 12:57:12
           - Bumped Unexpected version
 

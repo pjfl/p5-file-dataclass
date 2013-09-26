@@ -1,10 +1,10 @@
-# @(#)$Ident: Constants.pm 2013-07-04 14:57 pjf ;
+# @(#)$Ident: Constants.pm 2013-09-13 17:19 pjf ;
 
 package File::DataClass::Constants;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Exporter 5.57 qw( import );
 use File::DataClass::Exception;
@@ -34,8 +34,8 @@ sub EXCEPTION_CLASS () { __PACKAGE__->Exception_Class }
 sub EXTENSIONS      () { { '.json' => [ q(JSON) ],
                            '.xml'  => [ q(XML::Simple), q(XML::Bare) ], } }
 sub NO_UMASK_STACK  () { -1 }
-sub STAT_FIELDS     () { qw(device inode mode nlink uid gid device_id
-                            size atime mtime ctime blksize blocks) }
+sub STAT_FIELDS     () { qw( device inode mode nlink uid gid device_id
+                             size atime mtime ctime blksize blocks ) }
 
 sub Exception_Class {
    my ($self, $class) = @_; defined $class or return $Exception_Class;
@@ -58,7 +58,7 @@ File::DataClass::Constants - Definitions of constant values
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 

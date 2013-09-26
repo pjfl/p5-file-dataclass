@@ -1,8 +1,8 @@
-# @(#)$Ident: 15io.t 2013-08-16 22:47 pjf ;
+# @(#)$Ident: 15io.t 2013-09-03 17:28 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile curdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -40,12 +40,12 @@ subtest 'Deliberate errors' => sub {
    like $EVAL_ERROR, qr{ File \s+ \S+ \s+ cannot \s+ open }mx,
       'Cannot open file';
 
-   eval { io( [ qw(non_existant file) ] )->println( 'x' ) };
+   eval { io( [ qw( non_existant file ) ] )->println( 'x' ) };
 
    like $EVAL_ERROR, qr{ File \s+ \S+ \s+ cannot \s+ open }mx,
       'Cannot create file in non existant directory';
 
-   eval { io( catdir( qw(t xxxxx) ) )->next };
+   eval { io( catdir( qw( t xxxxx ) ) )->next };
 
    like $EVAL_ERROR, qr{ Directory \s+ \S+ \s+ cannot \s+ open }mx,
       'Cannot open directory';
@@ -63,17 +63,20 @@ subtest 'Deliberate errors' => sub {
 };
 
 subtest 'Polymorphic Constructor' => sub {
-   sub _filename { [ qw(t mydir file1) ] }
+   sub _filename { [ qw( t mydir file1 ) ] }
 
-   ok io( catfile( qw(t mydir file1) ) )->exists, 'Constructs from path';
-   ok io( [ qw(t mydir file1) ] )->exists, 'Constructs from arrayref';
+   ok io( catfile( qw( t mydir file1 ) ) )->exists, 'Constructs from path';
+   ok io( [ qw( t mydir file1 ) ] )->exists, 'Constructs from arrayref';
    ok io( \&_filename )->exists, 'Constructs from coderef';
-   ok io( { name => catfile( qw(t mydir file1) ) } )->exists,
+   ok io( { name => catfile( qw( t mydir file1 ) ) } )->exists,
       'Constructs from hashref';
-   $io = io( [ qw(t mydir file1) ], q(r), oct q(400) ); $io = io( $io );
+   $io = io( [ qw( t mydir file1 ) ], q(r), oct q(400) ); $io = io( $io );
    ok $io->exists, 'Constructs from object';
+   $io = io( [ qw( t mydir file1 ) ], { perms => oct q(400) } );
+   ok $io->exists && (sprintf "%o", $io->_perms & 07777) eq '400',
+      'Constructs from name and hashref';
    is( (sprintf "%o", $io->_perms & 07777), q(400),
-       'Duplicates permissions from original object' );
+      'Duplicates permissions from original object' );
 
    my ($homedir) = glob( '~' );
 
@@ -89,18 +92,18 @@ subtest 'Polymorphic Constructor' => sub {
 $io = io( $PROGRAM_NAME ); is "${io}", $PROGRAM_NAME, 'Stringifies';
 
 subtest 'File::Spec::Functions' => sub {
-   is( io( '././t/default.xml' )->canonpath, f( catfile( qw(t default.xml) ) ),
+   is( io( '././t/default.xml' )->canonpath, f( catfile( qw( t default.xml ) )),
        'Canonpath' );
-   is( io( '././t/bogus'       )->canonpath, f( catfile( qw(t bogus) ) ),
+   is( io( '././t/bogus'       )->canonpath, f( catfile( qw( t bogus ) ) ),
        'Bogus canonpath' );
-   ok( io( catfile( q(), qw(foo bar) ) )->is_absolute, 'Is absolute' );
+   ok( io( catfile( q(), qw( foo bar ) ) )->is_absolute, 'Is absolute' );
 
-   my ($v, $d, $f) = io( catdir( qw(foo bar) ) )->splitpath;
+   my ($v, $d, $f) = io( catdir( qw( foo bar ) ) )->splitpath;
 
    is( $d.q(x), catdir( q(foo), q(x) ), 'Splitpath directory' );
    is( $f, q(bar), 'Splitpath file' );
 
-   my @dirs = io( catdir( qw(foo bar baz) ) )->splitdir;
+   my @dirs = io( catdir( qw( foo bar baz ) ) )->splitdir;
 
    is scalar @dirs, 3, 'Splitdir count';
    is( (join q(+), @dirs), q(foo+bar+baz), 'Splitdir string' );

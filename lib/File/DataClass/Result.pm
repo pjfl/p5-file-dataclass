@@ -1,14 +1,14 @@
-# @(#)$Ident: Result.pm 2013-07-29 11:25 pjf ;
+# @(#)$Ident: Result.pm 2013-09-13 17:47 pjf ;
 
 package File::DataClass::Result;
 
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
+use File::DataClass::Types  qw( ArrayRef HashRef Maybe Object Str );
 use Moo;
 use MooX::ClassStash;
-use Scalar::Util      qw( blessed );
-use Unexpected::Types qw( ArrayRef HashRef Maybe Object Str );
+use Scalar::Util            qw( blessed );
 
 has 'name'       => is => 'rw', isa => Str,    required => 1;
 
@@ -60,7 +60,7 @@ File::DataClass::Result - Result object definition
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -121,7 +121,7 @@ None
 
 =item L<Moo>
 
-=item L<Unexpected::Types>
+=item L<MooX::ClassStash>
 
 =back
 

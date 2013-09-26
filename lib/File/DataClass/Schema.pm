@@ -1,9 +1,9 @@
-# @(#)$Ident: Schema.pm 2013-06-16 21:45 pjf ;
+# @(#)$Ident: Schema.pm 2013-09-13 17:41 pjf ;
 
 package File::DataClass::Schema;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Class::Null;
 use File::DataClass::Cache;
@@ -24,7 +24,7 @@ has 'cache'                    => is => 'lazy', isa => Cache;
 
 has 'cache_attributes'         => is => 'ro',   isa => HashRef,
    default                     => sub { {
-      driver                   => q(FastMmap),
+      driver                   => 'FastMmap',
       page_size                => 131072,
       num_pages                => 89,
       unlink_on_exit           => TRUE, } };
@@ -73,10 +73,10 @@ around 'BUILDARGS' => sub {
    my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
 
    my $builder = delete $attr->{builder} or return $attr;
-   my $config  = $builder->can( q(config) ) ? $builder->config : {};
+   my $config  = $builder->can( 'config' ) ? $builder->config : {};
 
-   merge_attributes $attr, $builder, [ qw(debug lock log tempdir) ];
-   merge_attributes $attr, $config,  [ qw(tempdir) ];
+   merge_attributes $attr, $builder, [ qw( debug lock log tempdir ) ];
+   merge_attributes $attr, $config,  [ qw( tempdir ) ];
 
    return $attr;
 };
@@ -126,8 +126,8 @@ sub translate {
    my ($self, $args) = @_;
 
    my $class      = blessed $self       || $self;
-   my $from_class = $args->{from_class} || q(Any);
-   my $to_class   = $args->{to_class  } || q(Any);
+   my $from_class = $args->{from_class} || 'Any';
+   my $to_class   = $args->{to_class  } || 'Any';
    my $attrs      = { path => $args->{from}, storage_class => $from_class };
    my $data       = $class->new( $attrs )->load;
 
@@ -149,7 +149,7 @@ sub _build_cache {
    $cache = $self->F_DC_Cache and exists $cache->{ $ns }
       and return $cache->{ $ns };
 
-   $self->cache_class eq q(none) and return Class::Null->new;
+   $self->cache_class eq 'none' and return Class::Null->new;
 
    $attrs->{cache_attributes}->{root_dir} ||= NUL.$self->tempdir;
 
@@ -175,8 +175,8 @@ sub _build_source_registrations {
 sub _build_storage {
    my $self = shift; my $class = $self->storage_class;
 
-   if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
-   else { $class = $self->storage_base.q(::).$class }
+   if ('+' eq substr $class, 0, 1) { $class = substr $class, 1 }
+   else { $class = $self->storage_base."::${class}" }
 
    ensure_class_loaded $class;
 
@@ -185,7 +185,7 @@ sub _build_storage {
 
 sub _constructor {
    my $class = shift;
-   my $attr  = { cache_class => q(none), storage_class => q(Any) };
+   my $attr  = { cache_class => 'none', storage_class => 'Any' };
 
    return $class->new( $attr );
 }
@@ -202,7 +202,7 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 

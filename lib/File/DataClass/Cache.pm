@@ -1,16 +1,15 @@
-# @(#)$Ident: Cache.pm 2013-06-30 15:26 pjf ;
+# @(#)$Ident: Cache.pm 2013-09-13 18:10 pjf ;
 
 package File::DataClass::Cache;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use File::DataClass::Functions qw( merge_attributes throw );
-use File::DataClass::Types     qw( Cache );
-use Moo;
-use Unexpected::Types          qw( Bool ClassName HashRef
+use File::DataClass::Types     qw( Bool Cache ClassName HashRef
                                    LoadableClass Object Str );
+use Moo;
 
 has 'cache'            => is => 'lazy', isa => Object;
 
@@ -30,9 +29,15 @@ has '_mtimes_key'      => is => 'ro',   isa => Str, default => '_mtimes';
 around 'BUILDARGS' => sub {
    my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
 
+   $attr->{cache_attributes} //= {};
+
+   my $cache_class = delete $attr->{cache_attributes}->{cache_class};
+
+   $cache_class and $attr->{cache_class} = $cache_class;
+
    my $builder = delete $attr->{builder} or return $attr;
 
-   merge_attributes $attr, $builder, [ qw(debug log) ];
+   merge_attributes $attr, $builder, [ qw( debug log ) ];
 
    return $attr;
 };
@@ -72,7 +77,7 @@ sub remove {
 sub set {
    my ($self, $key, $data, $meta) = @_; my $mt_key = $self->_mtimes_key;
 
-   $key .= NUL; $meta ||= {}; $meta->{mtime} ||= undef;
+   $key .= NUL; $meta ||= {}; $meta->{mtime} //= undef;
 
    $key eq $mt_key and throw error => 'Cache key "[_1]" not allowed',
                              args  => [ $mt_key ];
@@ -108,18 +113,16 @@ sub set_mtime {
 sub _build_cache {
    my $self = shift; my $attr = $self->cache_attributes; my $log = $self->log;
 
-   my $class = delete $attr->{cache_class} || $self->cache_class;
-
    $attr->{on_set_error} = sub { $log->error( $_[ 0 ] ) };
 
-   return $class->new( %{ $attr } );
+   return $self->cache_class->new( %{ $attr } );
 }
 
 sub _get_key_and_newest {
    my ($self, $paths) = @_; my $newest = 0; my $valid = TRUE;  my $key;
 
-   for my $path (grep { length } map { NUL.$_ } @{ $paths }) {
-      $key .= $key ? q(~).$path : $path; my $mtime = $self->get_mtime( $path );
+   for my $path (grep { length } map { "${_}" } @{ $paths }) {
+      $key .= $key ? "~${path}" : $path; my $mtime = $self->get_mtime( $path );
 
       if ($mtime) { $mtime > $newest and $newest = $mtime }
       else { $valid = FALSE }
@@ -140,7 +143,7 @@ File::DataClass::Cache - Adds extra methods to the CHI API
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 

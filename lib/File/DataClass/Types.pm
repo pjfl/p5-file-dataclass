@@ -1,11 +1,11 @@
-# @(#)$Ident: Types.pm 2013-06-30 00:42 pjf ;
+# @(#)$Ident: Types.pm 2013-09-13 17:49 pjf ;
 
 package File::DataClass::Types;
 
 use strict;
 use warnings;
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::IO;
 use Scalar::Util            qw( blessed dualvar );
@@ -23,7 +23,7 @@ subtype Cache, as Object,
    message { __exception_message_for_cache( $_ ) };
 
 subtype DummyClass, as Str,
-   where   { $_ eq q(none) },
+   where   { $_ eq 'none' },
    message { inflate_message( 'Dummy class [_1] is not "none"', $_ ) };
 
 subtype HashRefOfBools, as HashRef;
@@ -57,8 +57,7 @@ subtype File, as Path,
 coerce HashRefOfBools, from ArrayRef,
    via { my %hash = map { $_ => 1 } @{ $_ }; return \%hash; };
 
-coerce OctalNum, from Str,
-   via { s{ \A 0 }{}mx; dualvar oct "0${_}", "0${_}" };
+coerce OctalNum, from Str, via { __coercion_for_octalnum( $_ ) };
 
 coerce Directory,
    from ArrayRef, via { io( $_ ) },
@@ -82,12 +81,22 @@ coerce Path,
    from Undef,    via { io( $_ ) };
 
 # Private functions
+sub __coercion_for_octalnum {
+   my $x = shift; length $x or return $x;
+
+   $x =~ s{ \A 0 }{}mx; $x =~ m{ [^0-7] }mx and return $x;
+
+   return dualvar oct "0${x}", "0${x}"
+}
+
 sub __constraint_for_octalnum {
-   my $x = shift; defined $x or return 0; my $strx;
+   my $x = shift; length $x or return 0;
 
-   ($strx = $x.q()) =~ s{ [0-7]+ }{}mx; length $strx != 0 and return 0;
+  (my $strx = "${x}") =~ s{ [0-7]+ }{}mx; length $strx != 0 and return 0;
 
-   ($strx = $x.q()) =~ s{ \A 0   }{}mx; return $strx eq $x + 0 ? 0 : 1;
+   $x < 8 and return 1; ($strx = "${x}") =~ s{ \A 0 }{}mx;
+
+   return $strx eq $x + 0 ? 0 : 1;
 }
 
 sub __exception_message_for_cache {
@@ -134,7 +143,7 @@ File::DataClass::Types - Role defining package constraints
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -199,6 +208,8 @@ None
 =item L<File::DataClass::IO>
 
 =item L<Type::Tiny>
+
+=item L<Unexpected>
 
 =back
 

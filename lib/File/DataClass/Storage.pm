@@ -1,21 +1,21 @@
-# @(#)$Ident: Storage.pm 2013-06-14 11:21 pjf ;
+# @(#)$Ident: Storage.pm 2013-09-25 12:22 pjf ;
 
 package File::DataClass::Storage;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Class::Null;
 use English                    qw( -no_match_vars );
 use File::Copy;
 use File::DataClass::Constants;
-use File::DataClass::Functions qw( is_stale merge_hash_data throw );
+use File::DataClass::Functions qw( is_stale merge_file_data throw );
 use File::DataClass::HashMerge;
+use File::DataClass::Types     qw( Object Str );
 use Moo;
 use MooX::Augment -class;
 use Scalar::Util               qw( blessed );
 use Try::Tiny;
-use Unexpected::Types          qw( Object Str );
 
 has 'backup'   => is => 'ro', isa => Str, default => NUL;
 
@@ -24,9 +24,9 @@ has 'encoding' => is => 'ro', isa => Str, default => NUL;
 has 'extn'     => is => 'ro', isa => Str, default => NUL;
 
 has 'schema'   => is => 'ro', isa => Object,
-   handles     => { _cache => q(cache), _debug => q(debug), _lock => q(lock),
-                    _log   => q(log),   _perms => q(perms) }, required => TRUE,
-   weak_ref    => TRUE;
+   handles     => { _cache => 'cache', _debug => 'debug', _lock => 'lock',
+                    _log   => 'log',   _perms => 'perms' },
+   required    => TRUE,  weak_ref => TRUE;
 
 sub create_or_update {
    my ($self, $path, $result, $updating, $cond) = @_;
@@ -108,21 +108,18 @@ sub load {
       my ($red, $path_mtime) = $self->_read_file( $path, FALSE ); $red or next;
 
       $path_mtime > $newest and $newest = $path_mtime;
-      merge_hash_data $data, $red;
+      merge_file_data $data, $red;
    }
 
    $self->_cache->set_by_paths( \@paths, $data, $self->meta_pack( $newest ) );
-
    return $data;
 }
 
-sub meta_pack {
-   # Can be modified in a subclass
+sub meta_pack { # Modified in a subclass
    my ($self, $mtime) = @_; return { mtime => $mtime };
 }
 
-sub meta_unpack {
-   # Can be modified in a subclass
+sub meta_unpack { # Modified in a subclass
    my ($self, $attrs) = @_; return $attrs ? $attrs->{mtime} : undef;
 }
 
@@ -185,7 +182,6 @@ sub validate_params {
 }
 
 # Private methods
-
 sub _read_file {
    my ($self, $path, $for_update) = @_;
 
@@ -245,7 +241,7 @@ sub __get_src_attributes {
    my ($cond, $src) = @_;
 
    return grep { not m{ \A _ }mx
-                 and $_ ne q(name)
+                 and $_ ne 'name'
                  and $cond->( $_ ) } keys %{ $src };
 }
 
@@ -261,7 +257,7 @@ File::DataClass::Storage - Storage base class
 
 =head1 Version
 
-This document describes version v0.25.$Rev: 1 $
+This document describes version v0.26.$Rev: 1 $
 
 =head1 Synopsis
 

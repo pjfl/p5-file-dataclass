@@ -1,8 +1,8 @@
-# @(#)$Ident: 20data-class.t 2013-08-16 22:19 pjf ;
+# @(#)$Ident: 20data-class.t 2013-09-11 21:36 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.25.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -128,9 +128,25 @@ $e = test( $rs, q(delete), $args );
 
 like $e, qr{ does \s+ not \s+ exist }mx, 'Detects non existing element';
 
+$args = { name => 'dummy', text => 'value3' };
+
+$res = test( $rs, 'create_or_update', $args );
+
+is $res, 'dummy','Create or update creates';
+
+$args->{text} = 'value4'; $res = test( $rs, 'create_or_update', $args );
+
+is $res, 'dummy','Create or update updates';
+
+$res = test( $rs, 'delete', $args );
+
+is( ($rs->source->columns)[ 0 ], 'text', 'Result source columns' );
+
 is $rs->source->has_column( 'text' ), 1, 'Has column - true';
 
 is $rs->source->has_column( 'nochance' ), 0, 'Has column - false';
+
+is $rs->source->has_column(), 0, 'Has column - undef';
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw(t default.xml) ],
@@ -163,6 +179,10 @@ $args = { acl => q(@support) };
 my @res = test( $rs, q(search), $args );
 
 ok $res[ 0 ] && $res[ 0 ]->name eq q(admin), 'Can search';
+
+is $rs->search( $args )->first->name, 'admin', 'RS - first';
+is $rs->search( $args )->last->name, 'admin', 'RS - last';
+is $rs->search( $args )->next->name, 'admin', 'RS - next';
 
 $args = { list => q(acl), name => q(admin) };
 $args->{items} = [ qw(group1 group2) ];
@@ -205,14 +225,14 @@ $e = test( $schema, qw(load nonexistant_file) );
 
 is ref $e, q(Unexpected), 'Non default exception class';
 
+done_testing;
+
 # Cleanup
 io( $dumped     )->unlink;
 io( $translate  )->unlink;
 io( catfile( qw(t ipc_srlock.lck) ) )->unlink;
 io( catfile( qw(t ipc_srlock.shm) ) )->unlink;
 io( $cache_file )->unlink;
-
-done_testing;
 
 # Local Variables:
 # mode: perl
