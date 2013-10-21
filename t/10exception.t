@@ -1,8 +1,8 @@
-# @(#)Ident: 10exception.t 2013-08-28 22:52 pjf ;
+# @(#)Ident: 10exception.t 2013-10-21 15:05 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -70,7 +70,7 @@ $line1 = __LINE__; eval {
 
 $e = $EVAL_ERROR; $EVAL_ERROR = undef;
 
-like $e, qr{ main\[ $line1 / \d+ \]:\scat:\sflap\scannot\sopen:\s\[\?\] }mx,
+like $e, qr{ main\[ $line1 / \d+ \]:\scat:\s'flap'\scannot\sopen:\s'\[\?\]' }mx,
    'Placeholer substitution';
 
 $line1 = __LINE__; eval { $class->throw( error => 'Current', ) };

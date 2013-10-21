@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+          - Bumped Unexpected dependency to v0.15
+          - ::IO::rel2abs stringifies the base arg
+          - Updated git hooks
+
 0.26.1    2013-09-26 17:02:33
           - Increased test coverage
 

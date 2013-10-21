@@ -1,8 +1,8 @@
-# @(#)$Ident: 20data-class.t 2013-09-11 21:36 pjf ;
+# @(#)$Ident: 20data-class.t 2013-10-21 15:05 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -55,7 +55,7 @@ ok ! -f $cache_file, 'Cache file not created too early';
 
 my $e = test( $schema, qw( load nonexistant_file ) );
 
-like $e, qr{ \QFile nonexistant_file cannot open\E }msx,
+like $e, qr{ \QFile 'nonexistant_file' cannot open\E }msx,
     'Cannot open nonexistant_file';
 
 is ref $e, 'File::DataClass::Exception', 'Default exception class';
@@ -86,7 +86,7 @@ like $e, qr{ \QResult source not specified\E }msx,
 
 $e = test( $schema, q(resultset), q(globals) );
 
-like $e, qr{ \QResult source globals unknown\E }msx, 'Result source unknown';
+like $e, qr{ \QResult source 'globals' unknown\E }msx, 'Result source unknown';
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw(t default.xml) ],

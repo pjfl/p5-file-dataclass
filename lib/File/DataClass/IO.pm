@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-09-25 19:06 pjf ;
+# @(#)$Ident: IO.pm 2013-09-30 16:49 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -807,7 +807,9 @@ sub read_dir {
 }
 
 sub rel2abs {
-   return File::Spec->rel2abs( $_[ 0 ]->name, $_[ 1 ] );
+   my ($self, $base) = @_;
+
+   return File::Spec->rel2abs( $self->name, defined $base ? "${base}" : undef );
 }
 
 sub relative {
@@ -1034,7 +1036,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.26.$Rev: 1 $
+This document describes version v0.26.$Rev: 2 $
 
 =head1 Synopsis
 
