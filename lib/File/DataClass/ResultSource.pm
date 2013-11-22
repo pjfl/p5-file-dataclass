@@ -3,7 +3,7 @@
 package File::DataClass::ResultSource;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
 use File::DataClass::ResultSet;
@@ -75,7 +75,7 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
 =head1 Version
 
-This document describes version v0.26.$Rev: 1 $
+This document describes version v0.27.$Rev: 1 $
 
 =head1 Synopsis
 

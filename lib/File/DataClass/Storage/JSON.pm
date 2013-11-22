@@ -3,7 +3,7 @@
 package File::DataClass::Storage::JSON;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use JSON qw();
 use Moo;
@@ -44,7 +44,7 @@ File::DataClass::Storage::JSON - Read/write JSON data storage model
 
 =head1 Version
 
-This document describes version v0.26.$Rev: 1 $
+This document describes version v0.27.$Rev: 1 $
 
 =head1 Synopsis
 

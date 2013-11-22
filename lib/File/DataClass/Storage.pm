@@ -3,7 +3,7 @@
 package File::DataClass::Storage;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.26.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Class::Null;
 use English                    qw( -no_match_vars );
@@ -257,7 +257,7 @@ File::DataClass::Storage - Storage base class
 
 =head1 Version
 
-This document describes version v0.26.$Rev: 1 $
+This document describes version v0.27.$Rev: 1 $
 
 =head1 Synopsis
 
