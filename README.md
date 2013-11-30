@@ -4,7 +4,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 # Version
 
-This document describes version v0.26.$Rev: 1 $ of [File::DataClass](https://metacpan.org/module/File::DataClass)
+This document describes version v0.27.$Rev: 2 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
 
 # Synopsis
 
@@ -28,9 +28,9 @@ Provides methods for manipulating structured data stored in files of
 different formats
 
 The documentation for this distribution starts in the class
-[File::DataClass::Schema](https://metacpan.org/module/File::DataClass::Schema)
+[File::DataClass::Schema](https://metacpan.org/pod/File::DataClass::Schema)
 
-[File::DataClass::IO](https://metacpan.org/module/File::DataClass::IO) is a [Moo](https://metacpan.org/module/Moo) based implementation of [IO::All](https://metacpan.org/module/IO::All)s API.
+[File::DataClass::IO](https://metacpan.org/pod/File::DataClass::IO) is a [Moo](https://metacpan.org/pod/Moo) based implementation of [IO::All](https://metacpan.org/pod/IO::All)s API.
 It implements the file and directory methods only
 
 # Configuration and Environment
@@ -43,7 +43,7 @@ Defines no attributes
 
     $hash_ref_of_CHI_objects = File::DataClass->F_DC_Cache;
 
-A class method which returns a hash ref of [CHI](https://metacpan.org/module/CHI) objects which are
+A class method which returns a hash ref of [CHI](https://metacpan.org/pod/CHI) objects which are
 used to cache the results of reading files
 
 # Diagnostics
@@ -52,7 +52,7 @@ None
 
 # Dependencies
 
-- [Moo](https://metacpan.org/module/Moo)
+- [Moo](https://metacpan.org/pod/Moo)
 
 # Incompatibilities
 
@@ -70,9 +70,9 @@ welcome
 
 Larry Wall - For the Perl programming language
 
-The class structure and API where taken from [DBIx::Class](https://metacpan.org/module/DBIx::Class)
+The class structure and API where taken from [DBIx::Class](https://metacpan.org/pod/DBIx::Class)
 
-The API for the file IO was taken from [IO::All](https://metacpan.org/module/IO::All)
+The API for the file IO was taken from [IO::All](https://metacpan.org/pod/IO::All)
 
 # Author
 
@@ -83,7 +83,7 @@ Peter Flanigan, `<pjfl@cpan.org>`
 Copyright (c) 2013 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself. See [perlartistic](https://metacpan.org/module/perlartistic)
+under the same terms as Perl itself. See [perlartistic](https://metacpan.org/pod/perlartistic)
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT WARRANTY; without even the implied warranty of
