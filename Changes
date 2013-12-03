@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Uses DZ::P::AbstractFromPOD and LicenseFromModule
           - Dropped dependency on Class::Load
 
 0.27.1    2013-11-22 09:40:23

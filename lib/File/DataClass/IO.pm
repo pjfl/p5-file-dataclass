@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-09-30 16:49 pjf ;
+# @(#)$Ident: IO.pm 2013-12-01 13:57 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -1036,7 +1036,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.27.$Rev: 3 $
 
 =head1 Synopsis
 
@@ -1151,9 +1151,10 @@ An object which is a L<File::DataClass::IO>
 
 =head2 abs2rel
 
-   $path = io( 'relative_path_to_file' )->abs2rel( 'optional_base_path' );
+   $path = io( 'path_to_file' )->abs2rel( 'optional_base_path' );
 
-Makes the pathname relative. Returns a path
+Makes the pathname relative via a call to
+L<abs2rel|File::Spec/abs2rel>. Returns a path
 
 =head2 absolute
 

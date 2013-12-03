@@ -1,10 +1,10 @@
-# @(#)$Ident: Functions.pm 2013-11-30 15:16 pjf ;
+# @(#)$Ident: Functions.pm 2013-11-30 15:59 pjf ;
 
 package File::DataClass::Functions;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use Exporter 5.57           qw( import );
@@ -118,7 +118,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 2 $
+This document describes version v0.27.$Rev: 3 $
 
 =head1 Synopsis
 
@@ -216,13 +216,15 @@ None
 
 =over 3
 
-=item L<Class::Load>
-
 =item L<Exporter>
 
 =item L<Hash::Merge>
 
+=item L<Module::Runtime>
+
 =item L<Try::Tiny>
+
+=item L<Unexpected>
 
 =back
 
