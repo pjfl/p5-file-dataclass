@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Simplified Build.PL. Updated test boilerplate
           - Uses DZ::P::AbstractFromPOD and LicenseFromModule
           - Dropped dependency on Class::Load
 
