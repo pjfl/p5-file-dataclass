@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-12-03 17:17 pjf ;
+# @(#)$Ident: IO.pm 2013-12-06 16:36 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 4 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 6 $ =~ /\d+/gmx );
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -1036,7 +1036,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 4 $
+This document describes version v0.27.$Rev: 6 $
 
 =head1 Synopsis
 
@@ -1828,7 +1828,7 @@ address below. Patches are welcome
 
 For the Perl programming language
 
-=item Ingy dÃ¶t Net <ingy@cpan.org>
+=item Ingy döt Net <ingy@cpan.org>
 
 For IO::All from which I took the API and some tests
 
