@@ -1,13 +1,13 @@
-# @(#)Ident: 07podspelling.t 2013-07-04 13:26 pjf ;
+# @(#)Ident: 07podspelling.t 2013-12-13 15:13 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
-use File::Spec::Functions qw(catdir catfile updir);
-use FindBin qw( $Bin );
-use lib catdir( $Bin, updir, q(lib) );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 7 $ =~ /\d+/gmx );
+use File::Spec::Functions   qw( catdir catfile updir );
+use FindBin                 qw( $Bin );
+use lib                 catdir( $Bin, updir, 'lib' );
+use utf8;
 
-use English qw(-no_match_vars);
 use Test::More;
 
 BEGIN {
@@ -22,6 +22,21 @@ $EVAL_ERROR and plan skip_all => 'Test::Spelling required but not installed';
 $ENV{TEST_SPELLING}
    or plan skip_all => 'Environment variable TEST_SPELLING not set';
 
+use English qw( -no_match_vars );
+
+*Test::Spelling::invalid_words_in = sub { # Have utf8 stopwords
+   my $file = shift; my $document = q(); open my $ofh, '>', \$document;
+
+   open my $ifh, '<:utf8', $file or die "File ${file} cannot open: ${OS_ERROR}";
+
+   Pod::Spell->new->parse_from_filehandle( $ifh, $ofh );
+
+   my @words = Test::Spelling::_get_spellcheck_results( $document );
+
+   chomp for @words;
+   return @words;
+};
+
 my $checker = has_working_spellchecker(); # Aspell is prefered
 
 if ($checker) { warn "Check using ${checker}\n" }
@@ -34,13 +49,12 @@ all_pod_files_spelling_ok();
 done_testing();
 
 # Local Variables:
+# coding: utf-8
 # mode: perl
 # tab-width: 3
 # End:
 
 __DATA__
-flanigan
-ingy
 appendln
 autoclose
 api
@@ -51,14 +65,17 @@ cwd
 datetime
 dir
 dirname
+döt
 dtd
 extn
 filename
 filenames
 filepath
+flanigan
 getline
 getlines
 gettext
+ingy
 io
 json
 mealmaster
