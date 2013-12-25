@@ -1,20 +1,25 @@
-# @(#)$Ident: Cache.pm 2013-09-13 18:10 pjf ;
+# @(#)$Ident: Cache.pm 2013-12-22 17:38 pjf ;
 
 package File::DataClass::Cache;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
+use Moo;
 use File::DataClass::Constants;
 use File::DataClass::Functions qw( merge_attributes throw );
 use File::DataClass::Types     qw( Bool Cache ClassName HashRef
                                    LoadableClass Object Str );
-use Moo;
 
-has 'cache'            => is => 'lazy', isa => Object;
+has 'cache'            => is => 'lazy', isa => Object, builder => sub {
+   my $self = shift; my $attr = $self->cache_attributes; my $log = $self->log;
 
-has 'cache_attributes' => is => 'ro',   isa => HashRef,
-   default             => sub { {} };
+   $attr->{on_set_error} = sub { $log->error( $_[ 0 ] ) };
+
+   return $self->cache_class->new( %{ $attr } );
+};
+
+has 'cache_attributes' => is => 'ro',   isa => HashRef, default => sub { {} };
 
 has 'cache_class'      => is => 'lazy', isa => LoadableClass, default => 'CHI';
 
@@ -110,14 +115,6 @@ sub set_mtime {
 }
 
 # Private methods
-sub _build_cache {
-   my $self = shift; my $attr = $self->cache_attributes; my $log = $self->log;
-
-   $attr->{on_set_error} = sub { $log->error( $_[ 0 ] ) };
-
-   return $self->cache_class->new( %{ $attr } );
-}
-
 sub _get_key_and_newest {
    my ($self, $paths) = @_; my $newest = 0; my $valid = TRUE;  my $key;
 
@@ -143,7 +140,7 @@ File::DataClass::Cache - Adds extra methods to the CHI API
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.27.$Rev: 8 $
 
 =head1 Synopsis
 

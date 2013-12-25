@@ -1,20 +1,20 @@
-# @(#)$Ident: Any.pm 2013-09-25 12:23 pjf ;
+# @(#)$Ident: Any.pm 2013-12-22 22:31 pjf ;
 
 package File::DataClass::Storage::Any;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
+use Moo;
 use File::Basename             qw( basename );
 use File::DataClass::Constants;
 use File::DataClass::Functions qw( ensure_class_loaded is_stale merge_file_data
                                    throw );
 use File::DataClass::Storage;
 use File::DataClass::Types     qw( Object HashRef );
-use Moo;
 
 has 'schema'  => is => 'ro', isa => Object, required => TRUE, weak_ref => TRUE,
-   handles    => [ qw(cache storage_attributes storage_base), ];
+   handles    => [ qw( cache storage_attributes storage_base ), ];
 
 
 has '_stores' => is => 'ro', isa => HashRef, default => sub { {} };
@@ -101,7 +101,7 @@ sub _get_store_from_extension {
    my $class = EXTENSIONS()->{ $extn }->[ 0 ]
       or throw error => 'Extension [_1] has no class', args => [ $extn ];
 
-   if (q(+) eq substr $class, 0, 1) { $class = substr $class, 1 }
+   if ('+' eq substr $class, 0, 1) { $class = substr $class, 1 }
    else { $class = $self->storage_base."::${class}" }
 
    ensure_class_loaded $class;
@@ -134,7 +134,7 @@ File::DataClass::Storage::Any - Selects storage class using the extension on the
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.27.$Rev: 8 $
 
 =head1 Synopsis
 

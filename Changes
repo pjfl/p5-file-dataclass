@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Split out Storage::XML to own dist
           - Made spell checking work with utf8
           - Simplified Build.PL. Updated test boilerplate
           - Uses DZ::P::AbstractFromPOD and LicenseFromModule

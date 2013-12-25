@@ -1,8 +1,8 @@
-# @(#)Ident: 07podspelling.t 2013-12-13 15:13 pjf ;
+# @(#)Ident: 07podspelling.t 2013-12-15 20:26 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 7 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -15,6 +15,7 @@ BEGIN {
       or plan skip_all => 'POD spelling test only for developers';
 }
 
+use English qw( -no_match_vars );
 eval "use Test::Spelling";
 
 $EVAL_ERROR and plan skip_all => 'Test::Spelling required but not installed';
@@ -22,7 +23,7 @@ $EVAL_ERROR and plan skip_all => 'Test::Spelling required but not installed';
 $ENV{TEST_SPELLING}
    or plan skip_all => 'Environment variable TEST_SPELLING not set';
 
-use English qw( -no_match_vars );
+no warnings 'redefine'; no warnings 'once';
 
 *Test::Spelling::invalid_words_in = sub { # Have utf8 stopwords
    my $file = shift; my $document = q(); open my $ofh, '>', \$document;

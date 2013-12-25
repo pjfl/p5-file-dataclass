@@ -1,16 +1,16 @@
-# @(#)$Ident: ResultSet.pm 2013-09-13 17:55 pjf ;
+# @(#)$Ident: ResultSet.pm 2013-12-22 02:17 pjf ;
 
 package File::DataClass::ResultSet;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
+use Moo;
 use File::DataClass::Constants;
-use File::DataClass::Functions qw( is_arrayref is_member throw );
+use File::DataClass::Functions qw( is_arrayref is_hashref is_member throw );
 use File::DataClass::List;
 use File::DataClass::Result;
 use File::DataClass::Types     qw( ArrayRef ClassName HashRef Int Object );
-use Moo;
 use Scalar::Util               qw( blessed );
 
 has 'list_class'   => is => 'ro',   isa => ClassName,
@@ -206,19 +206,18 @@ sub _create_result {
 }
 
 sub _eval_clause {
-   my ($self, $clause, $lhs) = @_; my $type = ref $clause;
+   my ($self, $clause, $lhs) = @_;
 
-   if ($type eq HASH) {
+   if (is_hashref $clause) {
       for (keys %{ $clause }) {
          $self->_eval_op( $lhs, $_, $clause->{ $_ } ) or return FALSE;
       }
 
       return TRUE;
    }
-
-   # TODO: Handle case of 2 arrays
-   $type eq ARRAY and return (is_arrayref $lhs) ? FALSE
-                                                : (is_member $lhs, $clause);
+   elsif (is_arrayref $clause) { # TODO: Handle case of 2 arrays
+      return (is_arrayref $lhs) ? FALSE : (is_member $lhs, $clause);
+   }
 
    return (is_arrayref $lhs) ? ((is_member $clause, $lhs) ? TRUE : FALSE)
                              : ($clause eq $lhs           ? TRUE : FALSE);
@@ -370,7 +369,7 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.27.$Rev: 8 $
 
 =head1 Synopsis
 

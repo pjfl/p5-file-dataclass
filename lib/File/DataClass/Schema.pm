@@ -1,10 +1,11 @@
-# @(#)$Ident: Schema.pm 2013-09-13 17:41 pjf ;
+# @(#)$Ident: Schema.pm 2013-12-22 18:24 pjf ;
 
 package File::DataClass::Schema;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
+use Moo;
 use Class::Null;
 use File::DataClass::Cache;
 use File::DataClass::Constants;
@@ -15,7 +16,6 @@ use File::DataClass::Storage;
 use File::DataClass::Types     qw( Bool Cache ClassName Directory DummyClass
                                    HashRef Lock Num Object Path Str );
 use File::Spec;
-use Moo;
 use Scalar::Util               qw( blessed );
 
 extends q(File::DataClass);
@@ -25,7 +25,7 @@ has 'cache'                    => is => 'lazy', isa => Cache;
 has 'cache_attributes'         => is => 'ro',   isa => HashRef,
    default                     => sub { {
       driver                   => 'FastMmap',
-      page_size                => 131072,
+      page_size                => 131_072,
       num_pages                => 89,
       unlink_on_exit           => TRUE, } };
 
@@ -63,12 +63,13 @@ has 'storage_base'             => is => 'ro',   isa => ClassName,
    default                     => 'File::DataClass::Storage';
 
 has 'storage_class'            => is => 'rw',   isa => Str,
-   default                     => 'XML::Simple', lazy => TRUE;
+   default                     => 'JSON', lazy => TRUE;
 
 has 'tempdir'                  => is => 'ro',   isa => Directory,
    coerce                      => Directory->coercion,
    default                     => sub { File::Spec->tmpdir };
 
+# Construction
 around 'BUILDARGS' => sub {
    my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
 
@@ -81,6 +82,52 @@ around 'BUILDARGS' => sub {
    return $attr;
 };
 
+sub _build_cache {
+   my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
+
+   my $attrs = { cache_attributes => { %{ $self->cache_attributes } },
+                 builder          => $self };
+
+   $ns = $attrs->{cache_attributes}->{namespace} ||= $ns;
+
+   $cache = $self->F_DC_Cache and exists $cache->{ $ns }
+      and return $cache->{ $ns };
+
+   $self->cache_class eq 'none' and return Class::Null->new;
+
+   $attrs->{cache_attributes}->{root_dir} ||= NUL.$self->tempdir;
+
+   return $self->F_DC_Cache->{ $ns } = $self->cache_class->new( $attrs );
+}
+
+sub _build_source_registrations {
+   my $self = shift; my $sources = {};
+
+   for my $moniker (keys %{ $self->result_source_attributes }) {
+      my $attrs = { %{ $self->result_source_attributes->{ $moniker } } };
+      my $class = delete $attrs->{result_source_class}
+               || $self->result_source_class;
+
+      $attrs->{name} = $moniker; $attrs->{schema} = $self;
+
+      $sources->{ $moniker } = $class->new( $attrs );
+   }
+
+   return $sources;
+}
+
+sub _build_storage {
+   my $self = shift; my $class = $self->storage_class;
+
+   if ('+' eq substr $class, 0, 1) { $class = substr $class, 1 }
+   else { $class = $self->storage_base."::${class}" }
+
+   ensure_class_loaded $class;
+
+   return $class->new( { %{ $self->storage_attributes }, schema => $self } );
+}
+
+# Public methods
 sub dump {
    my ($self, $args) = @_; blessed $self or $self = $self->_constructor;
 
@@ -138,51 +185,6 @@ sub translate {
 }
 
 # Private methods
-sub _build_cache {
-   my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
-
-   my $attrs = { cache_attributes => { %{ $self->cache_attributes } },
-                 builder          => $self };
-
-   $ns = $attrs->{cache_attributes}->{namespace} ||= $ns;
-
-   $cache = $self->F_DC_Cache and exists $cache->{ $ns }
-      and return $cache->{ $ns };
-
-   $self->cache_class eq 'none' and return Class::Null->new;
-
-   $attrs->{cache_attributes}->{root_dir} ||= NUL.$self->tempdir;
-
-   return $self->F_DC_Cache->{ $ns } = $self->cache_class->new( $attrs );
-}
-
-sub _build_source_registrations {
-   my $self = shift; my $sources = {};
-
-   for my $moniker (keys %{ $self->result_source_attributes }) {
-      my $attrs = { %{ $self->result_source_attributes->{ $moniker } } };
-      my $class = delete $attrs->{result_source_class}
-               || $self->result_source_class;
-
-      $attrs->{name} = $moniker; $attrs->{schema} = $self;
-
-      $sources->{ $moniker } = $class->new( $attrs );
-   }
-
-   return $sources;
-}
-
-sub _build_storage {
-   my $self = shift; my $class = $self->storage_class;
-
-   if ('+' eq substr $class, 0, 1) { $class = substr $class, 1 }
-   else { $class = $self->storage_base."::${class}" }
-
-   ensure_class_loaded $class;
-
-   return $class->new( { %{ $self->storage_attributes }, schema => $self } );
-}
-
 sub _constructor {
    my $class = shift;
    my $attr  = { cache_class => 'none', storage_class => 'Any' };
@@ -202,7 +204,7 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.27.$Rev: 8 $
 
 =head1 Synopsis
 

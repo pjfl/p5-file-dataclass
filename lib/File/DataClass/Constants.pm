@@ -1,10 +1,10 @@
-# @(#)$Ident: Constants.pm 2013-09-13 17:19 pjf ;
+# @(#)$Ident: Constants.pm 2013-12-25 15:34 pjf ;
 
 package File::DataClass::Constants;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
 use Exporter 5.57 qw( import );
 use File::DataClass::Exception;
@@ -15,24 +15,24 @@ our @EXPORT = qw( ARRAY CODE CURDIR CYGWIN EVIL EXCEPTION_CLASS EXTENSIONS
 
 my $Exception_Class = 'File::DataClass::Exception';
 
-sub ARRAY    () { q(ARRAY)    }
-sub CODE     () { q(CODE)     }
-sub CURDIR   () { q(.)        }
-sub CYGWIN   () { q(cygwin)   }
-sub EVIL     () { q(mswin32)  }
-sub FALSE    () { 0           }
-sub HASH     () { q(HASH)     }
-sub LANG     () { q(en)       }
-sub LOCALIZE () { q([_)       }
-sub NUL      () { q()         }
-sub PERMS    () { oct q(0660) }
-sub SPC      () { q( )        }
-sub TILDE    () { q(~)        }
-sub TRUE     () { 1           }
+sub ARRAY    () { 'ARRAY'    }
+sub CODE     () { 'CODE'     }
+sub CURDIR   () { '.'        }
+sub CYGWIN   () { 'cygwin'   }
+sub EVIL     () { 'mswin32'  }
+sub FALSE    () { 0          }
+sub HASH     () { 'HASH'     }
+sub LANG     () { 'en'       }
+sub LOCALIZE () { '[_'       }
+sub NUL      () { q()        }
+sub PERMS    () { oct '0660' }
+sub SPC      () { ' '        }
+sub TILDE    () { '~'        }
+sub TRUE     () { 1          }
 
 sub EXCEPTION_CLASS () { __PACKAGE__->Exception_Class }
-sub EXTENSIONS      () { { '.json' => [ q(JSON) ],
-                           '.xml'  => [ q(XML::Simple), q(XML::Bare) ], } }
+sub EXTENSIONS      () { { '.json' => [ 'JSON' ],
+                           '.xml'  => [ 'XML::Simple', 'XML::Bare' ], } }
 sub NO_UMASK_STACK  () { -1 }
 sub STAT_FIELDS     () { qw( device inode mode nlink uid gid device_id
                              size atime mtime ctime blksize blocks ) }
@@ -40,8 +40,8 @@ sub STAT_FIELDS     () { qw( device inode mode nlink uid gid device_id
 sub Exception_Class {
    my ($self, $class) = @_; defined $class or return $Exception_Class;
 
-   $class->can( q(throw) )
-       or die "Class ${class} is not loaded or has no throw method";
+   $class->can( 'throw' )
+       or die "Class ${class} is not loaded or has no 'throw' method";
 
    return $Exception_Class = $class;
 }
@@ -58,7 +58,7 @@ File::DataClass::Constants - Definitions of constant values
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.27.$Rev: 8 $
 
 =head1 Synopsis
 

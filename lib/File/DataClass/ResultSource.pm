@@ -1,15 +1,15 @@
-# @(#)$Ident: ResultSource.pm 2013-09-13 17:33 pjf ;
+# @(#)$Ident: ResultSource.pm 2013-12-15 20:18 pjf ;
 
 package File::DataClass::ResultSource;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
+use Moo;
 use File::DataClass::Constants;
 use File::DataClass::ResultSet;
 use File::DataClass::Types  qw( ArrayRef ClassName HashRef
                                 Object SimpleStr Str );
-use Moo;
 
 has 'attributes'           => is => 'ro', isa => ArrayRef[Str],
    default                 => sub { [] };
@@ -75,7 +75,7 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.27.$Rev: 8 $
 
 =head1 Synopsis
 

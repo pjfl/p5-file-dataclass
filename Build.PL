@@ -1,4 +1,4 @@
-# @(#)$Ident: DZ_Build.PL 2013-12-12 21:42 pjf ;
+# @(#)$Ident: Build.PL 2013-12-15 14:31 pjf ;
 
 use strict;
 use warnings;
@@ -10,9 +10,10 @@ sub whimper { print {*STDOUT} $_[ 0 ]."\n"; exit 0 }
 my $perl_ver = ##{ $meta2{prereqs}->{runtime}->{requires}->{perl} ##};
 my $name     = '##{ $zilla->name ##}'; $name =~ s{ - }{::}gmx;
 my $prereqs  = {
-##{ $plugin->get_prereqs( 1 ) ##} };
+##{ $plugin->get_prereqs( 1 ) ##}
+};
 
-unless ($] >= $perl_ver) {
+if ($] < $perl_ver) {
    $ENV{AUTOMATED_TESTING}
       or $ENV{PERL_CPAN_REPORTER_CONFIG}
       or $ENV{PERL5_CPANPLUS_IS_VERSION}

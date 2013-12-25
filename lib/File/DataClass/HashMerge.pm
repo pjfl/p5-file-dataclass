@@ -1,18 +1,17 @@
-# @(#)$Ident: HashMerge.pm 2013-05-17 14:48 pjf ;
+# @(#)$Ident: HashMerge.pm 2013-12-23 00:54 pjf ;
 
 package File::DataClass::HashMerge;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
 use File::DataClass::Constants;
-use Carp;
 
 sub merge {
    my ($self, $dest_ref, $src, $filter) = @_; my $updated = FALSE;
 
-   $dest_ref or croak 'No destination reference specified';
+   $dest_ref or die 'No destination reference specified';
 
    ${ $dest_ref } ||= {}; $src ||= {}; $filter ||= sub { keys %{ $_[ 0 ] } };
 
@@ -32,7 +31,6 @@ sub merge {
 }
 
 # Private methods
-
 sub _merge_attr {
    my ($self, $to_ref, $from) = @_; my $to = ${ $to_ref }; my $updated = FALSE;
 
@@ -111,7 +109,7 @@ File::DataClass::HashMerge - Merge hashes with update flag
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.27.$Rev: 8 $
 
 =head1 Synopsis
 

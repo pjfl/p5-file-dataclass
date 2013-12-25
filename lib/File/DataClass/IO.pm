@@ -1,12 +1,13 @@
-# @(#)$Ident: IO.pm 2013-12-06 16:36 pjf ;
+# @(#)$Ident: IO.pm 2013-12-25 18:44 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 6 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
+use Moo;
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
 use Fcntl                      qw( :flock :seek );
@@ -21,7 +22,6 @@ use File::Temp                   ( );
 use IO::Dir;
 use IO::File;
 use List::Util                 qw( first );
-use Moo;
 use Scalar::Util               qw( blessed );
 use Type::Utils                qw( enum );
 use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
@@ -271,11 +271,13 @@ sub buffer {
 }
 
 sub _build__dir_pattern {
-   my $self = shift; my ($curdir, $pat, $updir);
+   my $self = shift; my $pat = NUL;
 
-   $pat  = "\Q$curdir\E" if ($curdir = File::Spec->curdir);
-   $pat .= '|'           if ($updir  = File::Spec->updir and $pat);
-   $pat .= "\Q$updir\E"  if ($updir);
+   my $curdir = File::Spec->curdir; my $updir = File::Spec->updir;
+
+   $curdir and $pat  = "\Q${curdir}\E"; # uncoverable condition left;
+   $pat    and $pat .= '|'; # uncoverable condition left;
+   $updir  and $pat .= "\Q${updir}\E"; # uncoverable condition left;
 
    return qr{ \A $pat \z }mx;
 }
@@ -301,8 +303,9 @@ sub catfile {
 }
 
 sub chmod {
-   my ($self, $perms) = @_; $perms ||= $self->_perms;
+   my ($self, $perms) = @_;
 
+   $perms ||= $self->_perms; # uncoverable condition false
    CORE::chmod $perms, $self->name;
    return $self;
 }
@@ -314,8 +317,12 @@ sub chomp {
 sub chown {
    my ($self, $uid, $gid) = @_;
 
-   defined $uid and defined $gid and CORE::chown $uid, $gid, $self->name;
+   (defined $uid and defined $gid)
+      or $self->_throw( 'User or group id undefined' );
 
+   1 == CORE::chown $uid, $gid, $self->name
+      or $self->_throw( error => 'Path [_1 chown failed to [_2]/[_3]',
+                        args  => [ $self->name, $uid, $gid ] );
    return $self;
 }
 
@@ -335,7 +342,10 @@ sub close {
 }
 
 sub _close_and_rename { # This creates a race condition
-   my $self = shift; my $handle; $self->unlock;
+   # uncoverable subroutine
+   my $self = shift; # uncoverable statement
+
+   my $handle; $self->unlock;
 
    if ($handle = $self->io_handle) { $handle->close; delete $self->{io_handle} }
 
@@ -359,7 +369,7 @@ sub _constructor {
 }
 
 sub copy {
-   my ($self, $to) = @_; $to or $self->_throw( 'Copy requires two args' );
+   my ($self, $to) = @_; $to or $self->_throw( 'Copy requires an argument' );
 
    (blessed $to and $to->isa( __PACKAGE__ ))
       or $to = $self->_constructor( $to );
@@ -663,7 +673,6 @@ sub next {
    my $io = $self->_constructor( [ $self->name, $name ] );
 
    defined $self->_filter and $io->filter( $self->_filter );
-
    return $io;
 }
 
@@ -861,7 +870,6 @@ sub seek {
    $self->is_open or $self->assert_open( $LC_OSNAME eq EVIL ? 'r' : 'r+' );
 
    $self->io_handle->seek( @args ); $self->error_check;
-
    return $self;
 }
 
@@ -891,7 +899,6 @@ sub set_lock {
    $self->_lock_obj and return $self->_lock_obj->set( k => $self->name );
 
    flock $self->io_handle, $self->mode eq 'r' ? LOCK_SH : LOCK_EX;
-
    return $self;
 }
 
@@ -932,7 +939,8 @@ sub substitute {
 
    for ($self->getlines) { s{ $search }{$replace}gmx; $wtr->print( $_ ) }
 
-   $self->close; $wtr->close; return $self;
+   $self->close; $wtr->close;
+   return $self;
 }
 
 sub tempfile {
@@ -943,11 +951,13 @@ sub tempfile {
    $tmplt ||= '%6.6dXXXX';
    $tmpfh   = File::Temp->new
       ( DIR => $tempdir, TEMPLATE => (sprintf $tmplt, $PID) );
-   $self->_init( 'file', $tmpfh->filename );
-   $self->_set_io_handle( $tmpfh );
-   $self->_set_is_open( TRUE );
-   $self->_set_mode( 'w+' );
-   return $self;
+
+   my $t = $self->_constructor( $tmpfh->filename )->file;
+
+   $t->_set_io_handle( $tmpfh );
+   $t->_set_is_open( TRUE );
+   $t->_set_mode( 'w+' );
+   return $t;
 }
 
 sub _throw {
@@ -970,7 +980,8 @@ sub _umask_pop {
 
    (defined $perms and $perms != NO_UMASK_STACK) or return umask;
 
-   umask pop @{ $self->_umask }; return $perms;
+   umask pop @{ $self->_umask };
+   return $perms;
 }
 
 sub _umask_push {
@@ -1036,7 +1047,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 6 $
+This document describes version v0.27.$Rev: 8 $
 
 =head1 Synopsis
 

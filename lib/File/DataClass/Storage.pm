@@ -1,10 +1,11 @@
-# @(#)$Ident: Storage.pm 2013-09-25 12:22 pjf ;
+# @(#)$Ident: Storage.pm 2013-12-15 20:18 pjf ;
 
 package File::DataClass::Storage;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
 
+use Moo;
 use Class::Null;
 use English                    qw( -no_match_vars );
 use File::Copy;
@@ -12,7 +13,6 @@ use File::DataClass::Constants;
 use File::DataClass::Functions qw( is_stale merge_file_data throw );
 use File::DataClass::HashMerge;
 use File::DataClass::Types     qw( Object Str );
-use Moo;
 use MooX::Augment -class;
 use Scalar::Util               qw( blessed );
 use Try::Tiny;
@@ -257,7 +257,7 @@ File::DataClass::Storage - Storage base class
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.27.$Rev: 8 $
 
 =head1 Synopsis
 
