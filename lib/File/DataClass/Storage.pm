@@ -1,9 +1,9 @@
-# @(#)$Ident: Storage.pm 2013-12-15 20:18 pjf ;
+# @(#)$Ident: Storage.pm 2013-12-31 21:28 pjf ;
 
 package File::DataClass::Storage;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Class::Null;
@@ -16,6 +16,8 @@ use File::DataClass::Types     qw( Object Str );
 use MooX::Augment -class;
 use Scalar::Util               qw( blessed );
 use Try::Tiny;
+use Unexpected::Functions      qw( RecordAlreadyExists NotFound
+                                   NothingUpdated Unspecified );
 
 has 'backup'   => is => 'ro', isa => Str, default => NUL;
 
@@ -28,6 +30,7 @@ has 'schema'   => is => 'ro', isa => Object,
                     _log   => 'log',   _perms => 'perms' },
    required    => TRUE,  weak_ref => TRUE;
 
+# Public methods
 sub create_or_update {
    my ($self, $path, $result, $updating, $cond) = @_;
 
@@ -35,15 +38,15 @@ sub create_or_update {
 
    $self->validate_params( $path, $element ); my $updated;
 
-   my $data = ($self->_read_file( $path, TRUE ))[ 0 ] || {};
+   my $data = ($self->_read_file( $path, TRUE ))[ 0 ];
 
    try {
       my $filter = sub { __get_src_attributes( $cond, $_[ 0 ] ) };
       my $name   = $result->name; $data->{ $element } ||= {};
 
       not $updating and exists $data->{ $element }->{ $name }
-         and throw error => 'File [_1] element [_2] already exists',
-                   args  => [ $path, $name ], level => 2;
+         and throw class => RecordAlreadyExists, args => [ $path, $name ],
+                   level => 2;
 
       $updated = File::DataClass::HashMerge->merge
          ( \$data->{ $element }->{ $name }, $result, $filter );
@@ -63,7 +66,7 @@ sub delete {
 
    $self->validate_params( $path, $element );
 
-   my $data = ($self->_read_file( $path, TRUE ))[ 0 ] || {};
+   my $data = ($self->_read_file( $path, TRUE ))[ 0 ];
    my $name = $result->name;
 
    if (exists $data->{ $element } and exists $data->{ $element }->{ $name }) {
@@ -94,25 +97,24 @@ sub insert {
 sub load {
    my ($self, @paths) = @_; $paths[ 0 ] or return {};
 
-   scalar @paths == 1
-      and return ($self->_read_file( $paths[ 0 ], FALSE ))[ 0 ] || {};
+   scalar @paths == 1 and return ($self->_read_file( $paths[ 0 ], FALSE ))[ 0 ];
 
-   my ($data, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
-   my $cache_mtime  = $self->meta_unpack( $meta );
+   my ($loaded, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
+   my $cache_mtime = $self->meta_unpack( $meta );
 
-   not is_stale $data, $cache_mtime, $newest and return $data;
+   not is_stale $loaded, $cache_mtime, $newest and return $loaded;
 
-   $data = {}; $newest = 0;
+   $loaded = {}; $newest = 0;
 
    for my $path (@paths) {
-      my ($red, $path_mtime) = $self->_read_file( $path, FALSE ); $red or next;
+      my ($red, $path_mtime) = $self->_read_file( $path, FALSE );
 
+      merge_file_data $loaded, $red;
       $path_mtime > $newest and $newest = $path_mtime;
-      merge_file_data $data, $red;
    }
 
-   $self->_cache->set_by_paths( \@paths, $data, $self->meta_pack( $newest ) );
-   return $data;
+   $self->_cache->set_by_paths( \@paths, $loaded, $self->meta_pack( $newest ) );
+   return $loaded;
 }
 
 sub meta_pack { # Modified in a subclass
@@ -120,7 +122,7 @@ sub meta_pack { # Modified in a subclass
 }
 
 sub meta_unpack { # Modified in a subclass
-   my ($self, $attrs) = @_; return $attrs ? $attrs->{mtime} : undef;
+   my ($self, $attr) = @_; return $attr ? $attr->{mtime} : undef;
 }
 
 sub read_file {
@@ -132,7 +134,7 @@ sub select {
 
    $self->validate_params( $path, $element );
 
-   my $data = ($self->_read_file( $path, FALSE ))[ 0 ] || {};
+   my $data = ($self->_read_file( $path, FALSE ))[ 0 ];
 
    return exists $data->{ $element } ? $data->{ $element } : {};
 }
@@ -140,9 +142,9 @@ sub select {
 sub txn_do {
    my ($self, $path, $code_ref) = @_; my $wantarray = wantarray;
 
-   $self->validate_params( $path, TRUE ); my $key = q(txn:).$path; my $res;
+   $self->validate_params( $path, TRUE ); my $key = "txn:${path}";
 
-   $self->_lock->set( k => $key );
+   $self->_lock->set( k => $key ); my $res;
 
    try {
       if ($wantarray) { @{ $res } = $code_ref->() }
@@ -161,8 +163,7 @@ sub update {
    defined $updating or $updating = TRUE; $cond ||= sub { TRUE };
 
    my $updated = $self->create_or_update( $path, $result, $updating, $cond )
-      or throw class => 'NothingUpdated', error => 'Nothing updated',
-               level => 2;
+      or throw class => NothingUpdated, level => 2;
 
    return $updated;
 }
@@ -170,12 +171,12 @@ sub update {
 sub validate_params {
    my ($self, $path, $element) = @_;
 
-   $path or throw error => 'No file path specified', level => 2;
+   $path or throw class => Unspecified, args => [ 'Path name' ], level => 2;
 
    blessed $path or throw error => 'Path [_1] is not blessed',
                           args  => [ $path ], level => 2;
 
-   $element or throw error => 'Path [_1] no element specified',
+   $element or throw error => 'Path [_1] result source not specified',
                      args  => [ $path ], level => 2;
 
    return;
@@ -194,7 +195,7 @@ sub _read_file {
       my $cache_mtime = $self->meta_unpack( $meta );
 
       if (is_stale $data, $cache_mtime, $path_mtime) {
-         if ($for_update and not $path->exists) { $data = undef }
+         if ($for_update and not $path->exists) { $data = {} }
          else {
             $data = inner( $path->lock ); $path->close;
             $meta = $self->meta_pack( $path_mtime );
@@ -215,13 +216,13 @@ sub _write_file {
    my ($self, $path, $data, $create) = @_;
 
    try {
-      $create or $path->exists
-         or throw error => 'File [_1] not found', args => [ $path ];
+      $create or $path->exists or throw class => NotFound, args => [ $path ];
 
       $path->exists or $path->perms( $self->_perms );
 
       if ($self->backup and $path->exists and not $path->empty) {
-         copy( $path.NUL, $path.$self->backup ) or throw $OS_ERROR;
+         copy( "${path}", $path.$self->backup )
+            or throw error => 'Backup copy failed: [_1]', args => [ $OS_ERROR ];
       }
 
       try   { $data = inner( $path->atomic->lock, $data ); $path->close }
@@ -236,7 +237,7 @@ sub _write_file {
    return $data;
 }
 
-# Private subroutines
+# Private functions
 sub __get_src_attributes {
    my ($cond, $src) = @_;
 
@@ -257,7 +258,7 @@ File::DataClass::Storage - Storage base class
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 8 $
+This document describes version v0.28.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -386,7 +387,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

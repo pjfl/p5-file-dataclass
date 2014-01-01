@@ -1,17 +1,17 @@
-# @(#)$Ident: JSON.pm 2013-06-08 22:27 pjf ;
+# @(#)$Ident: JSON.pm 2013-12-30 18:37 pjf ;
 
 package File::DataClass::Storage::JSON;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
-use JSON qw();
 use Moo;
+use JSON qw();
 use MooX::Augment -class;
 
 extends qw(File::DataClass::Storage);
 
-has '+extn' => default => q(.json);
+has '+extn' => default => '.json';
 
 augment '_read_file' => sub {
    my ($self, $rdr) = @_;
@@ -44,7 +44,7 @@ File::DataClass::Storage::JSON - Read/write JSON data storage model
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.28.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -112,7 +112,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

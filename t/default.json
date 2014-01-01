@@ -21,18 +21,21 @@
          "acl" : [
             "@support"
          ],
+         "count" : "1",
          "state" : "0"
       },
       "entrance" : {
          "acl" : [
             "any"
          ],
+         "count" : "2",
          "state" : "0"
       },
       "library" : {
          "acl" : [
             "any"
          ],
+         "count" : "3",
          "state" : "0"
       }
    },

@@ -1,9 +1,9 @@
-# @(#)$Ident: Any.pm 2013-12-22 22:31 pjf ;
+# @(#)$Ident: Any.pm 2013-12-30 19:28 pjf ;
 
 package File::DataClass::Storage::Any;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::Basename             qw( basename );
@@ -41,29 +41,30 @@ sub insert {
 sub load {
    my ($self, @paths) = @_; $paths[ 0 ] or return {};
 
-   my ($data, $meta, $newest) = $self->cache->get_by_paths( \@paths );
-   my $cache_mtime  = $self->meta_unpack( $meta );
+   scalar @paths == 1 and return ($self->read_file( $paths[ 0 ], FALSE ))[ 0 ];
 
-   not is_stale $data, $cache_mtime, $newest and return $data;
+   my ($loaded, $meta, $newest) = $self->cache->get_by_paths( \@paths );
+   my $cache_mtime = $self->meta_unpack( $meta );
 
-   $data = {}; $newest = 0;
+   not is_stale $loaded, $cache_mtime, $newest and return $loaded;
 
-   for my $path (@paths) {
-      my $store = $self->_get_store_from_path( $path );
-      my ($red, $path_mtime) = $store->read_file( $path, FALSE ); $red or next;
+   $loaded = {}; $newest = 0;
+
+   for my $path (@paths) { # Different storage classes by filename extension
+      my ($red, $path_mtime) = $self->read_file( $path, FALSE );
 
       $path_mtime > $newest and $newest = $path_mtime;
-      merge_file_data $data, $red;
+      merge_file_data $loaded, $red;
    }
 
-   $self->cache->set_by_paths( \@paths, $data, $self->meta_pack( $newest ) );
-   return $data;
+   $self->cache->set_by_paths( \@paths, $loaded, $self->meta_pack( $newest ) );
+   return $loaded;
 }
 
 sub meta_pack {
    my ($self, $mtime) = @_; my $attr = $self->{_meta_cache} || {};
 
-   $attr->{mtime} = $mtime; return $attr;
+   defined $mtime and $attr->{mtime} = $mtime; return $attr;
 }
 
 sub meta_unpack {
@@ -134,7 +135,7 @@ File::DataClass::Storage::Any - Selects storage class using the extension on the
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 8 $
+This document describes version v0.28.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -142,7 +143,7 @@ This document describes version v0.27.$Rev: 8 $
 
    my $schema = File::DataClass::Schema->new( storage_class => q(Any) );
 
-   my $data = $schema->load( 'data_file1.xml', 'data_file2.json' );
+   my $loaded = $schema->load( 'data_file1.xml', 'data_file2.json' );
 
 =head1 Description
 
@@ -222,7 +223,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

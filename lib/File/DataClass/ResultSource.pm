@@ -1,9 +1,9 @@
-# @(#)$Ident: ResultSource.pm 2013-12-15 20:18 pjf ;
+# @(#)$Ident: ResultSource.pm 2013-12-26 21:01 pjf ;
 
 package File::DataClass::ResultSource;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -30,7 +30,7 @@ has 'resultset_class'      => is => 'ro', isa => ClassName,
    default                 => 'File::DataClass::ResultSet';
 
 has 'schema'               => is => 'ro', isa => Object,
-   handles                 => [ qw(path storage) ],
+   handles                 => [ qw( path storage ) ],
    required                => TRUE, weak_ref => TRUE,
 
 
@@ -41,9 +41,9 @@ sub columns {
 }
 
 sub has_column {
-   my $attr = $_[ 0 ]->_attributes; my $key = $_[ 1 ] || '_invalid_key_';
+   my $key = $_[ 1 ] || '_invalid_key_';
 
-   return exists $attr->{ $key } && defined $attr->{ $key } ? TRUE : FALSE;
+   return exists $_[ 0 ]->_attributes->{ $key } ? TRUE : FALSE;
 }
 
 sub resultset {
@@ -75,7 +75,7 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 8 $
+This document describes version v0.28.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -175,7 +175,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

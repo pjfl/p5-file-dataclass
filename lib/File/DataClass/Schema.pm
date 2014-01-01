@@ -1,9 +1,9 @@
-# @(#)$Ident: Schema.pm 2013-12-22 18:24 pjf ;
+# @(#)$Ident: Schema.pm 2013-12-31 17:05 pjf ;
 
 package File::DataClass::Schema;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Class::Null;
@@ -17,6 +17,7 @@ use File::DataClass::Types     qw( Bool Cache ClassName Directory DummyClass
                                    HashRef Lock Num Object Path Str );
 use File::Spec;
 use Scalar::Util               qw( blessed );
+use Unexpected::Functions      qw( Unspecified );
 
 extends q(File::DataClass);
 
@@ -131,11 +132,11 @@ sub _build_storage {
 sub dump {
    my ($self, $args) = @_; blessed $self or $self = $self->_constructor;
 
-   my $path = $args->{path} || $self->path;
+   my $path = $args->{path} || $self->path; # uncoverable condition false
 
    blessed $path or $path = io( $path );
 
-   return $self->storage->dump( $path, $args->{data} || {} );
+   return $self->storage->dump( $path, $args->{data} );
 }
 
 sub extensions {
@@ -149,7 +150,7 @@ sub load {
 
    @paths = map { blessed $_ ? $_ : io( $_ ) } @paths;
 
-   return $self->storage->load( @paths ) || {};
+   return $self->storage->load( @paths );
 }
 
 sub resultset {
@@ -157,7 +158,9 @@ sub resultset {
 }
 
 sub source {
-   my ($self, $moniker) = @_; $moniker or throw 'Result source not specified';
+   my ($self, $moniker) = @_;
+
+   $moniker or throw class => Unspecified, args => [ 'Result source' ];
 
    my $source = $self->source_registrations->{ $moniker }
       or throw error => 'Result source [_1] unknown', args => [ $moniker ];
@@ -180,7 +183,6 @@ sub translate {
 
    $attrs = { path => $args->{to}, storage_class => $to_class };
    $class->new( $attrs )->dump( { data => $data } );
-
    return;
 }
 
@@ -204,7 +206,7 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 8 $
+This document describes version v0.28.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -436,7 +438,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

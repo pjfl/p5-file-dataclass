@@ -1,8 +1,8 @@
-# @(#)Ident: 12types.t 2013-12-06 16:05 pjf ;
+# @(#)Ident: 12types.t 2013-12-29 21:51 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 5 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -28,8 +28,8 @@ use_ok 'File::DataClass::Types';
 
 {  package MyCache;
 
-   use File::DataClass::Types qw( Cache );
    use Moo;
+   use File::DataClass::Types qw( Cache );
 
    has 'test_cache' => is => 'ro', isa => Cache;
 }
@@ -48,8 +48,8 @@ like $EVAL_ERROR, qr{ not \s+ of \s+ class }mx, 'Cache - wrong class';
 
 {  package MyDummyClass;
 
-   use File::DataClass::Types qw( DummyClass );
    use Moo;
+   use File::DataClass::Types qw( DummyClass );
 
    has 'test_dummy_class' => is => 'ro', isa => DummyClass;
 }
@@ -64,8 +64,8 @@ is $dummy->test_dummy_class, 'none', 'DummyClass - is none';
 
 {  package MyLock;
 
-   use File::DataClass::Types qw( Lock );
    use Moo;
+   use File::DataClass::Types qw( Lock );
 
    has 'test_lock' => is => 'ro', isa => Lock;
 }
@@ -84,8 +84,8 @@ like $EVAL_ERROR, qr{ is \s missing (.+) methods }mx, 'Lock - missing methods';
 
 {  package MyOctalNum;
 
-   use File::DataClass::Types qw( OctalNum );
    use Moo;
+   use File::DataClass::Types qw( OctalNum );
 
    has 'test_octal_num' => is => 'ro', isa => OctalNum,
       coerce            => OctalNum->coercion;
@@ -119,8 +119,8 @@ ok $octal->test_octal_num == 15, 'OctalNum - is converted';
 
 {  package MyPath;
 
-   use File::DataClass::Types qw( Path );
    use Moo;
+   use File::DataClass::Types qw( Path );
 
    has 'test_path' => is => 'ro', isa => Path, coerce => Path->coercion;
 }
@@ -132,6 +132,18 @@ isa_ok $path->test_path, 'File::DataClass::IO';
 eval { $path = MyPath->new( test_path => bless {}, 'Dummy' ) };
 
 like $EVAL_ERROR, qr{ not \s of \s class }mx, 'Path - wrong class';
+
+{  package MyResult;
+
+   use Moo;
+   use File::DataClass::Types qw( Result );
+
+   has 'test_result' => is => 'ro', isa => Result;
+}
+
+eval { MyResult->new( test_result => bless {}, 'Dummy' ) };
+
+like $EVAL_ERROR, qr{ not \s of \s class }mx, 'Result - wrong class';
 
 done_testing;
 

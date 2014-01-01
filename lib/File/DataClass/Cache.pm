@@ -1,9 +1,9 @@
-# @(#)$Ident: Cache.pm 2013-12-22 17:38 pjf ;
+# @(#)$Ident: Cache.pm 2013-12-31 14:33 pjf ;
 
 package File::DataClass::Cache;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -76,6 +76,7 @@ sub remove {
    my ($self, $key) = @_; $key or return; $key .= NUL;
 
    $self->cache->remove( $key ); $self->set_mtime( $key, undef );
+
    return;
 }
 
@@ -84,7 +85,7 @@ sub set {
 
    $key .= NUL; $meta ||= {}; $meta->{mtime} //= undef;
 
-   $key eq $mt_key and throw error => 'Cache key "[_1]" not allowed',
+   $key eq $mt_key and throw error => 'Cache key [_1] not allowed',
                              args  => [ $mt_key ];
 
    if ($key and defined $data) {
@@ -100,7 +101,8 @@ sub set_by_paths {
 
    my ($key, $newest) = $self->_get_key_and_newest( $paths );
 
-   $meta->{mtime} = $newest; return $self->set( $key, $data, $meta );
+   $meta->{mtime} = $newest;
+   return $self->set( $key, $data, $meta );
 }
 
 sub set_mtime {
@@ -140,7 +142,7 @@ File::DataClass::Cache - Adds extra methods to the CHI API
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 8 $
+This document describes version v0.28.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -297,7 +299,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

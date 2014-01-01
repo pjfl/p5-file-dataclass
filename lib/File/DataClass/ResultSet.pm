@@ -1,9 +1,9 @@
-# @(#)$Ident: ResultSet.pm 2013-12-22 02:17 pjf ;
+# @(#)$Ident: ResultSet.pm 2013-12-31 21:30 pjf ;
 
 package File::DataClass::ResultSet;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -12,6 +12,7 @@ use File::DataClass::List;
 use File::DataClass::Result;
 use File::DataClass::Types     qw( ArrayRef ClassName HashRef Int Object );
 use Scalar::Util               qw( blessed );
+use Unexpected::Functions      qw( NonExistantRecord Unspecified );
 
 has 'list_class'   => is => 'ro',   isa => ClassName,
    default         => 'File::DataClass::List';
@@ -61,20 +62,19 @@ sub create_or_update {
 }
 
 sub delete {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_; my $optional = $args->{optional};
+
+   my $name = $self->_validate_params( $args ); my $path = $self->path;
 
    my $res = $self->_txn_do( sub {
-      my ($result, $error);
-
-      unless ($result = $self->_find( $name )) {
-         $args->{optional} and return FALSE;
-         $error = 'File [_1] element [_2] does not exist';
-         throw error => $error, args => [ $self->path, $name ];
+      my $result; unless ($result = $self->_find( $name )) {
+         $optional and return FALSE;
+         throw class => NonExistantRecord, args => [ $path, $name ];
       }
 
-      $result->delete and return TRUE;
-      $error = 'File [_1] element [_2] not deleted';
-      throw error => $error, args => [ $self->path, $name ];
+      $result->delete or throw error => 'File [_1] element [_2] not deleted',
+                               args  => [ $path, $name ];
+      return TRUE;
    } );
 
    return $res ? $name : undef;
@@ -87,11 +87,10 @@ sub find {
 }
 
 sub find_and_update { # TODO: Why is this not private?
-   my ($self, $args) = @_;
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $name   = $args->{name} or throw 'Record name not specified';
    my $result = $self->_find( $name )
-      or throw error => 'Record [_1] not found', args => [ $name ];
+      or throw class => NonExistantRecord, args => [ $self->path, $name ];
 
    for (grep { exists $args->{ $_ } } @{ $self->attributes }) {
       $result->$_( $args->{ $_ } );
@@ -101,11 +100,11 @@ sub find_and_update { # TODO: Why is this not private?
 }
 
 sub first {
-   my $self = shift; return $self->_results ? $self->_results->[0] : undef;
+   my $self = shift; return $self->_results->[ 0 ];
 }
 
 sub last {
-   my $self = shift; return $self->_results ? $self->_results->[-1] : undef;
+   my $self = shift; return $self->_results->[ -1 ];
 }
 
 sub list {
@@ -115,18 +114,20 @@ sub list {
 }
 
 sub next {
-   my $self = shift; my $index = $self->_iterator; $self->_results or return;
+   my $self  = shift;
+   my $index = $self->_iterator; $self->_iterator( $index + 1 );
 
-   $self->_iterator( $index + 1 ); return $self->_results->[ $index ];
+   return $self->_results->[ $index ];
 }
 
 sub push {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $list  = $args->{list} or throw 'No list name specified';
+   my $list  = $args->{list}
+      or throw class => Unspecified, args => [ 'List name' ];
    my $items = $args->{items} || []; my ($added, $attrs);
 
-   $items->[0] or throw 'List contains no items';
+   $items->[ 0 ] or throw 'List contains no items';
 
    my $res = $self->_txn_do( sub {
       ($attrs, $added) = $self->_push( $name, $list, $items );
@@ -155,10 +156,11 @@ sub search {
 sub splice {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $list  = $args->{list} or throw 'No list name specified';
+   my $list  = $args->{list}
+      or throw class => Unspecified, args => [ 'List name' ];
    my $items = $args->{items} || []; my ($attrs, $removed);
 
-   $items->[0] or throw 'List contains no items';
+   $items->[ 0 ] or throw 'List contains no items';
 
    my $res = $self->_txn_do( sub {
       ($attrs, $removed) = $self->_splice( $name, $list, $items );
@@ -179,16 +181,16 @@ sub update {
 # Private methods
 sub _build__operators {
    return {
-      q(eq) => sub { return $_[0] eq $_[1] },
-      q(==) => sub { return $_[0] == $_[1] },
-      q(ne) => sub { return $_[0] ne $_[1] },
-      q(!=) => sub { return $_[0] != $_[1] },
-      q(>)  => sub { return $_[0] >  $_[1] },
-      q(>=) => sub { return $_[0] >= $_[1] },
-      q(<)  => sub { return $_[0] <  $_[1] },
-      q(<=) => sub { return $_[0] <= $_[1] },
-      q(=~) => sub { return $_[0] =~ $_[1] },
-      q(!~) => sub { return $_[0] !~ $_[1] },
+      q(eq) => sub { return $_[ 0 ] eq $_[ 1 ] },
+      q(==) => sub { return $_[ 0 ] == $_[ 1 ] },
+      q(ne) => sub { return $_[ 0 ] ne $_[ 1 ] },
+      q(!=) => sub { return $_[ 0 ] != $_[ 1 ] },
+      q(>)  => sub { return $_[ 0 ] >  $_[ 1 ] },
+      q(>=) => sub { return $_[ 0 ] >= $_[ 1 ] },
+      q(<)  => sub { return $_[ 0 ] <  $_[ 1 ] },
+      q(<=) => sub { return $_[ 0 ] <= $_[ 1 ] },
+      q(=~) => sub { return $_[ 0 ] =~ $_[ 1 ] },
+      q(!~) => sub { return $_[ 0 ] !~ $_[ 1 ] },
    };
 }
 
@@ -198,7 +200,7 @@ sub _create_result {
    my $attrs = { %{ $self->defaults }, _resultset => $self };
 
    for (grep { exists $args->{ $_ } and defined $args->{ $_ } }
-            @{ $self->attributes }, qw(name)) {
+            @{ $self->attributes }, 'name') {
       $attrs->{ $_ } = $args->{ $_ };
    }
 
@@ -271,9 +273,7 @@ sub _list {
    my $result = $self->_create_result( $attrs );
 
    $attrs = { found => $found, list => $list, result => $result, };
-
    $labels and $attrs->{labels} = $labels;
-
    return $self->list_class->new( $attrs );
 }
 
@@ -294,8 +294,6 @@ sub _push {
 
 sub _search {
    my ($self, $where) = @_; my $results = $self->_results; my @tmp;
-
-   unless ($results) { $self->_results( [] ); $self->_iterator( 0 ) }
 
    if (not defined $results->[ 0 ]) {
       $results = $self->select;
@@ -349,10 +347,10 @@ sub _txn_do {
 }
 
 sub _validate_params {
-   my ($self, $args) = @_; $args ||= {};
+   my ($self, $args) = @_; $args //= {};
 
    my $name = $args->{name}
-      or throw error => 'No element name specified', level => 2;
+      or throw class => Unspecified, args => [ 'Record name' ], level => 2;
 
    return $name;
 }
@@ -369,7 +367,7 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 8 $
+This document describes version v0.28.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -590,7 +588,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

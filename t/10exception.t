@@ -1,8 +1,8 @@
-# @(#)Ident: 10exception.t 2013-12-06 16:05 pjf ;
+# @(#)Ident: 10exception.t 2013-12-31 17:15 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 5 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -20,7 +20,8 @@ BEGIN {
 }
 
 use Test::Requires "${perl_ver}";
-use English qw( -no_match_vars );
+use English      qw( -no_match_vars );
+use Scalar::Util qw( blessed );
 
 use_ok 'File::DataClass::Exception';
 
@@ -34,7 +35,8 @@ eval { $class->throw( 'PracticeKill' ) };
 
 $e = $EVAL_ERROR; $EVAL_ERROR = undef; my $min_level = $e->level;
 
-is ref $e, $class, 'Good class';
+is blessed $e, $class, 'Good class';
+is $e->class, 'File::DataClass::Exception', 'Default exception class';
 like $e, qr{ \A main \[\d+ / $min_level \] }mx, 'Package and default level';
 like $e, qr{ PracticeKill \s* \z   }mx, 'Throws error message';
 

@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2013-12-25 18:44 pjf ;
+# @(#)$Ident: IO.pm 2014-01-01 00:48 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use English                    qw( -no_match_vars );
@@ -24,6 +24,7 @@ use IO::File;
 use List::Util                 qw( first );
 use Scalar::Util               qw( blessed );
 use Type::Utils                qw( enum );
+use Unexpected::Functions      qw( NotFound Unspecified );
 use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
                                    PositiveInt RegexpRef SimpleStr Str );
 
@@ -151,11 +152,11 @@ sub all_files {
 sub _all_file_contents {
    my $self = shift; $self->is_open or $self->assert_open;
 
-   local $RS = undef; my $all = $self->io_handle->getline;
+   local $RS = undef; my $content = $self->io_handle->getline;
 
    $self->error_check; $self->autoclose and $self->close;
 
-   return $all;
+   return $content;
 }
 
 sub append {
@@ -200,7 +201,7 @@ sub assert_dirpath {
 sub assert_filepath {
    my $self = shift; my $dir;
 
-   $self->name or $self->_throw( 'Path not specified' );
+   $self->name or $self->_throw( class => Unspecified, args => [ 'Path name' ]);
 
    (undef, $dir) = File::Spec->splitpath( $self->name );
 
@@ -275,9 +276,9 @@ sub _build__dir_pattern {
 
    my $curdir = File::Spec->curdir; my $updir = File::Spec->updir;
 
-   $curdir and $pat  = "\Q${curdir}\E"; # uncoverable condition left;
-   $pat    and $pat .= '|'; # uncoverable condition left;
-   $updir  and $pat .= "\Q${updir}\E"; # uncoverable condition left;
+   $curdir and $pat  = "\Q${curdir}\E"; # uncoverable condition left
+   $curdir and $updir and $pat .= '|';  # uncoverable condition left
+   $updir  and $pat .= "\Q${updir}\E";  # uncoverable condition left
 
    return qr{ \A $pat \z }mx;
 }
@@ -318,7 +319,7 @@ sub chown {
    my ($self, $uid, $gid) = @_;
 
    (defined $uid and defined $gid)
-      or $self->_throw( 'User or group id undefined' );
+      or $self->_throw( class => Unspecified, args => [ 'User or group id' ] );
 
    1 == CORE::chown $uid, $gid, $self->name
       or $self->_throw( error => 'Path [_1 chown failed to [_2]/[_3]',
@@ -369,7 +370,9 @@ sub _constructor {
 }
 
 sub copy {
-   my ($self, $to) = @_; $to or $self->_throw( 'Copy requires an argument' );
+   my ($self, $to) = @_;
+
+   $to or $self->_throw( class => Unspecified, args => [ 'Copy to' ] );
 
    (blessed $to and $to->isa( __PACKAGE__ ))
       or $to = $self->_constructor( $to );
@@ -398,9 +401,9 @@ sub delete {
 }
 
 sub delete_tmp_files {
-   my ($self, $tmplt) = @_;
+   my ($self, $tmplt) = @_; $tmplt ||= '%6.6d....';
 
-   $tmplt ||= '%6.6d....'; my $pat = sprintf $tmplt, $PID;
+   my $pat = sprintf $tmplt, $PID;
 
    while (my $entry = $self->next) {
       $entry->filename =~ m{ \A $pat \z }mx and unlink $entry->pathname;
@@ -422,11 +425,9 @@ sub dirname {
 }
 
 sub empty {
-   my $self = shift;
+   my $self = shift; $self->is_file and return -z $self->name;
 
-   $self->is_file and return -z $self->name;
-   $self->is_dir  or  $self->_throw( error => 'Path [_1] not found',
-                                     args  => [ $self->name ] );
+   $self->is_dir or $self->_throw( class => NotFound, args => [ $self->name ] );
 
    return $self->next ? FALSE : TRUE;
 }
@@ -434,12 +435,12 @@ sub empty {
 sub encoding {
    my ($self, $encoding) = @_;
 
-   $encoding and lc $encoding eq 'utf-8' and $encoding = 'utf8';
-   $encoding or
-      $self->_throw( 'No encoding value passed to '.__PACKAGE__.'::encoding' );
-   $self->is_open and CORE::binmode( $self->io_handle, ":encoding($encoding)" );
+   $encoding or $self->_throw
+      ( class => Unspecified, args => [ 'Encoding value' ] );
+   lc $encoding eq 'utf-8' and $encoding = 'utf8';
    $self->_encoding( $encoding );
    $self->_set_is_utf8( $encoding eq 'utf8' ? TRUE : FALSE );
+   $self->is_open and $self->set_binmode;
    return $self;
 }
 
@@ -448,7 +449,7 @@ sub error_check {
 
    $self->io_handle->can( 'error' ) or return;
    $self->io_handle->error or return;
-   $self->_throw( error => 'IO error [_1]', args => [ $OS_ERROR ] );
+   $self->_throw( error => 'IO error: [_1]', args => [ $OS_ERROR ] );
    return;
 }
 
@@ -518,7 +519,7 @@ sub _get_atomic_path {
 sub getline {
    my ($self, $separator) = @_; my $line; $self->assert_open;
 
-   {  local $RS = $separator || $self->_separator;
+   {  local $RS = $separator // $self->_separator; # uncoverable condition false
       $line = $self->io_handle->getline;
       defined $line and $self->_chomp and CORE::chomp $line;
    }
@@ -532,7 +533,7 @@ sub getline {
 sub getlines {
    my ($self, $separator) = @_; my @lines; $self->assert_open;
 
-   {  local $RS = $separator || $self->_separator;
+   {  local $RS = $separator // $self->_separator; # uncoverable condition false
       @lines = $self->io_handle->getlines;
 
       if ($self->_chomp) { CORE::chomp for @lines }
@@ -573,7 +574,7 @@ sub is_dir {
 
    $self->type or $self->_init_type_from_fs or return FALSE;
 
-   return $self->type && $self->type eq 'dir' ? TRUE : FALSE;
+   return $self->type eq 'dir' ? TRUE : FALSE;
 }
 
 sub is_executable {
@@ -702,7 +703,7 @@ sub open {
 sub _open_args {
    my ($self, $mode, $perms) = @_;
 
-   $self->name or $self->_throw( 'Path not specified' );
+   $self->name or $self->_throw( class => Unspecified, args => [ 'Path name' ]);
 
    my $pathname = $self->_atomic && !$self->is_reading( $mode )
                 ? $self->_get_atomic_path : $self->name;
@@ -734,7 +735,7 @@ sub _open_file {
    }
 
    $self->_umask_pop;
-   CORE::chmod $perms, $path; # Not necessary on normal systems
+   CORE::chmod $perms, $path; # TODO: Not necessary on normal systems
    $self->_set_is_open( TRUE );
    $self->set_binmode;
    $self->set_lock;
@@ -766,7 +767,7 @@ sub _print {
 
    for (@args) {
       print {$self->io_handle} $_
-         or $self->_throw( error => 'IO error [_1]', args  => [ $OS_ERROR ] );
+         or $self->_throw( error => 'IO error: [_1]', args  => [ $OS_ERROR ] );
    }
 
    return $self;
@@ -1047,7 +1048,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 8 $
+This document describes version v0.28.$Rev: 1 $ of L<File::DataClass::IO>
 
 =head1 Synopsis
 
@@ -1841,7 +1842,7 @@ For the Perl programming language
 
 =item Ingy döt Net <ingy@cpan.org>
 
-For IO::All from which I took the API and some tests
+For L<IO::All> from which I took the API and some tests
 
 =item L<Path::Tiny>
 
@@ -1852,11 +1853,11 @@ file name, not following symlinks and some tests
 
 =head1 Author
 
-Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
+Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

@@ -1,6 +1,8 @@
 Revision history for File::DataClass
 
-          - Split out Storage::XML to own dist
+0.28.1    2014-01-01 14:52:36
+          - Define and use exception classes
+          - Split out Storage::XML to own distribution
           - Made spell checking work with utf8
           - Simplified Build.PL. Updated test boilerplate
           - Uses DZ::P::AbstractFromPOD and LicenseFromModule

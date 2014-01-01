@@ -1,19 +1,41 @@
-# @(#)Ident: Exception.pm 2013-08-28 22:55 pjf ;
+# @(#)Ident: Exception.pm 2013-12-31 21:31 pjf ;
 
 package File::DataClass::Exception;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Unexpected::Types qw( Str );
 
 extends q(Unexpected);
 with    q(Unexpected::TraitFor::ErrorLeader);
+with    q(Unexpected::TraitFor::ExceptionClasses);
 
-__PACKAGE__->ignore_class( 'File::DataClass::IO' );
+my $class = __PACKAGE__;
 
-has 'out' => is => 'ro', isa => Str, default => q();
+$class->has_exception( $class );
+
+$class->has_exception( 'AlreadyExists' => {
+   parents => [ $class ], error => 'File [_1] already exists' } );
+
+$class->has_exception( 'NonExistantRecord' => {
+   parents => [ $class ], error => 'File [_1] record [_2] does not exist' } );
+
+$class->has_exception( 'NotFound' => {
+   parents => [ $class ], error => 'File [_1] not found' } );
+
+$class->has_exception( 'NothingUpdated' => {
+   parents => [ $class ], error => 'Nothing updated' } );
+
+$class->has_exception( 'RecordAlreadyExists' => {
+   parents => [ $class ], error => 'File [_1] record [_2] already exists' } );
+
+$class->ignore_class ( 'File::DataClass::IO' );
+
+has '+class' => default => $class;
+
+has 'out'    => is => 'ro', isa => Str, default => q();
 
 1;
 
@@ -55,7 +77,7 @@ File::DataClass::Exception - Exception class composed from traits
 
 =head1 Version
 
-This documents version v0.27.$Rev: 1 $ of L<File::DataClass::Exception>
+This documents version v0.28.$Rev: 1 $ of L<File::DataClass::Exception>
 
 =head1 Description
 
@@ -86,6 +108,11 @@ it threw
 =back
 
 =head1 Subroutines/Methods
+
+=head2 BUILDARGS
+
+Doesn't modify the C<BUILDARGS> method. This is here to workaround a
+bug in L<Moo> and / or L<Test::Pod::Coverage>
 
 =head2 as_string
 
@@ -163,7 +190,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

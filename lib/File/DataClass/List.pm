@@ -3,7 +3,7 @@
 package File::DataClass::List;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::Types  qw( ArrayRef Bool HashRef Result Undef );
 use Moo;
@@ -25,7 +25,7 @@ File::DataClass::List - List response class
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 1 $
+This document describes version v0.28.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -94,7 +94,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

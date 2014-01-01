@@ -1,8 +1,8 @@
-# @(#)Ident: 21hash-merge.t 2013-12-06 16:04 pjf ;
+# @(#)Ident: 21hash-merge.t 2013-12-29 03:29 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 5 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -71,6 +71,19 @@ ok( (not exists $res->vals->{k1}), 'Delete attribute from hash' );
 $res = test( $rs, 'delete', $args );
 
 is $res, 'dummy', 'Deletes dummy element';
+
+use_ok 'File::DataClass::HashMerge';
+
+my $dest = {};
+my $src  = { key => 'value', };
+
+File::DataClass::HashMerge->merge( \$dest, $src );
+
+is $dest->{key}, 'value', 'Default merge filter';
+
+File::DataClass::HashMerge->merge( \$dest );
+
+is $dest->{key}, 'value', 'No source required';
 
 done_testing;
 

@@ -1,15 +1,13 @@
-# @(#)$Ident: HashMerge.pm 2013-12-23 00:54 pjf ;
+# @(#)$Ident: HashMerge.pm 2013-12-29 03:32 pjf ;
 
 package File::DataClass::HashMerge;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 8 $ =~ /\d+/gmx );
-
-use File::DataClass::Constants;
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 sub merge {
-   my ($self, $dest_ref, $src, $filter) = @_; my $updated = FALSE;
+   my ($self, $dest_ref, $src, $filter) = @_; my $updated = 0;
 
    $dest_ref or die 'No destination reference specified';
 
@@ -23,7 +21,7 @@ sub merge {
          $updated ||= $res;
       }
       elsif (exists ${ $dest_ref }->{ $attr }) {
-         delete ${ $dest_ref }->{ $attr }; $updated = TRUE;
+         delete ${ $dest_ref }->{ $attr }; $updated = 1;
       }
    }
 
@@ -32,33 +30,33 @@ sub merge {
 
 # Private methods
 sub _merge_attr {
-   my ($self, $to_ref, $from) = @_; my $to = ${ $to_ref }; my $updated = FALSE;
+   my ($self, $to_ref, $from) = @_; my $to = ${ $to_ref }; my $updated = 0;
 
-   if ($to and ref $to eq HASH) {
+   if ($to and ref $to eq 'HASH') {
       $updated = $self->_merge_attr_hashes( $to, $from );
    }
-   elsif ($to and ref $to eq ARRAY) {
+   elsif ($to and ref $to eq 'ARRAY') {
       $updated = $self->_merge_attr_arrays( $to, $from );
    }
    elsif ($to and $to ne $from) {
-      $updated = TRUE; ${ $to_ref } = $from;
+      $updated = 1; ${ $to_ref } = $from;
    }
    elsif (not $to and defined $from) {
-      if (ref $from eq HASH) {
-         scalar keys %{ $from } > 0 and $updated = TRUE
+      if (ref $from eq 'HASH') {
+         scalar keys %{ $from } > 0 and $updated = 1
             and ${ $to_ref } = $from;
       }
-      elsif (ref $from eq ARRAY) {
-         scalar @{ $from } > 0 and $updated = TRUE; ${ $to_ref } = $from;
+      elsif (ref $from eq 'ARRAY') {
+         scalar @{ $from } > 0 and $updated = 1; ${ $to_ref } = $from;
       }
-      else { $updated = TRUE; ${ $to_ref } = $from }
+      else { $updated = 1; ${ $to_ref } = $from }
    }
 
    return $updated;
 }
 
 sub _merge_attr_arrays {
-   my ($self, $to, $from) = @_; my $updated = FALSE;
+   my ($self, $to, $from) = @_; my $updated = 0;
 
    for (0 .. $#{ $to }) {
       if (defined $from->[ $_ ]) {
@@ -66,18 +64,18 @@ sub _merge_attr_arrays {
 
          $updated ||= $res;
       }
-      elsif ($to->[ $_ ]) { splice @{ $to }, $_; $updated = TRUE; last }
+      elsif ($to->[ $_ ]) { splice @{ $to }, $_; $updated = 1; last }
    }
 
    if (@{ $from } > @{ $to }) {
-      push @{ $to }, (splice @{ $from }, $#{ $to } + 1); $updated = TRUE;
+      push @{ $to }, (splice @{ $from }, $#{ $to } + 1); $updated = 1;
    }
 
    return $updated;
 }
 
 sub _merge_attr_hashes {
-   my ($self, $to, $from) = @_; my $updated = FALSE;
+   my ($self, $to, $from) = @_; my $updated = 0;
 
    for (grep { exists $from->{ $_ } } keys %{ $to }) {
       if (defined $from->{ $_ }) {
@@ -85,12 +83,12 @@ sub _merge_attr_hashes {
 
          $updated ||= $res;
       }
-      else { delete $to->{ $_ }; delete $from->{ $_ }; $updated = TRUE }
+      else { delete $to->{ $_ }; delete $from->{ $_ }; $updated = 1 }
    }
 
    for (grep { not exists $to->{ $_ } } keys %{ $from }) {
       if (defined $from->{ $_ }) {
-         $to->{ $_ } = $from->{ $_ }; $updated = TRUE;
+         $to->{ $_ } = $from->{ $_ }; $updated = 1;
       }
    }
 
@@ -109,7 +107,7 @@ File::DataClass::HashMerge - Merge hashes with update flag
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 8 $
+This document describes version v0.28.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -161,7 +159,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

@@ -1,10 +1,10 @@
-# @(#)$Ident: Functions.pm 2013-11-30 15:59 pjf ;
+# @(#)$Ident: Functions.pm 2013-12-30 23:36 pjf ;
 
 package File::DataClass::Functions;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.27.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use Exporter 5.57           qw( import );
@@ -66,11 +66,12 @@ sub is_member (;@) {
 sub is_stale (;$$$) {
    my ($data, $cache_mtime, $path_mtime) = @_;
 
-   $NTFS and return 1; # Assume NTFS does not support mtime
+   # Assume NTFS does not support mtime
+   $NTFS and return 1; # uncoverable branch true
 
-   return ! defined $data || ! defined $path_mtime || ! defined $cache_mtime
-         || $path_mtime > $cache_mtime
-          ? 1 : 0;
+   my $is_def = defined $data && defined $path_mtime && defined $cache_mtime;
+
+   return !$is_def || $path_mtime > $cache_mtime ? 1 : 0;
 }
 
 sub merge_attributes ($$;$) {
@@ -99,6 +100,7 @@ sub merge_file_data ($$) {
 }
 
 sub thread_id {
+   # uncoverable branch true
    return exists $INC{ 'threads.pm' } ? threads->tid() : 0;
 }
 
@@ -118,7 +120,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-This document describes version v0.27.$Rev: 3 $
+This document describes version v0.28.$Rev: 1 $
 
 =head1 Synopsis
 
@@ -248,7 +250,7 @@ Peter Flanigan, C<< <Support at RoxSoft.co.uk> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2013 Peter Flanigan. All rights reserved
+Copyright (c) 2014 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
