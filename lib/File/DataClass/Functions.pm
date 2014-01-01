@@ -4,7 +4,7 @@ package File::DataClass::Functions;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.29.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use Exporter 5.57           qw( import );
@@ -120,7 +120,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-This document describes version v0.28.$Rev: 1 $
+This document describes version v0.29.$Rev: 1 $
 
 =head1 Synopsis
 

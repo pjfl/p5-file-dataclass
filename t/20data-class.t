@@ -1,8 +1,8 @@
-# @(#)$Ident: 20data-class.t 2013-12-31 17:11 pjf ;
+# @(#)$Ident: 20data-class.t 2014-01-01 16:37 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.29.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -210,36 +210,32 @@ my $search_rs = $rs->search( $args ); $search_rs->next; $search_rs->reset;
 
 is $search_rs->next->name, 'admin', 'RS - reset';
 
-$rs = $schema->resultset( 'levels' );
-is $rs->search( { name => { 'eq' => 'admin' } } )->first->name, 'admin',
+sub search {
+   my $where = shift; my $rs = $schema->resultset( 'levels' );
+
+   return [ sort map { $_->name } $rs->search( $where )->all ];
+}
+
+is_deeply search( { name  => { 'eq' => 'admin' } } ), [ 'admin' ],
    'RS - eq operator';
-$rs = $schema->resultset( 'levels' );
-is $rs->search( { count => { '==' => '1' } } )->first->name, 'admin',
+is_deeply search( { count => { '==' => '1'     } } ), [ 'admin' ],
    'RS - == operator';
-$rs = $schema->resultset( 'levels' );
-is $rs->search( { name => { 'ne' => 'admin' } } )->first->name, 'library',
+is_deeply search( { acl   => { '=~' => 'port'  } } ), [ 'admin' ],
+   'RS - =~ operator';
+is_deeply search( { acl   => { '!~' => 'port'  } } ), [ 'entrance', 'library' ],
+   'RS - !~ operator';
+is_deeply search( { name  => { 'ne' => 'admin' } } ), [ 'entrance', 'library' ],
+   'RS - ne operator';
+is_deeply search( { count => { '!=' => '1'     } } ), [ 'entrance', 'library' ],
    'RS - != operator';
-$rs = $schema->resultset( 'levels' );
-is $rs->search( { count => { '!=' => '1' } } )->last->name, 'entrance',
+is_deeply search( { count => { '>' => '1'      } } ), [ 'entrance', 'library' ],
    'RS - > operator';
-$rs = $schema->resultset( 'levels' );
-is $rs->search( { count => { '>' => '1' } } )->last->name, 'entrance',
-   'RS - > operator';
-$rs = $schema->resultset( 'levels' );
-is $rs->search( { count => { '>=' => '2' } } )->last->name, 'entrance',
+is_deeply search( { count => { '>=' => '2'     } } ), [ 'entrance', 'library' ],
    'RS - >= operator';
-$rs = $schema->resultset( 'levels' );
-is $rs->search( { count => { '<' => '3' } } )->last->name, 'entrance',
+is_deeply search( { count => { '<' => '3'      } } ), [ 'admin',   'entrance' ],
    'RS - < operator';
-$rs = $schema->resultset( 'levels' );
-is $rs->search( { count => { '<=' => '2' } } )->last->name, 'entrance',
+is_deeply search( { count => { '<=' => '2'     } } ), [ 'admin',   'entrance' ],
    'RS - <= operator';
-$rs = $schema->resultset( 'levels' );
-is $rs->search( { acl => { '=~' => 'port' } } )->first->name, 'admin',
-   'RS - match operator';
-$rs = $schema->resultset( 'levels' );
-is $rs->search( { acl => { '!~' => 'fred' } } )->first->name, 'admin',
-   'RS - not match operator';
 
 {  package Dummy;
 

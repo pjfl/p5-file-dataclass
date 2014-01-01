@@ -1,9 +1,9 @@
-# @(#)$Ident: ResultSet.pm 2013-12-31 21:30 pjf ;
+# @(#)$Ident: ResultSet.pm 2014-01-01 17:00 pjf ;
 
 package File::DataClass::ResultSet;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.29.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -189,8 +189,8 @@ sub _build__operators {
       q(>=) => sub { return $_[ 0 ] >= $_[ 1 ] },
       q(<)  => sub { return $_[ 0 ] <  $_[ 1 ] },
       q(<=) => sub { return $_[ 0 ] <= $_[ 1 ] },
-      q(=~) => sub { return $_[ 0 ] =~ $_[ 1 ] },
-      q(!~) => sub { return $_[ 0 ] !~ $_[ 1 ] },
+      q(=~) => sub { my $re = $_[ 1 ]; return $_[ 0 ] =~ qr{ $re }mx },
+      q(!~) => sub { my $re = $_[ 1 ]; return $_[ 0 ] !~ qr{ $re }mx },
    };
 }
 
@@ -241,7 +241,7 @@ sub _eval_op {
 
    my $subr = $self->_operators->{ $op } or return FALSE;
 
-   $_ or return FALSE for (map { $subr->( $_, $rhs ) }
+   $_ or return FALSE for (map { $subr->( $_, $rhs ) ? 1 : 0 }
                            (is_arrayref $lhs) ? @{ $lhs } : ( $lhs ));
 
    return TRUE;
@@ -367,7 +367,7 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
-This document describes version v0.28.$Rev: 1 $
+This document describes version v0.29.$Rev: 1 $
 
 =head1 Synopsis
 

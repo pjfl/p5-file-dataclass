@@ -4,7 +4,7 @@ package File::DataClass;
 
 use 5.010001;
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.28.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.29.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 
@@ -26,7 +26,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 =head1 Version
 
-This document describes version v0.28.$Rev: 1 $ of L<File::DataClass>
+This document describes version v0.29.$Rev: 1 $ of L<File::DataClass>
 
 =head1 Synopsis
 

@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+0.29.1    2014-01-01 17:01:42
+          - Fixed regex where clause matching
+          - Fixed hash order bug in tests
+
 0.28.1    2014-01-01 14:52:36
           - Define and use exception classes
           - Split out Storage::XML to own distribution
