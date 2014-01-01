@@ -61,3 +61,5 @@ Thumbs.db
 
 # Avoid archives of this distribution
 \bFile-DataClass-v?[\d\.\_]+
+lib/File/DataClass/Storage/XML
+lib/File/DataClass/Storage/XML.pm
