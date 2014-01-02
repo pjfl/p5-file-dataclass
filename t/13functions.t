@@ -1,4 +1,4 @@
-# @(#)Ident: 13functions.t 2013-12-31 00:06 pjf ;
+# @(#)Ident: 13functions.t 2014-01-02 02:27 pjf ;
 
 use strict;
 use warnings;
@@ -24,6 +24,7 @@ use English                    qw( -no_match_vars );
 use File::DataClass::Functions qw( :all );
 use Unexpected::Functions      qw( is_class_loaded );
 
+my $osname       = lc $OSNAME;
 my $result_class = 'File::DataClass::Result';
 
 ensure_class_loaded( $result_class, { ignore_loaded => 1 } );
@@ -42,7 +43,13 @@ is  is_member( undef ), undef, 'Is member without argument';
 is  is_member( 'x', [] ), 0, 'Is member with array ref';
 is  is_member( 'x', qw( x y ) ), 1, 'Is member with list';
 ok  is_stale( {}, 0, 1 ), 'Is stale - true';
-ok !is_stale( {}, 1, 0 ), 'Is stale - false';
+
+SKIP: {
+   ($osname eq 'mswin32' or $osname eq 'cygwin')
+      and skip 'NTFS cache is always stale', 1;
+
+   ok !is_stale( {}, 1, 0 ), 'Is stale - false';
+}
 
 my $dest = { }; my $src = {  x => 'y' };
 
