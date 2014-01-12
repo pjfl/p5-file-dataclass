@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+          - Refactored extension to storage class mapping
+          - Fixed requiring Cwd in ::IO
+
 0.30.1    2014-01-02 02:31:15
           - Skipped stale cache test on NTFS
 

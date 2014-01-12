@@ -1,9 +1,9 @@
-# @(#)Ident: Exception.pm 2013-12-31 21:31 pjf ;
+# @(#)Ident: Exception.pm 2014-01-10 18:46 pjf ;
 
 package File::DataClass::Exception;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moo;
 use Unexpected::Types qw( Str );
@@ -17,13 +17,13 @@ my $class = __PACKAGE__;
 $class->has_exception( $class );
 
 $class->has_exception( 'AlreadyExists' => {
-   parents => [ $class ], error => 'File [_1] already exists' } );
+   parents => [ $class ], error => 'Path [_1] already exists' } );
 
 $class->has_exception( 'NonExistantRecord' => {
    parents => [ $class ], error => 'File [_1] record [_2] does not exist' } );
 
 $class->has_exception( 'NotFound' => {
-   parents => [ $class ], error => 'File [_1] not found' } );
+   parents => [ $class ], error => 'Path [_1] not found' } );
 
 $class->has_exception( 'NothingUpdated' => {
    parents => [ $class ], error => 'Nothing updated' } );
@@ -77,7 +77,7 @@ File::DataClass::Exception - Exception class composed from traits
 
 =head1 Version
 
-This documents version v0.30.$Rev: 1 $ of L<File::DataClass::Exception>
+This documents version v0.30.$Rev: 2 $ of L<File::DataClass::Exception>
 
 =head1 Description
 

@@ -1,13 +1,14 @@
-# @(#)$Ident: IO.pm 2014-01-01 00:48 pjf ;
+# @(#)$Ident: IO.pm 2014-01-11 02:33 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moo;
+use Cwd                        qw( );
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
 use Fcntl                      qw( :flock :seek );
@@ -15,26 +16,27 @@ use File::Basename               ( );
 use File::Copy                   ( );
 use File::DataClass::Constants;
 use File::DataClass::Functions qw( first_char is_arrayref
-                                   is_coderef is_hashref thread_id );
+                                   is_coderef is_hashref thread_id throw );
 use File::Path                   ( );
 use File::Spec                   ( );
+use File::Spec::Functions      qw( curdir );
 use File::Temp                   ( );
 use IO::Dir;
 use IO::File;
 use List::Util                 qw( first );
 use Scalar::Util               qw( blessed );
 use Type::Utils                qw( enum );
-use Unexpected::Functions      qw( NotFound Unspecified );
+use Unexpected::Functions      qw( AlreadyExists NotFound Unspecified );
 use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
                                    PositiveInt RegexpRef SimpleStr Str );
 
-our @EXPORT   = qw( io );
+our @EXPORT    = qw( io );
 
-my @ARG_NAMES = qw( name mode perms );
-my $IO_MODE   = enum 'IO_Mode' => [ qw( a a+ r r+ w w+ ) ];
-my $IO_TYPE   = enum 'IO_Type' => [ qw( dir file ) ];
-my $LC_OSNAME = lc $OSNAME;
-my $NTFS      = $LC_OSNAME eq EVIL || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
+my  @ARG_NAMES = qw( name mode perms );
+my  $IO_MODE   = enum 'IO_Mode' => [ qw( a a+ r r+ w w+ ) ];
+my  $IO_TYPE   = enum 'IO_Type' => [ qw( dir file ) ];
+my  $LC_OSNAME = lc $OSNAME;
+my  $NTFS      = $LC_OSNAME eq EVIL || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
 
 # Public attributes
 has 'autoclose'     => is => 'lazy', isa => Bool,           default => TRUE  ;
@@ -102,7 +104,7 @@ sub __coerce_name {
    is_coderef  $name          and $name =  $name->();
    blessed     $name          and $name =  "${name}";
    is_arrayref $name          and $name =  File::Spec->catfile( @{ $name } );
-   CURDIR eq   $name          and $name =  Cwd::getcwd;
+   curdir eq   $name          and $name =  Cwd::getcwd();
    first_char  $name eq TILDE and $name =  __expand_tilde( $name );
    length      $name > 1      and $name =~ s{ [/\\] \z }{}mx;
    return $name;
@@ -130,7 +132,10 @@ sub abs2rel {
 }
 
 sub absolute {
-   $_[ 0 ]->_set_name( $_[ 0 ]->rel2abs( $_[ 1 ] ) ); return $_[ 0 ];
+   my ($self, $base) = @_; $base and $base = __coerce_name( $base );
+
+   $self->_set_name( $self->name ? $self->rel2abs( $base ) : $base );
+   return $self;
 }
 
 sub all {
@@ -201,7 +206,7 @@ sub assert_dirpath {
 sub assert_filepath {
    my $self = shift; my $dir;
 
-   $self->name or $self->_throw( class => Unspecified, args => [ 'Path name' ]);
+   $self->name or $self->_throw( class => Unspecified, args => [ 'path name' ]);
 
    (undef, $dir) = File::Spec->splitpath( $self->name );
 
@@ -274,7 +279,7 @@ sub buffer {
 sub _build__dir_pattern {
    my $self = shift; my $pat = NUL;
 
-   my $curdir = File::Spec->curdir; my $updir = File::Spec->updir;
+   my $curdir = curdir; my $updir = File::Spec->updir;
 
    $curdir and $pat  = "\Q${curdir}\E"; # uncoverable condition left
    $curdir and $updir and $pat .= '|';  # uncoverable condition left
@@ -319,7 +324,7 @@ sub chown {
    my ($self, $uid, $gid) = @_;
 
    (defined $uid and defined $gid)
-      or $self->_throw( class => Unspecified, args => [ 'User or group id' ] );
+      or $self->_throw( class => Unspecified, args => [ 'user or group id' ] );
 
    1 == CORE::chown $uid, $gid, $self->name
       or $self->_throw( error => 'Path [_1 chown failed to [_2]/[_3]',
@@ -372,7 +377,7 @@ sub _constructor {
 sub copy {
    my ($self, $to) = @_;
 
-   $to or $self->_throw( class => Unspecified, args => [ 'Copy to' ] );
+   $to or $self->_throw( class => Unspecified, args => [ 'copy to' ] );
 
    (blessed $to and $to->isa( __PACKAGE__ ))
       or $to = $self->_constructor( $to );
@@ -385,7 +390,7 @@ sub copy {
 }
 
 sub cwd {
-   require Cwd; return $_[ 0 ]->_constructor( Cwd::getcwd() );
+   return $_[ 0 ]->_constructor( Cwd::getcwd() );
 }
 
 sub deep {
@@ -436,7 +441,7 @@ sub encoding {
    my ($self, $encoding) = @_;
 
    $encoding or $self->_throw
-      ( class => Unspecified, args => [ 'Encoding value' ] );
+      ( class => Unspecified, args => [ 'encoding value' ] );
    lc $encoding eq 'utf-8' and $encoding = 'utf8';
    $self->_encoding( $encoding );
    $self->_set_is_utf8( $encoding eq 'utf8' ? TRUE : FALSE );
@@ -561,7 +566,7 @@ sub _init_type_from_fs {
    return -f $_[ 0 ]->name ? $_[ 0 ]->file : -d _ ? $_[ 0 ]->dir : undef;
 }
 
-sub io {
+sub io (;@) { # Exported function
    return __PACKAGE__->new( @_ );
 }
 
@@ -668,6 +673,21 @@ sub mkpath {
    return $self;
 }
 
+sub move {
+   my ($self, $to) = @_;
+
+   $to or $self->_throw( class => Unspecified, args => [ 'move to' ] );
+
+   (blessed $to and $to->isa( __PACKAGE__ ))
+      or $to = $self->_constructor( $to );
+
+   File::Copy::move( $self->name, $to->pathname )
+      or $self->_throw( error => 'Cannot move [_1] to [_2]',
+                        args  => [ $self->name, $to->pathname ] );
+
+   return $to;
+}
+
 sub next {
    my $self = shift; defined (my $name = $self->read_dir) or return;
 
@@ -703,7 +723,7 @@ sub open {
 sub _open_args {
    my ($self, $mode, $perms) = @_;
 
-   $self->name or $self->_throw( class => Unspecified, args => [ 'Path name' ]);
+   $self->name or $self->_throw( class => Unspecified, args => [ 'path name' ]);
 
    my $pathname = $self->_atomic && !$self->is_reading( $mode )
                 ? $self->_get_atomic_path : $self->name;
@@ -962,9 +982,9 @@ sub tempfile {
 }
 
 sub _throw {
-   my ($self, @args) = @_; eval { $self->unlock; };
+   my ($self, @args) = @_; eval { $self->unlock }; throw @args;
 
-   EXCEPTION_CLASS->throw( @args ); return; # Not reached
+   return; # Not reached
 }
 
 sub touch {
@@ -1048,7 +1068,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 1 $ of L<File::DataClass::IO>
+This document describes version v0.30.$Rev: 2 $ of L<File::DataClass::IO>
 
 =head1 Synopsis
 
@@ -1563,6 +1583,13 @@ Create the specified directory
    io( 'path_to_directory' )->mkpath;
 
 Create the specified path
+
+=head2 move
+
+   $dest_obj = io( 'path_to_file' )->move( $destination_path_or_object );
+
+Moves the file to the destination. The destination can be either a path or
+and IO object. Returns the destination object
 
 =head2 next
 

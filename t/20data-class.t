@@ -1,8 +1,8 @@
-# @(#)$Ident: 20data-class.t 2014-01-01 16:37 pjf ;
+# @(#)$Ident: 20data-class.t 2014-01-12 18:52 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -56,10 +56,10 @@ $schema = File::DataClass::Schema->new
 
 ok !-f $cache_file, 'Cache file not created too early';
 
-my $e = test( $schema, qw( load nonexistant_file ) );
+my $e = test( $schema, qw( load nonexistant_path ) );
 
-like $e, qr{ \QFile 'nonexistant_file' not found\E }msx,
-    'Nonexistant file not found';
+like $e, qr{ \QPath 'nonexistant_path' not found\E }msx,
+    'Nonexistant path not found';
 
 is ref $e, 'File::DataClass::Exception', 'Default exception class';
 
@@ -88,7 +88,7 @@ like $data->{ '_cvs_default' }, qr{ default\.xml }mx, 'Loads from class method';
 
 $e = test( $schema, 'resultset' );
 
-like $e, qr{ \Q'Result source' not specified\E }msx,
+like $e, qr{ \Q'result source' not specified\E }msx,
    'Result source not specified';
 
 $e = test( $schema, qw( resultset globals ) );
@@ -107,7 +107,7 @@ my $rs = test( $schema, qw( resultset globals ) );
 
 $args = {}; $e = test( $rs, 'create', $args );
 
-like $e, qr{ \Q'Record name' not specified\E }msx, 'Record name not specified';
+like $e, qr{ \Q'record name' not specified\E }msx, 'Record name not specified';
 
 $args->{name} = 'dummy'; my $res = test( $rs, 'create', $args );
 

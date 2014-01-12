@@ -1,15 +1,17 @@
-# @(#)$Ident: Schema.pm 2013-12-31 17:05 pjf ;
+# @(#)$Ident: Schema.pm 2014-01-12 17:37 pjf ;
 
 package File::DataClass::Schema;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moo;
 use Class::Null;
 use File::DataClass::Cache;
 use File::DataClass::Constants;
-use File::DataClass::Functions qw( ensure_class_loaded merge_attributes throw );
+use File::DataClass::Functions qw( ensure_class_loaded map_extension2class
+                                   merge_attributes supported_extensions
+                                   throw );
 use File::DataClass::IO;
 use File::DataClass::ResultSource;
 use File::DataClass::Storage;
@@ -139,8 +141,12 @@ sub dump {
    return $self->storage->dump( $path, $args->{data} );
 }
 
-sub extensions {
-   return EXTENSIONS;
+sub extensions { # Deprecated
+   my $extns = {};
+
+   $extns->{ $_ } = map_extension2class( $_ ) for (supported_extensions());
+
+   return $extns;
 }
 
 sub load {
@@ -160,7 +166,7 @@ sub resultset {
 sub source {
    my ($self, $moniker) = @_;
 
-   $moniker or throw class => Unspecified, args => [ 'Result source' ];
+   $moniker or throw class => Unspecified, args => [ 'result source' ];
 
    my $source = $self->source_registrations->{ $moniker }
       or throw error => 'Result source [_1] unknown', args => [ $moniker ];
@@ -206,7 +212,7 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 1 $
+This document describes version v0.30.$Rev: 2 $
 
 =head1 Synopsis
 
@@ -345,6 +351,8 @@ successful
 =head2 extensions
 
    \%extension_map = $self->extensions;
+
+B<DEPRECATED>: Use the function C<extension2class> instead
 
 Returns a hash ref that maps filename extensions (keys) onto storage
 subclasses (values)

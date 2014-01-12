@@ -1,20 +1,21 @@
-# @(#)$Ident: Any.pm 2013-12-30 19:28 pjf ;
+# @(#)$Ident: Any.pm 2014-01-12 18:55 pjf ;
 
 package File::DataClass::Storage::Any;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moo;
 use File::Basename             qw( basename );
 use File::DataClass::Constants;
-use File::DataClass::Functions qw( ensure_class_loaded is_stale merge_file_data
-                                   throw );
+use File::DataClass::Functions qw( ensure_class_loaded map_extension2class
+                                   is_stale merge_file_data throw );
 use File::DataClass::Storage;
 use File::DataClass::Types     qw( Object HashRef );
 
-has 'schema'  => is => 'ro', isa => Object, required => TRUE, weak_ref => TRUE,
-   handles    => [ qw( cache storage_attributes storage_base ), ];
+has 'schema'  => is => 'ro', isa => Object,
+   handles    => [ qw( cache storage_attributes storage_base ), ],
+   required   => TRUE, weak_ref => TRUE;
 
 
 has '_stores' => is => 'ro', isa => HashRef, default => sub { {} };
@@ -99,7 +100,7 @@ sub _get_store_from_extension {
 
    exists $stores->{ $extn } and return $stores->{ $extn };
 
-   my $class = EXTENSIONS()->{ $extn }->[ 0 ]
+   my $list = map_extension2class( $extn ); my $class = $list->[ 0 ]
       or throw error => 'Extension [_1] has no class', args => [ $extn ];
 
    if ('+' eq substr $class, 0, 1) { $class = substr $class, 1 }
@@ -135,7 +136,7 @@ File::DataClass::Storage::Any - Selects storage class using the extension on the
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 1 $
+This document describes version v0.30.$Rev: 2 $
 
 =head1 Synopsis
 

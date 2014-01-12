@@ -1,9 +1,9 @@
-# @(#)$Ident: ResultSet.pm 2014-01-01 17:00 pjf ;
+# @(#)$Ident: ResultSet.pm 2014-01-12 17:39 pjf ;
 
 package File::DataClass::ResultSet;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -123,8 +123,7 @@ sub next {
 sub push {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $list  = $args->{list}
-      or throw class => Unspecified, args => [ 'List name' ];
+   my $list  = $args->{list} or throw class => Unspecified, args => [ 'list' ];
    my $items = $args->{items} || []; my ($added, $attrs);
 
    $items->[ 0 ] or throw 'List contains no items';
@@ -156,8 +155,7 @@ sub search {
 sub splice {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $list  = $args->{list}
-      or throw class => Unspecified, args => [ 'List name' ];
+   my $list  = $args->{list} or throw class => Unspecified, args => [ 'list' ];
    my $items = $args->{items} || []; my ($attrs, $removed);
 
    $items->[ 0 ] or throw 'List contains no items';
@@ -350,7 +348,7 @@ sub _validate_params {
    my ($self, $args) = @_; $args //= {};
 
    my $name = $args->{name}
-      or throw class => Unspecified, args => [ 'Record name' ], level => 2;
+      or throw class => Unspecified, args => [ 'record name' ], level => 2;
 
    return $name;
 }
@@ -367,7 +365,7 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 1 $
+This document describes version v0.30.$Rev: 2 $
 
 =head1 Synopsis
 

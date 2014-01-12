@@ -1,9 +1,9 @@
-# @(#)$Ident: Storage.pm 2013-12-31 21:28 pjf ;
+# @(#)$Ident: Storage.pm 2014-01-12 17:39 pjf ;
 
 package File::DataClass::Storage;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moo;
 use Class::Null;
@@ -171,7 +171,7 @@ sub update {
 sub validate_params {
    my ($self, $path, $element) = @_;
 
-   $path or throw class => Unspecified, args => [ 'Path name' ], level => 2;
+   $path or throw class => Unspecified, args => [ 'path name' ], level => 2;
 
    blessed $path or throw error => 'Path [_1] is not blessed',
                           args  => [ $path ], level => 2;
@@ -258,7 +258,7 @@ File::DataClass::Storage - Storage base class
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 1 $
+This document describes version v0.30.$Rev: 2 $
 
 =head1 Synopsis
 

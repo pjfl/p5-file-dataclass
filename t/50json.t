@@ -1,8 +1,8 @@
-# @(#)$Ident: 50json.t 2013-12-30 19:34 pjf ;
+# @(#)$Ident: 50json.t 2014-01-12 19:03 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -91,6 +91,10 @@ $schema->storage->create_or_update( io( $path ), $result, 1, sub { 1 } );
 is test( $rs, 'delete', $args ), 'dummy', 'Deletes again';
 
 $schema->storage->validate_params( io( $path ), 'globals' );
+
+eval { $schema->storage->validate_params( io( 'no.chance' ), 'globals' ) };
+
+like $EVAL_ERROR, qr{ \Qhas no class\E }mx, 'Extension without class';
 
 my $translate = catfile( qw( t translate.json ) ); io( $translate )->unlink;
 

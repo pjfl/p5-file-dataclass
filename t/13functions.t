@@ -1,8 +1,8 @@
-# @(#)Ident: 13functions.t 2014-01-02 02:27 pjf ;
+# @(#)Ident: 13functions.t 2014-01-12 19:21 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' ), catdir( $Bin, 'lib' );
@@ -36,6 +36,16 @@ eval { ensure_class_loaded( 'TestTypo' ) };
 like $EVAL_ERROR, qr{ package \s undefined }mx,
    'Class loaded package undefined';
 
+eval { ensure_class_loaded( 'DoesNotExists' ) };
+
+like $EVAL_ERROR, qr{ \Qt locate DoesNotExists\E }mx, 'Package not loaded';
+
+is extension_map( '.json' ), undef, 'Extension map defaults empty';
+extension_map( 'test', [ qw( .test .test ) ] );
+extension_map();
+is extension_map( '.json' )->[ 0 ], 'JSON', 'Extension map loads on first use';
+is extension_map( '.test' )->[ 1 ], undef, 'Extension map deduplicates';
+
 ok !is_arrayref(), 'Is array ref without an argument';
 ok !is_coderef(),  'Is code  ref without an argument';
 ok !is_hashref(),  'Is hash  ref without an argument';
@@ -51,8 +61,13 @@ SKIP: {
    ok !is_stale( {}, 1, 0 ), 'Is stale - false';
 }
 
+my $list = map_extension2class( '.json' );
+
+is $list->[ 0 ], 'JSON', 'Maps extension to class';
+
 my $dest = { }; my $src = {  x => 'y' };
 
+merge_attributes $dest, $src;
 merge_attributes $dest, $src, [ 'x' ];
 
 is $dest->{x}, 'y', 'Merge attributes';
@@ -60,6 +75,8 @@ is $dest->{x}, 'y', 'Merge attributes';
 $dest = {  x => undef }; merge_file_data( $dest, {  x => { z => 'y' } });
 
 is $dest->{x}->{z}, undef, 'Merge file data';
+
+ok( (is_member '.json', supported_extensions()), 'Lists supported extensions' );
 
 done_testing;
 

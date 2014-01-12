@@ -1,28 +1,31 @@
-# @(#)$Ident: Functions.pm 2013-12-30 23:36 pjf ;
+# @(#)$Ident: Functions.pm 2014-01-12 18:45 pjf ;
 
 package File::DataClass::Functions;
 
+use 5.010001;
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use Exporter 5.57           qw( import );
 use File::DataClass::Constants;
 use Hash::Merge             qw( merge );
 use List::Util              qw( first );
+use Module::Pluggable::Object;
 use Module::Runtime         qw( require_module );
 use Scalar::Util            qw( blessed );
 use Try::Tiny;
 use Unexpected::Functions   qw( is_class_loaded );
 
-our @EXPORT_OK   = qw( ensure_class_loaded first_char is_arrayref is_coderef
-                       is_hashref is_member is_stale merge_attributes
-                       merge_file_data thread_id throw );
-our %EXPORT_TAGS =   ( all => [ @EXPORT_OK ], );
+our @EXPORT_OK    = qw( ensure_class_loaded extension_map first_char
+                        is_arrayref is_coderef is_hashref is_member
+                        is_stale map_extension2class merge_attributes
+                        merge_file_data supported_extensions thread_id throw );
+our %EXPORT_TAGS  =   ( all => [ @EXPORT_OK ], );
 
-my $LC_OSNAME    = lc $OSNAME;
-my $NTFS         = $LC_OSNAME eq EVIL || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
+my $LC_OSNAME     = lc $OSNAME;
+my $NTFS          = $LC_OSNAME eq EVIL || $LC_OSNAME eq CYGWIN ? 1 : 0;
 
 # Public functions
 sub ensure_class_loaded ($;$) {
@@ -37,6 +40,32 @@ sub ensure_class_loaded ($;$) {
                 args  => [ $class ] );
 
    return 1;
+}
+
+sub extension_map (;$$) {
+   my ($class, $extensions) = @_; state $map //= {};
+
+   if (defined $class) {
+      if (defined $extensions) {
+         is_arrayref( $extensions ) or $extensions = [ $extensions ];
+
+         for my $extn (@{ $extensions }) {
+            $map->{ $extn } //= []; is_member( $class, $map->{ $extn } )
+               or push @{ $map->{ $extn } }, $class;
+         }
+      }
+
+      return exists $map->{ $class } ? $map->{ $class } : undef;
+   }
+
+   $map->{ '_map_loaded' } and return $map;
+
+   my $finder = Module::Pluggable::Object->new
+      ( search_path => [ 'File::DataClass::Storage' ], require => TRUE, );
+
+   $finder->plugins; $map->{ '_map_loaded' } = 1;
+
+   return $map;
 }
 
 sub first_char ($) {
@@ -56,11 +85,11 @@ sub is_hashref (;$) {
 }
 
 sub is_member (;@) {
-   my ($candidate, @rest) = @_; $candidate or return;
+   my ($candidate, @args) = @_; $candidate or return;
 
-   is_arrayref $rest[ 0 ] and @rest = @{ $rest[ 0 ] };
+   is_arrayref $args[ 0 ] and @args = @{ $args[ 0 ] };
 
-   return (first { $_ eq $candidate } @rest) ? 1 : 0;
+   return (first { $_ eq $candidate } @args) ? 1 : 0;
 }
 
 sub is_stale (;$$$) {
@@ -72,6 +101,12 @@ sub is_stale (;$$$) {
    my $is_def = defined $data && defined $path_mtime && defined $cache_mtime;
 
    return !$is_def || $path_mtime > $cache_mtime ? 1 : 0;
+}
+
+sub map_extension2class ($) {
+   my $map = extension_map();
+
+   return exists $map->{ $_[ 0 ] } ? $map->{ $_[ 0 ] } : undef;
 }
 
 sub merge_attributes ($$;$) {
@@ -99,7 +134,11 @@ sub merge_file_data ($$) {
    return;
 }
 
-sub thread_id {
+sub supported_extensions () {
+   return grep { not m{ \A _ }mx } keys %{ extension_map() };
+}
+
+sub thread_id () {
    # uncoverable branch true
    return exists $INC{ 'threads.pm' } ? threads->tid() : 0;
 }
@@ -120,7 +159,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 1 $
+This document describes version v0.30.$Rev: 2 $
 
 =head1 Synopsis
 
@@ -137,6 +176,22 @@ Common functions used in this distribution
    ensure_class_loaded( $some_class, \%options );
 
 Require the requested class, throw an error if it doesn't load
+
+=head2 extension_map
+
+   $map   = extension_map;                     # Accessor
+   $value = extension_map $class, $extensions; # Mutator
+
+An accessor / mutator for the hash reference that maps filename
+extensions onto storage classes. Calling the accessor populates the
+extension map on first use. Extensions are either a scalar or a hash
+reference
+
+=head2 map_extension2class
+
+   $array_ref_of_class_name = map_extension2class $extension;
+
+Maps a filename extensions to a storage classes
 
 =head2 first_char
 
@@ -190,6 +245,12 @@ accessor methods are called
    merge_file_data $existing, $new;
 
 Uses L<Hash::Merge> to merge data from the new hash ref in with the existing
+
+=head2 supported_extensions
+
+   @list_of_extension_names = supported_extensions;
+
+Returns a list of supported filename extensions
 
 =head2 thread_id
 

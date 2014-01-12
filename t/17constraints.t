@@ -1,8 +1,8 @@
-# @(#)Ident: 17constraints.t 2013-12-21 01:59 pjf ;
+# @(#)Ident: 17constraints.t 2014-01-10 15:13 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -48,7 +48,7 @@ use_ok 'File::DataClass::Constants';
 
 eval { File::DataClass::Constants->Exception_Class( 'TC1' ) };
 
-like $EVAL_ERROR, qr{ \A Class \s TC1 \s is \s not \s loaded }mx,
+like $EVAL_ERROR, qr{ \A \QClass 'TC1' is not loaded\E }mx,
    'Bad exception class';
 
 done_testing;
