@@ -1,16 +1,14 @@
-# @(#)$Ident: JSON.pm 2014-01-12 18:18 pjf ;
+# @(#)$Ident: JSON.pm 2014-01-12 21:03 pjf ;
 
 package File::DataClass::Storage::JSON;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Functions qw( extension_map );
 use JSON                       qw();
 use MooX::Augment -class;
-
-BEGIN { extension_map 'JSON' => '.json' }
 
 extends qw(File::DataClass::Storage);
 
@@ -35,6 +33,8 @@ augment '_write_file' => sub {
    $wtr->print( $json->pretty->utf8( 0 )->encode( $data ) ); return $data;
 };
 
+extension_map 'JSON' => '.json';
+
 1;
 
 __END__
@@ -47,7 +47,7 @@ File::DataClass::Storage::JSON - Read/write JSON data storage model
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 2 $
+This document describes version v0.30.$Rev: 3 $
 
 =head1 Synopsis
 

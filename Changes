@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Created STORAGE_BASE constant
           - Refactored extension to storage class mapping
           - Fixed requiring Cwd in ::IO
 

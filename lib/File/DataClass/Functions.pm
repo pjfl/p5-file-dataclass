@@ -1,11 +1,11 @@
-# @(#)$Ident: Functions.pm 2014-01-12 18:45 pjf ;
+# @(#)$Ident: Functions.pm 2014-01-12 23:51 pjf ;
 
 package File::DataClass::Functions;
 
 use 5.010001;
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use Exporter 5.57           qw( import );
@@ -20,8 +20,9 @@ use Unexpected::Functions   qw( is_class_loaded );
 
 our @EXPORT_OK    = qw( ensure_class_loaded extension_map first_char
                         is_arrayref is_coderef is_hashref is_member
-                        is_stale map_extension2class merge_attributes
-                        merge_file_data supported_extensions thread_id throw );
+                        is_stale qualify_storage_class map_extension2class
+                        merge_attributes merge_file_data supported_extensions
+                        thread_id throw );
 our %EXPORT_TAGS  =   ( all => [ @EXPORT_OK ], );
 
 my $LC_OSNAME     = lc $OSNAME;
@@ -43,7 +44,7 @@ sub ensure_class_loaded ($;$) {
 }
 
 sub extension_map (;$$) {
-   my ($class, $extensions) = @_; state $map //= {};
+   my ($class, $extensions) = @_; state $map //= { '_map_loaded' => 0 };
 
    if (defined $class) {
       if (defined $extensions) {
@@ -61,7 +62,7 @@ sub extension_map (;$$) {
    $map->{ '_map_loaded' } and return $map;
 
    my $finder = Module::Pluggable::Object->new
-      ( search_path => [ 'File::DataClass::Storage' ], require => TRUE, );
+      ( search_path => [ STORAGE_BASE ], require => 1, );
 
    $finder->plugins; $map->{ '_map_loaded' } = 1;
 
@@ -134,6 +135,10 @@ sub merge_file_data ($$) {
    return;
 }
 
+sub qualify_storage_class ($) {
+   return STORAGE_BASE.'::'.$_[ 0 ];
+}
+
 sub supported_extensions () {
    return grep { not m{ \A _ }mx } keys %{ extension_map() };
 }
@@ -159,7 +164,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 2 $
+This document describes version v0.30.$Rev: 3 $
 
 =head1 Synopsis
 
@@ -182,16 +187,12 @@ Require the requested class, throw an error if it doesn't load
    $map   = extension_map;                     # Accessor
    $value = extension_map $class, $extensions; # Mutator
 
-An accessor / mutator for the hash reference that maps filename
+An accessor / mutator for the stateful hash reference that maps filename
 extensions onto storage classes. Calling the accessor populates the
-extension map on first use. Extensions are either a scalar or a hash
-reference
-
-=head2 map_extension2class
-
-   $array_ref_of_class_name = map_extension2class $extension;
-
-Maps a filename extensions to a storage classes
+extension map on first use. Storage subclasses call the mutator to
+register the extensions that they handle. If the C<$extensions>
+parameter is an array reference then the storage subclass can
+"claim ownership" of more than one extension in a single call
 
 =head2 first_char
 
@@ -231,6 +232,12 @@ remaining parameters
 Returns true if there is no data or the cache mtime is older than the
 path mtime
 
+=head2 map_extension2class
+
+   $array_ref_of_class_name = map_extension2class $extension;
+
+Maps a filename extensions to a storage classes
+
 =head2 merge_attributes
 
    $dest = merge_attributes $dest, $src, $attr_list_ref;
@@ -245,6 +252,12 @@ accessor methods are called
    merge_file_data $existing, $new;
 
 Uses L<Hash::Merge> to merge data from the new hash ref in with the existing
+
+=head2 qualify_storage_class
+
+   $storage_classname = qualify_storage_class $class_suffix;
+
+Prepends the C<STORAGE_BASE> classname to the supplied suffix
 
 =head2 supported_extensions
 

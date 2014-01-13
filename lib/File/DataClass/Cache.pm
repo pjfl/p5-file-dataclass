@@ -1,9 +1,9 @@
-# @(#)$Ident: Cache.pm 2013-12-31 14:33 pjf ;
+# @(#)$Ident: Cache.pm 2014-01-13 13:43 pjf ;
 
 package File::DataClass::Cache;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -34,11 +34,10 @@ has '_mtimes_key'      => is => 'ro',   isa => Str, default => '_mtimes';
 around 'BUILDARGS' => sub {
    my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
 
-   $attr->{cache_attributes} //= {};
+   $attr->{cache_attributes} //= {}; my $cache_class;
 
-   my $cache_class = delete $attr->{cache_attributes}->{cache_class};
-
-   $cache_class and $attr->{cache_class} = $cache_class;
+   $cache_class = delete $attr->{cache_attributes}->{cache_class}
+      and $attr->{cache_class} = $cache_class;
 
    my $builder = delete $attr->{builder} or return $attr;
 
@@ -142,7 +141,7 @@ File::DataClass::Cache - Adds extra methods to the CHI API
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 1 $
+This document describes version v0.30.$Rev: 3 $
 
 =head1 Synopsis
 

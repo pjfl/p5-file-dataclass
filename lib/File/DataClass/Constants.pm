@@ -1,17 +1,17 @@
-# @(#)$Ident: Constants.pm 2014-01-12 14:42 pjf ;
+# @(#)$Ident: Constants.pm 2014-01-12 21:24 pjf ;
 
 package File::DataClass::Constants;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Exporter 5.57           qw( import );
 use File::DataClass::Exception;
 
 our @EXPORT = qw( ARRAY CODE CYGWIN EVIL EXCEPTION_CLASS FALSE HASH
                   LANG LOCALIZE NO_UMASK_STACK NUL PERMS SPC
-                  STAT_FIELDS TILDE TRUE );
+                  STAT_FIELDS STORAGE_BASE TILDE TRUE );
 
 my $Exception_Class = 'File::DataClass::Exception';
 
@@ -33,6 +33,7 @@ sub EXCEPTION_CLASS () { __PACKAGE__->Exception_Class }
 sub NO_UMASK_STACK  () { -1 }
 sub STAT_FIELDS     () { qw( device inode mode nlink uid gid device_id
                              size atime mtime ctime blksize blocks ) }
+sub STORAGE_BASE    () { 'File::DataClass::Storage' }
 
 sub Exception_Class {
    my ($self, $class) = @_; defined $class or return $Exception_Class;
@@ -55,7 +56,7 @@ File::DataClass::Constants - Definitions of constant values
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 2 $
+This document describes version v0.30.$Rev: 3 $
 
 =head1 Synopsis
 
@@ -131,6 +132,10 @@ Space character
 =head2 C<STAT_FIELDS>
 
 The list of fields returned by the core C<stat> function
+
+=head2 C<STORAGE_BASE>
+
+The prefix for storage classes
 
 =head2 C<TILDE>
 

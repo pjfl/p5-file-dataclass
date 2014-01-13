@@ -1,15 +1,16 @@
-# @(#)$Ident: Schema.pm 2014-01-12 17:37 pjf ;
+# @(#)$Ident: Schema.pm 2014-01-13 13:52 pjf ;
 
 package File::DataClass::Schema;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Moo;
 use Class::Null;
 use File::DataClass::Cache;
 use File::DataClass::Constants;
-use File::DataClass::Functions qw( ensure_class_loaded map_extension2class
+use File::DataClass::Functions qw( ensure_class_loaded first_char
+                                   qualify_storage_class map_extension2class
                                    merge_attributes supported_extensions
                                    throw );
 use File::DataClass::IO;
@@ -61,9 +62,6 @@ has 'storage'                  => is => 'rw',   isa => Object,
 
 has 'storage_attributes'       => is => 'ro',   isa => HashRef,
    default                     => sub { {} };
-
-has 'storage_base'             => is => 'ro',   isa => ClassName,
-   default                     => 'File::DataClass::Storage';
 
 has 'storage_class'            => is => 'rw',   isa => Str,
    default                     => 'JSON', lazy => TRUE;
@@ -122,8 +120,8 @@ sub _build_source_registrations {
 sub _build_storage {
    my $self = shift; my $class = $self->storage_class;
 
-   if ('+' eq substr $class, 0, 1) { $class = substr $class, 1 }
-   else { $class = $self->storage_base."::${class}" }
+   if (first_char $class eq '+') { $class = substr $class, 1 }
+   else { $class = qualify_storage_class $class }
 
    ensure_class_loaded $class;
 
@@ -143,6 +141,8 @@ sub dump {
 
 sub extensions { # Deprecated
    my $extns = {};
+
+   warn "DEPRECATED: Calling F::DC::Schema::extensions as a class method\n";
 
    $extns->{ $_ } = map_extension2class( $_ ) for (supported_extensions());
 
@@ -212,7 +212,7 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 2 $
+This document describes version v0.30.$Rev: 3 $
 
 =head1 Synopsis
 

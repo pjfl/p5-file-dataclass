@@ -1,14 +1,15 @@
-# @(#)$Ident: Any.pm 2014-01-12 18:55 pjf ;
+# @(#)$Ident: Any.pm 2014-01-13 00:14 pjf ;
 
 package File::DataClass::Storage::Any;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Moo;
 use File::Basename             qw( basename );
 use File::DataClass::Constants;
-use File::DataClass::Functions qw( ensure_class_loaded map_extension2class
+use File::DataClass::Functions qw( ensure_class_loaded first_char
+                                   qualify_storage_class map_extension2class
                                    is_stale merge_file_data throw );
 use File::DataClass::Storage;
 use File::DataClass::Types     qw( Object HashRef );
@@ -100,16 +101,16 @@ sub _get_store_from_extension {
 
    exists $stores->{ $extn } and return $stores->{ $extn };
 
-   my $list = map_extension2class( $extn ); my $class = $list->[ 0 ]
+   my $list; ($list = map_extension2class( $extn ) and my $class = $list->[ 0 ])
       or throw error => 'Extension [_1] has no class', args => [ $extn ];
 
-   if ('+' eq substr $class, 0, 1) { $class = substr $class, 1 }
-   else { $class = $self->storage_base."::${class}" }
+   if (first_char $class eq '+') { $class = substr $class, 1 }
+   else { $class = qualify_storage_class $class }
 
    ensure_class_loaded $class;
 
-   return $stores->{ $extn } = $class->new( { %{ $self->storage_attributes },
-                                              schema => $self->schema } );
+   return $stores->{ $extn } = $class->new
+      ( { %{ $self->storage_attributes }, schema => $self->schema } );
 }
 
 sub _get_store_from_path {
@@ -136,7 +137,7 @@ File::DataClass::Storage::Any - Selects storage class using the extension on the
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 2 $
+This document describes version v0.30.$Rev: 3 $
 
 =head1 Synopsis
 
