@@ -1,9 +1,9 @@
-# @(#)$Ident: Cache.pm 2014-01-13 13:43 pjf ;
+# @(#)$Ident: Cache.pm 2014-01-13 17:49 pjf ;
 
 package File::DataClass::Cache;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 3 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -14,7 +14,9 @@ use File::DataClass::Types     qw( Bool Cache ClassName HashRef
 has 'cache'            => is => 'lazy', isa => Object, builder => sub {
    my $self = shift; my $attr = $self->cache_attributes; my $log = $self->log;
 
-   $attr->{on_set_error} = sub { $log->error( $_[ 0 ] ) };
+   $attr->{on_set_error} = sub { # uncoverable subroutine
+      $log->error( $_[ 0 ] );    # uncoverable statement
+   };
 
    return $self->cache_class->new( %{ $attr } );
 };
@@ -141,7 +143,7 @@ File::DataClass::Cache - Adds extra methods to the CHI API
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 3 $
+This document describes version v0.31.$Rev: 1 $
 
 =head1 Synopsis
 

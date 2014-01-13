@@ -3,7 +3,7 @@
 package File::DataClass::Result;
 
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::Types  qw( ArrayRef HashRef Maybe Object Str );
 use Moo;
@@ -60,7 +60,7 @@ File::DataClass::Result - Result object definition
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 1 $
+This document describes version v0.31.$Rev: 1 $
 
 =head1 Synopsis
 

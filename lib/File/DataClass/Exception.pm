@@ -3,7 +3,7 @@
 package File::DataClass::Exception;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Unexpected::Types qw( Str );
@@ -77,7 +77,7 @@ File::DataClass::Exception - Exception class composed from traits
 
 =head1 Version
 
-This documents version v0.30.$Rev: 2 $ of L<File::DataClass::Exception>
+This documents version v0.31.$Rev: 1 $ of L<File::DataClass::Exception>
 
 =head1 Description
 

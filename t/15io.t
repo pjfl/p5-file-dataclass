@@ -1,8 +1,8 @@
-# @(#)$Ident: 15io.t 2014-01-11 02:49 pjf ;
+# @(#)$Ident: 15io.t 2014-01-13 18:06 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile curdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -67,6 +67,11 @@ subtest 'Deliberate errors' => sub {
 
    like $EVAL_ERROR, qr{ Path \s+ \S+ \s+ not \s+ removed }mx,
       'Cannot remove non existant directory';
+
+   eval { io( { name => undef } ) };
+
+   like $EVAL_ERROR, qr{ \Qnot a simple string\E }mx,
+      'Undefined name not alllowed';
 };
 
 subtest 'Polymorphic Constructor' => sub {
@@ -79,6 +84,8 @@ subtest 'Polymorphic Constructor' => sub {
       'Constructs from hashref';
    $io = io( [ qw( t mydir file1 ) ], 'r', oct '400' ); $io = io( $io );
    ok $io->exists, 'Constructs from object';
+   $io = io( $io, { mode => 'a+' } );
+   is $io->mode, 'a+', 'Constructs from object - merges hashref';
    $io = io( [ qw( t mydir file1 ) ], { perms => oct '400' } );
    ok $io->exists && (sprintf "%o", $io->_perms & 07777) eq '400',
       'Constructs from name and hashref';
@@ -142,6 +149,8 @@ subtest 'File::Spec::Functions' => sub {
 };
 
 subtest 'Absolute/relative pathname conversions' => sub {
+   $io = io()->absolute( 't' );
+   is "${io}", 't', 'Absolute - defaults to base';
    $io = io( $PROGRAM_NAME )->absolute;
    is "${io}", File::Spec->rel2abs( $PROGRAM_NAME ), 'Absolute';
    $io->relative;

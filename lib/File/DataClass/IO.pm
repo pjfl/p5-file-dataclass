@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2014-01-11 02:33 pjf ;
+# @(#)$Ident: IO.pm 2014-01-13 18:18 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.30.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Cwd                        qw( );
@@ -705,12 +705,12 @@ sub open {
    my ($self, $mode, $perms) = @_; $mode ||= $self->mode;
 
    $self->is_open
-      and (substr $mode, 0, 1) eq (substr $self->mode, 0, 1)
+      and first_char( $mode ) eq first_char( $self->mode )
       and return $self;
    $self->is_open
-      and 'r' eq (substr $mode, 0, 1)
+      and 'r' eq first_char( $mode )
       and '+' eq (substr $self->mode, 1, 1) || NUL
-      and $self->seek( 0, 0 )
+      and $self->seek( 0, SEEK_SET )
       and return $self;
    $self->type or $self->_init_type_from_fs; $self->type or $self->file;
    $self->is_open and $self->close;
@@ -1068,7 +1068,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.30.$Rev: 2 $ of L<File::DataClass::IO>
+This document describes version v0.31.$Rev: 1 $ of L<File::DataClass::IO>
 
 =head1 Synopsis
 
