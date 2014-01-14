@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Except old WithLanguage storage subclass from extension_map
+
 0.31.1    2014-01-13 18:34:25
           - Create extension_map stateful function
           - Improved test coverage

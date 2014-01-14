@@ -1,11 +1,11 @@
-# @(#)$Ident: Functions.pm 2014-01-12 23:51 pjf ;
+# @(#)$Ident: Functions.pm 2014-01-14 13:27 pjf ;
 
 package File::DataClass::Functions;
 
 use 5.010001;
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use English                 qw( -no_match_vars );
 use Exporter 5.57           qw( import );
@@ -61,8 +61,10 @@ sub extension_map (;$$) {
 
    $map->{ '_map_loaded' } and return $map;
 
-   my $finder = Module::Pluggable::Object->new
-      ( search_path => [ STORAGE_BASE ], require => 1, );
+   my $base       = STORAGE_BASE;
+   my $exceptions = STORAGE_EXCEPTIONS;
+   my $finder     = Module::Pluggable::Object->new
+      ( except => [ $exceptions ], search_path => [ $base ], require => 1, );
 
    $finder->plugins; $map->{ '_map_loaded' } = 1;
 
@@ -164,7 +166,7 @@ File::DataClass::Functions - Common functions used in this distribution
 
 =head1 Version
 
-This document describes version v0.31.$Rev: 1 $
+This document describes version v0.31.$Rev: 2 $
 
 =head1 Synopsis
 

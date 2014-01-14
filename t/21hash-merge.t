@@ -1,8 +1,8 @@
-# @(#)Ident: 21hash-merge.t 2013-12-29 03:29 pjf ;
+# @(#)Ident: 21hash-merge.t 2014-01-14 13:52 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -74,12 +74,18 @@ is $res, 'dummy', 'Deletes dummy element';
 
 use_ok 'File::DataClass::HashMerge';
 
-my $dest = {};
-my $src  = { key => 'value', };
+eval { File::DataClass::HashMerge->merge() };
+
+like $EVAL_ERROR, qr{ \Qno destination reference\E }imx,
+   'Requires a destination hash ref';
+
+my $dest = { delete_key => 1 };
+my $src  = { delete_key => undef, key => 'value', key_no_value => undef, };
 
 File::DataClass::HashMerge->merge( \$dest, $src );
 
 is $dest->{key}, 'value', 'Default merge filter';
+ok !exists $dest->{delete_key}, 'Deletes unwanted keys';
 
 File::DataClass::HashMerge->merge( \$dest );
 
