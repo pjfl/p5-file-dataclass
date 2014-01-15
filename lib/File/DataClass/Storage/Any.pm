@@ -3,7 +3,7 @@
 package File::DataClass::Storage::Any;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::Basename             qw( basename );
@@ -137,7 +137,7 @@ File::DataClass::Storage::Any - Selects storage class using the extension on the
 
 =head1 Version
 
-This document describes version v0.31.$Rev: 1 $
+This document describes version v0.32.$Rev: 1 $
 
 =head1 Synopsis
 

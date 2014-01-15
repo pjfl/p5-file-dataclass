@@ -1,9 +1,9 @@
-# @(#)$Ident: Storage.pm 2014-01-12 17:39 pjf ;
+# @(#)$Ident: Storage.pm 2014-01-15 16:32 pjf ;
 
 package File::DataClass::Storage;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Class::Null;
@@ -16,7 +16,7 @@ use File::DataClass::Types     qw( Object Str );
 use MooX::Augment -class;
 use Scalar::Util               qw( blessed );
 use Try::Tiny;
-use Unexpected::Functions      qw( RecordAlreadyExists NotFound
+use Unexpected::Functions      qw( RecordAlreadyExists PathNotFound
                                    NothingUpdated Unspecified );
 
 has 'backup'   => is => 'ro', isa => Str, default => NUL;
@@ -216,7 +216,7 @@ sub _write_file {
    my ($self, $path, $data, $create) = @_;
 
    try {
-      $create or $path->exists or throw class => NotFound, args => [ $path ];
+      $create or $path->exists or throw class => PathNotFound, args => [ $path];
 
       $path->exists or $path->perms( $self->_perms );
 
@@ -258,7 +258,7 @@ File::DataClass::Storage - Storage base class
 
 =head1 Version
 
-This document describes version v0.31.$Rev: 1 $
+This document describes version v0.32.$Rev: 1 $
 
 =head1 Synopsis
 

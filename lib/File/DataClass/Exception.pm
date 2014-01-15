@@ -1,37 +1,36 @@
-# @(#)Ident: Exception.pm 2014-01-10 18:46 pjf ;
+# @(#)Ident: Exception.pm 2014-01-15 16:38 pjf ;
 
 package File::DataClass::Exception;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
-use Unexpected::Types qw( Str );
+use Unexpected::Functions   qw( has_exception );
+use Unexpected::Types       qw( Str );
 
 extends q(Unexpected);
 with    q(Unexpected::TraitFor::ErrorLeader);
 with    q(Unexpected::TraitFor::ExceptionClasses);
 
-my $class = __PACKAGE__;
+my $class = __PACKAGE__; $class->ignore_class( 'File::DataClass::IO' );
 
-$class->has_exception( $class );
+has_exception $class;
 
-$class->has_exception( 'AlreadyExists' => {
-   parents => [ $class ], error => 'Path [_1] already exists' } );
+has_exception 'NothingUpdated' => parents => [ $class ],
+   error   => 'Nothing updated';
 
-$class->has_exception( 'NonExistantRecord' => {
-   parents => [ $class ], error => 'File [_1] record [_2] does not exist' } );
+has_exception 'PathAlreadyExists' => parents => [ $class ],
+   error   => 'Path [_1] already exists';
 
-$class->has_exception( 'NotFound' => {
-   parents => [ $class ], error => 'Path [_1] not found' } );
+has_exception 'PathNotFound' => parents => [ $class ],
+   error   => 'Path [_1] not found';
 
-$class->has_exception( 'NothingUpdated' => {
-   parents => [ $class ], error => 'Nothing updated' } );
+has_exception 'RecordAlreadyExists' => parents => [ $class ],
+   error   => 'File [_1] record [_2] already exists';
 
-$class->has_exception( 'RecordAlreadyExists' => {
-   parents => [ $class ], error => 'File [_1] record [_2] already exists' } );
-
-$class->ignore_class ( 'File::DataClass::IO' );
+has_exception 'RecordNotFound' => parents => [ $class ],
+   error   => 'File [_1] record [_2] does not exist';
 
 has '+class' => default => $class;
 
@@ -77,7 +76,7 @@ File::DataClass::Exception - Exception class composed from traits
 
 =head1 Version
 
-This documents version v0.31.$Rev: 1 $ of L<File::DataClass::Exception>
+This documents version v0.32.$Rev: 1 $ of L<File::DataClass::Exception>
 
 =head1 Description
 

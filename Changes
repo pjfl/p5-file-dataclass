@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+0.32.1    2014-01-15 17:17:35
+          - Use Unexpected::Functions::has_exception not add_exception
           - Except old WithLanguage storage subclass from extension_map
 
 0.31.1    2014-01-13 18:34:25

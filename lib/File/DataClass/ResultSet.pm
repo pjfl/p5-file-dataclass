@@ -1,9 +1,9 @@
-# @(#)$Ident: ResultSet.pm 2014-01-12 17:39 pjf ;
+# @(#)$Ident: ResultSet.pm 2014-01-15 16:36 pjf ;
 
 package File::DataClass::ResultSet;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -12,7 +12,7 @@ use File::DataClass::List;
 use File::DataClass::Result;
 use File::DataClass::Types     qw( ArrayRef ClassName HashRef Int Object );
 use Scalar::Util               qw( blessed );
-use Unexpected::Functions      qw( NonExistantRecord Unspecified );
+use Unexpected::Functions      qw( RecordNotFound Unspecified );
 
 has 'list_class'   => is => 'ro',   isa => ClassName,
    default         => 'File::DataClass::List';
@@ -69,7 +69,7 @@ sub delete {
    my $res = $self->_txn_do( sub {
       my $result; unless ($result = $self->_find( $name )) {
          $optional and return FALSE;
-         throw class => NonExistantRecord, args => [ $path, $name ];
+         throw class => RecordNotFound, args => [ $path, $name ];
       }
 
       $result->delete or throw error => 'File [_1] element [_2] not deleted',
@@ -90,7 +90,7 @@ sub find_and_update { # TODO: Why is this not private?
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
    my $result = $self->_find( $name )
-      or throw class => NonExistantRecord, args => [ $self->path, $name ];
+      or throw class => RecordNotFound, args => [ $self->path, $name ];
 
    for (grep { exists $args->{ $_ } } @{ $self->attributes }) {
       $result->$_( $args->{ $_ } );
@@ -365,7 +365,7 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
-This document describes version v0.31.$Rev: 1 $
+This document describes version v0.32.$Rev: 1 $
 
 =head1 Synopsis
 

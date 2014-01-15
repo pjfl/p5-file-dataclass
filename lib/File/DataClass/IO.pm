@@ -1,11 +1,11 @@
-# @(#)$Ident: IO.pm 2014-01-13 18:18 pjf ;
+# @(#)$Ident: IO.pm 2014-01-15 16:26 pjf ;
 
 package File::DataClass::IO;
 
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.31.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Cwd                        qw( );
@@ -26,7 +26,7 @@ use IO::File;
 use List::Util                 qw( first );
 use Scalar::Util               qw( blessed );
 use Type::Utils                qw( enum );
-use Unexpected::Functions      qw( AlreadyExists NotFound Unspecified );
+use Unexpected::Functions      qw( PathNotFound Unspecified );
 use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
                                    PositiveInt RegexpRef SimpleStr Str );
 
@@ -430,11 +430,12 @@ sub dirname {
 }
 
 sub empty {
-   my $self = shift; $self->is_file and return -z $self->name;
+   my $self = shift; my $name = $self->name; my $empty;
 
-   $self->is_dir or $self->_throw( class => NotFound, args => [ $self->name ] );
-
-   return $self->next ? FALSE : TRUE;
+   $self->exists  or  $self->_throw( class => PathNotFound, args => [ $name ] );
+   $self->is_file and return -z $name ? TRUE : FALSE;
+   $empty = $self->next ? FALSE : TRUE; $self->close;
+   return $empty;
 }
 
 sub encoding {
@@ -1068,7 +1069,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.31.$Rev: 1 $ of L<File::DataClass::IO>
+This document describes version v0.32.$Rev: 1 $ of L<File::DataClass::IO>
 
 =head1 Synopsis
 
