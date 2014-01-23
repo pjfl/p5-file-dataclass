@@ -1,9 +1,9 @@
-# @(#)$Ident: ResultSet.pm 2014-01-22 23:10 pjf ;
+# @(#)$Ident: ResultSet.pm 2014-01-23 00:43 pjf ;
 
 package File::DataClass::ResultSet;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -340,7 +340,7 @@ sub _update_result {
    my ($self, $result, $args) = @_;
 
    for my $attr (grep { exists $args->{ $_ } } @{ $self->attributes }) {
-      $result->$_( $args->{ $attr } );
+      $result->$attr( $args->{ $attr } );
    }
 
    return $result->update;
@@ -367,7 +367,7 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
-This document describes version v0.32.$Rev: 2 $
+This document describes version v0.32.$Rev: 3 $
 
 =head1 Synopsis
 
