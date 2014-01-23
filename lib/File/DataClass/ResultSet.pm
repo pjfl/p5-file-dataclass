@@ -1,9 +1,9 @@
-# @(#)$Ident: ResultSet.pm 2014-01-15 16:36 pjf ;
+# @(#)$Ident: ResultSet.pm 2014-01-22 23:10 pjf ;
 
 package File::DataClass::ResultSet;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -51,11 +51,7 @@ sub create_or_update {
       my $result = $self->_find( $name )
          or return $self->_create_result( $args )->insert;
 
-      for (grep { exists $args->{ $_ } } @{ $self->attributes }) {
-         $result->$_( $args->{ $_ } );
-      }
-
-      return $result->update;
+      return $self->_update_result( $result, $args );
    } );
 
    return $res ? $name : undef;
@@ -84,19 +80,6 @@ sub find {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
    return $self->_txn_do( sub { $self->_find( $name ) } );
-}
-
-sub find_and_update { # TODO: Why is this not private?
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
-
-   my $result = $self->_find( $name )
-      or throw class => RecordNotFound, args => [ $self->path, $name ];
-
-   for (grep { exists $args->{ $_ } } @{ $self->attributes }) {
-      $result->$_( $args->{ $_ } );
-   }
-
-   return $result->update;
 }
 
 sub first {
@@ -130,7 +113,7 @@ sub push {
 
    my $res = $self->_txn_do( sub {
       ($attrs, $added) = $self->_push( $name, $list, $items );
-      $self->find_and_update( $attrs );
+      $self->_find_and_update( $attrs );
    } );
 
    return $res ? $added : undef;
@@ -162,7 +145,7 @@ sub splice {
 
    my $res = $self->_txn_do( sub {
       ($attrs, $removed) = $self->_splice( $name, $list, $items );
-      $self->find_and_update( $attrs );
+      $self->_find_and_update( $attrs );
    } );
 
    return $res ? $removed : undef;
@@ -171,7 +154,7 @@ sub splice {
 sub update {
    my ($self, $args) = @_; my $name = $self->_validate_params( $args );
 
-   my $res = $self->_txn_do( sub { $self->find_and_update( $args ) } );
+   my $res = $self->_txn_do( sub { $self->_find_and_update( $args ) } );
 
    return $res ? $name : undef;
 }
@@ -253,6 +236,15 @@ sub _find {
    my $attrs = { %{ $results->{ $name } }, name => $name };
 
    return $self->_create_result( $attrs );
+}
+
+sub _find_and_update {
+   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+
+   my $result = $self->_find( $name )
+      or throw class => RecordNotFound, args => [ $self->path, $name ];
+
+   return $self->_update_result( $result, $args );
 }
 
 sub _list {
@@ -344,6 +336,16 @@ sub _txn_do {
    return $self->storage->txn_do( $self->path, $coderef );
 }
 
+sub _update_result {
+   my ($self, $result, $args) = @_;
+
+   for my $attr (grep { exists $args->{ $_ } } @{ $self->attributes }) {
+      $result->$_( $args->{ $attr } );
+   }
+
+   return $result->update;
+}
+
 sub _validate_params {
    my ($self, $args) = @_; $args //= {};
 
@@ -365,7 +367,7 @@ File::DataClass::ResultSet - Core element methods
 
 =head1 Version
 
-This document describes version v0.32.$Rev: 1 $
+This document describes version v0.32.$Rev: 2 $
 
 =head1 Synopsis
 
@@ -445,7 +447,7 @@ L<File::DataClass::Schema> object. Returns the new element's name
    $element_name = $rs->create_or_update( $args );
 
 Creates a new element if it does not already exist, updates the existing
-one if it does. Calls L</find_and_update>
+one if it does. Calls L</_find_and_update>
 
 =head2 delete
 
@@ -460,9 +462,9 @@ Deletes an element
 Finds the named element and returns an
 L<element|File::DataClass::Result> object for it
 
-=head2 find_and_update
+=head2 _find_and_update
 
-   $updated_element_name = $rs->_find_and_update( $name, $attrs );
+   $updated_element_name = $rs->_find_and_update( $args );
 
 Finds the named element object and updates it's attributes. Does not wrap
 the find and update in a transaction

@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Took ::Resulset find_and_update private
+
 0.32.1    2014-01-15 17:17:35
           - Use Unexpected::Functions::has_exception not add_exception
           - Except old WithLanguage storage subclass from extension_map

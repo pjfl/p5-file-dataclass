@@ -1,8 +1,8 @@
-# @(#)$Ident: 50json.t 2014-01-12 19:03 pjf ;
+# @(#)$Ident: 50json.t 2014-01-15 23:54 pjf ;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 2 $ =~ /\d+/gmx );
 use File::Spec::Functions   qw( catdir catfile updir );
 use FindBin                 qw( $Bin );
 use lib                 catdir( $Bin, updir, 'lib' );
@@ -76,11 +76,14 @@ like $data->{ '_cvs_other' } || q(), qr{ @\(\#\)\$Id: }mx,
 my $rs   = test( $schema, qw( resultset globals ) );
 my $args = { name => 'dummy', text => 'value3' };
 
-is test( $rs, 'create_or_update', $args ), 'dummy','Create or update creates';
+is test( $rs, 'create_or_update', $args ), 'dummy', 'Create or update creates';
 
 $args->{text} = 'value4';
 
-is test( $rs, 'create_or_update', $args ), 'dummy','Create or update updates';
+is test( $rs, 'create_or_update', $args ), 'dummy', 'Create or update updates';
+
+like test( $rs, 'create_or_update', $args ), qr{ \Qnothing updated\E }imx,
+   'No update without change';
 
 my $result = $rs->find( { name => 'dummy' } );
 
@@ -89,6 +92,13 @@ is test( $rs, 'delete', $args ), 'dummy', 'Deletes';
 $schema->storage->create_or_update( io( $path ), $result, 1, sub { 1 } );
 
 is test( $rs, 'delete', $args ), 'dummy', 'Deletes again';
+
+like test( $rs, 'delete', $args ), qr{ \Qdoes not exist\E }mx,
+   "Delete non existant throws";
+
+$args->{optional} = 1;
+
+is test( $rs, 'delete', $args ), undef, "Delete optional doesn't throw";
 
 $schema->storage->validate_params( io( $path ), 'globals' );
 
