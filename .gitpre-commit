@@ -3,12 +3,12 @@
 use 5.01;
 use strict;
 use warnings;
-use lib qw( lib );
-use version; our $VERSION = qv( '0.4' );
+use version; our $VERSION = qv( '0.5' );
+use lib                     qw( lib );
 
-use Date::Format          qw( time2str );
-use English               qw( -no_match_vars );
-use File::Spec::Functions qw( catfile updir );
+use Date::Format            qw( time2str );
+use English                 qw( -no_match_vars );
+use File::Spec::Functions   qw( catfile updir );
 use Module::Metadata;
 use Perl::Version;
 
@@ -45,6 +45,22 @@ sub __get_ignore_rev_regex () {
    return join '|', split m{ [\n] }mx, $paths;
 }
 
+sub __update_version ($$) {
+   my ($rev_ref, $path) = @_;
+
+   my $rev = ${ $rev_ref }; my $content = __read_all_from $path;
+
+   $content =~ m{ \$ (Rev (?:ision)?) (?:[:] \s+ (\d+) \s+)? \$ }mx or return 0;
+   $content =~ s{ \$ (Rev (?:ision)?) (?:[:] \s+ (\d+) \s+)? \$ }{\$$1\$}gmx;
+   $rev < ($2 || 0) + 1 and $rev = ${ $rev_ref } = ($2 || 0) + 1;
+   $content =~ s{ \$ (Rev (?:ision)?) \$ }{\$$1: $rev \$}gmx;
+   __write_data_to $path, $content;
+
+   my $cmd = "git add ${path}"; qx{ $cmd };
+
+   return 1;
+}
+
 my ($module, $rev, $rev_file);
 
 my $project_file = -f 'dist.ini'    ? 'dist.ini'    :
@@ -62,25 +78,18 @@ if (defined $project_file) {
 }
 
 if (defined $rev and qx{ git branch 2>/dev/null } =~ m{ ^ [*] \s+ master }mx) {
+   my $main   = catfile( 'lib', split m{ :: }mx, "${module}.pm" );
    my @stat   = split m{ \n }mx, qx{ git status --porcelain };
    my $ignore = __get_ignore_rev_regex;
    my $found  = 0;
 
    for my $path (map { s{ \A .+ \s+ }{}mx; $_ } grep { m{ \A [AM] }mx } @stat) {
-      $ignore and $path =~ m{ (?: $ignore ) }mx and next;
-
-      my $content = __read_all_from $path;
-
-      $content =~ m{ \$ (Rev (?:ision)?) (?:[:] \s+ (\d+) \s+)? \$ }mx or next;
-      $content =~ s{ \$ (Rev (?:ision)?) (?:[:] \s+ (\d+) \s+)? \$ }{\$$1\$}gmx;
-      $rev < ($2 || 0) + 1 and $rev = ($2 || 0) + 1;
-      $content =~ s{ \$ (Rev (?:ision)?) \$ }{\$$1: $rev \$}gmx;
-      __write_data_to $path, $content;
-
-      my $cmd = "git add ${path}"; qx{ $cmd }; $found = 1;
+      $ignore and $path =~ m{ (?: $ignore ) }mx and next; $found = 1;
+      $main   ne  $path and __update_version \$rev, $path;
    }
 
-   $found and __write_data_to $rev_file, "${rev}\n";
+   $found and __update_version \$rev, $main
+          and __write_data_to $rev_file, "${rev}\n";
 }
 
 my $change_file = 'Changes';

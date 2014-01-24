@@ -5,7 +5,7 @@ package File::DataClass::Types;
 use strict;
 use warnings;
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use File::DataClass::IO;
 use Scalar::Util            qw( blessed dualvar );
@@ -143,7 +143,7 @@ File::DataClass::Types - Role defining package constraints
 
 =head1 Version
 
-This document describes version v0.32.$Rev: 1 $
+This document describes version v0.33.$Rev: 1 $
 
 =head1 Synopsis
 

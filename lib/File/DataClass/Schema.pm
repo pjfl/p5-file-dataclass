@@ -3,7 +3,7 @@
 package File::DataClass::Schema;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Class::Null;
@@ -212,7 +212,7 @@ File::DataClass::Schema - Base class for schema definitions
 
 =head1 Version
 
-This document describes version v0.32.$Rev: 1 $
+This document describes version v0.33.$Rev: 1 $
 
 =head1 Synopsis
 

@@ -5,7 +5,7 @@ package File::DataClass::IO;
 use 5.010001;
 use namespace::clean -except => 'meta';
 use overload '""' => sub { shift->pathname }, fallback => 1;
-use version; our $VERSION = qv( sprintf '0.32.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Cwd                        qw( );
@@ -1069,7 +1069,7 @@ File::DataClass::IO - Better IO syntax
 
 =head1 Version
 
-This document describes version v0.32.$Rev: 1 $ of L<File::DataClass::IO>
+This document describes version v0.33.$Rev: 1 $ of L<File::DataClass::IO>
 
 =head1 Synopsis
 

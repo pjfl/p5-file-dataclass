@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.33.1    2014-01-24 20:54:00
+          - Updated gitpre commit hook
+          - Updated Unexpected dependency
           - Took ::Resulset find_and_update private
 
 0.32.1    2014-01-15 17:17:35
