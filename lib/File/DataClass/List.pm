@@ -1,11 +1,8 @@
-# @(#)$Ident: List.pm 2013-09-13 17:45 pjf ;
-
 package File::DataClass::List;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
-use File::DataClass::Types  qw( ArrayRef Bool HashRef Result Undef );
+use File::DataClass::Types qw( ArrayRef Bool HashRef Result Undef );
 use Moo;
 
 has 'found'  => is => 'ro', isa => Bool,     default => 0;
@@ -22,10 +19,6 @@ __END__
 =head1 Name
 
 File::DataClass::List - List response class
-
-=head1 Version
-
-This document describes version v0.33.$Rev: 1 $
 
 =head1 Synopsis
 

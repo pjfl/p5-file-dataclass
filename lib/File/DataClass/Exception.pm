@@ -1,13 +1,10 @@
-# @(#)Ident: Exception.pm 2014-01-15 16:38 pjf ;
-
 package File::DataClass::Exception;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
-use Unexpected::Functions   qw( has_exception );
-use Unexpected::Types       qw( Str );
+use Unexpected::Functions qw( has_exception );
+use Unexpected::Types     qw( Str );
 
 extends q(Unexpected);
 with    q(Unexpected::TraitFor::ErrorLeader);
@@ -73,10 +70,6 @@ File::DataClass::Exception - Exception class composed from traits
    # THEN
    try   { $self->some_method() }
    catch { warn $_."\n\n".$_->stacktrace."\n" };
-
-=head1 Version
-
-This documents version v0.33.$Rev: 1 $ of L<File::DataClass::Exception>
 
 =head1 Description
 

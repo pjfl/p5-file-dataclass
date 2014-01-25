@@ -1,9 +1,6 @@
-# @(#)$Ident: Cache.pm 2014-01-13 17:49 pjf ;
-
 package File::DataClass::Cache;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Constants;
@@ -140,10 +137,6 @@ __END__
 =head1 Name
 
 File::DataClass::Cache - Adds extra methods to the CHI API
-
-=head1 Version
-
-This document describes version v0.33.$Rev: 1 $
 
 =head1 Synopsis
 

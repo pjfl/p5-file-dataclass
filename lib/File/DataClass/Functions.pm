@@ -1,22 +1,19 @@
-# @(#)$Ident: Functions.pm 2014-01-14 13:27 pjf ;
-
 package File::DataClass::Functions;
 
 use 5.010001;
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
-use English                 qw( -no_match_vars );
-use Exporter 5.57           qw( import );
+use English               qw( -no_match_vars );
+use Exporter 5.57         qw( import );
 use File::DataClass::Constants;
-use Hash::Merge             qw( merge );
-use List::Util              qw( first );
+use Hash::Merge           qw( merge );
+use List::Util            qw( first );
 use Module::Pluggable::Object;
-use Module::Runtime         qw( require_module );
-use Scalar::Util            qw( blessed );
+use Module::Runtime       qw( require_module );
+use Scalar::Util          qw( blessed );
 use Try::Tiny;
-use Unexpected::Functions   qw( is_class_loaded );
+use Unexpected::Functions qw( is_class_loaded );
 
 our @EXPORT_OK    = qw( ensure_class_loaded extension_map first_char
                         is_arrayref is_coderef is_hashref is_member
@@ -163,10 +160,6 @@ __END__
 =head1 Name
 
 File::DataClass::Functions - Common functions used in this distribution
-
-=head1 Version
-
-This document describes version v0.33.$Rev: 1 $
 
 =head1 Synopsis
 

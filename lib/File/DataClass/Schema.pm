@@ -1,9 +1,6 @@
-# @(#)$Ident: Schema.pm 2014-01-13 13:52 pjf ;
-
 package File::DataClass::Schema;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use Class::Null;
@@ -209,10 +206,6 @@ __END__
 =head1 Name
 
 File::DataClass::Schema - Base class for schema definitions
-
-=head1 Version
-
-This document describes version v0.33.$Rev: 1 $
 
 =head1 Synopsis
 

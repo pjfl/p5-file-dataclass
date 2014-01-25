@@ -1,11 +1,8 @@
-# @(#)Ident: 07podspelling.t 2014-01-12 21:08 pjf ;
-
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
-use File::Spec::Functions   qw( catdir catfile updir );
-use FindBin                 qw( $Bin );
-use lib                 catdir( $Bin, updir, 'lib' );
+use File::Spec::Functions qw( catdir catfile updir );
+use FindBin               qw( $Bin );
+use lib               catdir( $Bin, updir, 'lib' );
 use utf8;
 
 use Test::More;
@@ -16,6 +13,7 @@ BEGIN {
 }
 
 use English qw( -no_match_vars );
+
 eval "use Test::Spelling";
 
 $EVAL_ERROR and plan skip_all => 'Test::Spelling required but not installed';

@@ -1,18 +1,16 @@
-# @(#)Ident: 05kwalitee.t 2013-04-30 01:34 pjf ;
-
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
-use File::Spec::Functions;
-use FindBin qw( $Bin );
-use lib catdir( $Bin, updir, q(lib) );
+use File::Spec::Functions qw( catdir updir );
+use FindBin               qw( $Bin );
+use lib               catdir( $Bin, updir, 'lib' );
 
-use English qw(-no_match_vars);
 use Test::More;
 
 BEGIN {
    $ENV{AUTHOR_TESTING} or plan skip_all => 'Kwalitee test only for developers';
 }
+
+use English qw( -no_match_vars );
 
 eval { require Test::Kwalitee; };
 

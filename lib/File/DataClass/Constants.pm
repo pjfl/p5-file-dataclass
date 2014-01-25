@@ -1,12 +1,9 @@
-# @(#)$Ident: Constants.pm 2014-01-14 13:38 pjf ;
-
 package File::DataClass::Constants;
 
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
-use Exporter 5.57           qw( import );
+use Exporter 5.57 qw( import );
 use File::DataClass::Exception;
 
 our @EXPORT = qw( ARRAY CODE CYGWIN EVIL EXCEPTION_CLASS FALSE HASH
@@ -54,10 +51,6 @@ __END__
 =head1 Name
 
 File::DataClass::Constants - Definitions of constant values
-
-=head1 Version
-
-This document describes version v0.33.$Rev: 1 $
 
 =head1 Synopsis
 

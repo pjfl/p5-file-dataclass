@@ -1,14 +1,11 @@
-# @(#)$Ident: Result.pm 2013-09-13 17:47 pjf ;
-
 package File::DataClass::Result;
 
 use namespace::clean -except => 'meta';
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
-use File::DataClass::Types  qw( ArrayRef HashRef Maybe Object Str );
+use File::DataClass::Types qw( ArrayRef HashRef Maybe Object Str );
 use Moo;
 use MooX::ClassStash;
-use Scalar::Util            qw( blessed );
+use Scalar::Util           qw( blessed );
 
 has 'name'       => is => 'rw', isa => Str,    required => 1;
 
@@ -57,10 +54,6 @@ __END__
 =head1 Name
 
 File::DataClass::Result - Result object definition
-
-=head1 Version
-
-This document describes version v0.33.$Rev: 1 $
 
 =head1 Synopsis
 

@@ -1,9 +1,6 @@
-# @(#)$Ident: JSON.pm 2014-01-12 21:03 pjf ;
-
 package File::DataClass::Storage::JSON;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::DataClass::Functions qw( extension_map );
@@ -44,10 +41,6 @@ __END__
 =head1 Name
 
 File::DataClass::Storage::JSON - Read/write JSON data storage model
-
-=head1 Version
-
-This document describes version v0.33.$Rev: 1 $
 
 =head1 Synopsis
 

@@ -1,9 +1,6 @@
-# @(#)$Ident: Any.pm 2014-01-13 00:14 pjf ;
-
 package File::DataClass::Storage::Any;
 
 use namespace::sweep;
-use version; our $VERSION = qv( sprintf '0.33.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 use File::Basename             qw( basename );
@@ -134,10 +131,6 @@ __END__
 =head1 Name
 
 File::DataClass::Storage::Any - Selects storage class using the extension on the path
-
-=head1 Version
-
-This document describes version v0.33.$Rev: 1 $
 
 =head1 Synopsis
 

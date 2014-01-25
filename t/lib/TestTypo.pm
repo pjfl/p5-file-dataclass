@@ -1,5 +1,3 @@
-# @(#)Ident: TestTypo.pm 2013-12-30 23:09 pjf ;
-
 package TestType;
 
 1;
