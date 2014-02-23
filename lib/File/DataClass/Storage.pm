@@ -157,7 +157,7 @@ sub txn_do {
 sub update {
    my ($self, $path, $result, $updating, $cond) = @_;
 
-   defined $updating or $updating = TRUE; $cond ||= sub { TRUE };
+   $updating //= TRUE; $cond //= sub { TRUE };
 
    my $updated = $self->create_or_update( $path, $result, $updating, $cond )
       or throw class => NothingUpdated, level => 2;

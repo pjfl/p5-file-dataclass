@@ -3,9 +3,10 @@ package File::DataClass::Storage::JSON;
 use namespace::sweep;
 
 use Moo;
-use File::DataClass::Functions qw( extension_map );
+use File::DataClass::Functions qw( extension_map throw );
 use JSON                       qw();
 use MooX::Augment -class;
+use Try::Tiny;
 
 extends qw(File::DataClass::Storage);
 
@@ -19,7 +20,13 @@ augment '_read_file' => sub {
    # The filter causes the data to be untainted (running suid). I shit you not
    my $json = JSON->new->canonical->filter_json_object( sub { $_[ 0 ] } );
 
-   return $rdr->empty ? {} : $json->utf8( 0 )->decode( $rdr->all );
+   $rdr->empty and return {}; my $content;
+
+   try   { $content = $json->utf8( 0 )->decode( $rdr->all ) }
+   catch { s{ at \s [^ ]+ \s line \s \d+ \. }{}mx;
+           throw error => "${_} in file ${rdr}" };
+
+   return $content;
 };
 
 augment '_write_file' => sub {

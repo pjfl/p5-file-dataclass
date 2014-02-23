@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - JSON storage gives better error messages
           - Removed Ident: labels and VERSION
 
 0.33.1    2014-01-24 20:54:00

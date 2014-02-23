@@ -212,28 +212,29 @@ File::DataClass::Schema - Base class for schema definitions
    use File::DataClass::Schema;
 
    $schema = File::DataClass::Schema->new
-      ( path    => [ qw(path to a file) ],
+      ( path    => [ qw( path to a file ) ],
         result_source_attributes => { source_name => {}, },
-        tempdir => [ qw(path to a directory) ] );
+        tempdir => [ qw( path to a directory ) ] );
 
-   $schema->source( q(source_name) )->attributes( [ qw(list of attr names) ] );
-   $rs = $schema->resultset( q(source_name) );
-   $result = $rs->find( { name => q(id of field element to find) } );
+   $schema->source( q(source_name) )
+          ->attributes( [ qw( list of attr names ) ] );
+   $rs = $schema->resultset( 'source_name' );
+   $result = $rs->find( { name => 'id of field element to find' } );
    $result->$attr_name( $some_new_value );
    $result->update;
-   @result = $rs->search( { 'attr name' => q(some value) } );
+   @result = $rs->search( { 'attr name' => 'some value' } );
 
 =head1 Description
 
-Base class for schema definitions. Each element in a data file
-requires a result source to define it's attributes
+Base class for schema definitions. Each record in a data file requires
+a result source to define it's attributes
 
 =head1 Configuration and Environment
 
 Registers all result sources defined by the result source attributes
 
 Creates a new instance of the storage class which defaults to
-L<File::DataClass::Storage::XML::Simple>
+L<File::DataClass::Storage::JSON>
 
 Defines these attributes
 
@@ -256,18 +257,6 @@ L<File::DataClass::Cache>
 =item C<debug>
 
 Writes debug information to the log object if set to true
-
-=item C<exception_class>
-
-A classname that is expected to have a class method C<throw>. Defaults to
-L<File::DataClass::Exception> and is of type C<File::DataClass::Exception>
-
-=item C<builder>
-
-An optional object that provides these methods; C<debug>,
-C<exception_class>, C<lock>, C<log>, and C<tempdir>. Their values are
-or'ed with values in the attributes hash before being passed to the
-constructor
 
 =item C<lock>
 
@@ -339,7 +328,7 @@ Constructs the attribute hash passed to the constructor method
 
 Dumps the data structure to a file. Path defaults to the one specified in
 the schema definition. Returns the data that was written to the file if
-successful
+successful. Can be called a class or an object method
 
 =head2 extensions
 
@@ -356,7 +345,8 @@ subclasses (values)
 
 Loads and returns the merged data structure from the named
 files. Paths defaults to the one specified in the schema
-definition. Data will be read from cache if available and not stale
+definition. Data will be read from cache if available and not
+stale. Can be called a class or an object method
 
 =head2 resultset
 
@@ -403,8 +393,6 @@ debug method to be called with useful information
 
 =item L<File::DataClass::Constants>
 
-=item L<File::DataClass::Exception>
-
 =item L<File::DataClass::Functions>
 
 =item L<File::DataClass::ResultSource>
@@ -413,9 +401,9 @@ debug method to be called with useful information
 
 =item L<File::DataClass::Types>
 
-=item L<IPC::SRLock>
-
 =item L<Moo>
+
+=item L<Unexpected>
 
 =back
 

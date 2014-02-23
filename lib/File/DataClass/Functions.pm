@@ -53,7 +53,7 @@ sub extension_map (;$$) {
          }
       }
 
-      return exists $map->{ $class } ? $map->{ $class } : undef;
+      return;
    }
 
    $map->{ '_map_loaded' } and return $map;

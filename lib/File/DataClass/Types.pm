@@ -136,16 +136,16 @@ __END__
 
 =head1 Name
 
-File::DataClass::Types - Role defining package constraints
+File::DataClass::Types - A type constraint library
 
 =head1 Synopsis
 
    use Moo;
-   use File::DataClass::Types q(Path Directory File);
+   use File::DataClass::Types qw( Path Directory File );
 
 =head1 Description
 
-Defines the constraints used in this distribution
+Defines the type constraints used in this distribution
 
 =head1 Configuration and Environment
 
@@ -157,13 +157,21 @@ Defines these subtypes
 
 Is a L<File::DataClass::Cache>
 
-=item C<Exception>
+=item C<DummyClass>
 
-Can C<throw>
+A string value 'none'
+
+=item C<HashRefOfBools>
+
+Coerces a hash ref of boolean true values from the keys in an array ref
 
 =item C<Lock>
 
 Is a L<Class::Null> or can C<set> and C<reset>
+
+=item C<OctalNum>
+
+Coearces a string to a number which is stored in octal
 
 =item C<Path>
 
