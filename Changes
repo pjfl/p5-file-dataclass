@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Fixed definedness bug in ::HashMerge
           - JSON storage gives better error messages
           - Removed Ident: labels and VERSION
 

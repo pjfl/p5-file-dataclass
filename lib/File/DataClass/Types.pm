@@ -171,7 +171,7 @@ Is a L<Class::Null> or can C<set> and C<reset>
 
 =item C<OctalNum>
 
-Coearces a string to a number which is stored in octal
+Coerces a string to a number which is stored in octal
 
 =item C<Path>
 

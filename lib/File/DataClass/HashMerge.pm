@@ -35,10 +35,10 @@ sub _merge_attr {
    elsif ($to and ref $to eq 'ARRAY') {
       $updated = $self->_merge_attr_arrays( $to, $from );
    }
-   elsif ($to and $to ne $from) {
+   elsif (defined $to and $to ne $from) {
       $updated = 1; ${ $to_ref } = $from;
    }
-   elsif (not $to and defined $from) {
+   elsif (not defined $to) {
       if (ref $from eq 'HASH') {
          scalar keys %{ $from } > 0 and $updated = 1
             and ${ $to_ref } = $from;

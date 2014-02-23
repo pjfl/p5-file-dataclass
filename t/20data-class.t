@@ -44,8 +44,6 @@ my $schema     = File::DataClass::Schema->new
 
 isa_ok $schema, 'File::DataClass::Schema';
 
-is $schema->extensions->{ '.json' }->[ 0 ], 'JSON', 'Default extension';
-
 ok !-f $cache_file, 'Cache file not created';
 
 $schema = File::DataClass::Schema->new
