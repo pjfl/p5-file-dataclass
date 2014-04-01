@@ -282,7 +282,7 @@ sub _build__dir_pattern {
    $curdir and $updir and $pat .= '|';  # uncoverable condition left
    $updir  and $pat .= "\Q${updir}\E";  # uncoverable condition left
 
-   return qr{ \A $pat \z }mx;
+   return qr{ \A (?:$pat) \z }mx;
 }
 
 sub canonpath {
@@ -826,6 +826,7 @@ sub read_dir {
    }
 
    while (not defined $name or $name =~ $dir_pat) {
+      $name and warn "$name $dir_pat\n";
       unless (defined ($name = $self->io_handle->read)) {
          $self->close; return;
       }
