@@ -826,7 +826,6 @@ sub read_dir {
    }
 
    while (not defined $name or $name =~ $dir_pat) {
-      $name and warn "$name $dir_pat\n";
       unless (defined ($name = $self->io_handle->read)) {
          $self->close; return;
       }
