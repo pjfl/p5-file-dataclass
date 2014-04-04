@@ -60,6 +60,16 @@ is ref $e, 'File::DataClass::Exception', 'Default exception class';
 
 ok -f $cache_file, 'Cache file found'; ! -f $cache_file and warn "${e}\n";
 
+eval { $schema->cache->cache->on_set_error->() }; $e = $EVAL_ERROR;
+
+ok ! $e, 'Calls cache on_set_error'; $e and warn "${e}\n";
+
+SKIP: {
+   $ENV{AUTHOR_TESTING} or skip 'Deprecated method only for developers', 1;
+
+   ok ref $schema->extensions eq 'HASH', 'Schema extensions returns a hash';
+}
+
 my $data = test( $schema, 'load', $path, catfile( qw( t other.json ) ) );
 
 like $data->{ '_cvs_default' } || q(), qr{ @\(\#\)\$Id: }mx,

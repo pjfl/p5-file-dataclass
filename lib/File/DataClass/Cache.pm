@@ -1,5 +1,6 @@
 package File::DataClass::Cache;
 
+use 5.01;
 use namespace::sweep;
 
 use Moo;
@@ -11,9 +12,7 @@ use File::DataClass::Types     qw( Bool Cache ClassName HashRef
 has 'cache'            => is => 'lazy', isa => Object, builder => sub {
    my $self = shift; my $attr = $self->cache_attributes; my $log = $self->log;
 
-   $attr->{on_set_error} = sub { # uncoverable subroutine
-      $log->error( $_[ 0 ] );    # uncoverable statement
-   };
+   $attr->{on_set_error} = sub { $log->error( $_[ 0 ] ) };
 
    return $self->cache_class->new( %{ $attr } );
 };
@@ -81,7 +80,7 @@ sub remove {
 sub set {
    my ($self, $key, $data, $meta) = @_; my $mt_key = $self->_mtimes_key;
 
-   $key .= NUL; $meta ||= {}; $meta->{mtime} //= undef;
+   $key .= NUL; $meta //= { mtime => undef };
 
    $key eq $mt_key and throw error => 'Cache key [_1] not allowed',
                              args  => [ $mt_key ];
