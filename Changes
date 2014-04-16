@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Fixed ::IO::iterator sort order
+
 0.34.1    2014-04-04 11:50:35
           - Improved test coverage
           - Fixed directory pattern match

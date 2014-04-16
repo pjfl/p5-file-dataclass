@@ -617,7 +617,7 @@ sub iterator {
       while (@dirs) {
          while (defined (my $path = $dirs[ 0 ]->next)) {
             $deep and $path->is_dir and ($follow or not $path->is_link)
-               and push @dirs, $path;
+               and unshift @dirs, $path;
             (not defined $filter or (map { $filter->() } ($path))[ 0 ])
                and return $path;
          }
