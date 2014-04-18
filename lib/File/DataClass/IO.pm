@@ -426,15 +426,6 @@ sub dirname {
    return $_[ 0 ]->name ? File::Basename::dirname( $_[ 0 ]->name ) : undef;
 }
 
-sub empty {
-   my $self = shift; my $name = $self->name; my $empty;
-
-   $self->exists  or  $self->_throw( class => PathNotFound, args => [ $name ] );
-   $self->is_file and return -z $name ? TRUE : FALSE;
-   $empty = $self->next ? FALSE : TRUE; $self->close;
-   return $empty;
-}
-
 sub encoding {
    my ($self, $encoding) = @_;
 
@@ -579,6 +570,17 @@ sub is_dir {
 
    return $self->type eq 'dir' ? TRUE : FALSE;
 }
+
+sub is_empty {
+   my $self = shift; my $name = $self->name; my $empty;
+
+   $self->exists  or  $self->_throw( class => PathNotFound, args => [ $name ] );
+   $self->is_file and return -z $name ? TRUE : FALSE;
+   $empty = $self->next ? FALSE : TRUE; $self->close;
+   return $empty;
+}
+
+*empty = \&is_empty; # Deprecated
 
 sub is_executable {
    return $_[ 0 ]->name && -x $_[ 0 ]->name ? TRUE : FALSE;
@@ -1425,7 +1427,7 @@ Returns the L<File::Basename> C<dirname> of the passed path
 
    $bool = io( 'path_to_file' )->empty;
 
-Returns true if the pathname exists and is zero bytes in size
+Deprecated in favour of L</is_empty>
 
 =head2 encoding
 
@@ -1507,6 +1509,12 @@ Return true if the pathname is absolute
    $bool = io( 'path_to_file' )->is_dir;
 
 Tests to see if the IO object is a directory
+
+=head2 is_empty
+
+   $bool = io( 'path_to_file' )->is_empty;
+
+Returns true if the pathname exists and is zero bytes in size
 
 =head2 is_executable
 

@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Deprecated ::IO::empty in favour of is_empty
           - Fixed ::IO::iterator sort order
 
 0.34.1    2014-04-04 11:50:35

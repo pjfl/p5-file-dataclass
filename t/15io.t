@@ -300,7 +300,8 @@ subtest 'Gets a single line' => sub {
 subtest 'Create and detect empty subdirectories and files' => sub {
    $io = io( catdir( qw(t output empty) ) );
    ok $io->mkdir, 'Make a directory';
-   ok $io->empty, 'The directory is empty';
+   ok $io->is_empty, 'The directory is empty';
+   ok $io->empty, 'The directory is empty - deprecated';
 
    my $path = catfile( qw(t output file) ); $io = io( $path ); $io->touch( 0 );
 
