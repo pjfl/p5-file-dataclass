@@ -59,7 +59,7 @@ File::DataClass::Storage::JSON - Read/write JSON data storage model
 
 =head1 Description
 
-Uses L<JSON> to read and write JSON files
+Uses L<JSON::MaybeXS> to read and write JSON files
 
 =head1 Configuration and Environment
 
@@ -77,11 +77,11 @@ The extension appended to filenames. Defaults to F<.json>
 
 =head2 _read_file
 
-Calls L<JSON/decode> to parse the input
+Calls L<JSON::MaybeXS/decode> to parse the input
 
 =head2 _write_file
 
-Calls L<JSON/encode> to generate the output
+Calls L<JSON::MaybeXS/encode> to generate the output
 
 =head1 Diagnostics
 
@@ -93,7 +93,7 @@ None
 
 =item L<File::DataClass::Storage>
 
-=item L<JSON::PP>
+=item L<JSON::MaybeXS>
 
 =back
 
