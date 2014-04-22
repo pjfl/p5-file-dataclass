@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Moved location of namespace::clean calls. Yuck
           - Replaced JSON with JSON::MaybeXS
           - Deprecated ::IO::empty in favour of is_empty
           - Fixed ::IO::iterator sort order

@@ -2,7 +2,6 @@ package File::DataClass::Types;
 
 use strict;
 use warnings;
-use namespace::clean -except => 'meta';
 
 use File::DataClass::IO;
 use Scalar::Util          qw( blessed dualvar );
@@ -12,6 +11,8 @@ use Type::Library             -base, -declare =>
 use Type::Utils           qw( as coerce extends from
                               message subtype via where );
 use Unexpected::Functions qw( inflate_message );
+
+use namespace::clean -except => 'meta';
 
 BEGIN { extends q(Unexpected::Types) };
 

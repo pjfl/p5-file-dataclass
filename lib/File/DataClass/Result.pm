@@ -1,11 +1,12 @@
 package File::DataClass::Result;
 
+use File::DataClass::Types qw( ArrayRef HashRef Maybe Object Str );
+use Scalar::Util           qw( blessed );
+
 use namespace::clean -except => 'meta';
 
-use File::DataClass::Types qw( ArrayRef HashRef Maybe Object Str );
 use Moo;
 use MooX::ClassStash;
-use Scalar::Util           qw( blessed );
 
 has 'name'       => is => 'rw', isa => Str,    required => 1;
 
