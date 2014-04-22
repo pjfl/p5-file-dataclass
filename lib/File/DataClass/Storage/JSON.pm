@@ -4,11 +4,11 @@ use namespace::sweep;
 
 use Moo;
 use File::DataClass::Functions qw( extension_map throw );
-use JSON                       qw();
+use JSON::MaybeXS              qw( JSON );
 use MooX::Augment -class;
 use Try::Tiny;
 
-extends qw(File::DataClass::Storage);
+extends q(File::DataClass::Storage);
 
 has '+extn' => default => '.json';
 
