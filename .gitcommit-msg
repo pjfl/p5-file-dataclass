@@ -3,7 +3,7 @@
 use 5.01;
 use strict;
 use warnings;
-use version; our $VERSION = qv( '0.3' );
+use version; our $VERSION = qv( '0.4' );
 
 use English qw( -no_match_vars );
 
@@ -29,7 +29,7 @@ if (-f $change_file) {
    $entry =  (split m{ [\-] }mx, $entry)[ 0 ];
 
    $message = length $message > 1 ? "${ver} ${message}" : "${ver} ${entry}";
-   $message = substr $message, 0, 50;
+   $message = substr $message, 0, 53;
 
    open my $out, '>', $message_file
       or die "Path ${message_file} cannot open: ${OS_ERROR}";

@@ -5,6 +5,7 @@ use 5.010001;
 use Moo;
 use Cwd                        qw( );
 use English                    qw( -no_match_vars );
+use Exporter 5.57              qw( import );
 use Fcntl                      qw( :flock :seek );
 use File::Basename               ( );
 use File::Copy                   ( );
@@ -24,10 +25,8 @@ use Unexpected::Functions      qw( PathNotFound Unspecified );
 use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
                                    PositiveInt RegexpRef SimpleStr Str );
 
-use namespace::clean -except => 'meta';
+use namespace::clean -except => [ 'import', 'meta' ];
 use overload '""' => sub { shift->pathname }, fallback => 1;
-
-use Exporter 5.57              qw( import );
 
 our @EXPORT    = qw( io );
 
