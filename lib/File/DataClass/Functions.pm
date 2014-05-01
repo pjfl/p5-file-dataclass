@@ -3,6 +3,7 @@ package File::DataClass::Functions;
 use 5.010001;
 use strict;
 use warnings;
+use feature 'state';
 
 use English               qw( -no_match_vars );
 use Exporter 5.57         qw( import );

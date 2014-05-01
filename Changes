@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+0.35.1    2014-05-01 15:28:33
+          - Moo / Role::Tiny upgrade must expicitely use feature 'state'. Thanks
           - Call to n::s now excepts import
           - Moved location of namespace::clean calls. Yuck
           - Replaced JSON with JSON::MaybeXS
