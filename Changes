@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Added reverse attr to ::IO. Reverse sort directory listings
+
 0.35.1    2014-05-01 15:28:33
           - Moo / Role::Tiny upgrade must expicitely use feature 'state'. Thanks
           - Call to n::s now excepts import
