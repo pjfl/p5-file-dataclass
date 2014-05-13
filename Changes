@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.37.1    2014-05-13 22:04:43
+          - Fixed crappy test. So system error messages can be garbage
+
 0.36.1    2014-05-13 11:02:40
           - Improved test coverage
           - Added reverse attr to ::IO. Reverse sort directory listings

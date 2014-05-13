@@ -278,8 +278,7 @@ subtest 'Setting assert creates path to file' => sub {
    ok -d $dir, 'Writing file creates directory';
    is io()->assert_dirpath( $dir ), $dir, 'Assert directory returns path';
    eval { io()->assert_dirpath( catfile( qw( t default.json ) ) ) };
-   like $EVAL_ERROR, qr{ \Qfile exists\E }imx,
-      'Assert directory fails if a file exists';
+   like $EVAL_ERROR, qr{ mkdir }imx, 'Assert directory fails if a file exists';
 };
 
 subtest 'Prints with and without newlines' => sub {
