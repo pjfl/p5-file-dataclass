@@ -45,7 +45,7 @@ sub extension_map (;$$) {
    my ($class, $extensions) = @_; state $map //= { '_map_loaded' => 0 };
 
    if (defined $class) {
-      if (defined $extensions) {
+      if (defined $extensions) { # uncoverable branch false
          is_arrayref( $extensions ) or $extensions = [ $extensions ];
 
          for my $extn (@{ $extensions }) {

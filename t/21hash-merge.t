@@ -88,6 +88,12 @@ File::DataClass::HashMerge->merge( \$dest );
 
 is $dest->{key}, 'value', 'No source required';
 
+$dest = {}; $src = { new_key => {} };
+
+my $updated = File::DataClass::HashMerge->merge( \$dest, $src );
+
+ok exists $dest->{new_key}, 'Adds empty hash';
+
 done_testing;
 
 # Local Variables:

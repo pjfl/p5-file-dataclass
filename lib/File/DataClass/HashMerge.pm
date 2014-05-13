@@ -44,7 +44,7 @@ sub _merge_attr {
             and ${ $to_ref } = $from;
       }
       elsif (ref $from eq 'ARRAY') {
-         scalar @{ $from } > 0 and $updated = 1; ${ $to_ref } = $from;
+         scalar @{ $from } > 0 and $updated = 1 and ${ $to_ref } = $from;
       }
       else { $updated = 1; ${ $to_ref } = $from }
    }

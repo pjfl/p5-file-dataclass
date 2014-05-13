@@ -35,6 +35,11 @@ sub p { join ';', grep { not m{ \.svn }mx } @_ }
 sub f { my $s = shift; $osname eq 'mswin32' and $s =~ s/\//\\/g; return $s }
 
 subtest 'Deliberate errors' => sub {
+   eval { io()->all };
+
+   like $EVAL_ERROR, qr{ \Qnot specified\E }mx,
+      'Filename unspecified';
+
    eval { io( 'quack' )->slurp };
 
    like $EVAL_ERROR, qr{ File \s+ \S+ \s+ cannot \s+ open }mx,
@@ -244,6 +249,16 @@ subtest 'Chomp newlines and record separators' => sub {
    ok !$seen, 'Getlines chomps record separators';
 };
 
+subtest 'Alternative state parameters' => sub {
+   $io = io( $PROGRAM_NAME ); $io->all;
+
+   ok !$io->is_open, 'Autocloses';
+
+   $io = io( $PROGRAM_NAME, { autoclose => 0 } ); $io->all;
+
+   ok $io->is_open, 'Does not autoclose';
+};
+
 subtest 'Create and remove a directory subtree' => sub {
    $dir = catdir( qw(t output subtree) );
    io( $dir )->mkpath; ok   -e $dir, 'Make path';
@@ -261,6 +276,10 @@ subtest 'Setting assert creates path to file' => sub {
    ok ! -e $dir, 'Assert does not create directory';
    $io->println( 'Hello' );
    ok -d $dir, 'Writing file creates directory';
+   is io()->assert_dirpath( $dir ), $dir, 'Assert directory returns path';
+   eval { io()->assert_dirpath( catfile( qw( t default.json ) ) ) };
+   like $EVAL_ERROR, qr{ \Qfile exists\E }imx,
+      'Assert directory fails if a file exists';
 };
 
 subtest 'Prints with and without newlines' => sub {

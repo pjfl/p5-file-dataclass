@@ -89,9 +89,11 @@ sub __build_attr_from { # Differentiate constructor method signatures
 }
 
 sub __clone_one_of_us {
-   my $clone = { %{ $_[ 0 ] } }; $clone->{perms} = delete $clone->{_perms};
+   my ($self, $params) = @_; $self->reverse; $self->sort; # Force evaluation
 
-   is_hashref $_[ 1 ] and $clone = { %{ $clone }, %{ $_[ 1 ] } };
+   my $clone = { %{ $self }, %{ $params // {} } };
+
+   $clone->{perms} = delete $clone->{_perms};
 
    return $clone;
 }
@@ -197,6 +199,7 @@ sub assert_dirpath {
 
    $self->_umask_pop;
 
+   # uncoverable branch true
    -d $dir_name or $self->_throw( error => 'Path [_1] cannot create: [_2]',
                                   args  => [ $dir_name, $OS_ERROR ] );
    return $dir_name;
@@ -559,7 +562,11 @@ sub _init {
 }
 
 sub _init_type_from_fs {
-   return -f $_[ 0 ]->name ? $_[ 0 ]->file : -d _ ? $_[ 0 ]->dir : undef;
+   my $self = shift;
+
+   $self->name or $self->_throw( class => Unspecified, args => [ 'path name' ]);
+
+   return -f $self->name ? $self->file : -d _ ? $self->dir : undef;
 }
 
 sub io (;@) { # Exported function
