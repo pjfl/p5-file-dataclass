@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.38.1    2014-05-15 01:09:50
+          - cad362f6-dba6-11e3-84c4-fc77f9652e90 Random WTF
+
 0.37.1    2014-05-13 22:04:43
           - Fixed crappy test. So system error messages can be garbage
 
