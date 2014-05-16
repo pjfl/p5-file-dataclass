@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+0.39.1    2014-05-16 09:17:58
+          - 6fbe5176-dcb6-11e3-84c4-fc77f9652e90 Added Test::Requires
+            Hash::MoreUtils
+
 0.38.1    2014-05-15 01:09:50
           - cad362f6-dba6-11e3-84c4-fc77f9652e90 Random WTF
 
