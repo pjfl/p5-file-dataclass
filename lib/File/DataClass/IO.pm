@@ -40,7 +40,6 @@ my  $NTFS      = $LC_OSNAME eq EVIL || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
 has 'autoclose'     => is => 'lazy', isa => Bool,           default => TRUE  ;
 has 'io_handle'     => is => 'rwp',  isa => Maybe[Object]                    ;
 has 'is_open'       => is => 'rwp',  isa => Bool,           default => FALSE ;
-has 'is_utf8'       => is => 'rwp',  isa => Bool,           default => FALSE ;
 has 'mode'          => is => 'rwp',  isa => $IO_MODE,       default => 'r'   ;
 has 'name'          => is => 'rwp',  isa => SimpleStr,      default => NUL,
    coerce           => \&__coerce_name,                     lazy    => TRUE  ;
@@ -54,14 +53,13 @@ has 'type'          => is => 'rwp',  isa => Maybe[$IO_TYPE]                  ;
 has '_assert'       => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_atomic'       => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_atomic_infix' => is => 'rw',   isa => SimpleStr,      default => 'B_*' ;
-has '_binary'       => is => 'rw',   isa => Bool,           default => FALSE ;
-has '_binmode'      => is => 'rw',   isa => SimpleStr,      default => NUL   ;
 has '_block_size'   => is => 'rw',   isa => PositiveInt,    default => 1024  ;
 has '_chomp'        => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_deep'         => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_dir_pattern'  => is => 'lazy', isa => RegexpRef                        ;
-has '_encoding'     => is => 'rw',   isa => SimpleStr,      default => NUL   ;
 has '_filter'       => is => 'rw',   isa => Maybe[CodeRef]                   ;
+has '_layers'       => is => 'ro',   isa => ArrayRef[SimpleStr],
+   default          => sub { [] };
 has '_lock'         => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_lock_obj'     => is => 'rw',   isa => Maybe[Object],
    writer           => 'lock_obj'                                            ;
@@ -220,6 +218,21 @@ sub assert_open {
    return $_[ 0 ]->open( $_[ 1 ] || 'r', $_[ 2 ] );
 }
 
+sub _assert_open_backwards {
+   my $self = shift; $self->is_open and return;
+
+   require File::ReadBackwards;
+
+   $self->_set_io_handle( File::ReadBackwards->new( $self->name ) )
+      or $self->_throw( error => 'File [_1] cannot open backwards: [_2]',
+                        args  => [ $self->name, $OS_ERROR ] );
+   $self->_set_is_open( TRUE );
+   $self->_set_mode( 'r' );
+   $self->set_binmode;
+   $self->set_lock;
+   return;
+}
+
 sub atomic {
    $_[ 0 ]->_atomic( TRUE ); return $_[ 0 ];
 }
@@ -242,19 +255,15 @@ sub binary {
    my $self = shift;
 
    $self->is_open and CORE::binmode( $self->io_handle );
-   $self->_binary( TRUE );
+   push @{ $self->_layers }, ':raw';
    return $self;
 }
 
 sub binmode {
    my ($self, $layer) = @_;
 
-   if ($self->is_open) {
-      $layer ? CORE::binmode( $self->io_handle, $layer )
-             : CORE::binmode( $self->io_handle );
-   }
-
-   $self->_binmode( $layer );
+   $self->is_open and $self->_sane_binmode( $layer );
+   push @{ $self->_layers }, $layer;
    return $self;
 }
 
@@ -438,10 +447,8 @@ sub encoding {
 
    $encoding or $self->_throw
       ( class => Unspecified, args => [ 'encoding value' ] );
-   lc $encoding eq 'utf-8' and $encoding = 'utf8';
-   $self->_encoding( $encoding );
-   $self->_set_is_utf8( $encoding eq 'utf8' ? TRUE : FALSE );
-   $self->is_open and $self->set_binmode;
+   $self->is_open and CORE::binmode( $self->io_handle, ":encoding($encoding)" );
+   push @{ $self->_layers }, ":encoding($encoding)";
    return $self;
 }
 
@@ -534,6 +541,12 @@ sub getline {
    return;
 }
 
+sub _getline_backwards {
+   my $self = shift; $self->_assert_open_backwards;
+
+   return $self->io_handle->readline;
+}
+
 sub getlines {
    my ($self, $separator) = @_; my @lines; $self->assert_open;
 
@@ -547,6 +560,17 @@ sub getlines {
    scalar @lines and return (@lines);
    $self->autoclose and $self->close;
    return ();
+}
+
+sub head {
+   my ($self, $lines) = @_; my @res; $lines //= 10; $self->close;
+
+   while ($lines--) {
+      defined (my $l = $self->getline) or last; push @res, $l;
+   }
+
+   $self->close;
+   return wantarray ? @res : join NUL, @res;
 }
 
 sub _init {
@@ -622,6 +646,12 @@ sub is_reading {
 
 sub is_writable {
    return $_[ 0 ]->name && -w $_[ 0 ]->name ? TRUE : FALSE;
+}
+
+sub is_writing {
+   my $mode = $_[ 1 ] || $_[ 0 ]->mode;
+
+   return first { $_ eq $mode } qw(a a+ w w+);
 }
 
 sub iterator {
@@ -767,11 +797,12 @@ sub _open_file {
 
    unless ($self->_set_io_handle( IO::File->new( $path, $mode ) )) {
       $self->_umask_pop;
-      $self->_throw( error => 'File [_1] cannot open', args  => [ $path ] );
+      $self->_throw( error => 'File [_1] cannot open', args => [ $path ] );
    }
 
    $self->_umask_pop;
-   CORE::chmod $perms, $path; # TODO: Not necessary on normal systems
+   # TODO: Not necessary on normal systems
+   $self->is_writing and CORE::chmod $perms, $path;
    $self->_set_is_open( TRUE );
    $self->set_binmode;
    $self->set_lock;
@@ -901,6 +932,13 @@ sub rmtree {
    my ($self, @args) = @_; return File::Path::remove_tree( $self->name, @args );
 }
 
+sub _sane_binmode {
+   my ($self, $layer) = @_;
+
+   return $layer ? CORE::binmode( $self->io_handle, $layer )
+                 : CORE::binmode( $self->io_handle );
+}
+
 sub seek {
    my ($self, @args) = @_;
 
@@ -917,15 +955,7 @@ sub separator {
 sub set_binmode {
    my $self = shift;
 
-   if (my $encoding = $self->_encoding) {
-      CORE::binmode( $self->io_handle, ":encoding($encoding)" );
-   }
-   elsif ($self->_binmode) {
-      CORE::binmode( $self->io_handle, $self->_binmode );
-   }
-   elsif ($self->_binary or $NTFS) {
-      CORE::binmode( $self->io_handle );
-   }
+   $self->_sane_binmode( $_ ) for @{ $self->_layers };
 
    return $self;
 }
@@ -978,6 +1008,17 @@ sub substitute {
 
    $self->close; $wtr->close;
    return $self;
+}
+
+sub tail {
+   my ($self, $lines) = @_; my @res; $lines //= 10; $self->close;
+
+   while ($lines--) {
+      unshift @res, ($self->_getline_backwards or last);
+   }
+
+   $self->close;
+   return wantarray ? @res : join NUL, @res;
 }
 
 sub tempfile {
@@ -1055,7 +1096,7 @@ sub _untainted_perms {
 }
 
 sub utf8 {
-   $_[ 0 ]->encoding( 'utf8' ); return $_[ 0 ];
+   $_[ 0 ]->encoding( 'UTF-8' ); return $_[ 0 ];
 }
 
 sub write {
@@ -1130,10 +1171,6 @@ Defaults to undef. This is set when the object is actually opened
 =item C<is_open>
 
 Defaults to false. Set to true when the object is opened
-
-=item C<is_utf8>
-
-Boolean should set to true if the file is C<UTF8> encoded. Defaults for false
 
 =item C<mode>
 
@@ -1508,6 +1545,14 @@ of file has been read past
 Like L</getline> but calls L</getlines> on the file handle and returns
 an array of lines
 
+=head2 head
+
+   @lines = io( 'path_to_file' )->head( $no_of_lines );
+
+Returns the first I<n> lines from the file where the number of lines
+returned defaults to 10. Returns the lines joined with null in a
+scalar context
+
 =head2 _init
 
 Sets default values for some attributes, takes two optional arguments;
@@ -1572,6 +1617,12 @@ Returns true if this IO object is in one of the read modes
    $bool = io( 'path_to_file' )->is_writable;
 
 Tests to see if the C<IO> object is writable
+
+=head2 is_writing
+
+   $bool = io( 'path_to_file' )->is_writing;
+
+Returns true if this IO object is in one of the write modes
 
 =head2 iterator
 
@@ -1789,6 +1840,14 @@ Returns a hash of the values returned by a L</stat> call on the pathname
 
 Substitutes C<$search> regular expression for C<$replace> string on each
 line of the given file
+
+=head2 tail
+
+   @lines = io( 'path_to_file' )->tail( $no_of_lines );
+
+Returns the last I<n> lines from the file where the number of lines
+returned defaults to 10. Returns the lines joined with null in a
+scalar context
 
 =head2 tempfile
 

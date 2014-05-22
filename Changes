@@ -1,5 +1,10 @@
 Revision history for File::DataClass
 
+0.40.1    2014-05-22 10:35:56
+          - Added head and tail methods to ::IO
+          - Fixed PerlIO layers in ::IO
+          - Using strict UTF-8 in ::IO
+
 0.39.1    2014-05-16 09:17:58
           - 6fbe5176-dcb6-11e3-84c4-fc77f9652e90 Added Test::Requires
             Hash::MoreUtils
