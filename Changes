@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Prevent duplicate IO layers
           - Attempting to fix tail test in win31
 
 0.40.1    2014-05-22 10:35:56

@@ -74,6 +74,16 @@ subtest 'Deliberate errors' => sub {
 
    like $EVAL_ERROR, qr{ \Qnot a simple string\E }mx,
       'Undefined name not alllowed';
+
+   eval { io()->assert_filepath };
+
+   like $EVAL_ERROR, qr{ \Qnot specified\E }mx,
+      'Cannot assert filepath without a name';
+
+   eval { io( 'not_bloody_likely' )->tail };
+
+   like $EVAL_ERROR, qr{ \Qcannot open backward\E }mx,
+      'Cannot open a non-existant file to read backwards';
 };
 
 subtest 'Polymorphic Constructor' => sub {
@@ -148,6 +158,7 @@ subtest 'File::Spec::Functions' => sub {
    ok io( [ qw(t mydir dir1) ] )->parent->is_dir, 'Parent';
    is io( [ qw(t mydir dir1) ] )->parent( 2 ), 't', 'Parent with count';
    is io( [ qw( t output print.t ) ] )->basename, 'print.t', 'Basename';
+   is io()->basename, undef, 'Basename - no name';
 };
 
 subtest 'Absolute/relative pathname conversions' => sub {
@@ -408,6 +419,11 @@ subtest 'Creates a file using atomic write' => sub {
    ok  -f $atomic_file, 'Atomic file exists - suffix'; $io->close;
    ok !-f $atomic_file, 'Renames atomic file - suffix';
 
+   my $io = io( $outfile )->atomic_infix( undef );
+
+   is $io->_atomic_infix, 'B_*', 'Default atomic infix';
+   $io->atomic_suffix( undef );
+   is $io->_atomic_infix, 'B_*', 'Default atomix suffix';
    io( $outfile )->delete;
    $io = io( $outfile )->atomic->lock->println( 'x' );
    io( $outfile )->close;

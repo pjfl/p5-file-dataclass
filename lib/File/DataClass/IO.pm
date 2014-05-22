@@ -10,12 +10,10 @@ use Fcntl                      qw( :flock :seek );
 use File::Basename               ( );
 use File::Copy                   ( );
 use File::DataClass::Constants;
-use File::DataClass::Functions qw( first_char is_arrayref
-                                   is_coderef is_hashref thread_id throw );
-use File::Path                   ( );
+use File::DataClass::Functions qw( first_char is_arrayref is_coderef
+                                   is_hashref is_member thread_id throw );
 use File::Spec                   ( );
 use File::Spec::Functions      qw( curdir );
-use File::Temp                   ( );
 use IO::Dir;
 use IO::File;
 use List::Util                 qw( first );
@@ -192,8 +190,11 @@ sub assert_dirpath {
 
    my $perms = $self->_mkdir_perms; $self->_umask_push( oct '07777' );
 
-   CORE::mkdir( $dir_name, $perms )
-      or File::Path::make_path( $dir_name, { mode => $perms } );
+   unless (CORE::mkdir( $dir_name, $perms )) {
+      require File::Path;
+
+      File::Path::make_path( $dir_name, { mode => $perms } );
+   }
 
    $self->_umask_pop;
 
@@ -254,16 +255,18 @@ sub basename {
 sub binary {
    my $self = shift;
 
-   $self->is_open and CORE::binmode( $self->io_handle );
-   push @{ $self->_layers }, ':raw';
+   $self->_push_layer( ':raw' )
+      and $self->is_open and CORE::binmode( $self->io_handle );
+
    return $self;
 }
 
 sub binmode {
    my ($self, $layer) = @_;
 
-   $self->is_open and $self->_sane_binmode( $layer );
-   push @{ $self->_layers }, $layer;
+   $self->_push_layer( $layer )
+      and $self->is_open and $self->_sane_binmode( $layer );
+
    return $self;
 }
 
@@ -447,8 +450,9 @@ sub encoding {
 
    $encoding or $self->_throw
       ( class => Unspecified, args => [ 'encoding value' ] );
-   $self->is_open and CORE::binmode( $self->io_handle, ":encoding($encoding)" );
-   push @{ $self->_layers }, ":encoding($encoding)";
+   $self->_push_layer( ":encoding($encoding)" )
+      and $self->is_open
+      and CORE::binmode( $self->io_handle, ":encoding($encoding)" );
    return $self;
 }
 
@@ -706,7 +710,7 @@ sub _mkdir_perms {
 sub mkpath {
    my ($self, $perms) = @_; $perms ||= $self->_mkdir_perms;
 
-   $self->_umask_push( oct '07777' );
+   $self->_umask_push( oct '07777' ); require File::Path;
 
    File::Path::make_path( $self->name, { mode => $perms } );
 
@@ -751,10 +755,10 @@ sub open {
    my ($self, $mode, $perms) = @_; $mode ||= $self->mode;
 
    $self->is_open
-      and first_char( $mode ) eq first_char( $self->mode )
+      and first_char $mode eq first_char $self->mode
       and return $self;
    $self->is_open
-      and 'r' eq first_char( $mode )
+      and 'r' eq first_char $mode
       and '+' eq (substr $self->mode, 1, 1) || NUL
       and $self->seek( 0, SEEK_SET )
       and return $self;
@@ -848,6 +852,14 @@ sub _println {
    return shift->_print( map { m{ [\n] \z }mx ? ($_) : ($_, "\n") } @_ );
 }
 
+sub _push_layer {
+   my ($self, $layer) = @_; $layer //= NUL;
+
+   is_member $layer, $self->_layers and return FALSE;
+   push @{ $self->_layers }, $layer;
+   return TRUE;
+}
+
 sub read {
    my ($self, @args) = @_; $self->assert_open;
 
@@ -929,7 +941,9 @@ sub rmdir {
 }
 
 sub rmtree {
-   my ($self, @args) = @_; return File::Path::remove_tree( $self->name, @args );
+   my ($self, @args) = @_; require File::Path;
+
+   return File::Path::remove_tree( $self->name, @args );
 }
 
 sub _sane_binmode {
@@ -1022,7 +1036,7 @@ sub tail {
 }
 
 sub tempfile {
-   my ($self, $tmplt) = @_; my ($tempdir, $tmpfh);
+   my ($self, $tmplt) = @_; my ($tempdir, $tmpfh); require File::Temp;
 
    ($tempdir = $self->name and -d $tempdir) or $tempdir = File::Spec->tmpdir;
 
