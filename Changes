@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Attempting to fix tail test in win31
+
 0.40.1    2014-05-22 10:35:56
           - Added head and tail methods to ::IO
           - Fixed PerlIO layers in ::IO

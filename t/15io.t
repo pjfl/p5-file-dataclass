@@ -382,8 +382,9 @@ subtest 'Heads / Tails' => sub {
    is scalar @{ [ io( $PROGRAM_NAME )->head ] }, 10, 'Default head lines';
    like( (io( $PROGRAM_NAME )->head( 2 ))[ -1 ], qr{ warnings }mx,
          'Second line' );
-   is scalar @{ [ io( $PROGRAM_NAME )->tail ] }, 10, 'Default tail lines';
-   like( (io( $PROGRAM_NAME )->tail( 3 ))[ 0 ], qr{ perl }mx,
+   is scalar @{ [ io( $PROGRAM_NAME )->tail( undef, "\n" ) ] }, 10,
+         'Default tail lines';
+   like( (io( $PROGRAM_NAME )->tail( 3, "\n" ))[ 0 ], qr{ perl }mx,
          'Second last line' );
 };
 

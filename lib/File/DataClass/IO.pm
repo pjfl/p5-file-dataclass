@@ -219,11 +219,11 @@ sub assert_open {
 }
 
 sub _assert_open_backwards {
-   my $self = shift; $self->is_open and return;
+   my ($self, @args) = @_; $self->is_open and return;
 
    require File::ReadBackwards;
 
-   $self->_set_io_handle( File::ReadBackwards->new( $self->name ) )
+   $self->_set_io_handle( File::ReadBackwards->new( $self->name, @args ) )
       or $self->_throw( error => 'File [_1] cannot open backwards: [_2]',
                         args  => [ $self->name, $OS_ERROR ] );
    $self->_set_is_open( TRUE );
@@ -542,7 +542,7 @@ sub getline {
 }
 
 sub _getline_backwards {
-   my $self = shift; $self->_assert_open_backwards;
+   my ($self, @args) = @_; $self->_assert_open_backwards( @args );
 
    return $self->io_handle->readline;
 }
@@ -1011,10 +1011,10 @@ sub substitute {
 }
 
 sub tail {
-   my ($self, $lines) = @_; my @res; $lines //= 10; $self->close;
+   my ($self, $lines, @args) = @_; my @res; $lines //= 10; $self->close;
 
    while ($lines--) {
-      unshift @res, ($self->_getline_backwards or last);
+      unshift @res, ($self->_getline_backwards( @args ) or last);
    }
 
    $self->close;
