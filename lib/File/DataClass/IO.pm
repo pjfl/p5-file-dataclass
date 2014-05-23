@@ -838,7 +838,7 @@ sub _print {
 
    for (@args) {
       print {$self->io_handle} $_
-         or $self->_throw( error => 'IO error: [_1]', args  => [ $OS_ERROR ] );
+         or $self->_throw( error => 'IO error: [_1]', args => [ $OS_ERROR ] );
    }
 
    return $self;

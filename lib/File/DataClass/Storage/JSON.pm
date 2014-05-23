@@ -12,6 +12,8 @@ extends q(File::DataClass::Storage);
 
 has '+extn' => default => '.json';
 
+extension_map 'JSON' => '.json';
+
 augment '_read_file' => sub {
    my ($self, $rdr) = @_;
 
@@ -37,8 +39,6 @@ augment '_write_file' => sub {
    $wtr->print( $json->pretty->utf8( 0 )->encode( $data ) ); return $data;
 };
 
-extension_map 'JSON' => '.json';
-
 1;
 
 __END__
@@ -53,9 +53,9 @@ File::DataClass::Storage::JSON - Read/write JSON data storage model
 
    use Moo;
 
-   extends qw(File::DataClass::Schema);
+   extends 'File::DataClass::Schema';
 
-   has '+storage_class' => default => q(JSON);
+   has '+storage_class' => default => 'JSON';
 
 =head1 Description
 
