@@ -31,7 +31,7 @@ sub NO_UMASK_STACK     () { -1 }
 sub STAT_FIELDS        () { qw( device inode mode nlink uid gid device_id
                                 size atime mtime ctime blksize blocks ) }
 sub STORAGE_BASE       () { 'File::DataClass::Storage' }
-sub STORAGE_EXCEPTIONS () { 'WithLanguage' }
+sub STORAGE_EXCEPTIONS () { 'File::DataClass::Storage::WithLanguage' }
 
 sub Exception_Class {
    my ($self, $class) = @_; defined $class or return $Exception_Class;

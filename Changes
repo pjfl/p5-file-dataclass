@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Storage exceptions should be a full package name
           - Prevent duplicate IO layers
           - Attempting to fix tail test in win31
 
