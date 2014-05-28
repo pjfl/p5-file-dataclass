@@ -346,8 +346,9 @@ sub _update_result {
 sub _validate_params {
    my ($self, $args) = @_; $args //= {};
 
-   my $name = $args->{name}
-      or throw class => Unspecified, args => [ 'record name' ], level => 2;
+   my $name = (is_hashref $args) ? $args->{name} : $args;
+
+   $name or throw class => Unspecified, args => [ 'record name' ], level => 2;
 
    return $name;
 }

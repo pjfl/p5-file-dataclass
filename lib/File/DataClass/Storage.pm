@@ -147,7 +147,7 @@ sub txn_do {
       if ($wantarray) { @{ $res } = $code_ref->() }
       else { $res = $code_ref->() }
    }
-   catch { $self->_lock->reset( k => $key ); throw error => $_, level => 4 };
+   catch { $self->_lock->reset( k => $key ); throw $_, { level => 4 } };
 
    $self->_lock->reset( k => $key );
 

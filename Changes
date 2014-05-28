@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.41.1    2014-05-28 11:27:00
+          - Can now pass just a record name to find
+          - Stopped txn_do from adding extra exception leader
           - Storage exceptions should be a full package name
           - Prevent duplicate IO layers
           - Attempting to fix tail test in win31
