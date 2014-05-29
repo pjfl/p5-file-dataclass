@@ -85,11 +85,12 @@ sub __build_attr_from { # Differentiate constructor method signatures
 }
 
 sub __clone_one_of_us {
-   my ($self, $params) = @_; $self->reverse; $self->sort; # Force evaluation
+   my ($self, $params) = @_;
+
+   $self->autoclose; $self->reverse; $self->sort; # Force evaluation
 
    my $clone = { %{ $self }, %{ $params // {} } };
-
-   $clone->{perms} = delete $clone->{_perms};
+   my $perms = delete $clone->{_perms}; $clone->{perms} //= $perms;
 
    return $clone;
 }
@@ -967,9 +968,9 @@ sub separator {
 }
 
 sub set_binmode {
-   my $self = shift;
+   my $self = shift; $NTFS and $self->_unshift_layer;
 
-   $self->_sane_binmode( $_ ) for @{ $self->_layers };
+   $self->_sane_binmode( $_ ) for (@{ $self->_layers });
 
    return $self;
 }
@@ -1099,6 +1100,14 @@ sub unlock {
    else { $handle and $handle->opened and flock $handle, LOCK_UN }
 
    return $self;
+}
+
+sub _unshift_layer {
+   my ($self, $layer) = @_; $layer //= NUL;
+
+   is_member $layer, $self->_layers and return FALSE;
+   unshift @{ $self->_layers }, $layer;
+   return TRUE;
 }
 
 sub _untainted_perms {

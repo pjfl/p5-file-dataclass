@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Restored binmode default for NTFS
+
 0.41.1    2014-05-28 11:27:00
           - Can now pass just a record name to find
           - Stopped txn_do from adding extra exception leader
