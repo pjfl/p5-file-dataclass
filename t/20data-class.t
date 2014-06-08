@@ -113,19 +113,19 @@ my $rs = test( $schema, qw( resultset globals ) );
 
 $args = {}; $e = test( $rs, 'create', $args );
 
-like $e, qr{ \Q'record name' not specified\E }msx, 'Record name not specified';
+like $e, qr{ \Qnot specified\E }msx, 'Record id not specified';
 
-$args->{name} = 'dummy'; my $res = test( $rs, 'create', $args );
+$args->{id} = 'dummy'; my $res = test( $rs, 'create', $args );
 
-ok !defined $res, 'Creates dummy element but does not insert';
+ok !$res, 'Creates dummy record but does not insert';
 
 $args->{text} = 'value1'; $res = test( $rs, 'create', $args );
 
-is $res, 'dummy', 'Creates dummy element and inserts';
+is $res->id, 'dummy', 'Creates dummy record and inserts';
 
 $args->{text} = 'value2'; $res = test( $rs, 'update', $args );
 
-is $res, 'dummy', 'Can update';
+is $res->id, 'dummy', 'Can update';
 
 delete $args->{text}; $res = test( $rs, 'find', $args );
 
@@ -133,33 +133,33 @@ is $res->text, 'value2', 'Can find';
 
 $e = test( $rs, 'create', $args );
 
-like $e, qr{ already \s+ exists }mx, 'Detects already existing element';
+like $e, qr{ already \s+ exists }mx, 'Detects already existing record';
 
 $res = test( $rs, 'delete', $args );
 
-is $res, 'dummy', 'Deletes dummy element';
+is $res, 'dummy', 'Deletes dummy record';
 
 $e = test( $rs, 'delete', $args );
 
-like $e, qr{ \Qdoes not exist\E }mx, 'Detects non existing element';
+like $e, qr{ \Qdoes not exist\E }mx, 'Detects non existing record';
 
-$args = { name => 'dummy', text => 'value3' };
+$args = { id => 'dummy', text => 'value3' };
 
 $res = test( $rs, 'create_or_update', $args );
 
-is $res, 'dummy','Create or update creates';
+is $res->id, 'dummy','Create or update creates';
 
 $args->{text} = 'value4'; $res = test( $rs, 'create_or_update', $args );
 
-is $res, 'dummy','Create or update updates';
+is $res->id, 'dummy','Create or update updates';
 
 $res = test( $rs, 'delete', $args );
 
-is( ($rs->source->columns)[ 0 ], 'text', 'Result source columns' );
+is( ($rs->result_source->columns)[ 0 ], 'text', 'Result source columns' );
 
-is $rs->source->has_column( 'text' ), 1, 'Has column - true';
-is $rs->source->has_column( 'nochance' ), 0, 'Has column - false';
-is $rs->source->has_column(), 0, 'Has column - undef';
+is $rs->result_source->has_column( 'text' ), 1, 'Has column - true';
+is $rs->result_source->has_column( 'nochance' ), 0, 'Has column - false';
+is $rs->result_source->has_column(), 0, 'Has column - undef';
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw( t default.json ) ],
@@ -169,7 +169,7 @@ $schema = File::DataClass::Schema->new
      tempdir => 't' );
 
 $rs   = $schema->resultset( 'fields' );
-$args = { name => 'feedback.body' };
+$args = { id => 'feedback.body' };
 $res  = test( $rs, 'list', $args );
 
 ok $res->result->width == 72 && scalar @{ $res->list } == 3, 'Can list';
@@ -181,7 +181,7 @@ $schema = File::DataClass::Schema->new
      tempdir => 't' );
 
 $rs   = $schema->resultset( 'levels' );
-$args = { list => 'acl', name => 'admin' };
+$args = { list => 'acl', id => 'admin' };
 $res  = test( $rs, 'push', $args );
 
 like $res, qr{ no \s items }mx, 'Cannot push an empty list';
@@ -192,7 +192,7 @@ $res  = test( $rs, 'push', $args );
 ok $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
    'Can push';
 
-$args = { list => 'acl', name => 'admin' };
+$args = { list => 'acl', id => 'admin' };
 $res  = test( $rs, 'splice', $args );
 
 like $res, qr{ no \s items }mx, 'Cannot splice an empty list';
@@ -205,24 +205,24 @@ ok $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
 
 my @res = test( $rs, 'search', $args = { acl => '@support' } );
 
-ok $res[ 0 ] && $res[ 0 ]->name eq 'admin', 'Can search';
-is $rs->search( $args )->first->name, 'admin', 'RS - first';
-is $rs->search( $args )->last->name,  'admin', 'RS - last';
-is $rs->search( $args )->next->name,  'admin', 'RS - next';
+ok $res[ 0 ] && $res[ 0 ]->id eq 'admin', 'Can search';
+is $rs->search( $args )->first->id, 'admin', 'RS - first';
+is $rs->search( $args )->last->id,  'admin', 'RS - last';
+is $rs->search( $args )->next->id,  'admin', 'RS - next';
 
 $rs = $schema->resultset( 'levels' );
 
 my $search_rs = $rs->search( $args ); $search_rs->next; $search_rs->reset;
 
-is $search_rs->next->name, 'admin', 'RS - reset';
+is $search_rs->next->id, 'admin', 'RS - reset';
 
 sub search {
    my $where = shift; my $rs = $schema->resultset( 'levels' );
 
-   return [ sort map { $_->name } $rs->search( $where )->all ];
+   return [ sort map { $_->id } $rs->search( $where )->all ];
 }
 
-is_deeply search( { name  => { 'eq' => 'admin' } } ), [ 'admin' ],
+is_deeply search( { id    => { 'eq' => 'admin' } } ), [ 'admin' ],
    'RS - eq operator';
 is_deeply search( { count => { '==' => '1'     } } ), [ 'admin' ],
    'RS - == operator';
@@ -230,7 +230,7 @@ is_deeply search( { acl   => { '=~' => 'port'  } } ), [ 'admin' ],
    'RS - =~ operator';
 is_deeply search( { acl   => { '!~' => 'port'  } } ), [ 'entrance', 'library' ],
    'RS - !~ operator';
-is_deeply search( { name  => { 'ne' => 'admin' } } ), [ 'entrance', 'library' ],
+is_deeply search( { id    => { 'ne' => 'admin' } } ), [ 'entrance', 'library' ],
    'RS - ne operator';
 is_deeply search( { count => { '!=' => '1'     } } ), [ 'entrance', 'library' ],
    'RS - != operator';

@@ -74,11 +74,13 @@ like $data->{ '_cvs_other' } || q(), qr{ @\(\#\)\$Id: }mx,
 my $rs   = test( $schema, qw( resultset globals ) );
 my $args = { name => 'dummy', text => 'value3' };
 
-is test( $rs, 'create_or_update', $args ), 'dummy', 'Create or update creates';
+is test( $rs, 'create_or_update', $args )->id, 'dummy',
+   'Create or update creates';
 
 $args->{text} = 'value4';
 
-is test( $rs, 'create_or_update', $args ), 'dummy', 'Create or update updates';
+is test( $rs, 'create_or_update', $args )->id, 'dummy',
+   'Create or update updates';
 
 like test( $rs, 'create_or_update', $args ), qr{ \Qnothing updated\E }imx,
    'No update without change';

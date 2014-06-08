@@ -31,7 +31,7 @@ has 'schema'   => is => 'ro', isa => Object,
 sub create_or_update {
    my ($self, $path, $result, $updating, $cond) = @_;
 
-   my $element = $result->_resultset->source->name;
+   my $element = $result->result_source->name;
 
    $self->validate_params( $path, $element ); my $updated;
 
@@ -39,35 +39,34 @@ sub create_or_update {
 
    try {
       my $filter = sub { __get_src_attributes( $cond, $_[ 0 ] ) };
-      my $name   = $result->name; $data->{ $element } ||= {};
+      my $id     = $result->id; $data->{ $element } ||= {};
 
-      not $updating and exists $data->{ $element }->{ $name }
-         and throw class => RecordAlreadyExists, args => [ $path, $name ],
+      not $updating and exists $data->{ $element }->{ $id }
+         and throw class => RecordAlreadyExists, args => [ $path, $id ],
                    level => 2;
 
       $updated = File::DataClass::HashMerge->merge
-         ( \$data->{ $element }->{ $name }, $result, $filter );
+         ( \$data->{ $element }->{ $id }, $result, $filter );
    }
    catch { $self->_lock->reset( k => $path ); throw $_ };
 
    if ($updated) { $self->_write_file( $path, $data, not $updating ) }
    else { $self->_lock->reset( k => $path ) }
 
-   return $updated;
+   return $updated ? $result : FALSE;
 }
 
 sub delete {
    my ($self, $path, $result) = @_;
 
-   my $element = $result->_resultset->source->name;
+   my $element = $result->result_source->name;
 
    $self->validate_params( $path, $element );
 
-   my $data = ($self->_read_file( $path, TRUE ))[ 0 ];
-   my $name = $result->name;
+   my $data = ($self->_read_file( $path, TRUE ))[ 0 ]; my $id = $result->id;
 
-   if (exists $data->{ $element } and exists $data->{ $element }->{ $name }) {
-      delete $data->{ $element }->{ $name };
+   if (exists $data->{ $element } and exists $data->{ $element }->{ $id }) {
+      delete $data->{ $element }->{ $id };
       scalar keys %{ $data->{ $element } } or delete $data->{ $element };
       $self->_write_file( $path, $data );
       return TRUE;
@@ -239,7 +238,7 @@ sub __get_src_attributes {
    my ($cond, $src) = @_;
 
    return grep { not m{ \A _ }mx
-                 and $_ ne 'name'
+                 and $_ ne 'id' and $_ ne 'name'
                  and $cond->( $_ ) } keys %{ $src };
 }
 

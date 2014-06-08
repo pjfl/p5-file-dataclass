@@ -11,72 +11,74 @@ use File::DataClass::Types     qw( ArrayRef ClassName HashRef Int Object );
 use Scalar::Util               qw( blessed );
 use Unexpected::Functions      qw( RecordNotFound Unspecified );
 
-has 'list_class'   => is => 'ro',   isa => ClassName,
-   default         => 'File::DataClass::List';
+has 'list_class'    => is => 'ro',   isa => ClassName,
+   default          => 'File::DataClass::List';
 
-has 'result_class' => is => 'ro',   isa => ClassName,
-   default         => 'File::DataClass::Result';
+has 'result_class'  => is => 'ro',   isa => ClassName,
+   default          => 'File::DataClass::Result';
 
-has 'source'       => is => 'ro',   isa => Object,
-   handles         => [ qw( attributes defaults label_attr path storage ) ],
-   required        => TRUE, weak_ref => TRUE;
+has 'result_source' => is => 'ro',   isa => Object,
+   handles          => [ qw( attributes defaults label_attr path storage ) ],
+   required         => TRUE, weak_ref => TRUE;
 
 
-has '_iterator'    => is => 'rw',   isa => Int, default => 0, init_arg => undef;
+has '_iterator'  => is => 'rw',   isa => Int, default => 0, init_arg => undef;
 
-has '_operators'   => is => 'lazy', isa => HashRef;
+has '_operators' => is => 'lazy', isa => HashRef;
 
-has '_results'     => is => 'rw',   isa => ArrayRef,
-   default         => sub { [] }, init_arg => undef;
+has '_results'   => is => 'rw',   isa => ArrayRef,
+   default       => sub { [] }, init_arg => undef;
 
 sub all {
    my $self = shift; return @{ $self->_results };
 }
 
 sub create {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_; $self->_validate_params( $args );
 
-   my $res = $self->_txn_do( sub { $self->_create_result( $args )->insert } );
-
-   return $res ? $name : undef;
+   return $self->_txn_do( sub { $self->_create_result( $args )->insert } );
 }
 
 sub create_or_update {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
 
-   my $res = $self->_txn_do( sub {
-      my $result = $self->_find( $name )
+   return $self->_txn_do( sub {
+      my $result = $self->_find( $id )
          or return $self->_create_result( $args )->insert;
 
       return $self->_update_result( $result, $args );
    } );
-
-   return $res ? $name : undef;
 }
 
 sub delete {
-   my ($self, $args) = @_; my $optional = $args->{optional};
+   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
 
-   my $name = $self->_validate_params( $args ); my $path = $self->path;
+   my $optional = $args->{optional}; my $path = $self->path;
 
    my $res = $self->_txn_do( sub {
-      my $result; unless ($result = $self->_find( $name )) {
-         $optional and return FALSE;
-         throw class => RecordNotFound, args => [ $path, $name ];
+      my $result; unless ($result = $self->_find( $id )) {
+         $optional or throw class => RecordNotFound, args => [ $path, $id ];
+         return FALSE;
       }
 
       $result->delete or throw error => 'File [_1] element [_2] not deleted',
-                               args  => [ $path, $name ];
+                               args  => [ $path, $id ];
       return TRUE;
    } );
 
-   return $res ? $name : undef;
+   return $res ? $id : undef;
 }
 
 sub find {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
 
-   return $self->_txn_do( sub { $self->_find( $name ) } );
+   return $self->_txn_do( sub { $self->_find( $id ) } );
+}
+
+sub find_and_update {
+   my ($self, $args) = @_; $self->_validate_params( $args );
+
+   return $self->_txn_do( sub { $self->_find_and_update( $args ) } );
 }
 
 sub first {
@@ -90,7 +92,7 @@ sub last {
 sub list {
    my ($self, $args) = @_;
 
-   return $self->_txn_do( sub { $self->_list( $args->{name} ) } );
+   return $self->_txn_do( sub { $self->_list( $args->{id} // $args->{name} ) });
 }
 
 sub next {
@@ -101,7 +103,7 @@ sub next {
 }
 
 sub push {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
 
    my $list  = $args->{list} or throw class => Unspecified, args => [ 'list' ];
    my $items = $args->{items} || []; my ($added, $attrs);
@@ -109,11 +111,12 @@ sub push {
    $items->[ 0 ] or throw 'List contains no items';
 
    my $res = $self->_txn_do( sub {
-      ($attrs, $added) = $self->_push( $name, $list, $items );
-      $self->_find_and_update( $attrs );
+      ($attrs, $added) = $self->_push( $id, $list, $items );
+
+      return $self->_find_and_update( $attrs );
    } );
 
-   return $res ? $added : undef;
+   return $res ? $added : FALSE;
 }
 
 sub reset {
@@ -123,7 +126,7 @@ sub reset {
 sub select {
    my $self = shift;
 
-   return $self->storage->select( $self->path, $self->source->name );
+   return $self->storage->select( $self->path, $self->result_source->name );
 }
 
 sub search {
@@ -133,7 +136,7 @@ sub search {
 }
 
 sub splice {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
 
    my $list  = $args->{list} or throw class => Unspecified, args => [ 'list' ];
    my $items = $args->{items} || []; my ($attrs, $removed);
@@ -141,19 +144,31 @@ sub splice {
    $items->[ 0 ] or throw 'List contains no items';
 
    my $res = $self->_txn_do( sub {
-      ($attrs, $removed) = $self->_splice( $name, $list, $items );
-      $self->_find_and_update( $attrs );
+      ($attrs, $removed) = $self->_splice( $id, $list, $items );
+
+      return $self->_find_and_update( $attrs );
    } );
 
-   return $res ? $removed : undef;
+   return $res ? $removed : FALSE;
 }
 
 sub update {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_;
 
-   my $res = $self->_txn_do( sub { $self->_find_and_update( $args ) } );
+   if (my $id = $args->{id} // $args->{name}) { # Deprecated
+      return $self->_txn_do( sub { $self->_find_and_update( $args ) } );
+   }
 
-   return $res ? $name : undef;
+   # TODO: Write tests for this
+   return $self->_txn_do( sub {
+      my $updated = FALSE;
+
+      for my $result (@{ $self->_results }) {
+         $updated ||= $self->_update_result( $result, $args );
+      }
+
+      return $updated;
+   } );
 }
 
 # Private methods
@@ -175,10 +190,10 @@ sub _build__operators {
 sub _create_result {
    my ($self, $args) = @_;
 
-   my $attrs = { %{ $self->defaults }, _resultset => $self };
+   my $attrs = { %{ $self->defaults }, result_source => $self->result_source };
 
    for (grep { exists $args->{ $_ } and defined $args->{ $_ } }
-            @{ $self->attributes }, 'name') {
+            @{ $self->attributes }, 'id', 'name') {
       $attrs->{ $_ } = $args->{ $_ };
    }
 
@@ -206,9 +221,9 @@ sub _eval_clause {
 sub _eval_criteria {
    my ($self, $criteria, $attrs) = @_; my $lhs;
 
-   for (keys %{ $criteria }) {
-      defined ($lhs = $attrs->{ $_ }) or return FALSE;
-      $self->_eval_clause( $criteria->{ $_ }, $lhs ) or return FALSE;
+   for my $k (keys %{ $criteria }) {
+      defined ($lhs = $attrs->{ $k eq 'name' ? 'id' : $k }) or return FALSE;
+      $self->_eval_clause( $criteria->{ $k }, $lhs ) or return FALSE;
    }
 
    return TRUE;
@@ -226,36 +241,36 @@ sub _eval_op {
 }
 
 sub _find {
-   my ($self, $name) = @_; my $results = $self->select;
+   my ($self, $id) = @_; my $results = $self->select;
 
-   ($name and exists $results->{ $name }) or return;
+   ($id and exists $results->{ $id }) or return;
 
-   my $attrs = { %{ $results->{ $name } }, name => $name };
+   my $attrs = { %{ $results->{ $id } }, id => $id };
 
    return $self->_create_result( $attrs );
 }
 
 sub _find_and_update {
-   my ($self, $args) = @_; my $name = $self->_validate_params( $args );
+   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
 
-   my $result = $self->_find( $name )
-      or throw class => RecordNotFound, args => [ $self->path, $name ];
+   my $result = $self->_find( $id )
+      or throw class => RecordNotFound, args => [ $self->path, $id ];
 
    return $self->_update_result( $result, $args );
 }
 
 sub _list {
-   my ($self, $name) = @_; my ($attr, $attrs, $labels); my $found = FALSE;
+   my ($self, $id) = @_; my ($attr, $attrs, $labels); my $found = FALSE;
 
    my $results = $self->select; my $list = [ sort keys %{ $results } ];
 
    $attr = $self->label_attr
       and $labels = { map { $_ => $results->{ $_ }->{ $attr } } @{ $list } };
 
-   if ($name and exists $results->{ $name }) {
-      $attrs = { %{ $results->{ $name } }, name => $name }; $found = TRUE;
+   if ($id and exists $results->{ $id }) {
+      $attrs = { %{ $results->{ $id } }, id => $id }; $found = TRUE;
    }
-   else { $attrs = { name => $name } }
+   else { $attrs = { id => $id } }
 
    my $result = $self->_create_result( $attrs );
 
@@ -265,9 +280,9 @@ sub _list {
 }
 
 sub _push {
-   my ($self, $name, $attr, $items) = @_;
+   my ($self, $id, $attr, $items) = @_;
 
-   my $attrs = { %{ $self->select->{ $name } || {} }, name => $name };
+   my $attrs = { %{ $self->select->{ $id } || {} }, id => $id };
    my $list  = [ @{ $attrs->{ $attr } || [] } ];
    my $in    = [];
 
@@ -286,7 +301,7 @@ sub _search {
       $results = $self->select;
 
       for (keys %{ $results }) {
-         my $attrs = { %{ $results->{ $_ } }, name => $_ };
+         my $attrs = { %{ $results->{ $_ } }, id => $_ };
 
          if (not $where or $self->_eval_criteria( $where, $attrs )) {
             CORE::push @{ $self->_results }, $self->_create_result( $attrs );
@@ -305,9 +320,9 @@ sub _search {
 }
 
 sub _splice {
-   my ($self, $name, $attr, $items) = @_;
+   my ($self, $id, $attr, $items) = @_;
 
-   my $attrs = { %{ $self->select->{ $name } || {} }, name => $name };
+   my $attrs = { %{ $self->select->{ $id } || {} }, id => $id };
    my $list  = [ @{ $attrs->{ $attr } || [] } ];
    my $out   = [];
 
@@ -346,11 +361,11 @@ sub _update_result {
 sub _validate_params {
    my ($self, $args) = @_; $args //= {};
 
-   my $name = (is_hashref $args) ? $args->{name} : $args;
+   my $id = (is_hashref $args) ? ($args->{id} // $args->{name}) : $args;
 
-   $name or throw class => Unspecified, args => [ 'record name' ], level => 2;
+   $id or throw class => Unspecified, args => [ 'record id' ], level => 2;
 
-   return $name;
+   return $id;
 }
 
 1;
@@ -397,7 +412,7 @@ List class name, defaults to L<File::DataClass::List>
 
 Result class name, defaults to L<File::DataClass::Result>
 
-=item C<source>
+=item C<result_source>
 
 An object reference to the L<File::DataClass::ResultSource> instance
 that created this result set
@@ -422,72 +437,81 @@ An array of result objects. Produced by calling L</search>
 
 =head2 all
 
-   @elements = $rs->search()->all;
+   @results = $rs->search()->all;
 
-Returns all the elements that are returned by the L</search> call
+Returns all the result object references that were found by the
+L</search> call
 
 =head2 create
 
-   $new_element_name = $rs->create( $args );
+   $result_object_ref = $rs->create( $args );
 
-Creates and inserts an new element. The C<$args> hash requires these
-keys; C<name> of the element to create and C<fields> is a hash
-containing the attributes of the new element. Missing attributes are
-defaulted from the C<defaults> attribute of the
-L<File::DataClass::Schema> object. Returns the new element's name
+Creates and inserts an new record. The C<$args> hash requires the
+C<id> of the record to create. Missing attributes are defaulted from
+the C<defaults> attribute of the L<File::DataClass::Schema>
+object. Returns the new record's object reference
+
+This behaviour changed after 0.41. It used to return the new record id
 
 =head2 create_or_update
 
-   $element_name = $rs->create_or_update( $args );
+   $result_object_ref = $rs->create_or_update( $args );
 
-Creates a new element if it does not already exist, updates the existing
-one if it does. Calls L</_find_and_update>
+Creates a new record if it does not already exist, updates the existing
+one if it does. Returns the record's object reference
+
+This behaviour changed after 0.41. It used to return the record id
 
 =head2 delete
 
-   $rs->delete( { name => $of_element_to_delete } );
+   $record_id = $rs->delete( $id_of_record_to_delete );
+   $record_id = $rs->delete( { id => $record_to_delete, optional => $bool } );
 
-Deletes an element
+Deletes a record. Returns the id of the deleted record. By default the
+C<optional> flag is false and if the record does not exist an exception will
+be thrown. Setting the flag to true avoids the exception and C<undef> is
+returned instead
 
 =head2 find
 
-   $result_object = $rs->find( { name => $of_element_to_find } );
+   $result_object_ref = $rs->find( $id_of_record_to_find } );
 
-Finds the named element and returns an
-L<element|File::DataClass::Result> object for it
+Finds the named record and returns an
+L<result|File::DataClass::Result> object reference for it
 
-=head2 _find_and_update
+=head2 find_and_update
 
-   $updated_element_name = $rs->_find_and_update( $args );
+   $result_object_ref = $rs->find_and_update( $args );
 
-Finds the named element object and updates it's attributes. Does not wrap
-the find and update in a transaction
+Finds the named result object and updates it's attributes
+
+This behaviour changed after 0.41. It used to return the result id
 
 =head2 first
 
-   $result_object = $rs->search( $where_clauses )->first;
+   $result_object_ref = $rs->search( $where_clauses )->first;
 
-Returns the first element object that is the result of the search call
+Returns the first result object that was found by the C</search> call
 
 =head2 list
 
-   $list_obect = $rs->list( { name => $name } );
+   $list_object_ref = $rs->list( { id => $id } );
 
-Returns a L<list|File::DataClass::List> object
+Returns a L<list|File::DataClass::List> object reference
 
-Retrieves the named element and a list of elements
+Retrieves the named record and a list of record ids
 
 =head2 last
 
-   $result_object = $rs->search( $where_clauses )->last;
+   $result_object_ref = $rs->search( $where_clauses )->last;
 
-Returns the last element object that is the result of the search call
+Returns the last result object that was found by the C</search> call
 
 =head2 next
 
-   $result_object = $rs->search( $where_clauses )->next;
+   $result_object_ref = $rs->search( $where_clauses )->next;
 
-Iterate over the elements returned by the search call
+Iterate over the results returned by the C</search> call
 
 =head2 path
 
@@ -497,10 +521,10 @@ Attribute L<File::DataClass::Schema/path>
 
 =head2 push
 
-   $added = $rs->push( { name => $name, list => $list, items => $items } );
+   $added = $rs->push( { name => $id, list => $list, items => $items } );
 
 Adds items to the attribute list. The C<$args> hash requires these
-keys; C<name> the element to edit, C<list> the attribute of the named
+keys; C<id> the element to edit, C<list> the attribute of the named
 element containing the list of existing items, C<req> the request
 object and C<items> the field on the request object containing the
 list of new items
@@ -509,18 +533,19 @@ list of new items
 
    $rs->reset
 
-Resets the resultset's cursor, so you can iterate through the elements again
+Resets the resultset's cursor, so you can iterate through the search
+results again
 
 =head2 search
 
    $result = $rs->search( $hash_ref_of_where_clauses );
 
-Search for elements that match the given criterion. The criterion is a hash
-ref whose keys are element attribute names. The criterion values are either
-scalar values or hash refs. The scalar values are tested for equality with
-the corresponding element attribute values. Hash ref keys are treated as
-comparison operators, the hash ref values are compared with the element
-attribute values, e.g.
+Search for records that match the given criterion. The criterion is a
+hash reference whose keys are record attribute names. The criterion
+values are either scalar values or hash references. The scalar values
+are tested for equality with the corresponding record attribute
+values. Hash reference keys are treated as comparison operators, the
+hash reference values are compared with the record attribute values, e.g.
 
    { 'some_element_attribute_name' => { '>=' => 0 } }
 
@@ -528,11 +553,11 @@ attribute values, e.g.
 
    $hash = $rs->select;
 
-Returns a hash ref of elements
+Returns a hash ref of records
 
 =head2 splice
 
-   $removed = $rs->splice( { name => $name, list => $list, items => $items } );
+   $removed = $rs->splice( { name => $id, list => $list, items => $items } );
 
 Removes items from the attribute list
 
@@ -544,7 +569,7 @@ Attribute L<File::DataClass::Schema/storage>
 
 =head2 update
 
-   $rs->update( { name => $of_element, fields => $attr_hash } );
+   $rs->update( { id => $of_element, fields => $attr_hash } );
 
 Updates the named element
 

@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Deprecated name attribute in favour of id
           - Restored binmode default for NTFS
 
 0.41.1    2014-05-28 11:27:00

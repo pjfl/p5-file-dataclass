@@ -8,27 +8,39 @@ use namespace::clean -except => 'meta';
 use Moo;
 use MooX::ClassStash;
 
-has 'name'       => is => 'rw', isa => Str,    required => 1;
+has 'id' => is => 'rw', isa => Str, required => 1;
 
-has '_resultset' => is => 'ro', isa => Object, required => 1,
-   handles       => { _path    => 'path', _source => 'source',
-                      _storage => 'storage' };
+has '_result_source' => is => 'ro', isa => Object,
+   handles  => { _path => 'path', _storage => 'storage' },
+   init_arg => 'result_source', reader => 'result_source',
+   required => 1, weak_ref => 1;
+
+around 'BUILDARGS' => sub {
+   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
+
+   my $name = delete $attr->{name}; $attr->{id} //= $name;
+
+   return $attr;
+};
 
 sub BUILD {
    my ($self, $args) = @_;
 
-   my $class = blessed $self; my $meta = $class->class_stash;
-
-   my %types = ( 'SCALAR', Maybe[Str], 'ARRAY',  Maybe[ArrayRef],
+   my $class  = blessed $self;
+   my $meta   = $class->class_stash;
+   my %types  = ( 'SCALAR', Maybe[Str], 'ARRAY',  Maybe[ArrayRef],
                  'HASH',   Maybe[HashRef] );
+   my @attrs  = @{ $self->result_source->attributes };
+   my $except = 'delete | insert | name | update';
 
-   for (@{ $self->_source->attributes }) {
-      my $type = ref $self->_source->defaults->{ $_ } || ref $args->{ $_ };
+   for my $attr (grep { not m{ \A (?: $except ) \z }mx } @attrs) {
+      my $type = ref $self->result_source->defaults->{ $attr }
+              || ref $args->{ $attr };
 
-      $meta->has_attribute( $_ ) or $meta->add_attribute
-         ( $_ => ( is => 'rw', isa => $types{ $type || q(SCALAR) } ) );
+      $meta->has_attribute( $attr ) or $meta->add_attribute
+         ( $attr => ( is => 'rw', isa => $types{ $type || 'SCALAR' } ) );
 
-      defined $args->{ $_ } and $self->$_( $args->{ $_ } );
+      defined $args->{ $attr } and $self->$attr( $args->{ $attr } );
    }
 
    return;
@@ -40,6 +52,10 @@ sub delete {
 
 sub insert {
    return $_[ 0 ]->_storage->insert( $_[ 0 ]->_path, $_[ 0 ] );
+}
+
+sub name { # Deprecated
+   return defined $_[ 1 ] ? $_[ 0 ]->id( $_[ 1 ] ) : $_[ 0 ]->id;
 }
 
 sub update {
@@ -68,19 +84,23 @@ Defines these attributes
 
 =over 3
 
-=item B<name>
+=item B<id>
 
 An additional attribute added to the result to store the underlying hash
 key
 
-=item B<_resultset>
+=item B<result_source>
 
-An object reference to the L<File::DataClass::ResultSet> instance that
-created this result object
+An object reference to the L<File::DataClass::ResultSource> instance for
+this result object
 
 =back
 
 =head1 Subroutines/Methods
+
+=head2 BUILDARGS
+
+Replaces the deprecated C<name> attribute with C<id>
 
 =head2 BUILD
 
@@ -98,6 +118,13 @@ Calls the delete method in the storage class
    $result->insert;
 
 Calls the insert method in the storage class
+
+=head2 name
+
+   $result->name;
+
+Defined as an alias for the C<id> attribute, use of this attribute is
+deprecated
 
 =head2 update
 

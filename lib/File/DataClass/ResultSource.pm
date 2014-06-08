@@ -46,7 +46,7 @@ sub has_column {
 sub resultset {
    my $self = shift;
 
-   my $attrs = { %{ $self->resultset_attributes }, source => $self };
+   my $attrs = { %{ $self->resultset_attributes }, result_source => $self };
 
    return $self->resultset_class->new( $attrs );
 }

@@ -47,7 +47,7 @@ my $rs   = test( $schema, 'resultset', 'keys' );
 my $args = { name => 'dummy', vals => { k1 => 'v1' } };
 my $res  = test( $rs, 'create', $args );
 
-is $res, q(dummy), 'Creates dummy element and inserts';
+is $res->id, 'dummy', 'Creates dummy element and inserts';
 
 delete $args->{vals}; $res = test( $rs, 'find', $args );
 
