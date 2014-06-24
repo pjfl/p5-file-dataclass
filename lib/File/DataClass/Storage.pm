@@ -143,7 +143,7 @@ sub txn_do {
    $self->_lock->set( k => $key ); my $res;
 
    try {
-      if ($wantarray) { @{ $res } = $code_ref->() }
+      if ($wantarray) { $res = [ $code_ref->() ] }
       else { $res = $code_ref->() }
    }
    catch { $self->_lock->reset( k => $key ); throw $_, { level => 4 } };
