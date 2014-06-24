@@ -1,6 +1,6 @@
 package File::DataClass::ResultSet;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use File::DataClass::Constants;

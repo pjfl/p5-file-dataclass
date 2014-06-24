@@ -1,8 +1,7 @@
 package File::DataClass::Functions;
 
 use 5.010001;
-use strict;
-use warnings;
+use strictures;
 use feature 'state';
 
 use English               qw( -no_match_vars );

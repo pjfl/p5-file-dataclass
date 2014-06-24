@@ -1,7 +1,7 @@
 package File::DataClass;
 
 use 5.010001;
-use namespace::sweep;
+use namespace::autoclean;
 use version; our $VERSION = qv( sprintf '0.41.%d', q$Rev: 4 $ =~ /\d+/gmx );
 
 use Moo;

@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Replaced namespace::sweep with ::autoclean
           - Fixed obscure syntax in ::Storage::txn_do
           - Deprecated name attribute in favour of id
           - Restored binmode default for NTFS

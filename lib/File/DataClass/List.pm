@@ -1,6 +1,6 @@
 package File::DataClass::List;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use File::DataClass::Types qw( ArrayRef Bool HashRef Result Undef );

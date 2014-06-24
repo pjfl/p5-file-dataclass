@@ -1,6 +1,6 @@
 package File::DataClass::Storage;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use Class::Null;

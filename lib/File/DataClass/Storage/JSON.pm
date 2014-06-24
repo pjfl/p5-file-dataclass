@@ -1,6 +1,6 @@
 package File::DataClass::Storage::JSON;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use File::DataClass::Functions qw( extension_map throw );

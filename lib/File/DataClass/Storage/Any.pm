@@ -1,6 +1,6 @@
 package File::DataClass::Storage::Any;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use File::Basename             qw( basename );

@@ -1,7 +1,6 @@
 package File::DataClass::Constants;
 
-use strict;
-use warnings;
+use strictures;
 
 use Exporter 5.57 qw( import );
 use File::DataClass::Exception;

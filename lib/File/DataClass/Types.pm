@@ -1,7 +1,6 @@
 package File::DataClass::Types;
 
-use strict;
-use warnings;
+use strictures;
 
 use File::DataClass::IO;
 use Scalar::Util          qw( blessed dualvar );

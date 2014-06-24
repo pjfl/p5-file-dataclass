@@ -1,7 +1,7 @@
 package File::DataClass::Cache;
 
 use 5.01;
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use File::DataClass::Constants;

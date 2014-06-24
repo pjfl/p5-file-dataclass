@@ -1,6 +1,6 @@
 package File::DataClass::Exception;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use Unexpected::Functions qw( has_exception );
@@ -152,7 +152,7 @@ None
 
 =over 3
 
-=item L<namespace::sweep>
+=item L<namespace::autoclean>
 
 =item L<Moo>
 

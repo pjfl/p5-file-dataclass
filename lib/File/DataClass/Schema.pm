@@ -1,6 +1,6 @@
 package File::DataClass::Schema;
 
-use namespace::sweep;
+use namespace::autoclean;
 
 use Moo;
 use Class::Null;
@@ -383,7 +383,7 @@ debug method to be called with useful information
 
 =over 3
 
-=item L<namespace::sweep>
+=item L<namespace::autoclean>
 
 =item L<Class::Null>
 
