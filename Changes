@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+0.42.1    2014-07-04 00:27:00
+          - Releasing
           - Fixed type error in ::ResultSet::delete
           - Replaced namespace::sweep with ::autoclean
           - Fixed obscure syntax in ::Storage::txn_do
