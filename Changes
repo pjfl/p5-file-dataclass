@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Fixed type error in ::ResultSet::delete
           - Replaced namespace::sweep with ::autoclean
           - Fixed obscure syntax in ::Storage::txn_do
           - Deprecated name attribute in favour of id

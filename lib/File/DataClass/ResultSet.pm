@@ -53,7 +53,8 @@ sub create_or_update {
 sub delete {
    my ($self, $args) = @_; my $id = $self->_validate_params( $args );
 
-   my $optional = $args->{optional}; my $path = $self->path;
+   my $optional = (is_hashref $args) ? $args->{optional} : FALSE;
+   my $path     = $self->path;
 
    my $res = $self->_txn_do( sub {
       my $result; unless ($result = $self->_find( $id )) {
@@ -92,7 +93,9 @@ sub last {
 sub list {
    my ($self, $args) = @_;
 
-   return $self->_txn_do( sub { $self->_list( $args->{id} // $args->{name} ) });
+   my $id = (is_hashref $args) ? $args->{id} // $args->{name} : $args;
+
+   return $self->_txn_do( sub { $self->_list( $id ) } );
 }
 
 sub next {
