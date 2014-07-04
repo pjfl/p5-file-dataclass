@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+          - Skipping heads / tails test on win32 since it's too flakey
+            29a2bb0c-6bf4-1014-974a-4394dad81770
+
 0.42.1    2014-07-04 00:27:00
           - Releasing
           - Fixed type error in ::ResultSet::delete
