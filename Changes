@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Fixed resultset update and added tests
+          - Added backwards bool to ::IO
           - Skipping heads / tails test on win32 since it's too flakey
             29a2bb0c-6bf4-1014-974a-4394dad81770
 

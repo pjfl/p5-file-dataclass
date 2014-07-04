@@ -115,6 +115,10 @@ $args = {}; $e = test( $rs, 'create', $args );
 
 like $e, qr{ \Qnot specified\E }msx, 'Record id not specified';
 
+$e = test( $rs, 'create' );
+
+like $e, qr{ \Qnot specified\E }msx, 'Record id not specified - undefined args';
+
 $args->{id} = 'dummy'; my $res = test( $rs, 'create', $args );
 
 ok !$res, 'Creates dummy record but does not insert';
@@ -169,10 +173,18 @@ $schema = File::DataClass::Schema->new
      tempdir => 't' );
 
 $rs   = $schema->resultset( 'fields' );
-$args = { id => 'feedback.body' };
-$res  = test( $rs, 'list', $args );
+$res  = test( $rs, 'list', { id => 'create-new' } );
+
+is $res->result->id, 'create-new', 'Lists with non existant id';
+
+$res  = test( $rs, 'list', { id => 'feedback.body' } );
 
 ok $res->result->width == 72 && scalar @{ $res->list } == 3, 'Can list';
+
+is $res->result->name, 'feedback.body',
+   'Deprecated name attribute use id instead - accessor';
+is $res->result->name( 'old_tosh' ), 'old_tosh',
+   'Deprecated name attribute use id instead - mutator';
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw( t default.json ) ],
@@ -243,6 +255,29 @@ is_deeply search( { count => { '<' => '3'      } } ), [ 'admin',   'entrance' ],
 is_deeply search( { count => { '<=' => '2'     } } ), [ 'admin',   'entrance' ],
    'RS - <= operator';
 
+io( [ qw( t default.json ) ] )->copy( [ qw( t update.json ) ] );
+
+$schema = File::DataClass::Schema->new
+   ( path    => [ qw( t update.json ) ],
+     result_source_attributes => {
+        fields => { attributes => [ qw( width ) ], }, },
+     tempdir => 't' );
+
+$rs = $schema->resultset( 'fields' );
+$rs = $rs->search( { width => { '>' => '10' } } );
+$rs->update( { width => '100' } );
+$rs = $schema->resultset( 'fields' );
+$rs = $rs->search( { width => { '==' => '100' } } );
+
+is_deeply [ sort map { $_->id } $rs->all ],
+   [ 'app_closed.user', 'feedback.body' ], 'Resultset update';
+
+$rs = $schema->resultset( 'fields' );
+$rs->find_and_update( { id => 'feedback.body', width => '12' } );
+$rs = $schema->resultset( 'fields' );
+
+is $rs->find( 'feedback.body' )->width, 12, 'Find and update';
+
 {  package Dummy;
 
    sub new { bless { tempdir => 't' }, 'Dummy' }
@@ -271,6 +306,7 @@ done_testing;
 # Cleanup
 io( $dumped )->unlink;
 io( $cache_file )->unlink;
+io( [ qw( t update.json ) ] )->unlink;
 io( catfile( qw( t ipc_srlock.lck ) ) )->unlink;
 io( catfile( qw( t ipc_srlock.shm ) ) )->unlink;
 

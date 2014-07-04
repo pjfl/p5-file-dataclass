@@ -51,6 +51,7 @@ has 'type'          => is => 'rwp',  isa => Maybe[$IO_TYPE]                  ;
 has '_assert'       => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_atomic'       => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_atomic_infix' => is => 'rw',   isa => SimpleStr,      default => 'B_*' ;
+has '_backwards'    => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_block_size'   => is => 'rw',   isa => PositiveInt,    default => 1024  ;
 has '_chomp'        => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_deep'         => is => 'rw',   isa => Bool,           default => FALSE ;
@@ -230,8 +231,8 @@ sub _assert_open_backwards {
                         args  => [ $self->name, $OS_ERROR ] );
    $self->_set_is_open( TRUE );
    $self->_set_mode( 'r' );
-   $self->set_binmode;
    $self->set_lock;
+   $self->set_binmode;
    return;
 }
 
@@ -245,6 +246,10 @@ sub atomic_infix {
 
 sub atomic_suffix {
    defined $_[ 1 ] and $_[ 0 ]->_atomic_infix( $_[ 1 ] ); return $_[ 0 ];
+}
+
+sub backwards {
+   $_[ 0 ]->_backwards( TRUE ); return $_[ 0 ];
 }
 
 sub basename {
@@ -533,7 +538,11 @@ sub _get_atomic_path {
 }
 
 sub getline {
-   my ($self, $separator) = @_; my $line; $self->assert_open;
+   my ($self, $separator) = @_;
+
+   $self->_backwards and return $self->_getline_backwards;
+
+   my $line; $self->assert_open;
 
    {  local $RS = $separator // $self->_separator; # uncoverable condition false
       $line = $self->io_handle->getline;
@@ -553,7 +562,11 @@ sub _getline_backwards {
 }
 
 sub getlines {
-   my ($self, $separator) = @_; my @lines; $self->assert_open;
+   my ($self, $separator) = @_;
+
+   $self->_backwards and return $self->_getlines_backwards;
+
+   my @lines; $self->assert_open;
 
    {  local $RS = $separator // $self->_separator; # uncoverable condition false
       @lines = $self->io_handle->getlines;
@@ -565,6 +578,14 @@ sub getlines {
    scalar @lines and return (@lines);
    $self->autoclose and $self->close;
    return ();
+}
+
+sub _getlines_backwards {
+   my $self = shift; my @lines;
+
+   while (defined (my $line = $self->_getline_backwards)) { push @lines, $line }
+
+   return @lines;
 }
 
 sub head {
@@ -809,8 +830,8 @@ sub _open_file {
    # TODO: Not necessary on normal systems
    $self->is_writing and CORE::chmod $perms, $path;
    $self->_set_is_open( TRUE );
-   $self->set_binmode;
    $self->set_lock;
+   $self->set_binmode;
    return $self;
 }
 
@@ -968,7 +989,11 @@ sub separator {
 }
 
 sub set_binmode {
-   my $self = shift; $NTFS and $self->_unshift_layer;
+   my $self = shift;
+
+   if ($NTFS) { #uncoverable condition true
+      is_member NUL, $self->_layers or unshift @{ $self->_layers }, NUL;
+   }
 
    $self->_sane_binmode( $_ ) for (@{ $self->_layers });
 
@@ -1100,14 +1125,6 @@ sub unlock {
    else { $handle and $handle->opened and flock $handle, LOCK_UN }
 
    return $self;
-}
-
-sub _unshift_layer {
-   my ($self, $layer) = @_; $layer //= NUL;
-
-   is_member $layer, $self->_layers and return FALSE;
-   unshift @{ $self->_layers }, $layer;
-   return TRUE;
 }
 
 sub _untainted_perms {
@@ -1367,6 +1384,12 @@ contain a C<*> then the value is appended to the filename instead
 If the value contains C<%P> it will be replaced with the process id
 
 If the value contains C<%T> it will be replaces with the thread id
+
+=head2 backwards
+
+   $io = io( 'path_to_file' )->backwards;
+
+Causes L</getline> and L</getlines> to read the file backwards
 
 =head2 basename
 

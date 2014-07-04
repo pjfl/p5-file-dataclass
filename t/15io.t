@@ -402,6 +402,15 @@ SKIP: {
       like( (io( $PROGRAM_NAME )->tail( 3, "\n" ))[ 0 ], qr{ perl }mx,
             'Second last line' );
    };
+
+   subtest 'Getline / getlines backwards' => sub {
+      like io( $PROGRAM_NAME )->backwards->getline, qr{ End }mx,
+         'Getline backwards';
+
+      my @lines = io( $PROGRAM_NAME )->backwards->getlines;
+
+      like $lines[ 0 ], qr{ End }mx, 'Getlines backwards';
+   };
 };
 
 subtest 'Creates a file using atomic write' => sub {

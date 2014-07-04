@@ -162,12 +162,11 @@ sub update {
       return $self->_txn_do( sub { $self->_find_and_update( $args ) } );
    }
 
-   # TODO: Write tests for this
    return $self->_txn_do( sub {
       my $updated = FALSE;
 
       for my $result (@{ $self->_results }) {
-         $updated ||= $self->_update_result( $result, $args );
+         my $res = $self->_update_result( $result, $args ); $updated ||= $res;
       }
 
       return $updated;
