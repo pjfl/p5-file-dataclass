@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+0.44.1    2014-07-16 13:37:02
+          - Deleted dependency on strictures
+          - Deleted some exception tests
+
 0.43.1    2014-07-04 13:17:32
           - Releasing
           - Fixed resultset update and added tests
