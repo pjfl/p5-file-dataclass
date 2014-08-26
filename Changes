@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Adjusted toolchain for Github
+
 0.45.1    2014-08-18 23:58:19
           - Bumped Type:Tiny version RT#98113
 
