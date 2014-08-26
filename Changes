@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Added MANIFEST to repository
           - Fixed dependency version
           - Added Travis integration and badges
           - Adjusted toolchain for Github
