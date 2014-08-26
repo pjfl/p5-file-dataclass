@@ -2,7 +2,7 @@ package File::DataClass;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.45.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.45.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Moo;
 
@@ -18,13 +18,20 @@ __END__
 
 =pod
 
+=begin markdown
+
+[![Build Status](https://travis-ci.org/pjfl/p5-file-dataclass.svg?branch=master)](https://travis-ci.org/pjfl/p5-file-dataclass)
+[![CPAN version](https://badge.fury.io/pl/File-DataClass.svg)](http://badge.fury.io/pl/File-DataClass)
+
+=end markdown
+
 =head1 Name
 
 File::DataClass - Structured data file IO with OO paradigm
 
 =head1 Version
 
-This document describes version v0.45.$Rev: 2 $ of L<File::DataClass>
+This document describes version v0.45.$Rev: 3 $ of L<File::DataClass>
 
 =head1 Synopsis
 
