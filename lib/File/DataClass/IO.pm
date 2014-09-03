@@ -91,8 +91,10 @@ sub __clone_one_of_us {
    $self->autoclose; $self->reverse; $self->sort; # Force evaluation
 
    my $clone = { %{ $self }, %{ $params // {} } };
-   my $perms = delete $clone->{_perms}; $clone->{perms} //= $perms;
-
+   my $perms = delete $clone->{_perms};
+   # uncoverable condition right
+   # uncoverable condition false
+   $clone->{perms} //= $perms;
    return $clone;
 }
 

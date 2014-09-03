@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.48.1    2014-09-03 23:22:44
+          - Removed CHI. Reduces dependencies
+
 0.47.1    2014-08-27 17:15:48
           - Have new one liner to feature test this particular insanity
             d26d4928-6bf5-1014-99ad-e1a5890cd912

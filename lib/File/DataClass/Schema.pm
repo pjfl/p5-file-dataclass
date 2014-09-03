@@ -25,7 +25,6 @@ has 'cache'                    => is => 'lazy', isa => Cache;
 
 has 'cache_attributes'         => is => 'ro',   isa => HashRef,
    default                     => sub { {
-      driver                   => 'FastMmap',
       page_size                => 131_072,
       num_pages                => 89,
       unlink_on_exit           => TRUE, } };
@@ -93,7 +92,8 @@ sub _build_cache {
 
    $self->cache_class eq 'none' and return Class::Null->new;
 
-   $attrs->{cache_attributes}->{root_dir} ||= NUL.$self->tempdir;
+   $attrs->{cache_attributes}->{share_file}
+      ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
 
    return $self->F_DC_Cache->{ $ns } = $self->cache_class->new( $attrs );
 }

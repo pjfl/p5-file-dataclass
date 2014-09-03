@@ -8,18 +8,15 @@ use File::DataClass::Constants;
 use File::DataClass::Functions qw( merge_attributes throw );
 use File::DataClass::Types     qw( Bool Cache ClassName HashRef
                                    LoadableClass Object Str );
+use Try::Tiny;
 
 has 'cache'            => is => 'lazy', isa => Object, builder => sub {
-   my $self = shift; my $attr = $self->cache_attributes; my $log = $self->log;
-
-   $attr->{on_set_error} = sub { $log->error( $_[ 0 ] ) };
-
-   return $self->cache_class->new( %{ $attr } );
-};
+   $_[ 0 ]->cache_class->new( %{ $_[ 0 ]->cache_attributes } ) };
 
 has 'cache_attributes' => is => 'ro',   isa => HashRef, default => sub { {} };
 
-has 'cache_class'      => is => 'lazy', isa => LoadableClass, default => 'CHI';
+has 'cache_class'      => is => 'lazy', isa => LoadableClass,
+   default             => 'Cache::FastMmap';
 
 has 'debug'            => is => 'ro',   isa => Bool, default => FALSE;
 
@@ -70,7 +67,7 @@ sub get_mtime {
 }
 
 sub remove {
-   my ($self, $key) = @_; $key or return; $key .= NUL;
+   my ($self, $key) = @_; defined $key or return;
 
    $self->cache->remove( $key ); $self->set_mtime( $key, undef );
 
@@ -78,26 +75,27 @@ sub remove {
 }
 
 sub set {
-   my ($self, $key, $data, $meta) = @_; my $mt_key = $self->_mtimes_key;
+   my ($self, $key, $data, $meta) = @_;
 
-   $key .= NUL; $meta //= { mtime => undef };
+   $meta //= { mtime => undef }; # uncoverable condition false
 
-   $key eq $mt_key and throw error => 'Cache key [_1] not allowed',
-                             args  => [ $mt_key ];
-
-   if ($key and defined $data) {
-      $self->cache->set( $key, { data => $data, meta => $meta } );
+   try {
+      $key eq $self->_mtimes_key and throw error => 'key not allowed';
+      $self->cache->set( $key, { data => $data, meta => $meta } )
+         or throw error => 'set operation returned false';
       $self->set_mtime( $key, $meta->{mtime} );
    }
+   catch { $self->log->error( "Cache key ${key} set failed - ${_}" ) };
 
    return ($data, $meta);
 }
 
 sub set_by_paths {
-   my ($self, $paths, $data, $meta) = @_; $meta ||= {};
+   my ($self, $paths, $data, $meta) = @_;
 
    my ($key, $newest) = $self->_get_key_and_newest( $paths );
 
+   $meta //= {}; # uncoverable condition false
    $meta->{mtime} = $newest;
    return $self->set( $key, $data, $meta );
 }
@@ -105,12 +103,13 @@ sub set_by_paths {
 sub set_mtime {
    my ($self, $k, $v) = @_;
 
-   my $mtimes = $self->cache->get( $self->_mtimes_key ) || {};
+   return $self->cache->get_and_set( $self->_mtimes_key, sub {
+      my (undef, $mtimes) = @_;
 
-   if (defined $v) { $mtimes->{ $k } = $v }
-   else { delete $mtimes->{ $k } }
+      if (defined $v) { $mtimes->{ $k } = $v } else { delete $mtimes->{ $k } }
 
-   return $self->cache->set( $self->_mtimes_key, $mtimes );
+      return $mtimes;
+   } );
 }
 
 # Private methods

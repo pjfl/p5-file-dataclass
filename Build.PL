@@ -24,7 +24,6 @@ my $prereqs  = {
     'version' => '0.88'
   },
   'requires' => {
-    'CHI' => '0.58',
     'Cache::FastMmap' => '1.40',
     'Class::Method::ModifiersX::Augment' => '0.001',
     'Class::Null' => '2.110730',

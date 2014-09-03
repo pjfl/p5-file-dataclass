@@ -61,9 +61,11 @@ is ref $e, 'File::DataClass::Exception', 'Default exception class';
 
 ok -f $cache_file, 'Cache file found'; ! -f $cache_file and warn "${e}\n";
 
-eval { $schema->cache->cache->on_set_error->() }; $e = $EVAL_ERROR;
+ok !($schema->cache->set( '_mtimes' ))[ 0 ], 'Cannot use reserved key';
 
-ok ! $e, 'Calls cache on_set_error'; $e and warn "${e}\n";
+ok $schema->cache->set( 'test', 'data' ), 'Sets cache';
+
+ok !$schema->cache->remove(), 'Cannot remove undefined key';
 
 SKIP: {
    $ENV{AUTHOR_TESTING} or skip 'Deprecated method only for developers', 1;

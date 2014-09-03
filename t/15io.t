@@ -96,7 +96,7 @@ subtest 'Polymorphic Constructor' => sub {
       'Constructs from hashref';
    $io = io( [ qw( t mydir file1 ) ], 'r', oct '400' ); $io = io( $io );
    ok $io->exists, 'Constructs from object';
-   $io = io( $io, { mode => 'a+' } );
+   $io = io( $io, { mode => 'a+', perms => '666' } );
    is $io->mode, 'a+', 'Constructs from object - merges hashref';
    $io = io( [ qw( t mydir file1 ) ], { perms => oct '400' } );
    ok $io->exists && (sprintf "%o", $io->_perms & 07777) eq '400',
