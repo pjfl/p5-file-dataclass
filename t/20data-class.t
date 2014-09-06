@@ -17,7 +17,6 @@ BEGIN {
 }
 
 use Test::Requires "${perl_ver}";
-use Test::Requires 'Hash::MoreUtils';
 use English qw( -no_match_vars );
 use File::DataClass::IO;
 use Text::Diff;

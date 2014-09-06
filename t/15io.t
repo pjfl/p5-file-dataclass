@@ -377,7 +377,7 @@ subtest 'Buffered reading/writing' => sub {
 
    if ($osname eq 'mswin32') { $input->binary; $output->binary; }
 
-   my $buffer; $input->buffer( $buffer ); $output->buffer( $buffer );
+   my $buffer; $input->buffer( $buffer ); $output->buffer( \$buffer );
 
    ok defined $buffer, 'Define buffer';
 
@@ -387,6 +387,10 @@ subtest 'Buffered reading/writing' => sub {
    ok $output->close,  'Close output';
    ok -s $outfile,     'Exists output file';
    ok $input->stat->{size} == $output->stat->{size}, 'File sizes match';
+
+   my $bs = $input->_block_size; $input->block_size;
+
+   ok $input->_block_size == $bs, 'Cannot set block size to undef';
 };
 
 SKIP: {

@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Removed Hash::MoreUtils require from tests
+
 0.48.1    2014-09-03 23:22:44
           - Removed CHI. Reduces dependencies
 
