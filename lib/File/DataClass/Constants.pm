@@ -103,7 +103,7 @@ Default language code, C<en>
 
 =head2 C<LOCALIZE>
 
-The character sequence that introduces a localization substitution
+The character sequence that introduces a localisation substitution
 parameter. Left square bracket underscore
 
 =head2 C<NO_UMASK_STACK>

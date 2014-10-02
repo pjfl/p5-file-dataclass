@@ -1555,7 +1555,7 @@ Returns true if the pathname exists
 
 =head2 file
 
-Initializes the current object as a file
+Initialises the current object as a file
 
 =head2 filename
 

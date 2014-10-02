@@ -78,6 +78,7 @@ ingy
 io
 json
 mealmaster
+merchantability
 metadata
 mkpath
 mta
