@@ -7,7 +7,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 # Version
 
-This document describes version v0.48.$Rev: 3 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
+This document describes version v0.49.$Rev: 1 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
 
 # Synopsis
 

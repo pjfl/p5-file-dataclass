@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+0.49.1    2014-10-02 20:57:55
+          - Updated prereqs
           - Spelling fixes
           - Removed Hash::MoreUtils require from tests
 
