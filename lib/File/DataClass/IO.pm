@@ -29,6 +29,7 @@ use overload '""' => sub { $_[ 0 ]->pathname }, fallback => 1;
 our @EXPORT    = qw( io );
 
 my  @ARG_NAMES = qw( name mode perms );
+my  $IO_LOCK   = enum 'IO_Lock' => [ FALSE, LOCK_BLOCKING, LOCK_NONBLOCKING ];
 my  $IO_MODE   = enum 'IO_Mode' => [ qw( a a+ r r+ w w+ ) ];
 my  $IO_TYPE   = enum 'IO_Type' => [ qw( dir file ) ];
 my  $LC_OSNAME = lc $OSNAME;
@@ -36,6 +37,7 @@ my  $NTFS      = $LC_OSNAME eq EVIL || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
 
 # Public attributes
 has 'autoclose'     => is => 'lazy', isa => Bool,           default => TRUE  ;
+has 'have_lock'     => is => 'rwp',  isa => Bool,           default => FALSE ;
 has 'io_handle'     => is => 'rwp',  isa => Maybe[Object]                    ;
 has 'is_open'       => is => 'rwp',  isa => Bool,           default => FALSE ;
 has 'mode'          => is => 'rwp',  isa => $IO_MODE,       default => 'r'   ;
@@ -59,7 +61,7 @@ has '_dir_pattern'  => is => 'lazy', isa => RegexpRef                        ;
 has '_filter'       => is => 'rw',   isa => Maybe[CodeRef]                   ;
 has '_layers'       => is => 'ro',   isa => ArrayRef[SimpleStr],
    default          => sub { [] };
-has '_lock'         => is => 'rw',   isa => Bool,           default => FALSE ;
+has '_lock'         => is => 'rw',   isa => $IO_LOCK,       default => FALSE ;
 has '_lock_obj'     => is => 'rw',   isa => Maybe[Object],
    writer           => 'lock_obj'                                            ;
 has '_no_follow'    => is => 'rw',   isa => Bool,           default => FALSE ;
@@ -92,8 +94,7 @@ sub __clone_one_of_us {
 
    my $clone = { %{ $self }, %{ $params // {} } };
    my $perms = delete $clone->{_perms};
-   # uncoverable condition right
-   # uncoverable condition false
+
    $clone->{perms} //= $perms;
    return $clone;
 }
@@ -263,8 +264,7 @@ sub basename {
 sub binary {
    my $self = shift;
 
-   $self->_push_layer( ':raw' )
-      and $self->is_open and CORE::binmode( $self->io_handle );
+   $self->_push_layer( ':raw' ) and $self->is_open and $self->_sane_binmode;
 
    return $self;
 }
@@ -459,8 +459,7 @@ sub encoding {
    $encoding or $self->_throw
       ( class => Unspecified, args => [ 'encoding value' ] );
    $self->_push_layer( ":encoding($encoding)" )
-      and $self->is_open
-      and CORE::binmode( $self->io_handle, ":encoding($encoding)" );
+      and $self->is_open and $self->_sane_binmode( ":encoding($encoding)" );
    return $self;
 }
 
@@ -510,10 +509,9 @@ sub _find {
       my $is_dir = $io->is_dir; defined $is_dir or next;
 
       (($files and not $is_dir) or ($dirs and $is_dir))
-         and ((not defined $filter) or (map { $filter->() } ($io))[ 0 ])
-         and push @all, $io;
+         and __include_path( $filter, $io ) and push @all, $io;
 
-      $is_dir and (not $io->is_link or $follow) and $level != 1
+      $is_dir and ($follow or not $io->is_link) and $level != 1
          and push @all, $io->_find( $files, $dirs, $level ? $level - 1 : 0 );
    }
 
@@ -599,6 +597,10 @@ sub head {
 
    $self->close;
    return wantarray ? @res : join NUL, @res;
+}
+
+sub __include_path {
+   return (not defined $_[ 0 ] or (map { $_[ 0 ]->() } ($_[ 1 ]))[ 0 ]);
 }
 
 sub _init {
@@ -692,8 +694,7 @@ sub iterator {
          while (defined (my $path = $dirs[ 0 ]->next)) {
             $deep and $path->is_dir and ($follow or not $path->is_link)
                and unshift @dirs, $path;
-            (not defined $filter or (map { $filter->() } ($path))[ 0 ])
-               and return $path;
+            __include_path( $filter, $path ) and return $path;
          }
 
          shift @dirs;
@@ -708,7 +709,7 @@ sub length {
 }
 
 sub lock {
-   $_[ 0 ]->_lock( TRUE ); return $_[ 0 ];
+   $_[ 0 ]->_lock( $_[ 1 ] // LOCK_BLOCKING ); return $_[ 0 ];
 }
 
 sub mkdir {
@@ -993,7 +994,7 @@ sub separator {
 sub set_binmode {
    my $self = shift;
 
-   if ($NTFS) { #uncoverable condition true
+   if ($NTFS) { # uncoverable branch true
       is_member NUL, $self->_layers or unshift @{ $self->_layers }, NUL;
    }
 
@@ -1005,9 +1006,15 @@ sub set_binmode {
 sub set_lock {
    my $self = shift; $self->_lock or return;
 
-   $self->_lock_obj and return $self->_lock_obj->set( k => $self->name );
+   my $async = $self->_lock == LOCK_NONBLOCKING ? TRUE : FALSE;
 
-   flock $self->io_handle, $self->mode eq 'r' ? LOCK_SH : LOCK_EX;
+   $self->_lock_obj
+      and return $self->_lock_obj->set( k => $self->name, async => $async );
+
+   my $mode = $self->mode eq 'r' ? LOCK_SH : LOCK_EX;
+
+   $async and $mode |= LOCK_NB;
+   $self->_set_have_lock( flock $self->io_handle, $mode ? TRUE : FALSE );
    return $self;
 }
 
@@ -1126,6 +1133,7 @@ sub unlock {
    if ($self->_lock_obj) { $self->_lock_obj->reset( k => $self->name ) }
    else { $handle and $handle->opened and flock $handle, LOCK_UN }
 
+   $self->_set_have_lock( FALSE );
    return $self;
 }
 
@@ -1205,6 +1213,10 @@ Defines the following attributes;
 
 Defaults to true. Attempts to read past end of file will cause the
 object to be closed
+
+=item C<have_lock>
+
+Defaults to false. Tracks the state of the lock on the underlying file
 
 =item C<io_handle>
 
@@ -1689,10 +1701,11 @@ Returns the length of the internal buffer
 
 =head2 lock
 
-   $io = io( 'path_to_file' )->lock;
+   $io = io( 'path_to_file' )->lock( $type );
 
-Causes L</_open_file> to set a shared flock if its a read an exclusive
-flock for any other mode
+Causes L</_open_file> to set a shared flock if its a read and an exclusive
+flock for any other mode. The type is an enumerated value; 0 - no locking, 1 -
+blocking C<flock> call (the default), and 2 - non-blocking C<flock> call
 
 =head2 mkdir
 

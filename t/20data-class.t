@@ -66,12 +66,6 @@ ok $schema->cache->set( 'test', 'data' ), 'Sets cache';
 
 ok !$schema->cache->remove(), 'Cannot remove undefined key';
 
-SKIP: {
-   $ENV{AUTHOR_TESTING} or skip 'Deprecated method only for developers', 1;
-
-   ok ref $schema->extensions eq 'HASH', 'Schema extensions returns a hash';
-}
-
 my $data = test( $schema, 'load', $path, catfile( qw( t other.json ) ) );
 
 like $data->{ '_cvs_default' } || q(), qr{ @\(\#\)\$Id: }mx,

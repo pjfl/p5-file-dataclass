@@ -1,5 +1,11 @@
 Revision history for File::DataClass
 
+0.50.1    2014-11-07 18:49:49
+          - Added async locking and constants
+          - Added IO::has_lock to track the state of the flock
+          - Changed IO::_lock from a bool to an enumerated type
+            Can be FALSE, LOCK_BLOCKING, or LOCK_NONBLOCKING
+
 0.49.1    2014-10-02 20:57:55
           - Updated prereqs
           - Spelling fixes

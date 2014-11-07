@@ -20,11 +20,12 @@ BEGIN {
 use Test::Requires "${perl_ver}";
 use Config;
 use Cwd;
-use English      qw( -no_match_vars );
-use File::pushd  qw( tempd );
-use Path::Tiny   qw( );
-use Scalar::Util qw( blessed );
-use Test::Deep   qw( cmp_deeply );
+use English                    qw( -no_match_vars );
+use File::pushd                qw( tempd );
+use Path::Tiny                 qw( );
+use Scalar::Util               qw( blessed );
+use Test::Deep                 qw( cmp_deeply );
+use File::DataClass::Constants qw( LOCK_NONBLOCKING );
 use File::DataClass::IO;
 
 isa_ok( io( $PROGRAM_NAME ), 'File::DataClass::IO' );
@@ -324,6 +325,9 @@ subtest 'Gets a single line' => sub {
    is $io->getline, 'öne', 'Getline utf8';
    $io->reset->binmode( ':raw' )->print( 'öne' );
    is $io->getline( $RS ), 'öne', 'Getline utf8 - raw';
+   $io->assert_open( 'r' )->binmode( ':crlf' );
+   $io = io( [ qw( t output print.t ) ] )->binmode( ':crlf' );
+   $io->assert_open( 'r' )->binary;
 };
 
 subtest 'Create and detect empty subdirectories and files' => sub {
@@ -443,7 +447,7 @@ subtest 'Creates a file using atomic write' => sub {
    $io->atomic_suffix( undef );
    is $io->_atomic_infix, 'B_*', 'Default atomix suffix';
    io( $outfile )->delete;
-   $io = io( $outfile )->atomic->lock->println( 'x' );
+   $io = io( $outfile )->atomic->lock( LOCK_NONBLOCKING )->println( 'x' );
    io( $outfile )->close;
 };
 

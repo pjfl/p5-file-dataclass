@@ -7,8 +7,9 @@ use Exporter 5.57 qw( import );
 use File::DataClass::Exception;
 
 our @EXPORT = qw( ARRAY CODE CYGWIN EVIL EXCEPTION_CLASS FALSE HASH
-                  LANG LOCALIZE NO_UMASK_STACK NUL PERMS SPC
-                  STAT_FIELDS STORAGE_BASE STORAGE_EXCEPTIONS TILDE TRUE );
+                  LANG LOCALIZE LOCK_BLOCKING LOCK_NONBLOCKING NO_UMASK_STACK
+                  NUL PERMS SPC STAT_FIELDS STORAGE_BASE STORAGE_EXCEPTIONS
+                  TILDE TRUE );
 
 my $Exception_Class = 'File::DataClass::Exception';
 
@@ -27,6 +28,8 @@ sub TILDE    () { '~'        }
 sub TRUE     () { 1          }
 
 sub EXCEPTION_CLASS    () { __PACKAGE__->Exception_Class }
+sub LOCK_BLOCKING      () { 1 }
+sub LOCK_NONBLOCKING   () { 2 }
 sub NO_UMASK_STACK     () { -1 }
 sub STAT_FIELDS        () { qw( device inode mode nlink uid gid device_id
                                 size atime mtime ctime blksize blocks ) }
@@ -105,6 +108,14 @@ Default language code, C<en>
 
 The character sequence that introduces a localisation substitution
 parameter. Left square bracket underscore
+
+=head2 C<LOCK_BLOCKING>
+
+Integer constant used to indicate a blocking lock call
+
+=head2 C<LOCK_NONBLOCKING>
+
+Integer constant used to indicate a non-blocking lock call
 
 =head2 C<NO_UMASK_STACK>
 
