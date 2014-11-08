@@ -85,15 +85,12 @@ sub _build_cache {
    my $attrs = { cache_attributes => { %{ $self->cache_attributes } },
                  builder          => $self };
 
-   $ns = $attrs->{cache_attributes}->{namespace} ||= $ns;
-
-   $cache = $self->F_DC_Cache and exists $cache->{ $ns }
-      and return $cache->{ $ns };
-
+   $ns    = $attrs->{cache_attributes}->{namespace} ||= $ns;
+   $cache = $self->F_DC_Cache;
+   exists $cache->{ $ns } and return $cache->{ $ns };
    $self->cache_class eq 'none' and return Class::Null->new;
-
    $attrs->{cache_attributes}->{share_file}
-      ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
+        ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
 
    return $self->F_DC_Cache->{ $ns } = $self->cache_class->new( $attrs );
 }
@@ -129,7 +126,7 @@ sub _build_storage {
 sub dump {
    my ($self, $args) = @_; blessed $self or $self = $self->_constructor;
 
-   my $path = $args->{path} || $self->path; # uncoverable condition false
+   my $path = $args->{path} || $self->path;
 
    blessed $path or $path = io( $path );
 
@@ -163,10 +160,10 @@ sub resultset {
 sub source {
    my ($self, $moniker) = @_;
 
-   $moniker or throw class => Unspecified, args => [ 'result source' ];
+   $moniker or throw Unspecified, args => [ 'result source' ];
 
    my $source = $self->source_registrations->{ $moniker }
-      or throw error => 'Result source [_1] unknown', args => [ $moniker ];
+      or throw 'Result source [_1] unknown', args => [ $moniker ];
 
    return $source;
 }

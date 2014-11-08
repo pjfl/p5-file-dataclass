@@ -1,27 +1,11 @@
-use strict;
-use warnings;
-use File::Spec::Functions qw( catdir catfile curdir updir );
-use FindBin               qw( $Bin );
-use lib               catdir( $Bin, updir, 'lib' );
-use utf8;
+use t::boilerplate;
 
 use Test::More;
-use Test::Requires { version => 0.88 };
-use Module::Build;
-
-my $notes = {}; my $perl_ver;
-
-BEGIN {
-   my $builder = eval { Module::Build->current };
-      $builder and $notes = $builder->notes;
-      $perl_ver = $notes->{min_perl_version} || 5.008;
-}
-
-use Test::Requires "${perl_ver}";
 use Config;
 use Cwd;
 use English                    qw( -no_match_vars );
 use File::pushd                qw( tempd );
+use File::Spec::Functions      qw( catdir catfile curdir );
 use Path::Tiny                 qw( );
 use Scalar::Util               qw( blessed );
 use Test::Deep                 qw( cmp_deeply );
@@ -325,6 +309,7 @@ subtest 'Gets a single line' => sub {
    is $io->getline, 'öne', 'Getline utf8';
    $io->reset->binmode( ':raw' )->print( 'öne' );
    is $io->getline( $RS ), 'öne', 'Getline utf8 - raw';
+   # TODO: Make tests of these
    $io->assert_open( 'r' )->binmode( ':crlf' );
    $io = io( [ qw( t output print.t ) ] )->binmode( ':crlf' );
    $io->assert_open( 'r' )->binary;
@@ -403,7 +388,7 @@ SKIP: {
 
    subtest 'Heads / Tails' => sub {
       is scalar @{ [ io( $PROGRAM_NAME )->head ] }, 10, 'Default head lines';
-      like( (io( $PROGRAM_NAME )->head( 2 ))[ -1 ], qr{ warnings }mx,
+      like( (io( $PROGRAM_NAME )->head( 3 ))[ -1 ], qr{ Test::More }mx,
             'Second line' );
       is scalar @{ [ io( $PROGRAM_NAME )->tail( undef, "\n" ) ] }, 10,
             'Default tail lines';

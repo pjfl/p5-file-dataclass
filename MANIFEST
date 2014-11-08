@@ -36,6 +36,7 @@ t/17constraints.t
 t/20data-class.t
 t/21hash-merge.t
 t/50json.t
+t/boilerplate.pm
 t/default.json
 t/lib/TestTypo.pm
 t/mydir/dir1/dira/dirx/file1

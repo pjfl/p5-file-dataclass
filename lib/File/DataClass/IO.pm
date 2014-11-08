@@ -1704,8 +1704,9 @@ Returns the length of the internal buffer
    $io = io( 'path_to_file' )->lock( $type );
 
 Causes L</_open_file> to set a shared flock if its a read and an exclusive
-flock for any other mode. The type is an enumerated value; 0 - no locking, 1 -
-blocking C<flock> call (the default), and 2 - non-blocking C<flock> call
+flock for any other mode. The type is an enumerated value; C<FALSE> - no
+locking, C<LOCK_BLOCKING> - blocking C<flock> call (the default), and
+C<LOCK_NONBLOCKING> - non-blocking C<flock> call
 
 =head2 mkdir
 

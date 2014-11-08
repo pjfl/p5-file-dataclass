@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+          - Added t/boilerplate.pm
+          - New win32 fail added debug to tests
+            7ccf4f62-8e65-1014-a370-e51e2b825c07
+
 0.50.1    2014-11-07 18:49:49
           - Added async locking and constants
           - Added IO::has_lock to track the state of the flock

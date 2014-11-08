@@ -1,24 +1,9 @@
-use strict;
-use warnings;
-use File::Spec::Functions qw( catdir catfile updir );
-use FindBin               qw( $Bin );
-use lib               catdir( $Bin, updir, 'lib' );
+use t::boilerplate;
 
 use Test::More;
-use Test::Requires { version => 0.88 };
-use Module::Build;
-
-my $notes = {}; my $perl_ver;
-
-BEGIN {
-   my $builder = eval { Module::Build->current };
-      $builder and $notes = $builder->notes;
-      $perl_ver = $notes->{min_perl_version} || 5.008;
-}
-
-use Test::Requires "${perl_ver}";
-use English qw( -no_match_vars );
+use English               qw( -no_match_vars );
 use File::DataClass::IO;
+use File::Spec::Functions qw( catfile );
 use Text::Diff;
 
 sub test {
@@ -35,23 +20,27 @@ use File::DataClass::Schema;
 
 my $osname     = lc $OSNAME;
 my $ntfs       = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
-my $path       = catfile( qw( t default.json ) );
-my $dumped     = catfile( qw( t dumped.json ) );
-my $cache_file = catfile( qw( t file-dataclass-schema.dat ) );
+my $path_ref   = [ 't', 'default.json' ];
+my $path       = catfile( @{ $path_ref } );
+my $dumped     = catfile( 't', 'dumped.json' );
+my $cache_file = catfile( 't', 'file-dataclass-schema.dat' );
+
+io( $path_ref )->is_writable
+   or plan skip_all => 'File t/default.json not writable';
+
 my $schema     = File::DataClass::Schema->new
-   ( cache_class => 'none',                   lock_class => 'none',
-     path        => [ qw( t default.json ) ], tempdir    => 't' );
+   ( cache_class => 'none',    lock_class => 'none',
+     path        => $path_ref, tempdir    => 't' );
 
 isa_ok $schema, 'File::DataClass::Schema';
 
 ok !-f $cache_file, 'Cache file not created';
 
-$schema = File::DataClass::Schema->new
-   ( path => [ qw( t default.json ) ], tempdir => 't' );
+$schema = File::DataClass::Schema->new( path => $path_ref, tempdir => 't' );
 
 ok !-f $cache_file, 'Cache file not created too early';
 
-my $e = test( $schema, qw( load nonexistant_path ) );
+my $e = test( $schema, 'load', 'nonexistant_path' );
 
 like $e, qr{ \QPath 'nonexistant_path' not found\E }msx,
     'Nonexistant path not found';
@@ -66,7 +55,7 @@ ok $schema->cache->set( 'test', 'data' ), 'Sets cache';
 
 ok !$schema->cache->remove(), 'Cannot remove undefined key';
 
-my $data = test( $schema, 'load', $path, catfile( qw( t other.json ) ) );
+my $data = test( $schema, 'load', $path, catfile( 't', 'other.json' ) );
 
 like $data->{ '_cvs_default' } || q(), qr{ @\(\#\)\$Id: }mx,
    'Has reference element 1';
@@ -92,19 +81,19 @@ $e = test( $schema, 'resultset' );
 like $e, qr{ \Q'result source' not specified\E }msx,
    'Result source not specified';
 
-$e = test( $schema, qw( resultset globals ) );
+$e = test( $schema, 'resultset', 'globals' );
 
 like $e, qr{ \QResult source 'globals' unknown\E }msx, 'Result source unknown';
 
 $schema = File::DataClass::Schema->new
-   ( path    => [ qw( t default.json ) ],
+   ( path                     => $path_ref,
      result_source_attributes => {
-        globals => { attributes => [ qw( text ) ], }, },
-     tempdir => 't' );
+        globals               => { attributes => [ 'text' ], }, },
+     tempdir                  => 't' );
 
 is( ($schema->sources)[ 0 ], 'globals', 'Sources' );
 
-my $rs = test( $schema, qw( resultset globals ) );
+my $rs = test( $schema, 'resultset', 'globals' );
 
 $args = {}; $e = test( $rs, 'create', $args );
 
@@ -123,6 +112,8 @@ $args->{text} = 'value1'; $res = test( $rs, 'create', $args );
 is $res->id, 'dummy', 'Creates dummy record and inserts';
 
 $args->{text} = 'value2'; $res = test( $rs, 'update', $args );
+
+$res->isa( 'File::DataClass::Exception' ) and warn "${res}";
 
 is $res->id, 'dummy', 'Can update';
 
@@ -161,11 +152,11 @@ is $rs->result_source->has_column( 'nochance' ), 0, 'Has column - false';
 is $rs->result_source->has_column(), 0, 'Has column - undef';
 
 $schema = File::DataClass::Schema->new
-   ( path    => [ qw( t default.json ) ],
+   ( path                     => $path_ref,
      result_source_attributes => {
-        fields => { attributes => [ qw( width ) ], }, },
-     storage_class => '+File::DataClass::Storage::JSON',
-     tempdir => 't' );
+        fields                => { attributes => [ 'width' ], }, },
+     storage_class            => '+File::DataClass::Storage::JSON',
+     tempdir                  => 't' );
 
 $rs   = $schema->resultset( 'fields' );
 $res  = test( $rs, 'list', { id => 'create-new' } );
@@ -182,10 +173,10 @@ is $res->result->name( 'old_tosh' ), 'old_tosh',
    'Deprecated name attribute use id instead - mutator';
 
 $schema = File::DataClass::Schema->new
-   ( path    => [ qw( t default.json ) ],
+   ( path                     => $path_ref,
      result_source_attributes => {
-        levels => { attributes => [ qw( acl count state ) ] }, },
-     tempdir => 't' );
+        levels                => { attributes => [ qw( acl count state ) ] }, },
+     tempdir                  => 't' );
 
 $rs   = $schema->resultset( 'levels' );
 $args = { list => 'acl', id => 'admin' };
@@ -193,7 +184,7 @@ $res  = test( $rs, 'push', $args );
 
 like $res, qr{ no \s items }mx, 'Cannot push an empty list';
 
-$args->{items} = [ qw( group1 group2 ) ];
+$args->{items} = [ 'group1', 'group2' ];
 $res  = test( $rs, 'push', $args );
 
 ok $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
@@ -204,7 +195,7 @@ $res  = test( $rs, 'splice', $args );
 
 like $res, qr{ no \s items }mx, 'Cannot splice an empty list';
 
-$args->{items} = [ qw( group1 group2 ) ];
+$args->{items} = [ 'group1', 'group2' ];
 $res  = test( $rs, 'splice', $args );
 
 ok $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
@@ -250,7 +241,7 @@ is_deeply search( { count => { '<' => '3'      } } ), [ 'admin',   'entrance' ],
 is_deeply search( { count => { '<=' => '2'     } } ), [ 'admin',   'entrance' ],
    'RS - <= operator';
 
-io( [ qw( t default.json ) ] )->copy( [ qw( t update.json ) ] );
+io( $path_ref )->copy( [ 't', 'update.json' ] );
 
 $schema = File::DataClass::Schema->new
    ( path    => [ qw( t update.json ) ],
@@ -285,7 +276,7 @@ use File::DataClass::Constants ();
 File::DataClass::Constants->Exception_Class( 'Unexpected' );
 
 $schema = File::DataClass::Schema->new
-   ( builder => Dummy->new, path => [ qw( t default.json ) ] );
+   ( builder => Dummy->new, path => $path_ref );
 
 is ref $schema, q(File::DataClass::Schema),
    'File::DataClass::Schema - with inversion of control';
