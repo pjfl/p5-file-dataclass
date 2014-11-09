@@ -17,6 +17,8 @@ sub test {
 }
 
 
+my $osname    = lc $OSNAME;
+my $ntfs      = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
 my $path_ref  = [ 't', 'default.json' ];
 my $schema    = File::DataClass::Schema->new
    ( cache_class              => 'none',
@@ -31,6 +33,8 @@ my $schema    = File::DataClass::Schema->new
 
 io( $path_ref )->is_writable
    or plan skip_all => 'File t/default.json not writable';
+
+$ntfs and plan skip_all => 'File system not supported';
 
 my $rs   = test( $schema, 'resultset', 'keys' );
 my $args = { name => 'dummy', vals => { k1 => 'v1' } };

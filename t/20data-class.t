@@ -28,6 +28,8 @@ my $cache_file = catfile( 't', 'file-dataclass-schema.dat' );
 io( $path_ref )->is_writable
    or plan skip_all => 'File t/default.json not writable';
 
+$ntfs and plan skip_all => 'File system not supported';
+
 my $schema     = File::DataClass::Schema->new
    ( cache_class => 'none',    lock_class => 'none',
      path        => $path_ref, tempdir    => 't' );

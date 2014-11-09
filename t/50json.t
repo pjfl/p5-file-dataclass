@@ -19,10 +19,14 @@ use File::DataClass::IO;
 
 use_ok 'File::DataClass::Schema';
 
+my $osname   = lc $OSNAME;
+my $ntfs     = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
 my $path_ref = [ 't', 'default.json' ]; my $path = catfile( @{ $path_ref } );
 
 io( $path_ref )->is_writable
    or plan skip_all => 'File t/default.json not writable';
+
+$ntfs and plan skip_all => 'File system not supported';
 
 my $schema = File::DataClass::Schema->new
    (  path                     => $path,
