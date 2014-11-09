@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Make ::IO::atomic a no op on mswin32
+            f1cbd4c4-6bf5-1014-bf4f-15730ce696e1
           - Added t/boilerplate.pm
           - New win32 fail added debug to tests
             7ccf4f62-8e65-1014-a370-e51e2b825c07

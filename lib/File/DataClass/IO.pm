@@ -240,7 +240,7 @@ sub _assert_open_backwards {
 }
 
 sub atomic {
-   $_[ 0 ]->_atomic( TRUE ); return $_[ 0 ];
+   not $NTFS and $_[ 0 ]->_atomic( TRUE ); return $_[ 0 ];
 }
 
 sub atomic_infix {

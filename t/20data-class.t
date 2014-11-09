@@ -47,7 +47,7 @@ like $e, qr{ \QPath 'nonexistant_path' not found\E }msx,
 
 is ref $e, 'File::DataClass::Exception', 'Default exception class';
 
-ok -f $cache_file, 'Cache file found'; ! -f $cache_file and warn "${e}\n";
+ok -f $cache_file, 'Cache file found'; ! -f $cache_file and warn "${e}";
 
 ok !($schema->cache->set( '_mtimes' ))[ 0 ], 'Cannot use reserved key';
 
