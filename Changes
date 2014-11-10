@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.52.1    2014-11-10 12:40:46
+          - Fixed NTFS skip in tests
+
 0.51.1    2014-11-09 15:49:44
           - Mark NTFS as unsupported
           - Make ::IO::atomic a no op on mswin32

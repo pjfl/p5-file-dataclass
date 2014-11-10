@@ -2,7 +2,7 @@ package File::DataClass;
 
 use 5.010001;
 use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.51.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.52.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 use Moo;
 
@@ -31,7 +31,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 =head1 Version
 
-This document describes version v0.51.$Rev: 1 $ of L<File::DataClass>
+This document describes version v0.52.$Rev: 1 $ of L<File::DataClass>
 
 =head1 Synopsis
 
@@ -87,7 +87,7 @@ None
 
 =head1 Incompatibilities
 
-On C<mswin32> and C<Cygwin> it is assumed that NTFS is being used and
+On C<mswin32> and C<cygwin> it is assumed that NTFS is being used and
 that it does not support C<mtime> so caching on those platforms is
 disabled
 

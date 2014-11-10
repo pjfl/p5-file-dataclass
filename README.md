@@ -7,7 +7,7 @@ File::DataClass - Structured data file IO with OO paradigm
 
 # Version
 
-This document describes version v0.50.$Rev: 2 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
+This document describes version v0.51.$Rev: 1 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
 
 # Synopsis
 
@@ -59,9 +59,12 @@ None
 
 # Incompatibilities
 
-On `MSWin32` and `Cygwin` it is assumed that NTFS is being used and
+On `mswin32` and `Cygwin` it is assumed that NTFS is being used and
 that it does not support `mtime` so caching on those platforms is
 disabled
+
+Due to the absence of an `mswin32` environment for testing purposes that
+platform is not supported
 
 # Bugs and Limitations
 

@@ -4,6 +4,15 @@ use Test::More;
 use English qw( -no_match_vars );
 use File::DataClass::IO;
 
+my $osname   = lc $OSNAME;
+my $ntfs     = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
+my $path_ref = [ 't', 'default.json' ];
+
+io( $path_ref )->is_writable
+   or plan skip_all => 'File t/default.json not writable';
+
+$ntfs and plan skip_all => 'File system not supported';
+
 use_ok 'File::DataClass::Schema';
 
 sub test {
@@ -17,10 +26,7 @@ sub test {
 }
 
 
-my $osname    = lc $OSNAME;
-my $ntfs      = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
-my $path_ref  = [ 't', 'default.json' ];
-my $schema    = File::DataClass::Schema->new
+my $schema = File::DataClass::Schema->new
    ( cache_class              => 'none',
      lock_class               => 'none',
      path                     => $path_ref,
@@ -30,15 +36,9 @@ my $schema    = File::DataClass::Schema->new
            defaults           => { vals => {} }, }, },
      storage_class            => 'JSON',
      tempdir                  => 't', );
-
-io( $path_ref )->is_writable
-   or plan skip_all => 'File t/default.json not writable';
-
-$ntfs and plan skip_all => 'File system not supported';
-
-my $rs   = test( $schema, 'resultset', 'keys' );
-my $args = { name => 'dummy', vals => { k1 => 'v1' } };
-my $res  = test( $rs, 'create', $args );
+my $rs     = test( $schema, 'resultset', 'keys' );
+my $args   = { name => 'dummy', vals => { k1 => 'v1' } };
+my $res    = test( $rs, 'create', $args );
 
 is $res->id, 'dummy', 'Creates dummy element and inserts';
 
