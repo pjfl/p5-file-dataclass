@@ -382,6 +382,14 @@ subtest 'Buffered reading/writing' => sub {
    ok $input->_block_size == $bs, 'Cannot set block size to undef';
 };
 
+subtest 'Digest' => sub {
+   my $io = io( [ 't', 'other.json' ] );
+
+   is $io->digest, $io->digest( 'SHA-256' ), 'Default digest';
+   is $io->digest( { block_size => 4 } ),
+      $io->digest( 'SHA-256', { block_size => 1024 } ), 'Digest - block size';
+};
+
 SKIP: {
    ($osname eq 'mswin32' or $osname eq 'cygwin')
       and skip 'Heads/Tails too flakey 29a2bb0c-6bf4-1014-974a-4394dad81770', 1;

@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Added ::IO->digest. Robbed from Path::Tiny
+
 0.52.1    2014-11-10 12:40:46
           - Fixed NTFS skip in tests
 

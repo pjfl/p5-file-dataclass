@@ -445,6 +445,28 @@ sub DEMOLISH {
    $_[ 0 ]->_atomic ? $_[ 0 ]->delete : $_[ 0 ]->close; return;
 }
 
+sub digest {
+   my ($self, @args) = @_; my $n = 0; $n++ while (defined $args[ $n ]);
+
+   my $args = (              $n == 0) ? { algorithm => 'SHA-256'  }
+            : (is_hashref $args[ 0 ]) ? { algorithm => 'SHA-256',
+                                          %{ $args[ 0 ] } }
+            : (              $n == 1) ? { algorithm => $args[ 0 ] }
+                                      : { algorithm => $args[ 0 ],
+                                          %{ $args[ 1 ] } };
+
+   require Digest; my $digest = Digest->new( $args->{algorithm} );
+
+   if ($args->{block_size}) {
+      $self->binmode( ':unix' )->lock->block_size( $args->{block_size} );
+
+      while ($self->read) { $digest->add( ${ $self->buffer } ); $self->clear; }
+   }
+   else { $digest->add( $self->binmode( ':unix' )->lock->all ) }
+
+   return $digest->hexdigest;
+}
+
 sub dir {
    return shift->_init( 'dir', @_ );
 }
@@ -1530,6 +1552,18 @@ the template filename pattern if required
 
 If this is an atomic file update calls the L</delete> method. If the
 object is still open it calls the L</close> method
+
+=head2 digest
+
+   $hex_digest = io( 'path_to_file' )->digest( $algorithm, $options );
+
+Returns a hexadecimal string which is calculated from the contents of the
+specified file. The arguments are optional. The algorithm defaults to
+C<SHA-256>. The C<$options> hash reference takes the C<block_size> parameter
+which causes the file to read through the buffer C<block_size> bytes at a
+time
+
+This was robbed from L<Path::Tiny>
 
 =head2 dir
 

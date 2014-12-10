@@ -175,7 +175,7 @@ sub sources {
 sub translate {
    my ($self, $args) = @_;
 
-   my $class      = blessed $self       || $self;
+   my $class      = blessed $self       || $self; # uncoverable condition false
    my $from_class = $args->{from_class} || 'Any';
    my $to_class   = $args->{to_class  } || 'Any';
    my $attrs      = { path => $args->{from}, storage_class => $from_class };
