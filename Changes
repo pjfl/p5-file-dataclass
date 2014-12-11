@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Converted ::IO to lexical subroutines
           - Added ::IO->digest. Robbed from Path::Tiny
 
 0.52.1    2014-11-10 12:40:46

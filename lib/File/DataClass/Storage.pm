@@ -42,8 +42,7 @@ sub create_or_update {
       my $id     = $result->id; $data->{ $element } ||= {};
 
       not $updating and exists $data->{ $element }->{ $id }
-         and throw class => RecordAlreadyExists, args => [ $path, $id ],
-                   level => 2;
+         and throw RecordAlreadyExists, [ $path, $id ], level => 2;
 
       $updated = File::DataClass::HashMerge->merge
          ( \$data->{ $element }->{ $id }, $result, $filter );
@@ -159,7 +158,7 @@ sub update {
    $updating //= TRUE; $cond //= sub { TRUE };
 
    my $updated = $self->create_or_update( $path, $result, $updating, $cond )
-      or throw class => NothingUpdated, level => 2;
+      or throw NothingUpdated, level => 2;
 
    return $updated;
 }
@@ -167,13 +166,10 @@ sub update {
 sub validate_params {
    my ($self, $path, $element) = @_;
 
-   $path or throw class => Unspecified, args => [ 'path name' ], level => 2;
-
-   blessed $path or throw error => 'Path [_1] is not blessed',
-                          args  => [ $path ], level => 2;
-
-   $element or throw error => 'Path [_1] result source not specified',
-                     args  => [ $path ], level => 2;
+   $path         or throw Unspecified, [ 'path name' ], level => 2;
+   blessed $path or throw 'Path [_1] is not blessed', [ $path ], level => 2;
+   $element      or throw 'Path [_1] result source not specified', [ $path ],
+                          level => 2;
 
    return;
 }
@@ -212,13 +208,13 @@ sub _write_file {
    my ($self, $path, $data, $create) = @_;
 
    try {
-      $create or $path->exists or throw class => PathNotFound, args => [ $path];
+      $create or $path->exists or throw PathNotFound, [ $path ];
 
       $path->exists or $path->perms( $self->_perms );
 
       if ($self->backup and $path->exists and not $path->empty) {
          copy( "${path}", $path.$self->backup )
-            or throw error => 'Backup copy failed: [_1]', args => [ $OS_ERROR ];
+            or throw 'Backup copy failed: [_1]', [ $OS_ERROR ];
       }
 
       try   { $data = inner( $path->atomic->lock, $data ); $path->close }

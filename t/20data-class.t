@@ -289,6 +289,8 @@ $e = test( $schema, qw( load nonexistant_file ) );
 
 is ref $e, 'Unexpected', 'Non default exception class';
 
+is $schema->extensions->{ '.json' }->[ 0 ], 'JSON', 'Extensions';
+
 done_testing;
 
 # Cleanup

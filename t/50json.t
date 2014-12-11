@@ -55,6 +55,12 @@ $diff = diff $path, $dumped;
 
 ok !$diff, 'Load and dump roundtrips 2';
 
+eval { $schema->dump( { data => sub {}, path => $dumped } ) };
+
+my $e = $EVAL_ERROR;
+
+like $e->error, qr{ CODE }mx, 'Throws on bad data';
+
 my $data = test( $schema, 'load', $path, catfile( qw( t other.json ) ) );
 
 like $data->{ '_cvs_default' } || q(), qr{ @\(\#\)\$Id: }mx,
@@ -103,7 +109,7 @@ my $translate = catfile( qw( t translate.json ) ); io( $translate )->unlink;
 $args = { from => $path,      from_class => 'JSON',
           to   => $translate, to_class   => 'JSON', };
 
-my $e = test( $schema, 'translate', $args ); $diff = diff $path, $translate;
+$e = test( $schema, 'translate', $args ); $diff = diff $path, $translate;
 
 ok !$diff, 'Can translate from JSON to JSON';
 
