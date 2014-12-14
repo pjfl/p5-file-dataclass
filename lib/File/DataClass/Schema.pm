@@ -66,6 +66,14 @@ has 'tempdir'                  => is => 'ro',   isa => Directory,
    coerce                      => Directory->coercion,
    default                     => sub { File::Spec->tmpdir };
 
+# Private methods
+my $_constructor = sub {
+   my $class = shift;
+   my $attr  = { cache_class => 'none', storage_class => 'Any' };
+
+   return $class->new( $attr );
+};
+
 # Construction
 around 'BUILDARGS' => sub {
    my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
@@ -124,7 +132,7 @@ sub _build_storage {
 
 # Public methods
 sub dump {
-   my ($self, $args) = @_; blessed $self or $self = $self->_constructor;
+   my ($self, $args) = @_; blessed $self or $self = $self->$_constructor;
 
    my $path = $args->{path} || $self->path;
 
@@ -144,7 +152,7 @@ sub extensions { # Deprecated
 }
 
 sub load {
-   my ($self, @paths) = @_; blessed $self or $self = $self->_constructor;
+   my ($self, @paths) = @_; blessed $self or $self = $self->$_constructor;
 
    $paths[ 0 ] or $paths[ 0 ] = $self->path;
 
@@ -160,10 +168,10 @@ sub resultset {
 sub source {
    my ($self, $moniker) = @_;
 
-   $moniker or throw Unspecified, args => [ 'result source' ];
+   $moniker or throw Unspecified, [ 'result source' ];
 
    my $source = $self->source_registrations->{ $moniker }
-      or throw 'Result source [_1] unknown', args => [ $moniker ];
+      or throw 'Result source [_1] unknown', [ $moniker ];
 
    return $source;
 }
@@ -184,14 +192,6 @@ sub translate {
    $attrs = { path => $args->{to}, storage_class => $to_class };
    $class->new( $attrs )->dump( { data => $data } );
    return;
-}
-
-# Private methods
-sub _constructor {
-   my $class = shift;
-   my $attr  = { cache_class => 'none', storage_class => 'Any' };
-
-   return $class->new( $attr );
 }
 
 1;

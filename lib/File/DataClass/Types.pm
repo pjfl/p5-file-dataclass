@@ -16,9 +16,60 @@ use namespace::clean -except => 'meta';
 
 BEGIN { extends q(Unexpected::Types) };
 
+# Private functions
+my $_coercion_for_octalnum = sub {
+   my $x = shift; length $x or return $x;
+
+   $x =~ s{ \A 0 }{}mx; $x =~ m{ [^0-7] }mx and return $x;
+
+   return dualvar oct "0${x}", "0${x}"
+};
+
+my $_constraint_for_octalnum = sub {
+   my $x = shift; length $x or return 0;
+
+  (my $strx = "${x}") =~ s{ [0-7]+ }{}mx; length $strx != 0 and return 0;
+
+   $x < 8 and return 1; ($strx = "${x}") =~ s{ \A 0 }{}mx;
+
+   return $strx eq $x + 0 ? 0 : 1;
+};
+
+my $_exception_message_for_object_reference = sub {
+   return inflate_message( 'String [_1] is not an object reference', $_[ 0 ] );
+};
+
+my $_exception_message_for_cache = sub {
+   blessed $_[ 0 ] and return inflate_message
+      ( 'Object [_1] is not of class File::DataClass::Cache', blessed $_[ 0 ] );
+
+   return $_exception_message_for_object_reference->( $_[ 0 ] );
+};
+
+my $_exception_message_for_lock = sub {
+   blessed $_[ 0 ] and return inflate_message
+      ( 'Object [_1] is missing set / reset methods', blessed $_[ 0 ] );
+
+   return $_exception_message_for_object_reference->( $_[ 0 ] );
+};
+
+my $_exception_message_for_path = sub {
+   blessed $_[ 0 ] and return inflate_message
+      ( 'Object [_1] is not of class File::DataClass::IO', blessed $_[ 0 ] );
+
+   return $_exception_message_for_object_reference->( $_[ 0 ] );
+};
+
+my $_exception_message_for_result = sub {
+   blessed $_[ 0 ] and return inflate_message
+      ( 'Object [_1] is not of class File::DataClass::Result', blessed $_[ 0 ]);
+
+   return $_exception_message_for_object_reference->( $_[ 0 ] );
+};
+
 subtype Cache, as Object,
    where   { $_->isa( 'File::DataClass::Cache' ) or $_->isa( 'Class::Null' ) },
-   message { __exception_message_for_cache( $_ ) };
+   message { $_exception_message_for_cache->( $_ ) };
 
 subtype DummyClass, as Str,
    where   { $_ eq 'none' },
@@ -29,19 +80,19 @@ subtype HashRefOfBools, as HashRef;
 subtype Lock, as Object,
    where   { ($_->can( 'set' ) and $_->can( 'reset' ) )
                                 or $_->isa( 'Class::Null' ) },
-   message { __exception_message_for_lock( $_ ) };
+   message { $_exception_message_for_lock->( $_ ) };
 
 subtype OctalNum, as Str,
-   where   { __constraint_for_octalnum( $_ ) },
+   where   { $_constraint_for_octalnum->( $_ ) },
    message { inflate_message( 'String [_1] is not an octal number', $_ ) };
 
 subtype Path, as Object,
    where   { $_->isa( 'File::DataClass::IO' ) },
-   message { __exception_message_for_path( $_ ) };
+   message { $_exception_message_for_path->( $_ ) };
 
 subtype Result, as Object,
    where   { $_->isa( 'File::DataClass::Result' ) },
-   message { __exception_message_for_result( $_ ) };
+   message { $_exception_message_for_result->( $_ ) };
 
 
 subtype Directory, as Path,
@@ -55,7 +106,7 @@ subtype File, as Path,
 coerce HashRefOfBools, from ArrayRef,
    via { my %hash = map { $_ => 1 } @{ $_ }; return \%hash; };
 
-coerce OctalNum, from Str, via { __coercion_for_octalnum( $_ ) };
+coerce OctalNum, from Str, via { $_coercion_for_octalnum->( $_ ) };
 
 coerce Directory,
    from ArrayRef, via { io( $_ ) },
@@ -77,57 +128,6 @@ coerce Path,
    from HashRef,  via { io( $_ ) },
    from Str,      via { io( $_ ) },
    from Undef,    via { io( $_ ) };
-
-# Private functions
-sub __coercion_for_octalnum {
-   my $x = shift; length $x or return $x;
-
-   $x =~ s{ \A 0 }{}mx; $x =~ m{ [^0-7] }mx and return $x;
-
-   return dualvar oct "0${x}", "0${x}"
-}
-
-sub __constraint_for_octalnum {
-   my $x = shift; length $x or return 0;
-
-  (my $strx = "${x}") =~ s{ [0-7]+ }{}mx; length $strx != 0 and return 0;
-
-   $x < 8 and return 1; ($strx = "${x}") =~ s{ \A 0 }{}mx;
-
-   return $strx eq $x + 0 ? 0 : 1;
-}
-
-sub __exception_message_for_cache {
-   blessed $_[ 0 ] and return inflate_message
-      ( 'Object [_1] is not of class File::DataClass::Cache', blessed $_[ 0 ] );
-
-   return __exception_message_for_object_reference( $_[ 0 ] );
-}
-
-sub __exception_message_for_lock {
-   blessed $_[ 0 ] and return inflate_message
-      ( 'Object [_1] is missing set / reset methods', blessed $_[ 0 ] );
-
-   return __exception_message_for_object_reference( $_[ 0 ] );
-}
-
-sub __exception_message_for_object_reference {
-   return inflate_message( 'String [_1] is not an object reference', $_[ 0 ] );
-}
-
-sub __exception_message_for_path {
-   blessed $_[ 0 ] and return inflate_message
-      ( 'Object [_1] is not of class File::DataClass::IO', blessed $_[ 0 ] );
-
-   return __exception_message_for_object_reference( $_[ 0 ] );
-}
-
-sub __exception_message_for_result {
-   blessed $_[ 0 ] and return inflate_message
-      ( 'Object [_1] is not of class File::DataClass::Result', blessed $_[ 0 ]);
-
-   return __exception_message_for_object_reference( $_[ 0 ] );
-}
 
 1;
 

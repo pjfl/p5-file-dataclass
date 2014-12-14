@@ -3,37 +3,57 @@ package File::DataClass::HashMerge;
 use strict;
 use warnings;
 
-sub merge {
-   my ($self, $dest_ref, $src, $filter) = @_; my $updated = 0;
+# Private methods
+my $_merge_attr;
 
-   $dest_ref or die 'No destination reference specified';
+my $_merge_attr_arrays = sub {
+   my ($self, $to, $from) = @_; my $updated = 0;
 
-   ${ $dest_ref } ||= {}; $src ||= {}; $filter ||= sub { keys %{ $_[ 0 ] } };
-
-   for my $attr ($filter->( $src )) {
-      if (defined $src->{ $attr }) {
-         my $res = $self->_merge_attr
-            ( \${ $dest_ref }->{ $attr }, $src->{ $attr } );
+   for (0 .. $#{ $to }) {
+      if (defined $from->[ $_ ]) {
+         my $res = $self->$_merge_attr( \$to->[ $_ ], $from->[ $_ ] );
 
          $updated ||= $res;
       }
-      elsif (exists ${ $dest_ref }->{ $attr }) {
-         delete ${ $dest_ref }->{ $attr }; $updated = 1;
+      elsif ($to->[ $_ ]) { splice @{ $to }, $_; $updated = 1; last }
+   }
+
+   if (@{ $from } > @{ $to }) {
+      push @{ $to }, (splice @{ $from }, $#{ $to } + 1); $updated = 1;
+   }
+
+   return $updated;
+};
+
+my $_merge_attr_hashes = sub {
+   my ($self, $to, $from) = @_; my $updated = 0;
+
+   for (grep { exists $from->{ $_ } } keys %{ $to }) {
+      if (defined $from->{ $_ }) {
+         my $res = $self->$_merge_attr( \$to->{ $_ }, $from->{ $_ } );
+
+         $updated ||= $res;
+      }
+      else { delete $to->{ $_ }; delete $from->{ $_ }; $updated = 1 }
+   }
+
+   for (grep { not exists $to->{ $_ } } keys %{ $from }) {
+      if (defined $from->{ $_ }) {
+         $to->{ $_ } = $from->{ $_ }; $updated = 1;
       }
    }
 
    return $updated;
-}
+};
 
-# Private methods
-sub _merge_attr {
+$_merge_attr = sub {
    my ($self, $to_ref, $from) = @_; my $to = ${ $to_ref }; my $updated = 0;
 
    if ($to and ref $to eq 'HASH') {
-      $updated = $self->_merge_attr_hashes( $to, $from );
+      $updated = $self->$_merge_attr_hashes( $to, $from );
    }
    elsif ($to and ref $to eq 'ARRAY') {
-      $updated = $self->_merge_attr_arrays( $to, $from );
+      $updated = $self->$_merge_attr_arrays( $to, $from );
    }
    elsif (defined $to and $to ne $from) {
       $updated = 1; ${ $to_ref } = $from;
@@ -50,42 +70,25 @@ sub _merge_attr {
    }
 
    return $updated;
-}
+};
 
-sub _merge_attr_arrays {
-   my ($self, $to, $from) = @_; my $updated = 0;
+# Public methods
+sub merge {
+   my ($self, $dest_ref, $src, $filter) = @_; my $updated = 0;
 
-   for (0 .. $#{ $to }) {
-      if (defined $from->[ $_ ]) {
-         my $res = $self->_merge_attr( \$to->[ $_ ], $from->[ $_ ] );
+   $dest_ref or die 'No destination reference specified';
 
-         $updated ||= $res;
-      }
-      elsif ($to->[ $_ ]) { splice @{ $to }, $_; $updated = 1; last }
-   }
+   ${ $dest_ref } ||= {}; $src ||= {}; $filter ||= sub { keys %{ $_[ 0 ] } };
 
-   if (@{ $from } > @{ $to }) {
-      push @{ $to }, (splice @{ $from }, $#{ $to } + 1); $updated = 1;
-   }
-
-   return $updated;
-}
-
-sub _merge_attr_hashes {
-   my ($self, $to, $from) = @_; my $updated = 0;
-
-   for (grep { exists $from->{ $_ } } keys %{ $to }) {
-      if (defined $from->{ $_ }) {
-         my $res = $self->_merge_attr( \$to->{ $_ }, $from->{ $_ } );
+   for my $attr ($filter->( $src )) {
+      if (defined $src->{ $attr }) {
+         my $res = $self->$_merge_attr
+            ( \${ $dest_ref }->{ $attr }, $src->{ $attr } );
 
          $updated ||= $res;
       }
-      else { delete $to->{ $_ }; delete $from->{ $_ }; $updated = 1 }
-   }
-
-   for (grep { not exists $to->{ $_ } } keys %{ $from }) {
-      if (defined $from->{ $_ }) {
-         $to->{ $_ } = $from->{ $_ }; $updated = 1;
+      elsif (exists ${ $dest_ref }->{ $attr }) {
+         delete ${ $dest_ref }->{ $attr }; $updated = 1;
       }
    }
 

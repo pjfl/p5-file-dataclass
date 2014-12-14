@@ -33,6 +33,16 @@ has 'schema'               => is => 'ro', isa => Object,
 
 has '_attributes' => is => 'lazy', isa => HashRef, init_arg => undef;
 
+# Construction
+sub _build__attributes {
+   my $self = shift; my $attr = {};
+
+   $attr->{ $_ } = TRUE for (@{ $self->attributes });
+
+   return $attr;
+}
+
+# Public methods
 sub columns {
    return @{ $_[ 0 ]->attributes };
 }
@@ -49,15 +59,6 @@ sub resultset {
    my $attrs = { %{ $self->resultset_attributes }, result_source => $self };
 
    return $self->resultset_class->new( $attrs );
-}
-
-# Private methods
-sub _build__attributes {
-   my $self = shift; my $attr = {};
-
-   $attr->{ $_ } = TRUE for (@{ $self->attributes });
-
-   return $attr;
 }
 
 1;

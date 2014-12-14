@@ -18,23 +18,54 @@ has 'schema'  => is => 'ro', isa => Object,
 
 has '_stores' => is => 'ro', isa => HashRef, default => sub { {} };
 
+# Private methods
+my $_get_store_from_extension = sub {
+   my ($self, $extn) = @_; my $stores = $self->_stores;
+
+   exists $stores->{ $extn } and return $stores->{ $extn };
+
+   my $list; ($list = map_extension2class( $extn ) and my $class = $list->[ 0 ])
+      or throw 'Extension [_1] has no class', [ $extn ];
+
+   if (first_char $class eq '+') { $class = substr $class, 1 }
+   else { $class = qualify_storage_class $class }
+
+   ensure_class_loaded $class;
+
+   return $stores->{ $extn } = $class->new
+      ( { %{ $self->storage_attributes }, schema => $self->schema } );
+};
+
+my $_get_store_from_path = sub {
+   my ($self, $path) = @_; my $file = basename( "${path}" );
+
+   my $extn = (split m{ \. }mx, $file)[ -1 ]
+      or throw 'File [_1] has no extension', [ $file ];
+
+   my $store = $self->$_get_store_from_extension( ".${extn}" )
+      or throw 'Extension [_1] has no store', [ $extn ];
+
+   return $store;
+};
+
+# Public methods
 sub create_or_update {
-   return shift->_get_store_from_path( $_[ 0 ] )->create_or_update( @_ );
+   return shift->$_get_store_from_path( $_[ 0 ] )->create_or_update( @_ );
 }
 
 sub delete {
-   return shift->_get_store_from_path( $_[ 0 ] )->delete( @_ );
+   return shift->$_get_store_from_path( $_[ 0 ] )->delete( @_ );
 }
 
 sub dump {
-   return shift->_get_store_from_path( $_[ 0 ] )->dump( @_ );
+   return shift->$_get_store_from_path( $_[ 0 ] )->dump( @_ );
 }
 
 sub extn {
 }
 
 sub insert {
-   return shift->_get_store_from_path( $_[ 0 ] )->insert( @_ );
+   return shift->$_get_store_from_path( $_[ 0 ] )->insert( @_ );
 }
 
 sub load {
@@ -73,53 +104,23 @@ sub meta_unpack {
 };
 
 sub read_file {
-   return shift->_get_store_from_path( $_[ 0 ] )->read_file( @_ );
+   return shift->$_get_store_from_path( $_[ 0 ] )->read_file( @_ );
 }
 
 sub select {
-   return shift->_get_store_from_path( $_[ 0 ] )->select( @_ );
+   return shift->$_get_store_from_path( $_[ 0 ] )->select( @_ );
 }
 
 sub txn_do {
-   return shift->_get_store_from_path( $_[ 0 ] )->txn_do( @_ );
+   return shift->$_get_store_from_path( $_[ 0 ] )->txn_do( @_ );
 }
 
 sub update {
-   return shift->_get_store_from_path( $_[ 0 ] )->update( @_ );
+   return shift->$_get_store_from_path( $_[ 0 ] )->update( @_ );
 }
 
 sub validate_params {
-   return shift->_get_store_from_path( $_[ 0 ] )->validate_params( @_ );
-}
-
-# Private methods
-sub _get_store_from_extension {
-   my ($self, $extn) = @_; my $stores = $self->_stores;
-
-   exists $stores->{ $extn } and return $stores->{ $extn };
-
-   my $list; ($list = map_extension2class( $extn ) and my $class = $list->[ 0 ])
-      or throw error => 'Extension [_1] has no class', args => [ $extn ];
-
-   if (first_char $class eq '+') { $class = substr $class, 1 }
-   else { $class = qualify_storage_class $class }
-
-   ensure_class_loaded $class;
-
-   return $stores->{ $extn } = $class->new
-      ( { %{ $self->storage_attributes }, schema => $self->schema } );
-}
-
-sub _get_store_from_path {
-   my ($self, $path) = @_; my $file = basename( "${path}" );
-
-   my $extn = (split m{ \. }mx, $file)[ -1 ]
-      or throw error => 'File [_1] has no extension', args => [ $file ];
-
-   my $store = $self->_get_store_from_extension( ".${extn}" )
-      or throw error => 'Extension [_1] has no store', args => [ $extn ];
-
-   return $store;
+   return shift->$_get_store_from_path( $_[ 0 ] )->validate_params( @_ );
 }
 
 1;

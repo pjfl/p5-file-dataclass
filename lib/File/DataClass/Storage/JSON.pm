@@ -26,7 +26,7 @@ augment '_read_file' => sub {
 
    try   { $content = $json->utf8( 0 )->decode( $rdr->all ) }
    catch { s{ at \s [^ ]+ \s line \s \d+ \. }{}mx;
-           throw error => "${_} in file ${rdr}" };
+           throw "${_} in file ${rdr}" };
 
    return $content;
 };

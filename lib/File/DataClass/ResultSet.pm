@@ -29,151 +29,7 @@ has '_operators' => is => 'lazy', isa => HashRef;
 has '_results'   => is => 'rw',   isa => ArrayRef,
    default       => sub { [] }, init_arg => undef;
 
-sub all {
-   my $self = shift; return @{ $self->_results };
-}
-
-sub create {
-   my ($self, $args) = @_; $self->_validate_params( $args );
-
-   return $self->_txn_do( sub { $self->_create_result( $args )->insert } );
-}
-
-sub create_or_update {
-   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
-
-   return $self->_txn_do( sub {
-      my $result = $self->_find( $id )
-         or return $self->_create_result( $args )->insert;
-
-      return $self->_update_result( $result, $args );
-   } );
-}
-
-sub delete {
-   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
-
-   my $optional = (is_hashref $args) ? $args->{optional} : FALSE;
-   my $path     = $self->path;
-
-   my $res = $self->_txn_do( sub {
-      my $result; unless ($result = $self->_find( $id )) {
-         $optional or throw class => RecordNotFound, args => [ $path, $id ];
-         return FALSE;
-      }
-
-      $result->delete or throw error => 'File [_1] element [_2] not deleted',
-                               args  => [ $path, $id ];
-      return TRUE;
-   } );
-
-   return $res ? $id : undef;
-}
-
-sub find {
-   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
-
-   return $self->_txn_do( sub { $self->_find( $id ) } );
-}
-
-sub find_and_update {
-   my ($self, $args) = @_; $self->_validate_params( $args );
-
-   return $self->_txn_do( sub { $self->_find_and_update( $args ) } );
-}
-
-sub first {
-   my $self = shift; return $self->_results->[ 0 ];
-}
-
-sub last {
-   my $self = shift; return $self->_results->[ -1 ];
-}
-
-sub list {
-   my ($self, $args) = @_;
-
-   my $id = (is_hashref $args) ? $args->{id} // $args->{name} : $args;
-
-   return $self->_txn_do( sub { $self->_list( $id ) } );
-}
-
-sub next {
-   my $self  = shift;
-   my $index = $self->_iterator; $self->_iterator( $index + 1 );
-
-   return $self->_results->[ $index ];
-}
-
-sub push {
-   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
-
-   my $list  = $args->{list} or throw class => Unspecified, args => [ 'list' ];
-   my $items = $args->{items} || []; my ($added, $attrs);
-
-   $items->[ 0 ] or throw 'List contains no items';
-
-   my $res = $self->_txn_do( sub {
-      ($attrs, $added) = $self->_push( $id, $list, $items );
-
-      return $self->_find_and_update( $attrs );
-   } );
-
-   return $res ? $added : FALSE;
-}
-
-sub reset {
-   my $self = shift; return $self->_iterator( 0 );
-}
-
-sub select {
-   my $self = shift;
-
-   return $self->storage->select( $self->path, $self->result_source->name );
-}
-
-sub search {
-   my ($self, $args) = @_;
-
-   return $self->_txn_do( sub { $self->_search( $args ) } );
-}
-
-sub splice {
-   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
-
-   my $list  = $args->{list} or throw class => Unspecified, args => [ 'list' ];
-   my $items = $args->{items} || []; my ($attrs, $removed);
-
-   $items->[ 0 ] or throw 'List contains no items';
-
-   my $res = $self->_txn_do( sub {
-      ($attrs, $removed) = $self->_splice( $id, $list, $items );
-
-      return $self->_find_and_update( $attrs );
-   } );
-
-   return $res ? $removed : FALSE;
-}
-
-sub update {
-   my ($self, $args) = @_;
-
-   if (my $id = $args->{id} // $args->{name}) { # Deprecated
-      return $self->_txn_do( sub { $self->_find_and_update( $args ) } );
-   }
-
-   return $self->_txn_do( sub {
-      my $updated = FALSE;
-
-      for my $result (@{ $self->_results }) {
-         my $res = $self->_update_result( $result, $args ); $updated ||= $res;
-      }
-
-      return $updated;
-   } );
-}
-
-# Private methods
+# Construction
 sub _build__operators {
    return {
       q(eq) => sub { return $_[ 0 ] eq $_[ 1 ] },
@@ -189,7 +45,8 @@ sub _build__operators {
    };
 }
 
-sub _create_result {
+# Private methods
+my $_create_result = sub {
    my ($self, $args) = @_;
 
    my $attrs = { %{ $self->defaults }, result_source => $self->result_source };
@@ -200,38 +57,9 @@ sub _create_result {
    }
 
    return $self->result_class->new( $attrs );
-}
+};
 
-sub _eval_clause {
-   my ($self, $clause, $lhs) = @_;
-
-   if (is_hashref $clause) {
-      for (keys %{ $clause }) {
-         $self->_eval_op( $lhs, $_, $clause->{ $_ } ) or return FALSE;
-      }
-
-      return TRUE;
-   }
-   elsif (is_arrayref $clause) { # TODO: Handle case of 2 arrays
-      return (is_arrayref $lhs) ? FALSE : (is_member $lhs, $clause);
-   }
-
-   return (is_arrayref $lhs) ? ((is_member $clause, $lhs) ? TRUE : FALSE)
-                             : ($clause eq $lhs           ? TRUE : FALSE);
-}
-
-sub _eval_criteria {
-   my ($self, $criteria, $attrs) = @_; my $lhs;
-
-   for my $k (keys %{ $criteria }) {
-      defined ($lhs = $attrs->{ $k eq 'name' ? 'id' : $k }) or return FALSE;
-      $self->_eval_clause( $criteria->{ $k }, $lhs ) or return FALSE;
-   }
-
-   return TRUE;
-}
-
-sub _eval_op {
+my $_eval_op = sub {
    my ($self, $lhs, $op, $rhs) = @_;
 
    my $subr = $self->_operators->{ $op } or return FALSE;
@@ -240,48 +68,9 @@ sub _eval_op {
                            (is_arrayref $lhs) ? @{ $lhs } : ( $lhs ));
 
    return TRUE;
-}
+};
 
-sub _find {
-   my ($self, $id) = @_; my $results = $self->select;
-
-   ($id and exists $results->{ $id }) or return;
-
-   my $attrs = { %{ $results->{ $id } }, id => $id };
-
-   return $self->_create_result( $attrs );
-}
-
-sub _find_and_update {
-   my ($self, $args) = @_; my $id = $self->_validate_params( $args );
-
-   my $result = $self->_find( $id )
-      or throw class => RecordNotFound, args => [ $self->path, $id ];
-
-   return $self->_update_result( $result, $args );
-}
-
-sub _list {
-   my ($self, $id) = @_; my ($attr, $attrs, $labels); my $found = FALSE;
-
-   my $results = $self->select; my $list = [ sort keys %{ $results } ];
-
-   $attr = $self->label_attr
-      and $labels = { map { $_ => $results->{ $_ }->{ $attr } } @{ $list } };
-
-   if ($id and exists $results->{ $id }) {
-      $attrs = { %{ $results->{ $id } }, id => $id }; $found = TRUE;
-   }
-   else { $attrs = { id => $id } }
-
-   my $result = $self->_create_result( $attrs );
-
-   $attrs = { found => $found, list => $list, result => $result, };
-   $labels and $attrs->{labels} = $labels;
-   return $self->list_class->new( $attrs );
-}
-
-sub _push {
+my $_push = sub {
    my ($self, $id, $attr, $items) = @_;
 
    my $attrs = { %{ $self->select->{ $id } || {} }, id => $id };
@@ -294,34 +83,9 @@ sub _push {
 
    $attrs->{ $attr } = $list;
    return ($attrs, $in);
-}
+};
 
-sub _search {
-   my ($self, $where) = @_; my $results = $self->_results; my @tmp;
-
-   if (not defined $results->[ 0 ]) {
-      $results = $self->select;
-
-      for (keys %{ $results }) {
-         my $attrs = { %{ $results->{ $_ } }, id => $_ };
-
-         if (not $where or $self->_eval_criteria( $where, $attrs )) {
-            CORE::push @{ $self->_results }, $self->_create_result( $attrs );
-         }
-      }
-   }
-   elsif ($where and defined $results->[ 0 ]) {
-      for (@{ $results }) {
-         $self->_eval_criteria( $where, $_ ) and CORE::push @tmp, $_;
-      }
-
-      $self->_results( \@tmp );
-   }
-
-   return wantarray ? $self->all : $self;
-}
-
-sub _splice {
+my $_splice = sub {
    my ($self, $id, $attr, $items) = @_;
 
    my $attrs = { %{ $self->select->{ $id } || {} }, id => $id };
@@ -342,15 +106,15 @@ sub _splice {
 
    $attrs->{ $attr } = $list;
    return ($attrs, $out);
-}
+};
 
-sub _txn_do {
+my $_txn_do = sub {
    my ($self, $coderef) = @_;
 
    return $self->storage->txn_do( $self->path, $coderef );
-}
+};
 
-sub _update_result {
+my $_update_result = sub {
    my ($self, $result, $args) = @_;
 
    for my $attr (grep { exists $args->{ $_ } } @{ $self->attributes }) {
@@ -358,16 +122,254 @@ sub _update_result {
    }
 
    return $result->update;
-}
+};
 
-sub _validate_params {
+my $_validate_params = sub {
    my ($self, $args) = @_; $args //= {};
 
    my $id = (is_hashref $args) ? ($args->{id} // $args->{name}) : $args;
 
-   $id or throw class => Unspecified, args => [ 'record id' ], level => 2;
+   $id or throw Unspecified, [ 'record id' ], level => 2;
 
    return $id;
+};
+
+my $_eval_clause = sub {
+   my ($self, $clause, $lhs) = @_;
+
+   if (is_hashref $clause) {
+      for (keys %{ $clause }) {
+         $self->$_eval_op( $lhs, $_, $clause->{ $_ } ) or return FALSE;
+      }
+
+      return TRUE;
+   }
+   elsif (is_arrayref $clause) { # TODO: Handle case of 2 arrays
+      return (is_arrayref $lhs) ? FALSE : (is_member $lhs, $clause);
+   }
+
+   return (is_arrayref $lhs) ? ((is_member $clause, $lhs) ? TRUE : FALSE)
+                             : ($clause eq $lhs           ? TRUE : FALSE);
+};
+
+my $_find = sub {
+   my ($self, $id) = @_; my $results = $self->select;
+
+   ($id and exists $results->{ $id }) or return;
+
+   my $attrs = { %{ $results->{ $id } }, id => $id };
+
+   return $self->$_create_result( $attrs );
+};
+
+my $_list = sub {
+   my ($self, $id) = @_; my ($attr, $attrs, $labels); my $found = FALSE;
+
+   my $results = $self->select; my $list = [ sort keys %{ $results } ];
+
+   $attr = $self->label_attr
+      and $labels = { map { $_ => $results->{ $_ }->{ $attr } } @{ $list } };
+
+   if ($id and exists $results->{ $id }) {
+      $attrs = { %{ $results->{ $id } }, id => $id }; $found = TRUE;
+   }
+   else { $attrs = { id => $id } }
+
+   my $result = $self->$_create_result( $attrs );
+
+   $attrs = { found => $found, list => $list, result => $result, };
+   $labels and $attrs->{labels} = $labels;
+   return $self->list_class->new( $attrs );
+};
+
+my $_eval_criteria = sub {
+   my ($self, $criteria, $attrs) = @_; my $lhs;
+
+   for my $k (keys %{ $criteria }) {
+      defined ($lhs = $attrs->{ $k eq 'name' ? 'id' : $k }) or return FALSE;
+      $self->$_eval_clause( $criteria->{ $k }, $lhs ) or return FALSE;
+   }
+
+   return TRUE;
+};
+
+my $_find_and_update = sub {
+   my ($self, $args) = @_; my $id = $self->$_validate_params( $args );
+
+   my $result = $self->$_find( $id )
+      or throw RecordNotFound, [ $self->path, $id ];
+
+   return $self->$_update_result( $result, $args );
+};
+
+my $_search = sub {
+   my ($self, $where) = @_; my $results = $self->_results; my @tmp;
+
+   if (not defined $results->[ 0 ]) {
+      $results = $self->select;
+
+      for (keys %{ $results }) {
+         my $attrs = { %{ $results->{ $_ } }, id => $_ };
+
+         if (not $where or $self->$_eval_criteria( $where, $attrs )) {
+            CORE::push @{ $self->_results }, $self->$_create_result( $attrs );
+         }
+      }
+   }
+   elsif ($where and defined $results->[ 0 ]) {
+      for (@{ $results }) {
+         $self->$_eval_criteria( $where, $_ ) and CORE::push @tmp, $_;
+      }
+
+      $self->_results( \@tmp );
+   }
+
+   return wantarray ? $self->all : $self;
+};
+
+# Public methods
+sub all {
+   my $self = shift; return @{ $self->_results };
+}
+
+sub create {
+   my ($self, $args) = @_; $self->$_validate_params( $args );
+
+   return $self->$_txn_do( sub { $self->$_create_result( $args )->insert } );
+}
+
+sub create_or_update {
+   my ($self, $args) = @_; my $id = $self->$_validate_params( $args );
+
+   return $self->$_txn_do( sub {
+      my $result = $self->$_find( $id )
+         or return $self->$_create_result( $args )->insert;
+
+      return $self->$_update_result( $result, $args );
+   } );
+}
+
+sub delete {
+   my ($self, $args) = @_; my $id = $self->$_validate_params( $args );
+
+   my $optional = (is_hashref $args) ? $args->{optional} : FALSE;
+   my $path     = $self->path;
+
+   my $res = $self->$_txn_do( sub {
+      my $result; unless ($result = $self->$_find( $id )) {
+         $optional or throw RecordNotFound, [ $path, $id ];
+         return FALSE;
+      }
+
+      $result->delete
+         or throw 'File [_1] element [_2] not deleted', [ $path, $id ];
+      return TRUE;
+   } );
+
+   return $res ? $id : undef;
+}
+
+sub find {
+   my ($self, $args) = @_; my $id = $self->$_validate_params( $args );
+
+   return $self->$_txn_do( sub { $self->$_find( $id ) } );
+}
+
+sub find_and_update {
+   my ($self, $args) = @_; $self->$_validate_params( $args );
+
+   return $self->$_txn_do( sub { $self->$_find_and_update( $args ) } );
+}
+
+sub first {
+   my $self = shift; return $self->_results->[ 0 ];
+}
+
+sub last {
+   my $self = shift; return $self->_results->[ -1 ];
+}
+
+sub list {
+   my ($self, $args) = @_;
+
+   my $id = (is_hashref $args) ? $args->{id} // $args->{name} : $args;
+
+   return $self->$_txn_do( sub { $self->$_list( $id ) } );
+}
+
+sub next {
+   my $self  = shift;
+   my $index = $self->_iterator; $self->_iterator( $index + 1 );
+
+   return $self->_results->[ $index ];
+}
+
+sub push {
+   my ($self, $args) = @_; my $id = $self->$_validate_params( $args );
+
+   my $list  = $args->{list} or throw Unspecified, [ 'list' ];
+   my $items = $args->{items} || []; my ($added, $attrs);
+
+   $items->[ 0 ] or throw 'List contains no items';
+
+   my $res = $self->$_txn_do( sub {
+      ($attrs, $added) = $self->$_push( $id, $list, $items );
+
+      return $self->$_find_and_update( $attrs );
+   } );
+
+   return $res ? $added : FALSE;
+}
+
+sub reset {
+   my $self = shift; return $self->_iterator( 0 );
+}
+
+sub select {
+   my $self = shift;
+
+   return $self->storage->select( $self->path, $self->result_source->name );
+}
+
+sub search {
+   my ($self, $args) = @_;
+
+   return $self->$_txn_do( sub { $self->$_search( $args ) } );
+}
+
+sub splice {
+   my ($self, $args) = @_; my $id = $self->$_validate_params( $args );
+
+   my $list  = $args->{list} or throw Unspecified, [ 'list' ];
+   my $items = $args->{items} || []; my ($attrs, $removed);
+
+   $items->[ 0 ] or throw 'List contains no items';
+
+   my $res = $self->$_txn_do( sub {
+      ($attrs, $removed) = $self->$_splice( $id, $list, $items );
+
+      return $self->$_find_and_update( $attrs );
+   } );
+
+   return $res ? $removed : FALSE;
+}
+
+sub update {
+   my ($self, $args) = @_;
+
+   if (my $id = $args->{id} // $args->{name}) { # Deprecated
+      return $self->$_txn_do( sub { $self->$_find_and_update( $args ) } );
+   }
+
+   return $self->$_txn_do( sub {
+      my $updated = FALSE;
+
+      for my $result (@{ $self->_results }) {
+         my $res = $self->$_update_result( $result, $args ); $updated ||= $res;
+      }
+
+      return $updated;
+   } );
 }
 
 1;

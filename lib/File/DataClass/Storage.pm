@@ -27,6 +27,15 @@ has 'schema'   => is => 'ro', isa => Object,
                     _log   => 'log',   _perms => 'perms' },
    required    => TRUE,  weak_ref => TRUE;
 
+# Private functions
+my $_get_src_attributes = sub {
+   my ($cond, $src) = @_;
+
+   return grep { not m{ \A _ }mx
+                 and $_ ne 'id' and $_ ne 'name'
+                 and $cond->( $_ ) } keys %{ $src };
+};
+
 # Public methods
 sub create_or_update {
    my ($self, $path, $result, $updating, $cond) = @_;
@@ -38,7 +47,7 @@ sub create_or_update {
    my $data = ($self->_read_file( $path, TRUE ))[ 0 ];
 
    try {
-      my $filter = sub { __get_src_attributes( $cond, $_[ 0 ] ) };
+      my $filter = sub { $_get_src_attributes->( $cond, $_[ 0 ] ) };
       my $id     = $result->id; $data->{ $element } ||= {};
 
       not $updating and exists $data->{ $element }->{ $id }
@@ -227,15 +236,6 @@ sub _write_file {
 
    $self->_lock->reset( k => $path );
    return $data;
-}
-
-# Private functions
-sub __get_src_attributes {
-   my ($cond, $src) = @_;
-
-   return grep { not m{ \A _ }mx
-                 and $_ ne 'id' and $_ ne 'name'
-                 and $cond->( $_ ) } keys %{ $src };
 }
 
 1;
