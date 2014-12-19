@@ -13,7 +13,7 @@ has '+extn' => default => '.json';
 
 extension_map 'JSON' => '.json';
 
-sub read_file_raw {
+sub read_from_file {
    my ($self, $rdr) = @_;
 
    $self->encoding and $rdr->encoding( $self->encoding );
@@ -29,7 +29,7 @@ sub read_file_raw {
    return $data;
 }
 
-sub write_file_raw {
+sub write_to_file {
    my ($self, $wtr, $data) = @_; my $json = JSON->new->canonical;
 
    $self->encoding and $wtr->encoding( $self->encoding );
@@ -73,11 +73,11 @@ The extension appended to filenames. Defaults to F<.json>
 
 =head1 Subroutines/Methods
 
-=head2 read_file_raw
+=head2 read_from_file
 
 API required method. Calls L<JSON::MaybeXS/decode> to parse the input
 
-=head2 write_file_raw
+=head2 write_to_file
 
 API required method. Calls L<JSON::MaybeXS/encode> to generate the output
 

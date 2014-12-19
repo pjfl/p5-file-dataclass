@@ -142,7 +142,7 @@ sub read_file {
       if (is_stale $data, $cache_mtime, $path_mtime) {
          if ($for_update and not $path->exists) { $data = {} }
          else {
-            $data = $self->read_file_raw( $path->lock ); $path->close;
+            $data = $self->read_from_file( $path->lock ); $path->close;
             $meta = $self->meta_pack( $path_mtime );
             $self->_cache->set( $path, $data, $meta );
             $self->_log->debug( "Read file  ${path}" );
@@ -157,8 +157,8 @@ sub read_file {
    return ($data, $path_mtime);
 }
 
-sub read_file_raw {
-   throw 'Method [_1] not overridden in subclass', [ 'read_file_raw' ];
+sub read_from_file {
+   throw 'Method [_1] not overridden in subclass', [ 'read_from_file' ];
 }
 
 sub select {
@@ -223,7 +223,7 @@ sub write_file {
             or throw 'Backup copy failed: [_1]', [ $OS_ERROR ];
       }
 
-      try   { $data = $self->write_file_raw( $path->atomic->lock, $data );
+      try   { $data = $self->write_to_file( $path->atomic->lock, $data );
               $path->close }
       catch { $path->delete; throw $_ };
 
@@ -236,8 +236,8 @@ sub write_file {
    return $data;
 }
 
-sub write_file_raw {
-   throw 'Method [_1] not overridden in subclass', [ 'write_file_raw' ];
+sub write_to_file {
+   throw 'Method [_1] not overridden in subclass', [ 'write_to_file' ];
 }
 
 1;
@@ -329,9 +329,9 @@ it returns. Paths are instances of L<File::DataClass::IO>
 
 Read a file from cache or disk
 
-=head2 read_file_raw
+=head2 read_from_file
 
-   $data = $self->read_file_raw( $read_file_handle );
+   $data = $self->read_from_file( $io_object_ref );
 
 Should be overridden in the subclass
 
@@ -366,9 +366,9 @@ Throw if C<$path> or C<$element> are not specified or C<$path> is not blessed
 Writes C<$data> to C<$path>. Will throw if C<$create> is not true and C<$path>
 does not exist
 
-=head2 write_file_raw
+=head2 write_to_file
 
-   $data = $self->write_file_raw( $write_file_handle, $data );
+   $data = $self->write_to_file( $io_object_ref, $data );
 
 Should be overridden in the subclass
 
