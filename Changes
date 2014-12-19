@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Dropped Class::Method::ModifiersX::Augment
           - Coverted rest to lexical subroutines
           - Converted ::IO to lexical subroutines
           - Added ::IO->digest. Robbed from Path::Tiny

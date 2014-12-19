@@ -5,7 +5,6 @@ use namespace::autoclean;
 use Moo;
 use File::DataClass::Functions qw( extension_map throw );
 use JSON::MaybeXS              qw( JSON );
-use MooX::Augment -class;
 use Try::Tiny;
 
 extends q(File::DataClass::Storage);
@@ -14,7 +13,7 @@ has '+extn' => default => '.json';
 
 extension_map 'JSON' => '.json';
 
-augment '_read_file' => sub {
+sub read_file_raw {
    my ($self, $rdr) = @_;
 
    $self->encoding and $rdr->encoding( $self->encoding );
@@ -22,22 +21,21 @@ augment '_read_file' => sub {
    # The filter causes the data to be untainted (running suid). I shit you not
    my $json = JSON->new->canonical->filter_json_object( sub { $_[ 0 ] } );
 
-   $rdr->empty and return {}; my $content;
+   $rdr->empty and return {}; my $data;
 
-   try   { $content = $json->utf8( 0 )->decode( $rdr->all ) }
-   catch { s{ at \s [^ ]+ \s line \s \d+ \. }{}mx;
-           throw "${_} in file ${rdr}" };
+   try   { $data = $json->utf8( 0 )->decode( $rdr->all ) }
+   catch { s{ at \s [^ ]+ \s line \s\d+\. }{}mx; throw "${_} in file ${rdr}" };
 
-   return $content;
-};
+   return $data;
+}
 
-augment '_write_file' => sub {
+sub write_file_raw {
    my ($self, $wtr, $data) = @_; my $json = JSON->new->canonical;
 
    $self->encoding and $wtr->encoding( $self->encoding );
 
    $wtr->print( $json->pretty->utf8( 0 )->encode( $data ) ); return $data;
-};
+}
 
 1;
 
@@ -75,13 +73,13 @@ The extension appended to filenames. Defaults to F<.json>
 
 =head1 Subroutines/Methods
 
-=head2 _read_file
+=head2 read_file_raw
 
-Calls L<JSON::MaybeXS/decode> to parse the input
+API required method. Calls L<JSON::MaybeXS/decode> to parse the input
 
-=head2 _write_file
+=head2 write_file_raw
 
-Calls L<JSON::MaybeXS/encode> to generate the output
+API required method. Calls L<JSON::MaybeXS/encode> to generate the output
 
 =head1 Diagnostics
 

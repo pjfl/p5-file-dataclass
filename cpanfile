@@ -1,5 +1,4 @@
 requires "Cache::FastMmap" => "1.40";
-requires "Class::Method::ModifiersX::Augment" => "0.001";
 requires "Class::Null" => "2.110730";
 requires "File::Path" => "2.08";
 requires "File::ReadBackwards" => "1.05";

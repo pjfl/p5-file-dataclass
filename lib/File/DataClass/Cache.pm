@@ -4,7 +4,7 @@ use 5.01;
 use namespace::autoclean;
 
 use Moo;
-use File::DataClass::Constants;
+use File::DataClass::Constants qw( FALSE NUL SPC TRUE );
 use File::DataClass::Functions qw( merge_attributes throw );
 use File::DataClass::Types     qw( Bool Cache ClassName HashRef
                                    LoadableClass Object Str );
@@ -17,8 +17,6 @@ has 'cache_attributes' => is => 'ro',   isa => HashRef, default => sub { {} };
 
 has 'cache_class'      => is => 'lazy', isa => LoadableClass,
    default             => 'Cache::FastMmap';
-
-has 'debug'            => is => 'ro',   isa => Bool, default => FALSE;
 
 has 'log'              => is => 'ro',   isa => Object,
    default             => sub { Class::Null->new };
@@ -51,7 +49,7 @@ around 'BUILDARGS' => sub {
 
    my $builder = delete $attr->{builder} or return $attr;
 
-   merge_attributes $attr, $builder, [ qw( debug log ) ];
+   merge_attributes $attr, $builder, [ 'log' ];
 
    return $attr;
 };
@@ -187,10 +185,6 @@ A hash ref passed to the L<CHI> constructor
 =item C<cache_class>
 
 The class name of the cache object, defaults to L<CHI>
-
-=item C<debug>
-
-Boolean which defaults to false
 
 =item C<log>
 

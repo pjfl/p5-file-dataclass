@@ -3,7 +3,7 @@ package File::DataClass::Types;
 use strict;
 use warnings;
 
-use File::DataClass::IO;
+use File::DataClass::IO   qw( io );
 use Scalar::Util          qw( blessed dualvar );
 use Type::Library             -base, -declare =>
                           qw( Cache DummyClass HashRefOfBools Lock

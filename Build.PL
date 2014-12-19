@@ -25,7 +25,6 @@ my $prereqs  = {
   },
   'requires' => {
     'Cache::FastMmap' => '1.40',
-    'Class::Method::ModifiersX::Augment' => '0.001',
     'Class::Null' => '2.110730',
     'File::Path' => '2.08',
     'File::ReadBackwards' => '1.05',

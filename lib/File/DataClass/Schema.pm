@@ -5,7 +5,7 @@ use namespace::autoclean;
 use Moo;
 use Class::Null;
 use File::DataClass::Cache;
-use File::DataClass::Constants;
+use File::DataClass::Constants qw( EXCEPTION_CLASS FALSE NUL PERMS TRUE );
 use File::DataClass::Functions qw( ensure_class_loaded first_char
                                    qualify_storage_class map_extension2class
                                    merge_attributes supported_extensions
@@ -31,8 +31,6 @@ has 'cache_attributes'         => is => 'ro',   isa => HashRef,
 
 has 'cache_class'              => is => 'ro',   isa => ClassName | DummyClass,
    default                     => 'File::DataClass::Cache';
-
-has 'debug'                    => is => 'ro',   isa => Bool, default => FALSE;
 
 has 'lock'                     => is => 'lazy', isa => Lock,
    default                     => sub { Class::Null->new };
@@ -81,7 +79,7 @@ around 'BUILDARGS' => sub {
    my $builder = delete $attr->{builder} or return $attr;
    my $config  = $builder->can( 'config' ) ? $builder->config : {};
 
-   merge_attributes $attr, $builder, [ qw( debug lock log tempdir ) ];
+   merge_attributes $attr, $builder, [ qw( lock log tempdir ) ];
    merge_attributes $attr, $config,  [ qw( tempdir ) ];
 
    return $attr;
@@ -251,10 +249,6 @@ Passed to the L<Cache::Cache> constructor
 Classname used to create the cache object. Defaults to
 L<File::DataClass::Cache>
 
-=item C<debug>
-
-Writes debug information to the log object if set to true
-
 =item C<lock>
 
 Defaults to L<Class::Null>. Can be set via the C<builder>
@@ -373,8 +367,7 @@ Reads a file in one format and writes it back out in another format
 
 =head1 Diagnostics
 
-Setting the C<debug> attribute to true will cause the log object's
-debug method to be called with useful information
+None
 
 =head1 Dependencies
 

@@ -3,10 +3,10 @@ package File::DataClass::ResultSource;
 use namespace::autoclean;
 
 use Moo;
-use File::DataClass::Constants;
+use File::DataClass::Constants qw( FALSE NUL TRUE );
 use File::DataClass::ResultSet;
-use File::DataClass::Types qw( ArrayRef ClassName HashRef
-                               Object SimpleStr Str );
+use File::DataClass::Types     qw( ArrayRef ClassName HashRef
+                                   Object SimpleStr Str );
 
 has 'attributes'           => is => 'ro', isa => ArrayRef[Str],
    default                 => sub { [] };

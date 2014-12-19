@@ -4,7 +4,7 @@ use namespace::autoclean;
 
 use Moo;
 use File::Basename             qw( basename );
-use File::DataClass::Constants;
+use File::DataClass::Constants qw( FALSE TRUE );
 use File::DataClass::Functions qw( ensure_class_loaded first_char
                                    qualify_storage_class map_extension2class
                                    is_stale merge_file_data throw );

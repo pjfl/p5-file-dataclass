@@ -3,7 +3,7 @@ package File::DataClass::ResultSet;
 use namespace::autoclean;
 
 use Moo;
-use File::DataClass::Constants;
+use File::DataClass::Constants qw( EXCEPTION_CLASS FALSE TRUE );
 use File::DataClass::Functions qw( is_arrayref is_hashref is_member throw );
 use File::DataClass::List;
 use File::DataClass::Result;
