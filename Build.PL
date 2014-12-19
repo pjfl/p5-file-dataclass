@@ -36,8 +36,8 @@ my $prereqs  = {
     'MooX::ClassStash' => '0.005',
     'Try::Tiny' => '0.22',
     'Type::Tiny' => '1.000002',
-    'Unexpected' => 'v0.33.0',
-    'namespace::autoclean' => '0.19',
+    'Unexpected' => 'v0.35.0',
+    'namespace::autoclean' => '0.22',
     'namespace::clean' => '0.25',
     'perl' => '5.010001'
   },

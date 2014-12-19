@@ -1,5 +1,9 @@
 Revision history for File::DataClass
 
+0.54.1    2014-12-19 22:52:50
+          - Updated prereqs. Slaven is testing with modules from the back
+            pan again 0b1e0b44-87ba-11e4-ac75-b26ee0bfc7aa
+
 0.53.1    2014-12-19 11:47:56
           - Storage API methods now called read_from_file and write_to_file
           - Dropped Class::Method::ModifiersX::Augment

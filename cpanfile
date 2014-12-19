@@ -10,8 +10,8 @@ requires "Moo" => "1.006";
 requires "MooX::ClassStash" => "0.005";
 requires "Try::Tiny" => "0.22";
 requires "Type::Tiny" => "1.000002";
-requires "Unexpected" => "v0.33.0";
-requires "namespace::autoclean" => "0.19";
+requires "Unexpected" => "v0.35.0";
+requires "namespace::autoclean" => "0.22";
 requires "namespace::clean" => "0.25";
 requires "perl" => "5.010001";
 
