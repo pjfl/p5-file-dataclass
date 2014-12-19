@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.53.1    2014-12-19 11:47:56
           - Storage API methods now called read_from_file and write_to_file
           - Dropped Class::Method::ModifiersX::Augment
           - Coverted rest to lexical subroutines

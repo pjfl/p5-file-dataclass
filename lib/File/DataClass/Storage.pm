@@ -240,6 +240,15 @@ sub write_to_file {
    throw 'Method [_1] not overridden in subclass', [ 'write_to_file' ];
 }
 
+# Backcompat
+sub _read_file {
+   throw 'Should never call _read_file';
+}
+
+sub _write_file {
+   throw 'Should never call _write_file';
+}
+
 1;
 
 __END__
