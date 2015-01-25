@@ -22,7 +22,7 @@ sub HASH     () { 'HASH'     }
 sub LANG     () { 'en'       }
 sub LOCALIZE () { '[_'       }
 sub NUL      () { q()        }
-sub PERMS    () { oct '0660' }
+sub PERMS    () { oct '0640' }
 sub SPC      () { ' '        }
 sub TILDE    () { '~'        }
 sub TRUE     () { 1          }
