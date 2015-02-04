@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Replaced MooX::ClassStash with Subclass::Of and a factory pattern
           - Changed default perms to 640
 
 0.54.1    2014-12-19 22:52:50

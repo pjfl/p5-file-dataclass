@@ -503,7 +503,7 @@ SKIP: {
       $io->chmod( 0400 );
       is( (sprintf "%o", $io->stat->{mode} & 07777), '400', 'Chmod 400' );
       $io->chmod();
-      is( (sprintf "%o", $io->stat->{mode} & 07777), '660', 'Chmod default' );
+      is( (sprintf "%o", $io->stat->{mode} & 07777), '640', 'Chmod default' );
       $io->chmod( 0777 );
       is( (sprintf "%o", $io->stat->{mode} & 07777), '777', 'Chmod 777' );
    };

@@ -14,8 +14,7 @@ has 'attributes'           => is => 'ro', isa => ArrayRef[Str],
 has 'defaults'             => is => 'ro', isa => HashRef,
    default                 => sub { {} };
 
-has 'name'                 => is => 'ro', isa => SimpleStr,
-   default                 => NUL;
+has 'name'                 => is => 'ro', isa => SimpleStr, required => TRUE;
 
 has 'label_attr'           => is => 'ro', isa => SimpleStr,
    default                 => NUL;
@@ -27,7 +26,7 @@ has 'resultset_class'      => is => 'ro', isa => ClassName,
    default                 => 'File::DataClass::ResultSet';
 
 has 'schema'               => is => 'ro', isa => Object,
-   handles                 => [ qw( path storage ) ],
+   handles                 => [ 'path', 'storage' ],
    required                => TRUE, weak_ref => TRUE,
 
 

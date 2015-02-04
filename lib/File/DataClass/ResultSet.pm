@@ -7,27 +7,31 @@ use File::DataClass::Constants qw( EXCEPTION_CLASS FALSE TRUE );
 use File::DataClass::Functions qw( is_arrayref is_hashref is_member throw );
 use File::DataClass::List;
 use File::DataClass::Result;
-use File::DataClass::Types     qw( ArrayRef ClassName HashRef Int Object );
+use File::DataClass::Types     qw( ArrayRef ClassName
+                                   HashRef Int Maybe Object Str );
 use Scalar::Util               qw( blessed );
+use Subclass::Of;
 use Unexpected::Functions      qw( RecordNotFound Unspecified );
 
-has 'list_class'    => is => 'ro',   isa => ClassName,
+my $class_stash = {};
+
+has 'list_class'    => is => 'ro', isa => ClassName,
    default          => 'File::DataClass::List';
 
-has 'result_class'  => is => 'ro',   isa => ClassName,
+has 'result_class'  => is => 'ro', isa => ClassName,
    default          => 'File::DataClass::Result';
 
-has 'result_source' => is => 'ro',   isa => Object,
+has 'result_source' => is => 'ro', isa => Object,
    handles          => [ qw( attributes defaults label_attr path storage ) ],
    required         => TRUE, weak_ref => TRUE;
 
+has '_iterator'     => is => 'rw',   isa => Int, default => 0,
+   init_arg         => undef;
 
-has '_iterator'  => is => 'rw',   isa => Int, default => 0, init_arg => undef;
+has '_operators'    => is => 'lazy', isa => HashRef;
 
-has '_operators' => is => 'lazy', isa => HashRef;
-
-has '_results'   => is => 'rw',   isa => ArrayRef,
-   default       => sub { [] }, init_arg => undef;
+has '_results'      => is => 'rw',   isa => ArrayRef,
+   default          => sub { [] }, init_arg => undef;
 
 # Construction
 sub _build__operators {
@@ -46,17 +50,42 @@ sub _build__operators {
 }
 
 # Private methods
+my $_new_result_class = sub {
+   my ($self, $class, $source, $values) = @_;
+
+   my $name = "${class}::".$source->name; my @attrs;
+
+   exists $class_stash->{ $name } and return $class_stash->{ $name };
+
+   my $except = 'delete | id | insert | name | path | result_source | update';
+   my %types  = ( 'SCALAR', Maybe[Str], 'ARRAY', Maybe[ArrayRef],
+                  'HASH',   Maybe[HashRef] );
+
+   for my $attr (grep { not m{ \A (?: $except ) \z }mx }
+                     @{ $source->attributes }) {
+      my $type = ref $source->defaults->{ $attr } || ref $values->{ $attr };
+
+      push @attrs, $attr, [ is => 'rw', isa => $types{ $type || 'SCALAR' } ];
+   }
+
+   return $class_stash->{ $name } = subclass_of
+      ( $class, -package => $name, -has => [ @attrs ] );
+};
+
 my $_create_result = sub {
    my ($self, $args) = @_;
 
-   my $attrs = { %{ $self->defaults }, result_source => $self->result_source };
+   my $attr = { %{ $self->defaults }, result_source => $self->result_source };
 
    for (grep { exists $args->{ $_ } and defined $args->{ $_ } }
             @{ $self->attributes }, 'id', 'name') {
-      $attrs->{ $_ } = $args->{ $_ };
+      $attr->{ $_ } = $args->{ $_ };
    }
 
-   return $self->result_class->new( $attrs );
+   my $class = $self->$_new_result_class
+      ( $self->result_class, $self->result_source, $attr );
+
+   return $class->new( $attr );
 };
 
 my $_eval_op = sub {

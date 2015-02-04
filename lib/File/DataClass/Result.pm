@@ -1,12 +1,9 @@
 package File::DataClass::Result;
 
-use File::DataClass::Types qw( ArrayRef HashRef Maybe Object Str );
-use Scalar::Util           qw( blessed );
-
-use namespace::clean -except => 'meta';
+use namespace::autoclean;
 
 use Moo;
-use MooX::ClassStash;
+use File::DataClass::Types qw( Object Str );
 
 has 'id' => is => 'rw', isa => Str, required => 1;
 
@@ -22,29 +19,6 @@ around 'BUILDARGS' => sub {
 
    return $attr;
 };
-
-sub BUILD {
-   my ($self, $args) = @_;
-
-   my $class  = blessed $self;
-   my $meta   = $class->class_stash;
-   my %types  = ( 'SCALAR', Maybe[Str], 'ARRAY',  Maybe[ArrayRef],
-                 'HASH',   Maybe[HashRef] );
-   my @attrs  = @{ $self->result_source->attributes };
-   my $except = 'delete | insert | name | update';
-
-   for my $attr (grep { not m{ \A (?: $except ) \z }mx } @attrs) {
-      my $type = ref $self->result_source->defaults->{ $attr }
-              || ref $args->{ $attr };
-
-      $meta->has_attribute( $attr ) or $meta->add_attribute
-         ( $attr => ( is => 'rw', isa => $types{ $type || 'SCALAR' } ) );
-
-      defined $args->{ $attr } and $self->$attr( $args->{ $attr } );
-   }
-
-   return;
-}
 
 sub delete {
    return $_[ 0 ]->_storage->delete( $_[ 0 ]->_path, $_[ 0 ] );
