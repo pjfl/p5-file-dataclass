@@ -158,7 +158,8 @@ sub read_file {
 }
 
 sub read_from_file {
-   throw 'Method [_1] not overridden in subclass', [ 'read_from_file' ];
+   throw 'Method [_1] not overridden in subclass [_2]',
+         [ 'read_from_file', blessed $_[ 0 ] ];
 }
 
 sub select {
