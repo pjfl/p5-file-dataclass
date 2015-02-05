@@ -57,7 +57,7 @@ my $_new_result_class = sub {
 
    exists $class_stash->{ $name } and return $class_stash->{ $name };
 
-   my $except = 'delete | id | insert | name | path | result_source | update';
+   my $except = 'delete | id | insert | name | result_source | update';
    my %types  = ( 'SCALAR', Maybe[Str], 'ARRAY', Maybe[ArrayRef],
                   'HASH',   Maybe[HashRef] );
 
