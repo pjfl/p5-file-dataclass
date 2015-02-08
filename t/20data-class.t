@@ -246,9 +246,9 @@ is_deeply search( { count => { '<=' => '2'     } } ), [ 'admin',   'entrance' ],
 io( $path_ref )->copy( [ 't', 'update.json' ] );
 
 $schema = File::DataClass::Schema->new
-   ( path    => [ qw( t update.json ) ],
+   ( path    => [ 't', 'update.json' ],
      result_source_attributes => {
-        fields => { attributes => [ qw( width ) ], }, },
+        fields => { attributes => [ 'width' ], }, },
      tempdir => 't' );
 
 $rs = $schema->resultset( 'fields' );
@@ -280,12 +280,12 @@ File::DataClass::Constants->Exception_Class( 'Unexpected' );
 $schema = File::DataClass::Schema->new
    ( builder => Dummy->new, path => $path_ref );
 
-is ref $schema, q(File::DataClass::Schema),
+is ref $schema, 'File::DataClass::Schema',
    'File::DataClass::Schema - with inversion of control';
 
 is $schema->tempdir, 't', 'IOC tempdir';
 
-$e = test( $schema, qw( load nonexistant_file ) );
+$e = test( $schema, 'load', 'nonexistant_file' );
 
 is ref $e, 'Unexpected', 'Non default exception class';
 
@@ -296,9 +296,9 @@ done_testing;
 # Cleanup
 io( $dumped )->unlink;
 io( $cache_file )->unlink;
-io( [ qw( t update.json ) ] )->unlink;
-io( catfile( qw( t ipc_srlock.lck ) ) )->unlink;
-io( catfile( qw( t ipc_srlock.shm ) ) )->unlink;
+io( [ 't', 'update.json' ] )->unlink;
+io( catfile( 't', 'ipc_srlock.lck' ) )->unlink;
+io( catfile( 't', 'ipc_srlock.shm' ) )->unlink;
 
 # Local Variables:
 # mode: perl

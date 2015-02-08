@@ -238,16 +238,17 @@ sub write_file {
 }
 
 sub write_to_file {
-   throw 'Method [_1] not overridden in subclass', [ 'write_to_file' ];
+   throw 'Method [_1] not overridden in subclass [_2]',
+         [ 'write_to_file', blessed $_[ 0 ] ];
 }
 
 # Backcompat
 sub _read_file {
-   throw 'Should never call _read_file';
+   throw 'Class [_1] should never call _read_file', [ blessed $_[ 0 ] ];
 }
 
 sub _write_file {
-   throw 'Should never call _write_file';
+   throw 'Class [_1] should never call _write_file', [ blessed $_[ 0 ] ];
 }
 
 1;

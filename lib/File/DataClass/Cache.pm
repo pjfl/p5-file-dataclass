@@ -149,18 +149,19 @@ File::DataClass::Cache - Adds extra methods to the CHI API
       default             => sub { return {} };
 
    sub _build_cache {
-      my $self  = shift;
+      my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
 
-      $self->Cache and return $self->Cache;
+      my $attrs = { cache_attributes => { %{ $self->cache_attributes } },
+                    builder          => $self };
 
-      my $attr = {}; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
+      $ns    = $attrs->{cache_attributes}->{namespace} ||= $ns;
+      $cache = $self->F_DC_Cache;
+      exists $cache->{ $ns } and return $cache->{ $ns };
+      $self->cache_class eq 'none' and return Class::Null->new;
+      $attrs->{cache_attributes}->{share_file}
+           ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
 
-      $attr->{cache_attributes}                = $self->cache_attributes;
-      $attr->{cache_attributes}->{driver   } ||= q(FastMmap);
-      $attr->{cache_attributes}->{root_dir } ||= NUL.$self->tempdir;
-      $attr->{cache_attributes}->{namespace} ||= $ns;
-
-      return $self->Cache( File::DataClass::Cache->new( $attr ) );
+      return $self->F_DC_Cache->{ $ns } = $self->cache_class->new( $attrs );
    }
 
 =head1 Description

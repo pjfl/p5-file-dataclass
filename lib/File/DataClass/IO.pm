@@ -60,7 +60,7 @@ my $_coerce_name = sub {
    return $name;
 };
 
-my $_include_path = sub {
+my $_should_include_path = sub {
    return (not defined $_[ 0 ] or (map { $_[ 0 ]->() } ($_[ 1 ]))[ 0 ]);
 };
 
@@ -174,7 +174,7 @@ my $_find; $_find = sub {
       my $is_dir = $io->is_dir; defined $is_dir or next;
 
       (($files and not $is_dir) or ($dirs and $is_dir))
-         and $_include_path->( $filter, $io ) and push @all, $io;
+         and $_should_include_path->( $filter, $io ) and push @all, $io;
 
       $is_dir and ($follow or not $io->is_link) and $level != 1
          and push @all, $io->$_find( $files, $dirs, $level ? $level - 1 : 0 );
@@ -850,7 +850,7 @@ sub iterator {
          while (defined (my $path = $dirs[ 0 ]->next)) {
             $deep and $path->is_dir and ($follow or not $path->is_link)
                and unshift @dirs, $path;
-            $_include_path->( $filter, $path ) and return $path;
+            $_should_include_path->( $filter, $path ) and return $path;
          }
 
          shift @dirs;
@@ -1195,7 +1195,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::IO - Better IO syntax
+File::DataClass::IO - A powerful and concise API to do as much IO as possible
 
 =head1 Synopsis
 

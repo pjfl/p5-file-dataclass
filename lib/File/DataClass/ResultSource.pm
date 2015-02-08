@@ -11,24 +11,22 @@ use File::DataClass::Types     qw( ArrayRef ClassName HashRef
 has 'attributes'           => is => 'ro', isa => ArrayRef[Str],
    default                 => sub { [] };
 
-has 'defaults'             => is => 'ro', isa => HashRef,
-   default                 => sub { {} };
+has 'defaults'             => is => 'ro', isa => HashRef, builder => sub { {} };
 
 has 'name'                 => is => 'ro', isa => SimpleStr, required => TRUE;
 
-has 'label_attr'           => is => 'ro', isa => SimpleStr,
-   default                 => NUL;
+has 'label_attr'           => is => 'ro', isa => SimpleStr, default => NUL;
 
-has 'resultset_attributes' => is => 'ro', isa => HashRef,
-   default                 => sub { {} };
+has 'resultset_attributes' => is => 'ro', isa => HashRef, builder => sub { {} };
 
 has 'resultset_class'      => is => 'ro', isa => ClassName,
    default                 => 'File::DataClass::ResultSet';
 
 has 'schema'               => is => 'ro', isa => Object,
    handles                 => [ 'path', 'storage' ],
-   required                => TRUE, weak_ref => TRUE,
+   required                => TRUE, weak_ref => TRUE;
 
+has 'types'                => is => 'ro', isa => HashRef, builder => sub { {} };
 
 has '_attributes' => is => 'lazy', isa => HashRef, init_arg => undef;
 
@@ -90,9 +88,8 @@ File::DataClass::ResultSource - A source of result sets for a given schema
 
 Provides new result sources for a given schema
 
-This is the base class for schema definitions. Each element in a data file
-requires a schema definition to define it's attributes that should
-inherit from this
+Each element in a data file requires a schema definition to define it's
+attributes
 
 =head1 Configuration and Environment
 
@@ -102,21 +99,39 @@ Defines the following attributes
 
 =item B<attributes>
 
-Array ref of attributes defined in this result source
+Array reference of attribute names defined in this result source
 
 =item B<defaults>
 
+A hash reference of attribute names. The values are the defaults for the
+result class attributes
+
 =item B<name>
+
+The name of the result source. Required
 
 =item B<label_attr>
 
+An attribute name which, if set, is used by the list class to return a list
+of labels suitable for display purposes
+
 =item B<resultset_attributes>
+
+A hash reference passed to the result constructor
 
 =item B<resultset_class>
 
+Classname of the result set
+
 =item B<schema>
 
-=item B<storage>
+A required weak reference to the schema object that is instantiating this
+result source
+
+=item B<types>
+
+A hash reference, keyed by attribute name. The types of the attributes in
+the result class
 
 =back
 

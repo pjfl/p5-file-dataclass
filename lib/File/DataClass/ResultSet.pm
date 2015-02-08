@@ -15,13 +15,13 @@ use Unexpected::Functions      qw( RecordNotFound Unspecified );
 
 my $class_stash = {};
 
-has 'list_class'    => is => 'ro', isa => ClassName,
+has 'list_class'    => is => 'ro',   isa => ClassName,
    default          => 'File::DataClass::List';
 
-has 'result_class'  => is => 'ro', isa => ClassName,
+has 'result_class'  => is => 'ro',   isa => ClassName,
    default          => 'File::DataClass::Result';
 
-has 'result_source' => is => 'ro', isa => Object,
+has 'result_source' => is => 'ro',   isa => Object,
    handles          => [ qw( attributes defaults label_attr path storage ) ],
    required         => TRUE, weak_ref => TRUE;
 
@@ -36,16 +36,16 @@ has '_results'      => is => 'rw',   isa => ArrayRef,
 # Construction
 sub _build__operators {
    return {
-      q(eq) => sub { return $_[ 0 ] eq $_[ 1 ] },
-      q(==) => sub { return $_[ 0 ] == $_[ 1 ] },
-      q(ne) => sub { return $_[ 0 ] ne $_[ 1 ] },
-      q(!=) => sub { return $_[ 0 ] != $_[ 1 ] },
-      q(>)  => sub { return $_[ 0 ] >  $_[ 1 ] },
-      q(>=) => sub { return $_[ 0 ] >= $_[ 1 ] },
-      q(<)  => sub { return $_[ 0 ] <  $_[ 1 ] },
-      q(<=) => sub { return $_[ 0 ] <= $_[ 1 ] },
-      q(=~) => sub { my $re = $_[ 1 ]; return $_[ 0 ] =~ qr{ $re }mx },
-      q(!~) => sub { my $re = $_[ 1 ]; return $_[ 0 ] !~ qr{ $re }mx },
+      'eq' => sub { return $_[ 0 ] eq $_[ 1 ] },
+      '==' => sub { return $_[ 0 ] == $_[ 1 ] },
+      'ne' => sub { return $_[ 0 ] ne $_[ 1 ] },
+      '!=' => sub { return $_[ 0 ] != $_[ 1 ] },
+      '>'  => sub { return $_[ 0 ] >  $_[ 1 ] },
+      '>=' => sub { return $_[ 0 ] >= $_[ 1 ] },
+      '<'  => sub { return $_[ 0 ] <  $_[ 1 ] },
+      '<=' => sub { return $_[ 0 ] <= $_[ 1 ] },
+      '=~' => sub { my $re = $_[ 1 ]; return $_[ 0 ] =~ qr{ $re }mx },
+      '!~' => sub { my $re = $_[ 1 ]; return $_[ 0 ] !~ qr{ $re }mx },
    };
 }
 
@@ -53,19 +53,22 @@ sub _build__operators {
 my $_new_result_class = sub {
    my ($self, $class, $source, $values) = @_;
 
-   my $name = "${class}::".$source->name; my @attrs;
+   my $name = "${class}::".(ucfirst $source->name); my @attrs;
 
    exists $class_stash->{ $name } and return $class_stash->{ $name };
 
    my $except = 'delete | id | insert | name | result_source | update';
-   my %types  = ( 'SCALAR', Maybe[Str], 'ARRAY', Maybe[ArrayRef],
-                  'HASH',   Maybe[HashRef] );
+   my %types  = ( 'ARRAY',  Maybe[ArrayRef],
+                  'HASH',   Maybe[HashRef],
+                  'SCALAR', Maybe[Str], );
 
    for my $attr (grep { not m{ \A (?: $except ) \z }mx }
                      @{ $source->attributes }) {
-      my $type = ref $source->defaults->{ $attr } || ref $values->{ $attr };
+      my $sdef = $source->defaults->{ $attr };
+      my $type = $source->types->{ $attr }
+              || $types{ ref $sdef || ref $values->{ $attr } || 'SCALAR' };
 
-      push @attrs, $attr, [ is => 'rw', isa => $types{ $type || 'SCALAR' } ];
+      push @attrs, $attr, [ is => 'rw', isa => $type ];
    }
 
    return $class_stash->{ $name } = subclass_of
@@ -122,12 +125,11 @@ my $_splice = sub {
    my $out   = [];
 
    for my $item (@{ $items }) {
-      last unless (defined $list->[ 0 ]);
+      defined $list->[ 0 ] or last;
 
       for (0 .. $#{ $list }) {
          if ($list->[ $_ ] eq $item) {
-            CORE::splice @{ $list }, $_, 1;
-            CORE::push   @{ $out  }, $item;
+            CORE::splice @{ $list }, $_, 1; CORE::push @{ $out  }, $item;
             last;
          }
       }
@@ -281,10 +283,9 @@ sub create_or_update {
 sub delete {
    my ($self, $args) = @_; my $id = $self->$_validate_params( $args );
 
-   my $optional = (is_hashref $args) ? $args->{optional} : FALSE;
    my $path     = $self->path;
-
-   my $res = $self->$_txn_do( sub {
+   my $optional = (is_hashref $args) ? $args->{optional} : FALSE;
+   my $res      = $self->$_txn_do( sub {
       my $result; unless ($result = $self->$_find( $id )) {
          $optional or throw RecordNotFound, [ $path, $id ];
          return FALSE;
