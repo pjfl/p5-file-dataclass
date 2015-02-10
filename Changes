@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Added explicite ::IO bool overload
+          - Added IO::hexdigest. IO::digest now returns an object ref
           - Added result source types
 
 0.55.1    2015-02-05 00:03:07

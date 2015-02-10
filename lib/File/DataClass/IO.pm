@@ -13,8 +13,9 @@ use File::DataClass::Constants qw( CYGWIN EVIL EXCEPTION_CLASS FALSE
                                    LOCK_BLOCKING LOCK_NONBLOCKING
                                    NO_UMASK_STACK NUL PERMS STAT_FIELDS
                                    TILDE TRUE );
-use File::DataClass::Functions qw( first_char is_arrayref is_coderef
-                                   is_hashref is_member thread_id throw );
+use File::DataClass::Functions qw( ensure_class_loaded first_char is_arrayref
+                                   is_coderef is_hashref is_member thread_id
+                                   throw );
 use File::Spec                   ( );
 use File::Spec::Functions      qw( curdir );
 use IO::Dir;
@@ -27,7 +28,9 @@ use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
                                    PositiveInt RegexpRef SimpleStr Str );
 
 use namespace::clean -except => [ 'import', 'meta' ];
-use overload '""' => sub { $_[ 0 ]->pathname }, fallback => 1;
+use overload '""'       => sub { $_[ 0 ]->pathname },
+             'bool'     => sub { $_[ 0 ]->pathname ? TRUE : FALSE },
+             'fallback' => TRUE;
 
 our @EXPORT    = qw( io );
 
@@ -671,7 +674,7 @@ sub digest { # Robbed from Path::Tiny
                                       : { algorithm => $args[ 0 ],
                                           %{ $args[ 1 ] } };
 
-   require Digest; my $digest = Digest->new( $args->{algorithm} );
+   ensure_class_loaded 'Digest'; my $digest = Digest->new( $args->{algorithm} );
 
    if ($args->{block_size}) {
       $self->binmode( ':unix' )->lock->block_size( $args->{block_size} );
@@ -680,7 +683,7 @@ sub digest { # Robbed from Path::Tiny
    }
    else { $digest->add( $self->binmode( ':unix' )->lock->all ) }
 
-   return $digest->hexdigest;
+   return $digest;
 }
 
 sub dir {
@@ -781,6 +784,10 @@ sub head {
 
    $self->close;
    return wantarray ? @res : join NUL, @res;
+}
+
+sub hexdigest {
+   my ($self, @args) = @_; return $self->digest( @args )->hexdigest;
 }
 
 sub is_absolute {
@@ -1557,9 +1564,9 @@ object is still open it calls the L</close> method
 
 =head2 digest
 
-   $hex_digest = io( 'path_to_file' )->digest( $algorithm, $options );
+   $digest_object = io( 'path_to_file' )->digest( $algorithm, $options );
 
-Returns a hexadecimal string which is calculated from the contents of the
+Returns a L<Digest> object which is calculated from the contents of the
 specified file. The arguments are optional. The algorithm defaults to
 C<SHA-256>. The C<$options> hash reference takes the C<block_size> parameter
 which causes the file to read through the buffer C<block_size> bytes at a
@@ -1648,6 +1655,12 @@ an array of lines
 Returns the first I<n> lines from the file where the number of lines
 returned defaults to 10. Returns the lines joined with null in a
 scalar context
+
+=head2 hexdigest
+
+   $hex_digest = io( 'path_to_file' )->hexdigest( $algorithm, $options );
+
+Returns a hexadecimal string which is calculated from the L</digest> object
 
 =head2 _init
 

@@ -17,6 +17,7 @@ sub test {
 }
 
 use File::DataClass::Schema;
+use Unexpected::Types qw( Bool Int );
 
 my $osname     = lc $OSNAME;
 my $ntfs       = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
@@ -177,7 +178,10 @@ is $res->result->name( 'old_tosh' ), 'old_tosh',
 $schema = File::DataClass::Schema->new
    ( path                     => $path_ref,
      result_source_attributes => {
-        levels                => { attributes => [ qw( acl count state ) ] }, },
+        levels                => { attributes => [ qw( acl count state ) ],
+                                   defaults   => { acl => [] },
+                                   types      => { count => Int,
+                                                   state => Bool, }, }, },
      tempdir                  => 't' );
 
 $rs   = $schema->resultset( 'levels' );
@@ -206,6 +210,10 @@ ok $res->[0] eq $args->{items}->[0] && $res->[1] eq $args->{items}->[1],
 my @res = test( $rs, 'search', $args = { acl => '@support' } );
 
 ok $res[ 0 ] && $res[ 0 ]->id eq 'admin', 'Can search';
+is ref $res[ 0 ]->acl, 'ARRAY', 'Result type from default';
+eval { $res[ 0 ]->count( 'x' ) }; $e = $EVAL_ERROR;
+like $EVAL_ERROR, qr{ \Qnot pass type constraint\E }mx,
+   'Result type constraint error';
 is $rs->search( $args )->first->id, 'admin', 'RS - first';
 is $rs->search( $args )->last->id,  'admin', 'RS - last';
 is $rs->search( $args )->next->id,  'admin', 'RS - next';

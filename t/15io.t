@@ -12,12 +12,12 @@ use Test::Deep                 qw( cmp_deeply );
 use File::DataClass::Constants qw( LOCK_NONBLOCKING );
 use File::DataClass::IO;
 
-isa_ok( io( $PROGRAM_NAME ), 'File::DataClass::IO' );
-
 my $io; my $osname = lc $OSNAME;
 
 sub p { join ';', grep { not m{ \.svn }mx } @_ }
 sub f { my $s = shift; $osname eq 'mswin32' and $s =~ s/\//\\/g; return $s }
+
+isa_ok( io( $PROGRAM_NAME ), 'File::DataClass::IO' );
 
 subtest 'Deliberate errors' => sub {
    eval { io()->all };
@@ -385,9 +385,10 @@ subtest 'Buffered reading/writing' => sub {
 subtest 'Digest' => sub {
    my $io = io( [ 't', 'other.json' ] );
 
-   is $io->digest, $io->digest( 'SHA-256' ), 'Default digest';
-   is $io->digest( { block_size => 4 } ),
-      $io->digest( 'SHA-256', { block_size => 1024 } ), 'Digest - block size';
+   is $io->hexdigest, $io->hexdigest( 'SHA-256' ), 'Default digest';
+   is $io->hexdigest( { block_size => 4 } ),
+      $io->hexdigest( 'SHA-256', { block_size => 1024 } ),
+      'Digest - block size';
 };
 
 SKIP: {

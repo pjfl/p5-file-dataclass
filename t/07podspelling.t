@@ -74,6 +74,7 @@ flanigan
 getline
 getlines
 gettext
+hexdigest
 ingy
 io
 json
