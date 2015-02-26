@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - IO::stat returns undef if no name or file handle
+          - Will stat an open file handle
           - Added explicite ::IO bool overload
           - Added IO::hexdigest. IO::digest now returns an object ref
           - Added result source types

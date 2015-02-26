@@ -13,13 +13,13 @@ use Try::Tiny;
 has 'cache'            => is => 'lazy', isa => Object, builder => sub {
    $_[ 0 ]->cache_class->new( %{ $_[ 0 ]->cache_attributes } ) };
 
-has 'cache_attributes' => is => 'ro',   isa => HashRef, default => sub { {} };
+has 'cache_attributes' => is => 'ro',   isa => HashRef, builder => sub { {} };
 
 has 'cache_class'      => is => 'lazy', isa => LoadableClass,
    default             => 'Cache::FastMmap';
 
 has 'log'              => is => 'ro',   isa => Object,
-   default             => sub { Class::Null->new };
+   builder             => sub { Class::Null->new };
 
 
 has '_mtimes_key'      => is => 'ro',   isa => Str, default => '_mtimes';

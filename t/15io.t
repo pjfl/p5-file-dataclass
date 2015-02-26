@@ -107,8 +107,15 @@ subtest 'Polymorphic Constructor' => sub {
     'Constructs from list of keys and values';
 };
 
-# Stringifies
-$io = io( $PROGRAM_NAME ); is "${io}", $PROGRAM_NAME, 'Stringifies';
+subtest 'Overload' => sub {
+   $io = io( $PROGRAM_NAME );
+   is "${io}", $PROGRAM_NAME, 'Stringifies';
+   is !!$io, 1, 'Boolean true name';
+   $io = io { io_handle => IO::Handle->new };
+   is !!$io, 1, 'Boolean true file handle';
+   $io = io;
+   is !!$io, q(), 'Boolean false';
+};
 
 subtest 'File::Spec::Functions' => sub {
    is( io( '././t/default.xml' )->canonpath, f( catfile( qw( t default.xml ) )),
@@ -626,7 +633,7 @@ SKIP: {
 }
 
 # Cleanup
-io( catdir( qw( t output ) ) )->rmtree;
+io( [ 't', 'output' ] )->rmtree;
 
 done_testing;
 

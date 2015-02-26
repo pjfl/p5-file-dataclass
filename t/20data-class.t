@@ -169,6 +169,7 @@ is $res->result->id, 'create-new', 'Lists with non existant id';
 $res  = test( $rs, 'list', { id => 'feedback.body' } );
 
 ok $res->result->width == 72 && scalar @{ $res->list } == 3, 'Can list';
+is keys( %{ $res->labels } ), 0, 'No labels';
 
 is $res->result->name, 'feedback.body',
    'Deprecated name attribute use id instead - accessor';
@@ -298,6 +299,12 @@ $e = test( $schema, 'load', 'nonexistant_file' );
 is ref $e, 'Unexpected', 'Non default exception class';
 
 is $schema->extensions->{ '.json' }->[ 0 ], 'JSON', 'Extensions';
+
+use File::DataClass::List;
+
+my $list = File::DataClass::List->new;
+
+ok ! defined $list->list->[ 0 ], 'Empty list';
 
 done_testing;
 

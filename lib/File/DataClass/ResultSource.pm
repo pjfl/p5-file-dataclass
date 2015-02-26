@@ -8,8 +8,18 @@ use File::DataClass::ResultSet;
 use File::DataClass::Types     qw( ArrayRef ClassName HashRef
                                    Object SimpleStr Str );
 
+# Private functions
+my $_build_attributes = sub {
+   my $self = shift; my $attr = {};
+
+   $attr->{ $_ } = TRUE for (@{ $self->attributes });
+
+   return $attr;
+};
+
+# Public attributes
 has 'attributes'           => is => 'ro', isa => ArrayRef[Str],
-   default                 => sub { [] };
+   builder                 => sub { [] };
 
 has 'defaults'             => is => 'ro', isa => HashRef, builder => sub { {} };
 
@@ -28,16 +38,8 @@ has 'schema'               => is => 'ro', isa => Object,
 
 has 'types'                => is => 'ro', isa => HashRef, builder => sub { {} };
 
-has '_attributes' => is => 'lazy', isa => HashRef, init_arg => undef;
-
-# Construction
-sub _build__attributes {
-   my $self = shift; my $attr = {};
-
-   $attr->{ $_ } = TRUE for (@{ $self->attributes });
-
-   return $attr;
-}
+has '_attributes' => is => 'lazy', isa => HashRef,
+   builder        => $_build_attributes, init_arg => undef;
 
 # Public methods
 sub columns {

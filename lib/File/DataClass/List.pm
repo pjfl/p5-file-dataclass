@@ -6,8 +6,8 @@ use Moo;
 use File::DataClass::Types qw( ArrayRef Bool HashRef Result Undef );
 
 has 'found'  => is => 'ro', isa => Bool,     default => 0;
-has 'labels' => is => 'ro', isa => HashRef,  builder => sub { return {} };
-has 'list'   => is => 'ro', isa => ArrayRef, builder => sub { return [] };
+has 'labels' => is => 'ro', isa => HashRef,  builder => sub { {} };
+has 'list'   => is => 'ro', isa => ArrayRef, builder => sub { [] };
 has 'result' => is => 'ro', isa => Result | Undef;
 
 1;

@@ -131,11 +131,12 @@ sub meta_unpack { # Modified in a subclass
 sub read_file {
    my ($self, $path, $for_update) = @_;
 
-   $self->_lock->set( k => $path ); my ($data, $meta, $path_mtime);
+   $self->_lock->set( k => $path ); my ($data, $path_mtime);
 
    try {
-      ($data, $meta)  = $self->_cache->get( $path );
-      $path_mtime     = $path->stat->{mtime};
+      my $stat = $path->stat; defined $stat and $path_mtime = $stat->{mtime};
+
+      my $meta; ($data, $meta) = $self->_cache->get( $path );
 
       my $cache_mtime = $self->meta_unpack( $meta );
 

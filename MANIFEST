@@ -46,3 +46,4 @@ t/mydir/file1
 t/mydir/file2
 t/mydir/file3
 t/other.json
+t/utf8.json

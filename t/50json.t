@@ -6,12 +6,10 @@ use File::DataClass::IO;
 use File::Spec::Functions qw( catfile );
 use Text::Diff;
 
-my $osname   = lc $OSNAME;
-my $ntfs     = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
-my $path_ref = [ 't', 'default.json' ]; my $path = catfile( @{ $path_ref } );
+my $osname = lc $OSNAME;
+my $ntfs   = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
 
-io( $path_ref )->is_writable
-   or plan skip_all => 'File t/default.json not writable';
+io( 't' )->is_writable or plan skip_all => 'Directory t not writable';
 
 $ntfs and plan skip_all => 'File system not supported';
 
@@ -27,7 +25,8 @@ sub test {
 
 use_ok 'File::DataClass::Schema';
 
-my $schema = File::DataClass::Schema->new
+my $path_ref = [ 't', 'default.json' ]; my $path = catfile( @{ $path_ref } );
+my $schema   = File::DataClass::Schema->new
    (  path                     => $path,
       result_source_attributes => {
          globals               => { attributes => [ 'text' ], }, },
@@ -53,7 +52,7 @@ $schema->dump( { data => $schema->load, path => $dumped } );
 
 $diff = diff $path, $dumped;
 
-ok !$diff, 'Load and dump roundtrips 2';
+ok !$diff, 'Load and dump roundtrips 2'; io( $dumped )->unlink;
 
 eval { $schema->dump( { data => sub {}, path => $dumped } ) };
 
@@ -116,6 +115,21 @@ ok !$diff, 'Can translate from JSON to JSON';
 File::DataClass::Schema->translate( { from => $path, to => $translate } );
 
 ok !$diff, 'Can translate from JSON to JSON - class method';
+
+$path_ref = [ 't', 'utf8.json' ]; $path = catfile( @{ $path_ref } );
+$schema   = File::DataClass::Schema->new
+   (  path                     => $path,
+      result_source_attributes => {
+         globals               => { attributes => [ 'text' ], }, },
+      storage_attributes       => { encoding => 'UTF-8' },
+      storage_class            => 'Any',
+      tempdir                  => 't' );
+
+$schema->dump( { data => $schema->load, path => $dumped } );
+
+$diff = diff $path, $dumped;
+
+ok !$diff, 'Load and dump roundtrips - uft8';
 
 done_testing;
 

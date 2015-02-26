@@ -29,7 +29,7 @@ use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
 
 use namespace::clean -except => [ 'import', 'meta' ];
 use overload '""'       => sub { $_[ 0 ]->pathname },
-             'bool'     => sub { $_[ 0 ]->pathname ? TRUE : FALSE },
+             'bool'     => sub { $_[ 0 ]->boolean  },
              'fallback' => TRUE;
 
 our @EXPORT    = qw( io );
@@ -67,6 +67,19 @@ my $_should_include_path = sub {
    return (not defined $_[ 0 ] or (map { $_[ 0 ]->() } ($_[ 1 ]))[ 0 ]);
 };
 
+# Private methods
+my $_build_dir_pattern = sub {
+   my $self = shift; my $pat = NUL;
+
+   my $curdir = curdir; my $updir = File::Spec->updir;
+
+   $curdir and $pat  = "\Q${curdir}\E"; # uncoverable condition left
+   $curdir and $updir and $pat .= '|';  # uncoverable condition left
+   $updir  and $pat .= "\Q${updir}\E";  # uncoverable condition left
+
+   return qr{ \A (?:$pat) \z }mx;
+};
+
 # Public attributes
 has 'autoclose'     => is => 'lazy', isa => Bool,           default => TRUE  ;
 has 'have_lock'     => is => 'rwp',  isa => Bool,           default => FALSE ;
@@ -89,17 +102,18 @@ has '_backwards'    => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_block_size'   => is => 'rw',   isa => PositiveInt,    default => 1024  ;
 has '_chomp'        => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_deep'         => is => 'rw',   isa => Bool,           default => FALSE ;
-has '_dir_pattern'  => is => 'lazy', isa => RegexpRef                        ;
+has '_dir_pattern'  => is => 'lazy', isa => RegexpRef,
+   builder          => $_build_dir_pattern                                   ;
 has '_filter'       => is => 'rw',   isa => Maybe[CodeRef]                   ;
 has '_layers'       => is => 'ro',   isa => ArrayRef[SimpleStr],
-   default          => sub { [] };
+   builder          => sub { [] }                                            ;
 has '_lock'         => is => 'rw',   isa => $IO_LOCK,       default => FALSE ;
 has '_lock_obj'     => is => 'rw',   isa => Maybe[Object],
    writer           => 'lock_obj'                                            ;
 has '_no_follow'    => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_separator'    => is => 'rw',   isa => Str,            default => $RS   ;
 has '_umask'        => is => 'rw',   isa => ArrayRef[Int],
-   default          => sub { [] };
+   builder          => sub { [] }                                            ;
 
 # Construction
 my $_clone_one_of_us = sub {
@@ -139,16 +153,12 @@ around 'BUILDARGS' => sub {
    my ($orig, $class, @args) = @_; return $_build_attr_from->( @args );
 };
 
-sub _build__dir_pattern {
-   my $self = shift; my $pat = NUL;
+sub BUILD {
+   my $self = shift; my $handle = $self->io_handle;
 
-   my $curdir = curdir; my $updir = File::Spec->updir;
+   not $self->name and $handle and $self->_set_is_open( $handle->opened );
 
-   $curdir and $pat  = "\Q${curdir}\E"; # uncoverable condition left
-   $curdir and $updir and $pat .= '|';  # uncoverable condition left
-   $updir  and $pat .= "\Q${updir}\E";  # uncoverable condition left
-
-   return qr{ \A (?:$pat) \z }mx;
+   return;
 }
 
 # Private methods
@@ -185,8 +195,8 @@ my $_find; $_find = sub {
 
    not $self->sort and return @all;
 
-   return $self->reverse ? reverse sort { $a->name cmp $b->name } @all
-                         :         sort { $a->name cmp $b->name } @all;
+   return $self->reverse ? sort { $b->name cmp $a->name } @all
+                         : sort { $a->name cmp $b->name } @all;
 };
 
 my $_get_atomic_path = sub {
@@ -239,7 +249,7 @@ my $_sane_binmode = sub {
 };
 
 my $_throw = sub {
-   my ($self, @args) = @_; eval { $self->unlock }; throw @args;
+   my $self = shift; eval { $self->unlock }; throw @_;
 };
 
 my $_umask_pop = sub {
@@ -266,7 +276,9 @@ my $_umask_push = sub {
 my $_untainted_perms = sub {
    my $self = shift; $self->exists or return; my $perms = 0;
 
-   $self->stat->{mode} =~ m{ \A (\d+) \z }mx and $perms = $1;
+   my $stat = $self->stat // {}; my $mode = $stat->{mode} // NUL;
+
+   $mode =~ m{ \A (\d+) \z }mx and $perms = $1;
 
    return $perms & oct '07777';
 };
@@ -274,7 +286,7 @@ my $_untainted_perms = sub {
 my $_assert_open_backwards = sub {
    my ($self, @args) = @_; $self->is_open and return;
 
-   require File::ReadBackwards;
+   ensure_class_loaded 'File::ReadBackwards';
 
    $self->_set_io_handle( File::ReadBackwards->new( $self->name, @args ) )
       or $self->$_throw( 'File [_1] cannot open backwards: [_2]',
@@ -469,8 +481,7 @@ sub assert_dirpath {
    my $perms = $self->$_mkdir_perms; $self->$_umask_push( oct '07777' );
 
    unless (CORE::mkdir( $dir_name, $perms )) {
-      require File::Path;
-
+      ensure_class_loaded 'File::Path';
       File::Path::make_path( $dir_name, { mode => $perms } );
    }
 
@@ -538,6 +549,10 @@ sub binmode {
 
 sub block_size {
    defined $_[ 1 ] and $_[ 0 ]->_block_size( $_[ 1 ] ); return $_[ 0 ];
+}
+
+sub boolean {
+   return ($_[ 0 ]->io_handle || $_[ 0 ]->name) ? TRUE : FALSE;
 }
 
 sub buffer {
@@ -713,7 +728,7 @@ sub error_check {
 }
 
 sub exists {
-   return -e $_[ 0 ]->name;
+   return $_[ 0 ]->name ? -e $_[ 0 ]->name : FALSE;
 }
 
 sub file {
@@ -892,7 +907,7 @@ sub mkdir {
 sub mkpath {
    my ($self, $perms) = @_; $perms ||= $self->$_mkdir_perms;
 
-   $self->$_umask_push( oct '07777' ); require File::Path;
+   $self->$_umask_push( oct '07777' ); ensure_class_loaded 'File::Path';
 
    File::Path::make_path( $self->name, { mode => $perms } );
 
@@ -1039,7 +1054,7 @@ sub rmdir {
 }
 
 sub rmtree {
-   my ($self, @args) = @_; require File::Path;
+   my ($self, @args) = @_; ensure_class_loaded 'File::Path';
 
    return File::Path::remove_tree( $self->name, @args );
 }
@@ -1103,11 +1118,12 @@ sub splitpath {
 }
 
 sub stat {
-   my $self = shift; $self->name or return {};
+   my $self = shift; $self->exists or $self->is_open or return;
 
    my %stat_hash = ( id => $self->filename );
 
-   @stat_hash{ STAT_FIELDS() } = stat $self->name;
+   @stat_hash{ STAT_FIELDS() }
+      = stat( $self->exists ? $self->name : $self->io_handle );
 
    return \%stat_hash;
 }
@@ -1137,15 +1153,15 @@ sub tail {
 }
 
 sub tempfile {
-   my ($self, $tmplt) = @_; my ($tempdir, $tmpfh); require File::Temp;
+   my ($self, $tmplt) = @_; my $tempdir;
+
+   ensure_class_loaded 'File::Temp'; $tmplt ||= '%6.6dXXXX';
 
    ($tempdir = $self->name and -d $tempdir) or $tempdir = File::Spec->tmpdir;
 
-   $tmplt ||= '%6.6dXXXX';
-   $tmpfh   = File::Temp->new
+   my $tmpfh = File::Temp->new
       ( DIR => $tempdir, TEMPLATE => (sprintf $tmplt, $PID) );
-
-   my $t = $self->$_constructor( $tmpfh->filename )->file;
+   my $t     = $self->$_constructor( $tmpfh->filename )->file;
 
    $t->_set_io_handle( $tmpfh );
    $t->_set_is_open( TRUE );
@@ -1320,6 +1336,10 @@ An object which is a L<File::DataClass::IO>
 
 =back
 
+=head2 BUILD
+
+Open the file handle if it is closed and was supplied without a file name
+
 =head2 abs2rel
 
    $path = io( 'path_to_file' )->abs2rel( 'optional_base_path' );
@@ -1459,6 +1479,13 @@ Sets binmode to the given layer
    $io = io( 'path_to_file' )->block_size( 1024 );
 
 Defaults to 1024. The default block size used by the L</read> method
+
+=head2 boolean
+
+   $bool = io( 'path_to_file' )->boolean;
+
+Returns true if the pathname has been set or the file handle is open, returns
+false otherwise. The boolean overload calls this
 
 =head2 buffer
 
@@ -1943,7 +1970,8 @@ Proxy for L<File::Spec/splitpath>
 
    $stat_hash_ref = io( 'path_to_file' )->stat;
 
-Returns a hash of the values returned by a L</stat> call on the pathname
+Returns a hash of the values returned by a L</stat> call on the pathname.
+Returns undefined if the file does not exist or the file handle is not open
 
 =head2 substitute
 

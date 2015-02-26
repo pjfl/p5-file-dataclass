@@ -15,6 +15,23 @@ use Unexpected::Functions      qw( RecordNotFound Unspecified );
 
 my $class_stash = {};
 
+# Private functions
+my $_build_operators = sub {
+   return {
+      'eq' => sub { return $_[ 0 ] eq $_[ 1 ] },
+      '==' => sub { return $_[ 0 ] == $_[ 1 ] },
+      'ne' => sub { return $_[ 0 ] ne $_[ 1 ] },
+      '!=' => sub { return $_[ 0 ] != $_[ 1 ] },
+      '>'  => sub { return $_[ 0 ] >  $_[ 1 ] },
+      '>=' => sub { return $_[ 0 ] >= $_[ 1 ] },
+      '<'  => sub { return $_[ 0 ] <  $_[ 1 ] },
+      '<=' => sub { return $_[ 0 ] <= $_[ 1 ] },
+      '=~' => sub { my $re = $_[ 1 ]; return $_[ 0 ] =~ qr{ $re }mx },
+      '!~' => sub { my $re = $_[ 1 ]; return $_[ 0 ] !~ qr{ $re }mx },
+   };
+};
+
+# Public attributes
 has 'list_class'    => is => 'ro',   isa => ClassName,
    default          => 'File::DataClass::List';
 
@@ -28,26 +45,11 @@ has 'result_source' => is => 'ro',   isa => Object,
 has '_iterator'     => is => 'rw',   isa => Int, default => 0,
    init_arg         => undef;
 
-has '_operators'    => is => 'lazy', isa => HashRef;
+has '_operators'    => is => 'lazy', isa => HashRef,
+   builder          => $_build_operators;
 
 has '_results'      => is => 'rw',   isa => ArrayRef,
-   default          => sub { [] }, init_arg => undef;
-
-# Construction
-sub _build__operators {
-   return {
-      'eq' => sub { return $_[ 0 ] eq $_[ 1 ] },
-      '==' => sub { return $_[ 0 ] == $_[ 1 ] },
-      'ne' => sub { return $_[ 0 ] ne $_[ 1 ] },
-      '!=' => sub { return $_[ 0 ] != $_[ 1 ] },
-      '>'  => sub { return $_[ 0 ] >  $_[ 1 ] },
-      '>=' => sub { return $_[ 0 ] >= $_[ 1 ] },
-      '<'  => sub { return $_[ 0 ] <  $_[ 1 ] },
-      '<=' => sub { return $_[ 0 ] <= $_[ 1 ] },
-      '=~' => sub { my $re = $_[ 1 ]; return $_[ 0 ] =~ qr{ $re }mx },
-      '!~' => sub { my $re = $_[ 1 ]; return $_[ 0 ] !~ qr{ $re }mx },
-   };
-}
+   builder          => sub { [] }, init_arg => undef;
 
 # Private methods
 my $_new_result_class = sub {

@@ -21,71 +21,8 @@ use Unexpected::Functions      qw( Unspecified );
 
 extends q(File::DataClass);
 
-has 'cache'                    => is => 'lazy', isa => Cache;
-
-has 'cache_attributes'         => is => 'ro',   isa => HashRef,
-   default                     => sub { {
-      page_size                => 131_072,
-      num_pages                => 89,
-      unlink_on_exit           => TRUE, } };
-
-has 'cache_class'              => is => 'ro',   isa => ClassName | DummyClass,
-   default                     => 'File::DataClass::Cache';
-
-has 'lock'                     => is => 'lazy', isa => Lock,
-   default                     => sub { Class::Null->new };
-
-has 'log'                      => is => 'lazy', isa => Object,
-   default                     => sub { Class::Null->new };
-
-has 'path'                     => is => 'rw',   isa => Path,
-   coerce                      => Path->coercion;
-
-has 'perms'                    => is => 'rw',   isa => Num, default => PERMS;
-
-has 'result_source_attributes' => is => 'ro',   isa => HashRef,
-   default                     => sub { {} };
-
-has 'result_source_class'      => is => 'ro',   isa => ClassName,
-   default                     => 'File::DataClass::ResultSource';
-
-has 'source_registrations'     => is => 'lazy', isa => HashRef[Object];
-
-has 'storage'                  => is => 'rw',   isa => Object,
-   builder                     => '_build_storage', lazy => TRUE;
-
-has 'storage_attributes'       => is => 'ro',   isa => HashRef,
-   default                     => sub { {} };
-
-has 'storage_class'            => is => 'rw',   isa => Str,
-   default                     => 'JSON', lazy => TRUE;
-
-has 'tempdir'                  => is => 'ro',   isa => Directory,
-   coerce                      => Directory->coercion,
-   default                     => sub { File::Spec->tmpdir };
-
 # Private methods
-my $_constructor = sub {
-   my $class = shift;
-   my $attr  = { cache_class => 'none', storage_class => 'Any' };
-
-   return $class->new( $attr );
-};
-
-# Construction
-around 'BUILDARGS' => sub {
-   my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
-
-   my $builder = delete $attr->{builder} or return $attr;
-   my $config  = $builder->can( 'config' ) ? $builder->config : {};
-
-   merge_attributes $attr, $builder, [ qw( lock log tempdir ) ];
-   merge_attributes $attr, $config,  [ qw( tempdir ) ];
-
-   return $attr;
-};
-
-sub _build_cache {
+my $_build_cache = sub {
    my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
 
    my $attrs = { cache_attributes => { %{ $self->cache_attributes } },
@@ -99,9 +36,9 @@ sub _build_cache {
         ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
 
    return $self->F_DC_Cache->{ $ns } = $self->cache_class->new( $attrs );
-}
+};
 
-sub _build_source_registrations {
+my $_build_source_registrations = sub {
    my $self = shift; my $sources = {};
 
    for my $moniker (keys %{ $self->result_source_attributes }) {
@@ -115,9 +52,9 @@ sub _build_source_registrations {
    }
 
    return $sources;
-}
+};
 
-sub _build_storage {
+my $_build_storage = sub {
    my $self = shift; my $class = $self->storage_class;
 
    if (first_char $class eq '+') { $class = substr $class, 1 }
@@ -126,7 +63,73 @@ sub _build_storage {
    ensure_class_loaded $class;
 
    return $class->new( { %{ $self->storage_attributes }, schema => $self } );
-}
+};
+
+my $_constructor = sub {
+   my $class = shift;
+   my $attr  = { cache_class => 'none', storage_class => 'Any' };
+
+   return $class->new( $attr );
+};
+
+# Private attributes
+has 'cache'                    => is => 'lazy', isa => Cache,
+   builder                     => $_build_cache;
+
+has 'cache_attributes'         => is => 'ro',   isa => HashRef,
+   builder                     => sub { {
+      page_size                => 131_072,
+      num_pages                => 89,
+      unlink_on_exit           => TRUE, } };
+
+has 'cache_class'              => is => 'ro',   isa => ClassName | DummyClass,
+   default                     => 'File::DataClass::Cache';
+
+has 'lock'                     => is => 'lazy', isa => Lock,
+   builder                     => sub { Class::Null->new };
+
+has 'log'                      => is => 'lazy', isa => Object,
+   builder                     => sub { Class::Null->new };
+
+has 'path'                     => is => 'rw',   isa => Path,
+   coerce                      => Path->coercion;
+
+has 'perms'                    => is => 'rw',   isa => Num, default => PERMS;
+
+has 'result_source_attributes' => is => 'ro',   isa => HashRef,
+   builder                     => sub { {} };
+
+has 'result_source_class'      => is => 'ro',   isa => ClassName,
+   default                     => 'File::DataClass::ResultSource';
+
+has 'source_registrations'     => is => 'lazy', isa => HashRef[Object],
+   builder                     => $_build_source_registrations;
+
+has 'storage'                  => is => 'rw',   isa => Object,
+   builder                     => $_build_storage, lazy => TRUE;
+
+has 'storage_attributes'       => is => 'ro',   isa => HashRef,
+   builder                     => sub { {} };
+
+has 'storage_class'            => is => 'rw',   isa => Str,
+   default                     => 'JSON', lazy => TRUE;
+
+has 'tempdir'                  => is => 'ro',   isa => Directory,
+   coerce                      => Directory->coercion,
+   builder                     => sub { File::Spec->tmpdir };
+
+# Construction
+around 'BUILDARGS' => sub {
+   my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
+
+   my $builder = delete $attr->{builder} or return $attr;
+   my $config  = $builder->can( 'config' ) ? $builder->config : {};
+
+   merge_attributes $attr, $builder, [ qw( lock log tempdir ) ];
+   merge_attributes $attr, $config,  [ qw( tempdir ) ];
+
+   return $attr;
+};
 
 # Public methods
 sub dump {
