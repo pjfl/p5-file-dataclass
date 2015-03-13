@@ -1152,6 +1152,14 @@ sub tail {
    return wantarray ? @res : join NUL, @res;
 }
 
+sub tell {
+   my $self = shift;
+
+   $self->is_open or $self->assert_open( $LC_OSNAME eq EVIL ? 'r' : 'r+' );
+
+   return CORE::tell $self->io_handle;
+}
+
 sub tempfile {
    my ($self, $tmplt) = @_; my $tempdir;
 
@@ -1987,6 +1995,12 @@ line of the given file
 Returns the last I<n> lines from the file where the number of lines
 returned defaults to 10. Returns the lines joined with null in a
 scalar context
+
+=head2 tell
+
+   $byte_offset = io( 'path_to_file' )->tell;
+
+Returns the byte offset into the file
 
 =head2 tempfile
 

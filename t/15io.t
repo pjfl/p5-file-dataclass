@@ -1,8 +1,9 @@
+use Cwd; # Load early as a workaround to ActiceState bug #104767
+
 use t::boilerplate;
 
 use Test::More;
 use Config;
-use Cwd;
 use English                    qw( -no_match_vars );
 use File::pushd                qw( tempd );
 use File::Spec::Functions      qw( catdir catfile curdir );
@@ -358,6 +359,17 @@ subtest 'Tempfile/seek' => sub {
       'Delete tmp files - non default template';
 };
 
+subtest 'Tell' => sub {
+   my $io = io $PROGRAM_NAME; $io->getline;
+
+   is $io->tell, 65, 'Tells at end of first line';
+   $io->seek( 0, 0 );
+   is $io->tell, 0, 'Tells at start of file';
+   $io->close;
+   $io->seek( 0, 0 );
+   is $io->tell, 0, 'Tells at start of file when file closed';
+};
+
 subtest 'Buffered reading/writing' => sub {
    my $outfile = catfile( qw( t output out.pm ) );
 
@@ -404,8 +416,8 @@ SKIP: {
 
    subtest 'Heads / Tails' => sub {
       is scalar @{ [ io( $PROGRAM_NAME )->head ] }, 10, 'Default head lines';
-      like( (io( $PROGRAM_NAME )->head( 3 ))[ -1 ], qr{ Test::More }mx,
-            'Second line' );
+      like( (io( $PROGRAM_NAME )->head( 3 ))[ -1 ], qr{ t::boilerplate }mx,
+            'Third line' );
       is scalar @{ [ io( $PROGRAM_NAME )->tail( undef, "\n" ) ] }, 10,
             'Default tail lines';
       like( (io( $PROGRAM_NAME )->tail( 3, "\n" ))[ 0 ], qr{ perl }mx,
