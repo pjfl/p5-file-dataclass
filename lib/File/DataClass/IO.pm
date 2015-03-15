@@ -1060,11 +1060,11 @@ sub rmtree {
 }
 
 sub seek {
-   my ($self, @args) = @_;
+   my ($self, $posn, $whence) = @_;
 
    $self->is_open or $self->assert_open( $LC_OSNAME eq EVIL ? 'r' : 'r+' );
 
-   $self->io_handle->seek( @args ); $self->error_check;
+   CORE::seek $self->io_handle, $posn, $whence; $self->error_check;
    return $self;
 }
 

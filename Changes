@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Fixed IO::seek
           - Added IO::tell
           - IO::stat returns undef if no name or file handle
           - Will stat an open file handle
