@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.56.1    2015-03-19 14:57:54
           - Deleted _lock_obj from ::IO. Unusable misfeature
           - Fixed IO::seek
           - Added IO::tell
