@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Deleted _lock_obj from ::IO. Unusable misfeature
           - Fixed IO::seek
           - Added IO::tell
           - IO::stat returns undef if no name or file handle

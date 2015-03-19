@@ -108,8 +108,6 @@ has '_filter'       => is => 'rw',   isa => Maybe[CodeRef]                   ;
 has '_layers'       => is => 'ro',   isa => ArrayRef[SimpleStr],
    builder          => sub { [] }                                            ;
 has '_lock'         => is => 'rw',   isa => $IO_LOCK,       default => FALSE ;
-has '_lock_obj'     => is => 'rw',   isa => Maybe[Object],
-   writer           => 'lock_obj'                                            ;
 has '_no_follow'    => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_separator'    => is => 'rw',   isa => Str,            default => $RS   ;
 has '_umask'        => is => 'rw',   isa => ArrayRef[Int],
@@ -1088,14 +1086,10 @@ sub set_lock {
    my $self = shift; $self->_lock or return;
 
    my $async = $self->_lock == LOCK_NONBLOCKING ? TRUE : FALSE;
-
-   $self->_lock_obj
-      and return $self->_lock_obj->set( k => $self->name, async => $async );
-
-   my $mode = $self->mode eq 'r' ? LOCK_SH : LOCK_EX;
+   my $mode  = $self->mode eq 'r' ? LOCK_SH : LOCK_EX;
 
    $async and $mode |= LOCK_NB;
-   $self->_set_have_lock( flock $self->io_handle, $mode ? TRUE : FALSE );
+   $self->_set_have_lock( (flock $self->io_handle, $mode) ? TRUE : FALSE );
    return $self;
 }
 
@@ -1193,9 +1187,7 @@ sub unlink {
 sub unlock {
    my $self = shift; $self->_lock or return; my $handle = $self->io_handle;
 
-   if ($self->_lock_obj) { $self->_lock_obj->reset( k => $self->name ) }
-   else { $handle and $handle->opened and flock $handle, LOCK_UN }
-
+   $handle and $handle->opened and flock $handle, LOCK_UN;
    $self->_set_have_lock( FALSE );
    return $self;
 }
