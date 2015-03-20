@@ -28,8 +28,8 @@ use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
                                    PositiveInt RegexpRef SimpleStr Str );
 
 use namespace::clean -except => [ 'import', 'meta' ];
-use overload '""'       => sub { $_[ 0 ]->pathname },
-             'bool'     => sub { $_[ 0 ]->boolean  },
+use overload '""'       => sub { $_[ 0 ]->as_string  },
+             'bool'     => sub { $_[ 0 ]->as_boolean },
              'fallback' => TRUE;
 
 our @EXPORT    = qw( io );
@@ -467,6 +467,16 @@ sub appendln {
    return $self->$_println( @args );
 }
 
+sub as_boolean {
+   return ($_[ 0 ]->name || $_[ 0 ]->io_handle) ? TRUE : FALSE;
+}
+
+sub as_string {
+   my $self = shift;
+
+   return $self->name || (defined $self->io_handle && NUL.$self->io_handle);
+}
+
 sub assert {
    $_[ 0 ]->_assert( TRUE ); return $_[ 0 ];
 }
@@ -547,10 +557,6 @@ sub binmode {
 
 sub block_size {
    defined $_[ 1 ] and $_[ 0 ]->_block_size( $_[ 1 ] ); return $_[ 0 ];
-}
-
-sub boolean {
-   return ($_[ 0 ]->io_handle || $_[ 0 ]->name) ? TRUE : FALSE;
 }
 
 sub buffer {
@@ -1396,6 +1402,19 @@ Opens the file in append mode and calls L</print> with the passed args
 
 Opens the file in append mode and calls L</println> with the passed args
 
+=head2 as_boolean
+
+   $bool = io( 'path_to_file' )->as_boolean;
+
+Returns true if the pathname has been set or the file handle is open, returns
+false otherwise. The boolean overload calls this
+
+=head2 as_string
+
+   $path_to_file = io( 'path_to_file' )->as_string;
+
+Returns the pathname of the IO object. Overload stringifies to this
+
 =head2 assert
 
    $io = io( 'path_to_file' )->assert;
@@ -1479,13 +1498,6 @@ Sets binmode to the given layer
    $io = io( 'path_to_file' )->block_size( 1024 );
 
 Defaults to 1024. The default block size used by the L</read> method
-
-=head2 boolean
-
-   $bool = io( 'path_to_file' )->boolean;
-
-Returns true if the pathname has been set or the file handle is open, returns
-false otherwise. The boolean overload calls this
 
 =head2 buffer
 
