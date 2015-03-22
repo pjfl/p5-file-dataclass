@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Improved test coverage
           - Overload stringify in ::IO uses handle if no name
 
 0.56.1    2015-03-19 14:57:54

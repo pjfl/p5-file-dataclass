@@ -725,9 +725,10 @@ sub encoding {
 sub error_check {
    my $self = shift;
 
-   $self->io_handle->can( 'error' ) or return;
-   $self->io_handle->error or return;
-   $self->$_throw( 'IO error: [_1]', [ $OS_ERROR ] );
+   $self->io_handle->can( 'error' )
+      and $self->io_handle->error
+      and $self->$_throw( 'IO error: [_1]', [ $OS_ERROR ] );
+
    return;
 }
 

@@ -19,7 +19,7 @@ my $_build_attributes = sub {
 
 # Public attributes
 has 'attributes'           => is => 'ro', isa => ArrayRef[Str],
-   builder                 => sub { [] };
+   required                => TRUE;
 
 has 'defaults'             => is => 'ro', isa => HashRef, builder => sub { {} };
 

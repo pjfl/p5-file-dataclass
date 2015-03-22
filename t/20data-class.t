@@ -306,6 +306,33 @@ my $list = File::DataClass::List->new;
 
 ok ! defined $list->list->[ 0 ], 'Empty list';
 
+$schema = File::DataClass::Schema->new
+   ( cache_class              => 'none',
+     lock_class               => 'none',
+     path                     => $path_ref,
+     result_source_attributes => {
+        keys                  => {
+           attributes         => [ qw( vals ) ],
+           defaults           => { vals => {} }, }, },
+     storage_class            => '+File::DataClass::Storage',
+     tempdir                  => 't', );
+
+$e = test( $schema->storage, 'read_from_file', '' );
+
+like $e, qr{ \Qnot overridden\E }mx, 'Read from file not overridden';
+
+$e = test( $schema->storage, 'write_to_file', '' );
+
+like $e, qr{ \Qnot overridden\E }mx, 'Write to file not overridden';
+
+$e = test( $schema->storage, '_read_file', '' );
+
+like $e, qr{ \Qshould never call\E }mx, 'Old read file should not call';
+
+$e = test( $schema->storage, '_write_file', '' );
+
+like $e, qr{ \Qshould never call\E }mx, 'Old write file should not call';
+
 done_testing;
 
 # Cleanup

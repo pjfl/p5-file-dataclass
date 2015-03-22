@@ -112,7 +112,10 @@ subtest 'Overload' => sub {
    $io = io( $PROGRAM_NAME );
    is "${io}", $PROGRAM_NAME, 'Stringifies';
    is !!$io, 1, 'Boolean true name';
+   $io = io;
+   is "${io}", q(), 'Stringifies - null';
    $io = io { io_handle => IO::Handle->new };
+   like "${io}", qr{ \QIO::Handle\E }mx, 'Stringifies from file handle';
    is !!$io, 1, 'Boolean true file handle';
    $io = io;
    is !!$io, q(), 'Boolean false';
@@ -562,6 +565,11 @@ SKIP: {
       $io->unlink;
    };
 }
+
+subtest 'Predicates' => sub {
+   is io()->is_dir, 0, 'Unspecified name is not a dir';
+   is io()->is_file, 0, 'Unspecified name is not a file';
+};
 
 SKIP: {
    $Config{d_symlink} or skip 'No symlink support', 1;

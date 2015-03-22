@@ -131,6 +131,17 @@ $diff = diff $path, $dumped;
 
 ok !$diff, 'Load and dump roundtrips - uft8';
 
+$schema   = File::DataClass::Schema->new
+   (  path                     => catfile( 't', 'bad_format.json' ),
+      result_source_attributes => {
+         globals               => { attributes => [ 'text' ], }, },
+      storage_class            => 'Any',
+      tempdir                  => 't' );
+
+eval { $schema->load };
+
+like $EVAL_ERROR, qr{ \Qcharacter offset 19\E }mx, 'Bad format';
+
 done_testing;
 
 # Cleanup
