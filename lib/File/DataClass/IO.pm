@@ -23,7 +23,7 @@ use IO::File;
 use List::Util                 qw( first );
 use Scalar::Util               qw( blessed );
 use Type::Utils                qw( enum );
-use Unexpected::Functions      qw( PathNotFound Unspecified );
+use Unexpected::Functions      qw( InvocantUndefined PathNotFound Unspecified );
 use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
                                    PositiveInt RegexpRef SimpleStr Str );
 
@@ -63,6 +63,24 @@ my $_coerce_name = sub {
    return $name;
 };
 
+my $_proxy = sub {
+   my ($proxy, $chain, $mode) = @_; no strict 'refs';
+
+   my $package = caller; defined &{ "${package}::${proxy}" } and return;
+
+   return  *{ "${package}::${proxy}" } = sub {
+      my $self = shift; defined $mode and $self->assert_open( $mode );
+
+      defined $self->io_handle or throw InvocantUndefined, [ $proxy ];
+
+      my @results = $self->io_handle->$proxy( @_ ); # Mustn't copy stack args
+
+      $self->error_check; $chain and return $self;
+
+      return wantarray ? @results : $results[ 0 ];
+   };
+};
+
 my $_should_include_path = sub {
    return (not defined $_[ 0 ] or (map { $_[ 0 ]->() } ($_[ 1 ]))[ 0 ]);
 };
@@ -85,7 +103,8 @@ has 'autoclose'     => is => 'lazy', isa => Bool,           default => TRUE  ;
 has 'have_lock'     => is => 'rwp',  isa => Bool,           default => FALSE ;
 has 'io_handle'     => is => 'rwp',  isa => Maybe[Object]                    ;
 has 'is_open'       => is => 'rwp',  isa => Bool,           default => FALSE ;
-has 'mode'          => is => 'rwp',  isa => $IO_MODE,       default => 'r'   ;
+has 'mode'          => is => 'rwp',  isa => $IO_MODE | PositiveInt,
+   default          => 'r'                                                   ;
 has 'name'          => is => 'rwp',  isa => SimpleStr,      default => NUL,
    coerce           => $_coerce_name,                       lazy    => TRUE  ;
 has '_perms'        => is => 'rwp',  isa => PositiveInt,    default => PERMS,
@@ -112,6 +131,16 @@ has '_no_follow'    => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_separator'    => is => 'rw',   isa => Str,            default => $RS   ;
 has '_umask'        => is => 'rw',   isa => ArrayRef[Int],
    builder          => sub { [] }                                            ;
+
+# Methods handled by the IO::Handle object
+$_proxy->( 'autoflush', TRUE );
+$_proxy->( 'eof'             );
+$_proxy->( 'fileno'          );
+$_proxy->( 'flush',     TRUE );
+$_proxy->( 'getc',      FALSE, 'r' );
+$_proxy->( 'sysread',   FALSE, O_RDONLY );
+$_proxy->( 'syswrite',  FALSE, O_CREAT | O_WRONLY );
+$_proxy->( 'truncate',  TRUE );
 
 # Construction
 my $_clone_one_of_us = sub {
@@ -513,7 +542,7 @@ sub assert_filepath {
 }
 
 sub assert_open {
-   return $_[ 0 ]->open( $_[ 1 ] || 'r', $_[ 2 ] );
+   return $_[ 0 ]->open( $_[ 1 ] // 'r', $_[ 2 ] );
 }
 
 sub atomic {
@@ -954,7 +983,7 @@ sub no_follow {
 }
 
 sub open {
-   my ($self, $mode, $perms) = @_; $mode ||= $self->mode;
+   my ($self, $mode, $perms) = @_; $mode //= $self->mode;
 
    $self->is_open
       and first_char $mode eq first_char $self->mode
@@ -1470,6 +1499,13 @@ If the value contains C<%P> it will be replaced with the process id
 
 If the value contains C<%T> it will be replaces with the thread id
 
+=head2 autoflush
+
+   $io->autoflush( $bool );
+
+Turns autoflush on or off on the file handle. Proxy method implemented by
+L<IO::Handle>
+
 =head2 backwards
 
    $io = io( 'path_to_file' )->backwards;
@@ -1637,6 +1673,13 @@ Deprecated in favour of L</is_empty>
 Apply the given encoding to the open file handle and store it on the
 C<_encoding> attribute
 
+=head2 eof
+
+   $bool = $io->eof;
+
+Returns true if the file handle is at end of file. Proxy method implemented by
+L<IO::Handle>
+
 =head2 error_check
 
 Tests to see if the open file handle is showing an error and if it is
@@ -1658,6 +1701,13 @@ Initialises the current object as a file
 
 Returns the filename part of pathname
 
+=head2 fileno
+
+   $fileno = $io->fileno
+
+Return the C<fileno> of the file handle. Proxy method implemented by
+L<IO::Handle>
+
 =head2 filepath
 
    $dirname = io( 'path_to_file' )->filepath;
@@ -1672,6 +1722,12 @@ Takes a subroutine reference that is used by the L</all> methods to
 filter which entries are returned. Called with C<$_> set to each
 pathname in turn. It should return true if the entry is wanted
 
+=head2 flush
+
+   $io->flush;
+
+Flush the file handle. Proxy method implemented by L<IO::Handle>
+
 =head2 getline
 
    $line = io( 'path_to_file' )->getline;
@@ -1680,6 +1736,13 @@ Asserts the file open for reading. Get one line from the file
 handle. Chomp the line if the C<_chomp> attribute is true. Check for
 errors. Close the file if the C<autoclose> attribute is true and end
 of file has been read past
+
+=head2 getc
+
+   $one_character = $io->getc;
+
+Reads one character from the file handle. Proxy method implemented by
+L<IO::Handle>
 
 =head2 getlines
 
@@ -1993,6 +2056,19 @@ Returns undefined if the file does not exist or the file handle is not open
 Substitutes C<$search> regular expression for C<$replace> string on each
 line of the given file
 
+=head2 sysread
+
+   $red = $io->sysread( $buffer, $length, $offset );
+
+Raw read bypasses the line buffering. Proxy method implemented by L<IO::Handle>
+
+=head2 syswrite
+
+   $wrote = $io->syswrite( $buffer, $length, $offset );
+
+Write the buffer to the file by-passing the line buffering. Proxy method
+implemented by L<IO::Handle>
+
 =head2 tail
 
    @lines = io( 'path_to_file' )->tail( $no_of_lines );
@@ -2029,6 +2105,13 @@ Create a zero length file if one does not already exist with given
 file system permissions which default to 0644 octal. If the file
 already exists update it's last modified datetime stamp. If a value
 for C<$time> is provided use that instead if the C<CORE::time>
+
+=head2 truncate
+
+   $io->truncate( $length );
+
+Truncate the file at the specified length.  Proxy method implemented by
+L<IO::Handle>
 
 =head2 unlink
 

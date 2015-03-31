@@ -1,9 +1,8 @@
-use Cwd; # Load early as a workaround to ActiceState bug #104767
-
 use t::boilerplate;
 
 use Test::More;
 use Config;
+use Cwd;
 use English                    qw( -no_match_vars );
 use File::pushd                qw( tempd );
 use File::Spec::Functions      qw( catdir catfile curdir );
@@ -365,7 +364,7 @@ subtest 'Tempfile/seek' => sub {
 subtest 'Tell' => sub {
    my $io = io $PROGRAM_NAME; $io->getline;
 
-   is $io->tell, 65, 'Tells at end of first line';
+   is $io->tell, 20, 'Tells at end of first line';
    $io->seek( 0, 0 );
    is $io->tell, 0, 'Tells at start of file';
    $io->close;
@@ -419,7 +418,7 @@ SKIP: {
 
    subtest 'Heads / Tails' => sub {
       is scalar @{ [ io( $PROGRAM_NAME )->head ] }, 10, 'Default head lines';
-      like( (io( $PROGRAM_NAME )->head( 3 ))[ -1 ], qr{ t::boilerplate }mx,
+      like( (io( $PROGRAM_NAME )->head( 3 ))[ -1 ], qr{ Test::More }mx,
             'Third line' );
       is scalar @{ [ io( $PROGRAM_NAME )->tail( undef, "\n" ) ] }, 10,
             'Default tail lines';
@@ -651,6 +650,21 @@ SKIP: {
       };
    };
 }
+
+subtest 'Proxied IO::Handle methods' => sub {
+   my $buf = q(); $io = io $PROGRAM_NAME;
+
+   is $io->sysread( $buf, 18 ), 18, 'Sysread byte count';
+   like $buf, qr{ boilerplate }mx, 'Sysread buffer';
+   $io = io [ 't', 'proxy_test' ]; $io->touch; eval { $io->truncate };
+   is $EVAL_ERROR->class, 'InvocantUndefined', 'Throw without handle';
+   is $io->syswrite( 'byte me', 2, 5 ), 2, 'Syswrite byte count';
+   is $io->getc, 'm', 'Getc';
+   like $io->fileno, qr{ \d+ }mx, 'Fileno';
+   ok !$io->eof, 'Not EOF'; $io->getc;
+   ok  $io->eof, 'EOF';
+   $io->close->unlink;
+};
 
 # Cleanup
 io( [ 't', 'output' ] )->rmtree;

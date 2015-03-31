@@ -23,6 +23,9 @@ has_exception 'PathAlreadyExists' => parents => [ $class ],
 has_exception 'PathNotFound' => parents => [ $class ],
    error   => 'Path [_1] not found';
 
+has_exception 'InvocantUndefined' => parents => [ $class ],
+   error   => 'Method [_1] cannot call with undefined invocant';
+
 has_exception 'RecordAlreadyExists' => parents => [ $class ],
    error   => 'File [_1] record [_2] already exists';
 

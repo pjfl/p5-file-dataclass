@@ -1,5 +1,6 @@
 package t::boilerplate;
 
+use Cwd; # Load early as a workaround to ActiceState bug #104767
 use strict;
 use warnings;
 use File::Spec::Functions qw( catdir updir );
