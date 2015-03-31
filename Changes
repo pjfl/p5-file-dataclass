@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Fixed bug in ::IO::exists
           - Added IO::Handle proxy methods to ::IO
           - Improved test coverage
           - Overload stringify in ::IO uses handle if no name

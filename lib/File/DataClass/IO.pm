@@ -762,7 +762,7 @@ sub error_check {
 }
 
 sub exists {
-   return $_[ 0 ]->name ? -e $_[ 0 ]->name : FALSE;
+   return $_[ 0 ]->name ? -e $_[ 0 ]->name ? TRUE : FALSE : FALSE;
 }
 
 sub file {
