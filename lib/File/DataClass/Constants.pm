@@ -6,8 +6,8 @@ use warnings;
 use Exporter 5.57 qw( import );
 use File::DataClass::Exception;
 
-our @EXPORT = qw( ARRAY CODE CYGWIN EVIL EXCEPTION_CLASS FALSE HASH
-                  LANG LOCALIZE LOCK_BLOCKING LOCK_NONBLOCKING NO_UMASK_STACK
+our @EXPORT = qw( ARRAY CODE CYGWIN EXCEPTION_CLASS FALSE HASH LANG
+                  LOCALIZE LOCK_BLOCKING LOCK_NONBLOCKING MSOFT NO_UMASK_STACK
                   NUL PERMS SPC STAT_FIELDS STORAGE_BASE STORAGE_EXCEPTIONS
                   TILDE TRUE );
 
@@ -16,11 +16,11 @@ my $Exception_Class = 'File::DataClass::Exception';
 sub ARRAY    () { 'ARRAY'    }
 sub CODE     () { 'CODE'     }
 sub CYGWIN   () { 'cygwin'   }
-sub EVIL     () { 'mswin32'  }
 sub FALSE    () { 0          }
 sub HASH     () { 'HASH'     }
 sub LANG     () { 'en'       }
 sub LOCALIZE () { '[_'       }
+sub MSOFT    () { 'mswin32'  }
 sub NUL      () { q()        }
 sub PERMS    () { oct '0640' }
 sub SPC      () { ' '        }
@@ -84,10 +84,6 @@ String CODE
 
 The devil's spawn with compatibility library loaded
 
-=head2 C<EVIL>
-
-The devil's spawn
-
 =head2 C<EXCEPTION_CLASS>
 
 The class to use when throwing exceptions
@@ -116,6 +112,10 @@ Integer constant used to indicate a blocking lock call
 =head2 C<LOCK_NONBLOCKING>
 
 Integer constant used to indicate a non-blocking lock call
+
+=head2 C<MSOFT>
+
+The string C<MSWin32>
 
 =head2 C<NO_UMASK_STACK>
 

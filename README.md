@@ -3,11 +3,11 @@
 
 # Name
 
-File::DataClass - Structured data file IO with OO paradigm
+File::DataClass - Structured data file IO with caching and searching
 
 # Version
 
-This document describes version v0.56.$Rev: 3 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
+This document describes version v0.56.$Rev: 5 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
 
 # Synopsis
 
@@ -42,12 +42,7 @@ Defines no attributes
 
 # Subroutines/Methods
 
-## F\_DC\_Cache
-
-    $hash_ref_of_CHI_objects = File::DataClass->F_DC_Cache;
-
-A class method which returns a hash ref of [CHI](https://metacpan.org/pod/CHI) objects which are
-used to cache the results of reading files
+None
 
 # Diagnostics
 

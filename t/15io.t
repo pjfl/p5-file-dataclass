@@ -6,6 +6,7 @@ use Cwd;
 use English                    qw( -no_match_vars );
 use File::pushd                qw( tempd );
 use File::Spec::Functions      qw( catdir catfile curdir );
+use IO::Handle;
 use Path::Tiny                 qw( );
 use Scalar::Util               qw( blessed );
 use Test::Deep                 qw( cmp_deeply );
@@ -236,6 +237,11 @@ subtest 'List all files and directories' => sub {
    is( p( io( $dir )->deep->all_dirs ), f( $exp_dirs3 ), 'All dirs deep' );
 };
 
+subtest 'Directory listing' => sub {
+   my @list = io( $dir )->read_dir;
+   is @list, 5, 'Correct number of entries';
+};
+
 subtest 'Filters matching patterns from directory listing' => sub {
    is p( io( $dir )->filter( sub { m{ dira }mx } )->deep->all_dirs ),
       f( $exp_filt1 ), 'Filter 1';
@@ -322,7 +328,7 @@ subtest 'Gets a single line' => sub {
    # TODO: Make tests of these
    $io->assert_open( 'r' )->binmode( ':crlf' );
    $io = io( [ qw( t output print.t ) ] )->binmode( ':crlf' );
-   $io->assert_open( 'r' )->binary;
+   $io->assert_open( 'r' )->binary->binary;
 };
 
 subtest 'Create and detect empty subdirectories and files' => sub {
@@ -532,6 +538,9 @@ SKIP: {
 
    subtest 'More permissions' => sub {
       ok $io->is_executable, 'Executable';
+      $io->perms( 0 )->chmod;
+      ok !$io->is_readable, 'Not readable';
+      ok !$io->is_writable, 'Not writable';
    };
 
    subtest 'Creates files with specified permissions' => sub {
@@ -568,6 +577,8 @@ SKIP: {
 subtest 'Predicates' => sub {
    is io()->is_dir, 0, 'Unspecified name is not a dir';
    is io()->is_file, 0, 'Unspecified name is not a file';
+   is io( 'not_found' )->is_file, 0, 'Non-existant name is not a file';
+   is io()->exists, 0, 'Unspecified name does not exist';
 };
 
 SKIP: {
@@ -656,7 +667,7 @@ subtest 'Proxied IO::Handle methods' => sub {
 
    is $io->sysread( $buf, 18 ), 18, 'Sysread byte count';
    like $buf, qr{ boilerplate }mx, 'Sysread buffer';
-   $io = io [ 't', 'proxy_test' ]; $io->touch; eval { $io->truncate };
+   $io = io [ 't', 'output', 'proxy_test' ]; $io->touch; eval { $io->truncate };
    is $EVAL_ERROR->class, 'InvocantUndefined', 'Throw without handle';
    is $io->syswrite( 'byte me', 2, 5 ), 2, 'Syswrite byte count';
    is $io->getc, 'm', 'Getc';

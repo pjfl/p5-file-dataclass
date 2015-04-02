@@ -147,6 +147,8 @@ File::DataClass::Cache - Adds extra methods to the CHI API
    has 'cache_attributes' => is => 'ro', isa => 'HashRef',
       default             => sub { return {} };
 
+   my $_cache_objects = {};
+
    sub _build_cache {
       my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
 
@@ -154,13 +156,12 @@ File::DataClass::Cache - Adds extra methods to the CHI API
                     builder          => $self };
 
       $ns    = $attrs->{cache_attributes}->{namespace} ||= $ns;
-      $cache = $self->F_DC_Cache;
-      exists $cache->{ $ns } and return $cache->{ $ns };
+      exists $_cache_objects->{ $ns } and return $_cache_objects->{ $ns };
       $self->cache_class eq 'none' and return Class::Null->new;
       $attrs->{cache_attributes}->{share_file}
            ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
 
-      return $self->F_DC_Cache->{ $ns } = $self->cache_class->new( $attrs );
+      return $_cache_objects->{ $ns } = $self->cache_class->new( $attrs );
    }
 
 =head1 Description

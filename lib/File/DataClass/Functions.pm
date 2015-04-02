@@ -7,7 +7,7 @@ use feature 'state';
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
-use File::DataClass::Constants qw( CYGWIN EVIL EXCEPTION_CLASS STORAGE_BASE
+use File::DataClass::Constants qw( CYGWIN EXCEPTION_CLASS MSOFT STORAGE_BASE
                                    STORAGE_EXCEPTIONS );
 use Hash::Merge                qw( merge );
 use List::Util                 qw( first );
@@ -25,7 +25,7 @@ our @EXPORT_OK    = qw( ensure_class_loaded extension_map first_char
 our %EXPORT_TAGS  =   ( all => [ @EXPORT_OK ], );
 
 my $LC_OSNAME     = lc $OSNAME;
-my $NTFS          = $LC_OSNAME eq EVIL || $LC_OSNAME eq CYGWIN ? 1 : 0;
+my $NTFS          = $LC_OSNAME eq MSOFT || $LC_OSNAME eq CYGWIN ? 1 : 0;
 
 # Public functions
 sub ensure_class_loaded ($;$) {

@@ -4,6 +4,7 @@ use namespace::autoclean;
 
 use Moo;
 use Class::Null;
+use File::DataClass;
 use File::DataClass::Cache;
 use File::DataClass::Constants qw( EXCEPTION_CLASS FALSE NUL PERMS TRUE );
 use File::DataClass::Functions qw( ensure_class_loaded first_char
@@ -19,36 +20,37 @@ use File::Spec;
 use Scalar::Util               qw( blessed );
 use Unexpected::Functions      qw( Unspecified );
 
-extends q(File::DataClass);
+our $VERSION = File::DataClass->VERSION;
+
+my $_cache_objects = {};
 
 # Private methods
 my $_build_cache = sub {
    my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
 
-   my $attrs = { cache_attributes => { %{ $self->cache_attributes } },
+   my $attr = { cache_attributes => { %{ $self->cache_attributes } },
                  builder          => $self };
 
-   $ns    = $attrs->{cache_attributes}->{namespace} ||= $ns;
-   $cache = $self->F_DC_Cache;
-   exists $cache->{ $ns } and return $cache->{ $ns };
+   $ns    = $attr->{cache_attributes}->{namespace} ||= $ns;
+   exists $_cache_objects->{ $ns } and return $_cache_objects->{ $ns };
    $self->cache_class eq 'none' and return Class::Null->new;
-   $attrs->{cache_attributes}->{share_file}
+   $attr->{cache_attributes}->{share_file}
         ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
 
-   return $self->F_DC_Cache->{ $ns } = $self->cache_class->new( $attrs );
+   return $_cache_objects->{ $ns } = $self->cache_class->new( $attr );
 };
 
 my $_build_source_registrations = sub {
    my $self = shift; my $sources = {};
 
    for my $moniker (keys %{ $self->result_source_attributes }) {
-      my $attrs = { %{ $self->result_source_attributes->{ $moniker } } };
-      my $class = delete $attrs->{result_source_class}
+      my $attr = { %{ $self->result_source_attributes->{ $moniker } } };
+      my $class = delete $attr->{result_source_class}
                || $self->result_source_class;
 
-      $attrs->{name} = $moniker; $attrs->{schema} = $self;
+      $attr->{name} = $moniker; $attr->{schema} = $self;
 
-      $sources->{ $moniker } = $class->new( $attrs );
+      $sources->{ $moniker } = $class->new( $attr );
    }
 
    return $sources;
@@ -91,8 +93,7 @@ has 'lock'                     => is => 'lazy', isa => Lock,
 has 'log'                      => is => 'lazy', isa => Object,
    builder                     => sub { Class::Null->new };
 
-has 'path'                     => is => 'rw',   isa => Path,
-   coerce                      => Path->coercion;
+has 'path'                     => is => 'rw',   isa => Path, coerce => TRUE;
 
 has 'perms'                    => is => 'rw',   isa => Num, default => PERMS;
 
@@ -115,8 +116,7 @@ has 'storage_class'            => is => 'rw',   isa => Str,
    default                     => 'JSON', lazy => TRUE;
 
 has 'tempdir'                  => is => 'ro',   isa => Directory,
-   coerce                      => Directory->coercion,
-   builder                     => sub { File::Spec->tmpdir };
+   coerce                      => TRUE, builder => sub { File::Spec->tmpdir };
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -187,11 +187,11 @@ sub translate {
    my $class      = blessed $self       || $self; # uncoverable condition false
    my $from_class = $args->{from_class} || 'Any';
    my $to_class   = $args->{to_class  } || 'Any';
-   my $attrs      = { path => $args->{from}, storage_class => $from_class };
-   my $data       = $class->new( $attrs )->load;
+   my $attr       = { path => $args->{from}, storage_class => $from_class };
+   my $data       = $class->new( $attr )->load;
 
-   $attrs = { path => $args->{to}, storage_class => $to_class };
-   $class->new( $attrs )->dump( { data => $data } );
+   $attr = { path => $args->{to}, storage_class => $to_class };
+   $class->new( $attr )->dump( { data => $data } );
    return;
 }
 

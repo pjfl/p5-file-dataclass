@@ -1,16 +1,7 @@
 package File::DataClass;
 
 use 5.010001;
-use namespace::autoclean;
-use version; our $VERSION = qv( sprintf '0.56.%d', q$Rev: 5 $ =~ /\d+/gmx );
-
-use Moo;
-
-my $F_DC_Cache = {};
-
-sub F_DC_Cache {
-   return $F_DC_Cache;
-}
+use version; our $VERSION = qv( sprintf '0.56.%d', q$Rev: 6 $ =~ /\d+/gmx );
 
 1;
 
@@ -27,11 +18,11 @@ __END__
 
 =head1 Name
 
-File::DataClass - Structured data file IO with OO paradigm
+File::DataClass - Structured data file IO with caching and searching
 
 =head1 Version
 
-This document describes version v0.56.$Rev: 5 $ of L<File::DataClass>
+This document describes version v0.56.$Rev: 6 $ of L<File::DataClass>
 
 =head1 Synopsis
 
@@ -66,12 +57,7 @@ Defines no attributes
 
 =head1 Subroutines/Methods
 
-=head2 F_DC_Cache
-
-   $hash_ref_of_CHI_objects = File::DataClass->F_DC_Cache;
-
-A class method which returns a hash ref of L<CHI> objects which are
-used to cache the results of reading files
+None
 
 =head1 Diagnostics
 

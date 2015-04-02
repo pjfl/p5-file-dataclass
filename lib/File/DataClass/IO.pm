@@ -9,15 +9,15 @@ use Exporter 5.57              qw( import );
 use Fcntl                      qw( :flock :seek );
 use File::Basename               ( );
 use File::Copy                   ( );
-use File::DataClass::Constants qw( CYGWIN EVIL EXCEPTION_CLASS FALSE
+use File::DataClass::Constants qw( CYGWIN EXCEPTION_CLASS FALSE
                                    LOCK_BLOCKING LOCK_NONBLOCKING
-                                   NO_UMASK_STACK NUL PERMS STAT_FIELDS
+                                   MSOFT NO_UMASK_STACK NUL PERMS STAT_FIELDS
                                    TILDE TRUE );
 use File::DataClass::Functions qw( ensure_class_loaded first_char is_arrayref
                                    is_coderef is_hashref is_member thread_id
                                    throw );
 use File::Spec                   ( );
-use File::Spec::Functions      qw( curdir );
+use File::Spec::Functions      qw( curdir updir );
 use IO::Dir;
 use IO::File;
 use List::Util                 qw( first );
@@ -39,7 +39,7 @@ my  $IO_LOCK   = enum 'IO_Lock' => [ FALSE, LOCK_BLOCKING, LOCK_NONBLOCKING ];
 my  $IO_MODE   = enum 'IO_Mode' => [ qw( a a+ r r+ w w+ ) ];
 my  $IO_TYPE   = enum 'IO_Type' => [ qw( dir file ) ];
 my  $LC_OSNAME = lc $OSNAME;
-my  $NTFS      = $LC_OSNAME eq EVIL || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
+my  $NTFS      = $LC_OSNAME eq MSOFT || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
 
 # Private functions
 my $_expand_tilde = sub {
@@ -63,37 +63,15 @@ my $_coerce_name = sub {
    return $name;
 };
 
-my $_proxy = sub {
-   my ($proxy, $chain, $mode) = @_; no strict 'refs';
-
-   my $package = caller; defined &{ "${package}::${proxy}" } and return;
-
-   return  *{ "${package}::${proxy}" } = sub {
-      my $self = shift; defined $mode and $self->assert_open( $mode );
-
-      defined $self->io_handle or throw InvocantUndefined, [ $proxy ];
-
-      my @results = $self->io_handle->$proxy( @_ ); # Mustn't copy stack args
-
-      $self->error_check; $chain and return $self;
-
-      return wantarray ? @results : $results[ 0 ];
-   };
-};
-
 my $_should_include_path = sub {
    return (not defined $_[ 0 ] or (map { $_[ 0 ]->() } ($_[ 1 ]))[ 0 ]);
 };
 
-# Private methods
+# Attribute constructors
 my $_build_dir_pattern = sub {
-   my $self = shift; my $pat = NUL;
+   my $self = shift; my $curdir = curdir; my $updir = updir;
 
-   my $curdir = curdir; my $updir = File::Spec->updir;
-
-   $curdir and $pat  = "\Q${curdir}\E"; # uncoverable condition left
-   $curdir and $updir and $pat .= '|';  # uncoverable condition left
-   $updir  and $pat .= "\Q${updir}\E";  # uncoverable condition left
+   my $pat  = "\Q${curdir}\E|\Q${updir}\E";
 
    return qr{ \A (?:$pat) \z }mx;
 };
@@ -132,16 +110,6 @@ has '_separator'    => is => 'rw',   isa => Str,            default => $RS   ;
 has '_umask'        => is => 'rw',   isa => ArrayRef[Int],
    builder          => sub { [] }                                            ;
 
-# Methods handled by the IO::Handle object
-$_proxy->( 'autoflush', TRUE );
-$_proxy->( 'eof'             );
-$_proxy->( 'fileno'          );
-$_proxy->( 'flush',     TRUE );
-$_proxy->( 'getc',      FALSE, 'r' );
-$_proxy->( 'sysread',   FALSE, O_RDONLY );
-$_proxy->( 'syswrite',  FALSE, O_CREAT | O_WRONLY );
-$_proxy->( 'truncate',  TRUE );
-
 # Construction
 my $_clone_one_of_us = sub {
    my ($self, $params) = @_;
@@ -149,9 +117,8 @@ my $_clone_one_of_us = sub {
    $self->autoclose; $self->reverse; $self->sort; # Force evaluation
 
    my $clone = { %{ $self }, %{ $params // {} } };
-   my $perms = delete $clone->{_perms};
+   my $perms = delete $clone->{_perms}; $clone->{perms} //= $perms;
 
-   $clone->{perms} //= $perms;
    return $clone;
 };
 
@@ -187,6 +154,33 @@ sub BUILD {
 
    return;
 }
+
+my $_proxy = sub { # Methods handled by the IO::Handle object
+   my ($proxy, $chain, $mode) = @_; no strict 'refs';
+
+   my $package = caller; defined &{ "${package}::${proxy}" } and return;
+
+   return  *{ "${package}::${proxy}" } = sub {
+      my $self = shift; defined $mode and $self->assert_open( $mode );
+
+      defined $self->io_handle or throw InvocantUndefined, [ $proxy ];
+
+      my @results = $self->io_handle->$proxy( @_ ); # Mustn't copy stack args
+
+      $self->error_check; $chain and return $self;
+
+      return wantarray ? @results : $results[ 0 ];
+   };
+};
+
+$_proxy->( 'autoflush', TRUE );
+$_proxy->( 'eof'             );
+$_proxy->( 'fileno'          );
+$_proxy->( 'flush',     TRUE );
+$_proxy->( 'getc',      FALSE, 'r' );
+$_proxy->( 'sysread',   FALSE, O_RDONLY );
+$_proxy->( 'syswrite',  FALSE, O_CREAT | O_WRONLY );
+$_proxy->( 'truncate',  TRUE );
 
 # Private methods
 my $_all_file_contents = sub {
@@ -629,7 +623,7 @@ sub catfile {
 sub chmod {
    my ($self, $perms) = @_;
 
-   $perms ||= $self->_perms; # uncoverable condition false
+   $perms //= $self->_perms; # uncoverable condition false
    CORE::chmod $perms, $self->name;
    return $self;
 }
@@ -758,11 +752,11 @@ sub error_check {
       and $self->io_handle->error
       and $self->$_throw( 'IO error: [_1]', [ $OS_ERROR ] );
 
-   return;
+   return $self;
 }
 
 sub exists {
-   return $_[ 0 ]->name ? -e $_[ 0 ]->name ? TRUE : FALSE : FALSE;
+   return ($_[ 0 ]->name && -e $_[ 0 ]->name) ? TRUE : FALSE;
 }
 
 sub file {
@@ -883,7 +877,7 @@ sub is_readable {
 }
 
 sub is_reading {
-   my $mode = $_[ 1 ] || $_[ 0 ]->mode; return first { $_ eq $mode } qw(r r+);
+   my $mode = $_[ 1 ] || $_[ 0 ]->mode; return first { $_ eq $mode } qw( r r+ );
 }
 
 sub is_writable {
@@ -893,7 +887,7 @@ sub is_writable {
 sub is_writing {
    my $mode = $_[ 1 ] || $_[ 0 ]->mode;
 
-   return first { $_ eq $mode } qw(a a+ w w+);
+   return first { $_ eq $mode } qw( a a+ w w+ );
 }
 
 sub iterator {
@@ -1039,11 +1033,11 @@ sub read {
 }
 
 sub read_dir {
-   my $self = shift; my $dir_pat = $self->_dir_pattern; my $name;
-
-   $self->type or $self->dir; $self->assert_open;
+   my $self = shift; $self->type or $self->dir; $self->assert_open;
 
    $self->is_link and $self->_no_follow and $self->close and return;
+
+   my $dir_pat = $self->_dir_pattern; my $name;
 
    if (wantarray) {
       my @names = grep { $_ !~ $dir_pat } $self->io_handle->read;
@@ -1096,8 +1090,7 @@ sub rmtree {
 sub seek {
    my ($self, $posn, $whence) = @_;
 
-   $self->is_open or $self->assert_open( $LC_OSNAME eq EVIL ? 'r' : 'r+' );
-
+   $self->is_open or $self->assert_open( $LC_OSNAME eq MSOFT ? 'r' : 'r+' );
    CORE::seek $self->io_handle, $posn, $whence; $self->error_check;
    return $self;
 }
@@ -1185,7 +1178,7 @@ sub tail {
 sub tell {
    my $self = shift;
 
-   $self->is_open or $self->assert_open( $LC_OSNAME eq EVIL ? 'r' : 'r+' );
+   $self->is_open or $self->assert_open( $LC_OSNAME eq MSOFT ? 'r' : 'r+' );
 
    return CORE::tell $self->io_handle;
 }
@@ -1201,8 +1194,7 @@ sub tempfile {
       ( DIR => $tempdir, TEMPLATE => (sprintf $tmplt, $PID) );
    my $t     = $self->$_constructor( $tmpfh->filename )->file;
 
-   $t->_set_io_handle( $tmpfh );
-   $t->_set_is_open( TRUE );
+   $t->_set_io_handle( $tmpfh ); $t->_set_is_open( TRUE );
    $t->_set_mode( 'w+' );
    return $t;
 }
@@ -1239,8 +1231,7 @@ sub write {
               ? $self->io_handle->write( @args )
               : $self->io_handle->write( ${ $self->buffer }, $self->length );
 
-   $self->error_check;
-   scalar @args or $self->clear;
+   $self->error_check; scalar @args or $self->clear;
    return $length;
 }
 
