@@ -4,7 +4,6 @@ use namespace::autoclean;
 
 use Moo;
 use Class::Null;
-use File::DataClass;
 use File::DataClass::Cache;
 use File::DataClass::Constants qw( EXCEPTION_CLASS FALSE NUL PERMS TRUE );
 use File::DataClass::Functions qw( ensure_class_loaded first_char
@@ -20,22 +19,20 @@ use File::Spec;
 use Scalar::Util               qw( blessed );
 use Unexpected::Functions      qw( Unspecified );
 
-our $VERSION = File::DataClass->VERSION;
-
 my $_cache_objects = {};
 
 # Private methods
 my $_build_cache = sub {
-   my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx; my $cache;
+   my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
 
-   my $attr = { cache_attributes => { %{ $self->cache_attributes } },
-                 builder          => $self };
+   my $attr  = { builder          => $self,
+                 cache_attributes => { %{ $self->cache_attributes } }, };
 
-   $ns    = $attr->{cache_attributes}->{namespace} ||= $ns;
+   $ns  = $attr->{cache_attributes}->{namespace} ||= $ns;
    exists $_cache_objects->{ $ns } and return $_cache_objects->{ $ns };
-   $self->cache_class eq 'none' and return Class::Null->new;
+   $self->cache_class eq 'none'    and return Class::Null->new;
    $attr->{cache_attributes}->{share_file}
-        ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
+      ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
 
    return $_cache_objects->{ $ns } = $self->cache_class->new( $attr );
 };
