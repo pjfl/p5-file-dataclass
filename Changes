@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.57.1    2015-04-04 20:59:17
           - Added Kwakitee badge
           - Refactored cache of cache objects
           - Fixed bug in ::IO::exists

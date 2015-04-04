@@ -539,8 +539,7 @@ SKIP: {
    subtest 'More permissions' => sub {
       ok $io->is_executable, 'Executable';
       $io->perms( 0 )->chmod;
-      ok !$io->is_readable, 'Not readable';
-      ok !$io->is_writable, 'Not writable';
+      is( (sprintf "%o", $io->stat->{mode} & 07777), '0', 'Chmod 0' );
    };
 
    subtest 'Creates files with specified permissions' => sub {
