@@ -9,10 +9,9 @@ use Exporter 5.57              qw( import );
 use Fcntl                      qw( :flock :seek );
 use File::Basename               ( );
 use File::Copy                   ( );
-use File::DataClass::Constants qw( CYGWIN EXCEPTION_CLASS FALSE
-                                   LOCK_BLOCKING LOCK_NONBLOCKING
-                                   MSOFT NO_UMASK_STACK NUL PERMS STAT_FIELDS
-                                   TILDE TRUE );
+use File::DataClass::Constants qw( CYGWIN EXCEPTION_CLASS FALSE LOCK_BLOCKING
+                                   LOCK_NONBLOCKING MSOFT NO_UMASK_STACK NUL
+                                   PERMS STAT_FIELDS TILDE TRUE );
 use File::DataClass::Functions qw( ensure_class_loaded first_char is_arrayref
                                    is_coderef is_hashref is_member thread_id
                                    throw );

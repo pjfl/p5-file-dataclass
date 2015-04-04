@@ -1,7 +1,7 @@
 package File::DataClass;
 
 use 5.010001;
-use version; our $VERSION = qv( sprintf '0.56.%d', q$Rev: 6 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.56.%d', q$Rev: 7 $ =~ /\d+/gmx );
 
 1;
 
@@ -9,12 +9,13 @@ __END__
 
 =pod
 
-=begin markdown
+=begin html
 
-[![Build Status](https://travis-ci.org/pjfl/p5-file-dataclass.svg?branch=master)](https://travis-ci.org/pjfl/p5-file-dataclass)
-[![CPAN version](https://badge.fury.io/pl/File-DataClass.svg)](http://badge.fury.io/pl/File-DataClass)
+<a href="https://travis-ci.org/pjfl/p5-file-dataclass"><img src="https://travis-ci.org/pjfl/p5-file-dataclass.svg?branch=master" alt="Travis CI Badge"></a>
+<a href="http://badge.fury.io/pl/File-DataClass"><img src="https://badge.fury.io/pl/File-DataClass.svg" alt="CPAN Badge"></a>
+<a href="http://cpants.cpanauthors.org/dist/File-DataClass"><img src="http://cpants.cpanauthors.org/dist/File-DataClass.png" alt="Kwalitee Badge"></a>
 
-=end markdown
+=end html
 
 =head1 Name
 
@@ -22,7 +23,7 @@ File::DataClass - Structured data file IO with caching and searching
 
 =head1 Version
 
-This document describes version v0.56.$Rev: 6 $ of L<File::DataClass>
+This document describes version v0.56.$Rev: 7 $ of L<File::DataClass>
 
 =head1 Synopsis
 

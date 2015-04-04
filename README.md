@@ -1,5 +1,8 @@
-[![Build Status](https://travis-ci.org/pjfl/p5-file-dataclass.svg?branch=master)](https://travis-ci.org/pjfl/p5-file-dataclass)
-[![CPAN version](https://badge.fury.io/pl/File-DataClass.svg)](http://badge.fury.io/pl/File-DataClass)
+<div>
+    <a href="https://travis-ci.org/pjfl/p5-file-dataclass"><img src="https://travis-ci.org/pjfl/p5-file-dataclass.svg?branch=master" alt="Travis CI Badge"></a>
+    <a href="http://badge.fury.io/pl/File-DataClass"><img src="https://badge.fury.io/pl/File-DataClass.svg" alt="CPAN Badge"></a>
+    <a href="http://cpants.cpanauthors.org/dist/File-DataClass"><img src="http://cpants.cpanauthors.org/dist/File-DataClass.png" alt="Kwalitee Badge"></a>
+</div>
 
 # Name
 
@@ -7,7 +10,7 @@ File::DataClass - Structured data file IO with caching and searching
 
 # Version
 
-This document describes version v0.56.$Rev: 5 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
+This document describes version v0.56.$Rev: 6 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
 
 # Synopsis
 
