@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+0.59.1    2015-04-05 18:56:50
+          - Fixed bad format test
+
 0.58.1    2015-04-04 21:14:40
           - Removed VERSION from Schema due to indexing problems
 

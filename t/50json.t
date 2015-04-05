@@ -140,7 +140,7 @@ $schema   = File::DataClass::Schema->new
 
 eval { $schema->load };
 
-like $EVAL_ERROR, qr{ \Qcharacter offset 19\E }mx, 'Bad format';
+like $EVAL_ERROR, qr{ \QFile-DataClass-Storage-JSON\E }mx, 'Bad format';
 
 done_testing;
 
