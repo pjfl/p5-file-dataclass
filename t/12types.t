@@ -67,8 +67,7 @@ like $EVAL_ERROR, qr{ is \s missing (.+) methods }mx, 'Lock - missing methods';
    use Moo;
    use File::DataClass::Types qw( OctalNum );
 
-   has 'test_octal_num' => is => 'ro', isa => OctalNum,
-      coerce            => OctalNum->coercion;
+   has 'test_octal_num' => is => 'ro', isa => OctalNum, coerce => 1;
 }
 
 my $octal; eval { $octal = MyOctalNum->new( test_octal_num => undef ) };
@@ -96,6 +95,10 @@ eval { $octal = MyOctalNum->new( test_octal_num => 17 ) };
 is( (sprintf '%o', $octal->test_octal_num), 17, 'OctalNum - is octal 17' );
 
 ok $octal->test_octal_num == 15, 'OctalNum - is converted';
+
+eval { $octal = MyOctalNum->new( test_octal_num => 18 ) };
+
+like $EVAL_ERROR, qr{ \Qnot an octal number\E }mx, 'OctalNum - bad value 18';
 
 {  package MyPath;
 

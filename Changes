@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Better Octalum implementation
+
 0.59.1    2015-04-05 18:56:50
           - Fixed bad format test
 

@@ -20,19 +20,17 @@ BEGIN { extends q(Unexpected::Types) };
 my $_coercion_for_octalnum = sub {
    my $x = shift; length $x or return $x;
 
-   $x =~ s{ \A 0 }{}mx; $x =~ m{ [^0-7] }mx and return $x;
+   $x =~ m{ [^0-7] }mx and return $x; $x =~ s{ \A 0 }{}gmx;
 
-   return dualvar oct "0${x}", "0${x}"
+   return dualvar oct "${x}", "0${x}"
 };
 
 my $_constraint_for_octalnum = sub {
    my $x = shift; length $x or return 0;
 
-  (my $strx = "${x}") =~ s{ [0-7]+ }{}mx; length $strx != 0 and return 0;
+   $x =~ m{ [^0-7] }mx and return 0;
 
-   $x < 8 and return 1; ($strx = "${x}") =~ s{ \A 0 }{}mx;
-
-   return $strx eq $x + 0 ? 0 : 1;
+   return ($x < 8) || (oct "${x}" == $x + 0) ? 1 : 0;
 };
 
 my $_exception_message_for_object_reference = sub {
