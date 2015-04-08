@@ -132,7 +132,7 @@ __END__
 
 =head1 Name
 
-File::DataClass::Cache - Adds extra methods to the CHI API
+File::DataClass::Cache - Accessors and mutators for the cache object
 
 =head1 Synopsis
 
