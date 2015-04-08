@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.60.1    2015-04-09 00:09:00
           - Added strict warnings to main module. Kwalitee
           - Better Octalum implementation
 
