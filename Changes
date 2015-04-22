@@ -1,5 +1,10 @@
 Revision history for File::DataClass
 
+          - Removed HashMerge. Renamed merge to merge_for_update
+          - Storage drops locks on destruction
+          - Removed Schema::extensions
+          - POD updates
+
 0.60.1    2015-04-09 00:09:00
           - Added strict warnings to main module. Kwalitee
           - Better Octalum implementation

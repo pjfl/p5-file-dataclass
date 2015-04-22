@@ -21,7 +21,7 @@ sub read_from_file {
    # The filter causes the data to be untainted (running suid). I shit you not
    my $json = JSON->new->canonical->filter_json_object( sub { $_[ 0 ] } );
 
-   $rdr->empty and return {}; my $data;
+   $rdr->is_empty and return {}; my $data;
 
    try   { $data = $json->utf8( 0 )->decode( $rdr->all ) }
    catch { s{ at \s [^ ]+ \s line \s\d+\. }{}mx; throw "${_} in file ${rdr}" };

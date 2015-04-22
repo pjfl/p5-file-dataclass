@@ -62,28 +62,27 @@ $res = test( $rs, 'delete', $args );
 
 is $res, 'dummy', 'Deletes dummy element';
 
-use_ok 'File::DataClass::HashMerge';
+use File::DataClass::Functions qw( merge_for_update );
 
-eval { File::DataClass::HashMerge->merge() };
+eval { merge_for_update() };
 
-like $EVAL_ERROR, qr{ \Qno destination reference\E }imx,
-   'Requires a destination hash ref';
+like $EVAL_ERROR, qr{ \Qnot specified\E }imx, 'Requires a destination hash ref';
 
 my $dest = { delete_key => 1 };
 my $src  = { delete_key => undef, key => 'value', key_no_value => undef, };
 
-File::DataClass::HashMerge->merge( \$dest, $src );
+merge_for_update( \$dest, $src );
 
 is $dest->{key}, 'value', 'Default merge filter';
 ok !exists $dest->{delete_key}, 'Deletes unwanted keys';
 
-File::DataClass::HashMerge->merge( \$dest );
+merge_for_update( \$dest );
 
 is $dest->{key}, 'value', 'No source required';
 
 $dest = {}; $src = { new_key => {} };
 
-my $updated = File::DataClass::HashMerge->merge( \$dest, $src );
+my $updated = merge_for_update( \$dest, $src );
 
 ok exists $dest->{new_key}, 'Adds empty hash';
 

@@ -12,7 +12,7 @@ use File::DataClass::Storage;
 use File::DataClass::Types     qw( Object HashRef );
 
 has 'schema'  => is => 'ro', isa => Object,
-   handles    => [ qw( cache storage_attributes storage_base ), ],
+   handles    => [ 'cache', 'storage_attributes', ],
    required   => TRUE, weak_ref => TRUE;
 
 

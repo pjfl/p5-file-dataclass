@@ -15,17 +15,85 @@ use Module::Pluggable::Object;
 use Module::Runtime            qw( require_module );
 use Scalar::Util               qw( blessed );
 use Try::Tiny;
-use Unexpected::Functions      qw( is_class_loaded );
+use Unexpected::Functions      qw( is_class_loaded Unspecified );
 
 our @EXPORT_OK    = qw( ensure_class_loaded extension_map first_char
                         is_arrayref is_coderef is_hashref is_member
                         is_stale qualify_storage_class map_extension2class
-                        merge_attributes merge_file_data supported_extensions
-                        thread_id throw );
+                        merge_attributes merge_file_data merge_for_update
+                        supported_extensions thread_id throw );
 our %EXPORT_TAGS  =   ( all => [ @EXPORT_OK ], );
 
 my $LC_OSNAME     = lc $OSNAME;
 my $NTFS          = $LC_OSNAME eq MSOFT || $LC_OSNAME eq CYGWIN ? 1 : 0;
+
+my $_merge_attr;
+
+my $_merge_attr_arrays = sub {
+   my ($to, $from) = @_; my $updated = 0;
+
+   for (0 .. $#{ $to }) {
+      if (defined $from->[ $_ ]) {
+         my $res = $_merge_attr->( \$to->[ $_ ], $from->[ $_ ] );
+
+         $updated ||= $res;
+      }
+      elsif ($to->[ $_ ]) { splice @{ $to }, $_; $updated = 1; last }
+   }
+
+   if (@{ $from } > @{ $to }) {
+      push @{ $to }, (splice @{ $from }, $#{ $to } + 1); $updated = 1;
+   }
+
+   return $updated;
+};
+
+my $_merge_attr_hashes = sub {
+   my ($to, $from) = @_; my $updated = 0;
+
+   for (grep { exists $from->{ $_ } } keys %{ $to }) {
+      if (defined $from->{ $_ }) {
+         my $res = $_merge_attr->( \$to->{ $_ }, $from->{ $_ } );
+
+         $updated ||= $res;
+      }
+      else { delete $to->{ $_ }; delete $from->{ $_ }; $updated = 1 }
+   }
+
+   for (grep { not exists $to->{ $_ } } keys %{ $from }) {
+      if (defined $from->{ $_ }) {
+         $to->{ $_ } = $from->{ $_ }; $updated = 1;
+      }
+   }
+
+   return $updated;
+};
+
+$_merge_attr = sub {
+   my ($to_ref, $from) = @_; my $to = ${ $to_ref }; my $updated = 0;
+
+   if ($to and ref $to eq 'HASH') {
+      $updated = $_merge_attr_hashes->( $to, $from );
+   }
+   elsif ($to and ref $to eq 'ARRAY') {
+      $updated = $_merge_attr_arrays->( $to, $from );
+   }
+   elsif (defined $to and $to ne $from) {
+      $updated = 1; ${ $to_ref } = $from;
+   }
+   elsif (not defined $to) {
+      if (ref $from eq 'HASH') {
+         scalar keys %{ $from } > 0 and $updated = 1
+            and ${ $to_ref } = $from;
+      }
+      elsif (ref $from eq 'ARRAY') {
+         scalar @{ $from } > 0 and $updated = 1 and ${ $to_ref } = $from;
+      }
+      else { $updated = 1; ${ $to_ref } = $from }
+   }
+
+   return $updated;
+};
 
 # Public functions
 sub ensure_class_loaded ($;$) {
@@ -136,6 +204,27 @@ sub merge_file_data ($$) {
    return;
 }
 
+sub merge_for_update (;$$$) {
+   my ($dest_ref, $src, $filter) = @_; my $updated = 0;
+
+   $dest_ref or throw( Unspecified, [ 'destination reference' ] );
+
+   ${ $dest_ref } ||= {}; $src ||= {}; $filter ||= sub { keys %{ $_[ 0 ] } };
+
+   for my $k ($filter->( $src )) {
+      if (defined $src->{ $k }) {
+         my $res = $_merge_attr->( \${ $dest_ref }->{ $k }, $src->{ $k });
+
+         $updated ||= $res;
+      }
+      elsif (exists ${ $dest_ref }->{ $k }) {
+         delete ${ $dest_ref }->{ $k }; $updated = 1;
+      }
+   }
+
+   return $updated;
+}
+
 sub qualify_storage_class ($) {
    return STORAGE_BASE.'::'.$_[ 0 ];
 }
@@ -161,11 +250,11 @@ __END__
 
 =head1 Name
 
-File::DataClass::Functions - Common functions used in this distribution
+File::DataClass::Functions - Common utility functions
 
 =head1 Synopsis
 
-   use File::DataClass::Functions qw(list of functions to import);
+   use File::DataClass::Functions qw( list of functions to import );
 
 =head1 Description
 
@@ -201,23 +290,23 @@ Returns the first character of C<$string>
 
    $bool = is_arrayref $scalar_variable
 
-Tests to see if the scalar variable is an array ref
+Tests to see if the scalar variable is an array reference
 
 =head2 is_coderef
 
    $bool = is_coderef $scalar_variable
 
-Tests to see if the scalar variable is a code ref
+Tests to see if the scalar variable is a code reference
 
 =head2 is_hashref
 
    $bool = is_hashref $scalar_variable
 
-Tests to see if the scalar variable is a hash ref
+Tests to see if the scalar variable is a hash reference
 
 =head2 is_member
 
-   $bool = is_member q(test_value), qw(a_value test_value b_value);
+   $bool = is_member 'test_value', qw( a_value test_value b_value );
 
 Tests to see if the first parameter is present in the list of
 remaining parameters
@@ -227,13 +316,13 @@ remaining parameters
    $bool = is_stale $data, $cache_mtime, $path_mtime;
 
 Returns true if there is no data or the cache mtime is older than the
-path mtime
+path mtime. Always returns true on C<NTFS>
 
 =head2 map_extension2class
 
    $array_ref_of_class_name = map_extension2class $extension;
 
-Maps a filename extensions to a storage classes
+Maps a filename extensions to a list of storage classes
 
 =head2 merge_attributes
 
@@ -249,6 +338,14 @@ accessor methods are called
    merge_file_data $existing, $new;
 
 Uses L<Hash::Merge> to merge data from the new hash ref in with the existing
+
+=head2 merge_for_update
+
+   $bool = merge_for_update $dest_ref, $src, $filter;
+
+Only merge the attributes from C<$src> to C<$dest_ref> if the C<$filter> code
+reference evaluates to true when called with a candidate value. Return true if
+the destination reference was updated
 
 =head2 qualify_storage_class
 
@@ -271,11 +368,11 @@ not been loaded
 
 =head2 throw
 
-   throw error => q(error_key), args => [ q(error_arg) ];
+   throw error => 'error_key', args => [ 'error_arg' ];
 
-Expose L<CatalystX::Usul::Exception/throw>. C<CX::Usul::Functions> has a
-class attribute I<Exception_Class> which can be set via a call to
-C<set_inherited>
+Expose L<throw|Unexpected::TraitFor::Throwing/throw>.
+The exception class can be changed by calling the
+L<Exception_Class|File::DataClass::Constants/Exception_Class> class method
 
 =head1 Configuration and Environment
 

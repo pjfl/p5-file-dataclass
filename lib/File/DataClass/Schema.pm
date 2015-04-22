@@ -23,16 +23,16 @@ my $_cache_objects = {};
 
 # Private methods
 my $_build_cache = sub {
-   my $self  = shift; (my $ns = lc __PACKAGE__) =~ s{ :: }{-}gmx;
-
-   my $attr  = { builder          => $self,
+   my $self  = shift;
+   my $attr  = { builder => $self,
                  cache_attributes => { %{ $self->cache_attributes } }, };
+   my $cattr = $attr->{cache_attributes};
+  (my $ns    = lc __PACKAGE__) =~ s{ :: }{-}gmx;
 
-   $ns  = $attr->{cache_attributes}->{namespace} ||= $ns;
+   $ns = $cattr->{namespace} //= $ns;
    exists $_cache_objects->{ $ns } and return $_cache_objects->{ $ns };
    $self->cache_class eq 'none'    and return Class::Null->new;
-   $attr->{cache_attributes}->{share_file}
-      ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
+   $cattr->{share_file} //= $self->tempdir->catfile( "${ns}.dat" )->pathname;
 
    return $_cache_objects->{ $ns } = $self->cache_class->new( $attr );
 };
@@ -132,21 +132,9 @@ around 'BUILDARGS' => sub {
 sub dump {
    my ($self, $args) = @_; blessed $self or $self = $self->$_constructor;
 
-   my $path = $args->{path} || $self->path;
-
-   blessed $path or $path = io( $path );
+   my $path = $args->{path} || $self->path; blessed $path or $path = io $path;
 
    return $self->storage->dump( $path, $args->{data} );
-}
-
-sub extensions { # Deprecated
-   my $extns = {};
-
-   warn "DEPRECATED: Calling F::DC::Schema::extensions as a class method\n";
-
-   $extns->{ $_ } = map_extension2class( $_ ) for (supported_extensions());
-
-   return $extns;
 }
 
 sub load {
@@ -211,18 +199,21 @@ File::DataClass::Schema - Base class for schema definitions
         result_source_attributes => { source_name => {}, },
         tempdir => [ qw( path to a directory ) ] );
 
-   $schema->source( q(source_name) )
+   $schema->source( 'source_name' )
           ->attributes( [ qw( list of attr names ) ] );
    $rs = $schema->resultset( 'source_name' );
-   $result = $rs->find( { name => 'id of field element to find' } );
+   $result = $rs->find( { name => 'id of record to find' } );
    $result->$attr_name( $some_new_value );
    $result->update;
    @result = $rs->search( { 'attr name' => 'some value' } );
 
 =head1 Description
 
-Base class for schema definitions. Each record in a data file requires
-a result source to define it's attributes
+Base class for schema definitions.  Each record in a data file requires a
+result source to define it's attributes. Schema subclasses define the result
+sources and create new result set instances. Result sets can be used to find
+existing records by their identity field, or to search for result objects.
+Attributes of result objects can be mutated and then persisted
 
 =head1 Configuration and Environment
 
@@ -247,7 +238,7 @@ Passed to the L<Cache::Cache> constructor
 =item C<cache_class>
 
 Classname used to create the cache object. Defaults to
-L<File::DataClass::Cache>
+L<File::DataClass::Cache>. Can be the dummy class C<none>
 
 =item C<lock>
 
@@ -261,7 +252,7 @@ Log object. Typically an instance of L<Log::Handler>
 =item C<path>
 
 Path to the file. This is a L<File::DataClass::IO> object that can be
-coerced from either a string or an array ref
+coerced from either a string or an array reference
 
 =item C<perms>
 
@@ -270,7 +261,7 @@ L<PERMS|File::DataClass::Constants/PERMS>
 
 =item C<result_source_attributes>
 
-A hash ref of result sources. See L<File::DataClass::ResultSource>
+A hash reference of result sources. See L<File::DataClass::ResultSource>
 
 =item C<result_source_class>
 
@@ -290,11 +281,6 @@ An instance of a subclass of L<File::DataClass::Storage>
 =item C<storage_attributes>
 
 Attributes passed to the storage object's constructor
-
-=item C<storage_base>
-
-If the storage class is only a partial classname then this attribute is
-prepended to it
 
 =item C<storage_class>
 
@@ -320,15 +306,6 @@ Constructs the attribute hash passed to the constructor method
 Dumps the data structure to a file. Path defaults to the one specified in
 the schema definition. Returns the data that was written to the file if
 successful. Can be called a class or an object method
-
-=head2 extensions
-
-   \%extension_map = $self->extensions;
-
-B<DEPRECATED>: Use the function C<extension2class> instead
-
-Returns a hash ref that maps filename extensions (keys) onto storage
-subclasses (values)
 
 =head2 load
 

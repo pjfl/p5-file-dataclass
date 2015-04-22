@@ -11,7 +11,6 @@ lib/File/DataClass/Cache.pm
 lib/File/DataClass/Constants.pm
 lib/File/DataClass/Exception.pm
 lib/File/DataClass/Functions.pm
-lib/File/DataClass/HashMerge.pm
 lib/File/DataClass/IO.pm
 lib/File/DataClass/List.pm
 lib/File/DataClass/Result.pm

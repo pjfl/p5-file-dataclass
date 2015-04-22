@@ -3,7 +3,7 @@ package File::DataClass;
 use 5.010001;
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.60.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.60.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
 1;
 
@@ -25,23 +25,23 @@ File::DataClass - Structured data file IO with caching and searching
 
 =head1 Version
 
-This document describes version v0.60.$Rev: 1 $ of L<File::DataClass>
+This document describes version v0.60.$Rev: 2 $ of L<File::DataClass>
 
 =head1 Synopsis
 
    use File::DataClass::Schema;
 
    $schema = File::DataClass::Schema->new
-      ( path    => [ qw(path to a file) ],
+      ( path    => [ 'path to a file' ],
         result_source_attributes => { source_name => {}, },
-        tempdir => [ qw(path to a directory) ] );
+        tempdir => [ 'path to a directory' ] );
 
-   $schema->source( q(source_name) )->attributes( [ qw(list of attr names) ] );
-   $rs = $schema->resultset( q(source_name) );
-   $result = $rs->find( { name => q(id of field element to find) } );
+   $schema->source( 'source_name' )->attributes( [ qw( list of attr names ) ] );
+   $rs = $schema->resultset( 'source_name' );
+   $result = $rs->find( { name => 'id of field element to find' } );
    $result->$attr_name( $some_new_value );
    $result->update;
-   @result = $rs->search( { 'attr name' => q(some value) } );
+   @result = $rs->search( { 'attr name' => 'some value' } );
 
 =head1 Description
 
@@ -56,7 +56,8 @@ It implements the file and directory methods only
 
 =head1 Configuration and Environment
 
-Defines no attributes
+Defines the distributions C<VERSION> number using a polyglot interpreted by
+both Perl and hooks in the C<VCS>
 
 =head1 Subroutines/Methods
 
@@ -70,7 +71,7 @@ None
 
 =over 3
 
-=item L<Moo>
+=item L<version>
 
 =back
 

@@ -10,23 +10,23 @@ File::DataClass - Structured data file IO with caching and searching
 
 # Version
 
-This document describes version v0.60.$Rev: 0 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
+This document describes version v0.60.$Rev: 1 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
 
 # Synopsis
 
     use File::DataClass::Schema;
 
     $schema = File::DataClass::Schema->new
-       ( path    => [ qw(path to a file) ],
+       ( path    => [ 'path to a file' ],
          result_source_attributes => { source_name => {}, },
-         tempdir => [ qw(path to a directory) ] );
+         tempdir => [ 'path to a directory' ] );
 
-    $schema->source( q(source_name) )->attributes( [ qw(list of attr names) ] );
-    $rs = $schema->resultset( q(source_name) );
-    $result = $rs->find( { name => q(id of field element to find) } );
+    $schema->source( 'source_name' )->attributes( [ qw( list of attr names ) ] );
+    $rs = $schema->resultset( 'source_name' );
+    $result = $rs->find( { name => 'id of field element to find' } );
     $result->$attr_name( $some_new_value );
     $result->update;
-    @result = $rs->search( { 'attr name' => q(some value) } );
+    @result = $rs->search( { 'attr name' => 'some value' } );
 
 # Description
 
@@ -41,7 +41,8 @@ It implements the file and directory methods only
 
 # Configuration and Environment
 
-Defines no attributes
+Defines the distributions `VERSION` number using a polyglot interpreted by
+both Perl and hooks in the `VCS`
 
 # Subroutines/Methods
 
@@ -53,7 +54,7 @@ None
 
 # Dependencies
 
-- [Moo](https://metacpan.org/pod/Moo)
+- [version](https://metacpan.org/pod/version)
 
 # Incompatibilities
 

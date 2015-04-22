@@ -128,13 +128,15 @@ $e = test( $rs, 'create', $args );
 
 like $e, qr{ already \s+ exists }mx, 'Detects already existing record';
 
-$res = test( $rs, 'delete', $args );
+my $res_copy = $res; $res = test( $rs, 'delete', $args );
 
 is $res, 'dummy', 'Deletes dummy record';
 
 $e = test( $rs, 'delete', $args );
 
 like $e, qr{ \Qdoes not exist\E }mx, 'Detects non existing record';
+
+ok !$res_copy->delete, 'Returns false deleting missing record';
 
 $args = { id => 'dummy', text => 'value3' };
 
@@ -254,11 +256,14 @@ is_deeply search( { count => { '<=' => '2'     } } ), [ 'admin',   'entrance' ],
 
 io( $path_ref )->copy( [ 't', 'update.json' ] );
 
+my $bak = io( [ 't', 'update.json.bak' ] ); $bak->exists and $bak->unlink;
+
 $schema = File::DataClass::Schema->new
-   ( path    => [ 't', 'update.json' ],
+   ( path                     => [ 't', 'update.json' ],
      result_source_attributes => {
-        fields => { attributes => [ 'width' ], }, },
-     tempdir => 't' );
+        fields                => { attributes => [ 'width' ], }, },
+     storage_attributes       => { backup => '.bak', },
+     tempdir                  => 't', );
 
 $rs = $schema->resultset( 'fields' );
 $rs = $rs->search( { width => { '>' => '10' } } );
@@ -274,6 +279,8 @@ $rs->find_and_update( { id => 'feedback.body', width => '12' } );
 $rs = $schema->resultset( 'fields' );
 
 is $rs->find( 'feedback.body' )->width, 12, 'Find and update';
+
+ok $bak->exists, 'Creates backup file'; $bak->exists and $bak->unlink;
 
 {  package Dummy;
 
@@ -297,8 +304,6 @@ is $schema->tempdir, 't', 'IOC tempdir';
 $e = test( $schema, 'load', 'nonexistant_file' );
 
 is ref $e, 'Unexpected', 'Non default exception class';
-
-is $schema->extensions->{ '.json' }->[ 0 ], 'JSON', 'Extensions';
 
 use File::DataClass::List;
 

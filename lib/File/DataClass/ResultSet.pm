@@ -294,7 +294,7 @@ sub delete {
       }
 
       $result->delete
-         or throw 'File [_1] element [_2] not deleted', [ $path, $id ];
+         or throw 'File [_1] source [_2] not deleted', [ $path, $id ];
       return TRUE;
    } );
 
@@ -412,21 +412,21 @@ __END__
 
 =head1 Name
 
-File::DataClass::ResultSet - Core element methods
+File::DataClass::ResultSet - Core result management methods
 
 =head1 Synopsis
 
    use File:DataClass;
 
-   $attrs = { result_source_attributes => { schema_attributes => { ... } } };
+   my $attr = { result_source_attributes => { schema_attributes => { ... } } };
 
-   $result_source = File::DataClass->new( $attrs )->result_source;
+   my $result_source = File::DataClass->new( $attr )->result_source;
 
-   $rs = $result_source->resultset( { path => q(path_to_data_file) } );
+   my $rs = $result_source->resultset( { path => q(path_to_data_file) } );
 
-   $result = $rs->search( $hash_ref_of_where_clauses );
+   my $result = $rs->search( $hash_ref_of_where_clauses );
 
-   for $result_object ($result->next) {
+   for my $result_object ($result->next) {
       # Do something with the result object
    }
 

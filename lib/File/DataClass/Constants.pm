@@ -11,7 +11,7 @@ our @EXPORT = qw( ARRAY CODE CYGWIN EXCEPTION_CLASS FALSE HASH LANG
                   NUL PERMS SPC STAT_FIELDS STORAGE_BASE STORAGE_EXCEPTIONS
                   TILDE TRUE );
 
-my $Exception_Class = 'File::DataClass::Exception';
+my $_exception_class = 'File::DataClass::Exception';
 
 sub ARRAY    () { 'ARRAY'    }
 sub CODE     () { 'CODE'     }
@@ -37,12 +37,12 @@ sub STORAGE_BASE       () { 'File::DataClass::Storage' }
 sub STORAGE_EXCEPTIONS () { 'File::DataClass::Storage::WithLanguage' }
 
 sub Exception_Class {
-   my ($self, $class) = @_; defined $class or return $Exception_Class;
+   my ($self, $class) = @_; defined $class or return $_exception_class;
 
    $class->can( 'throw' )
        or die "Class '${class}' is not loaded or has no 'throw' method";
 
-   return $Exception_Class = $class;
+   return $_exception_class = $class;
 }
 
 1;
