@@ -150,9 +150,10 @@ subtest 'File::Spec::Functions' => sub {
    is io()->file->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ),
        'Catfile 2';
    is io()->catfile( qw(goo hoo) ), f( catfile( qw(goo hoo) ) ), 'Catfile 3';
-   is io( [ qw(t mydir dir1) ] )->dirname, catdir( qw(t mydir) ), 'Dirname';
-   ok io( [ qw(t mydir dir1) ] )->parent->is_dir, 'Parent';
-   is io( [ qw(t mydir dir1) ] )->parent( 2 ), 't', 'Parent with count';
+   is io( [ qw( t mydir dir1 ) ] )->dirname, catdir( qw(t mydir) ), 'Dirname';
+   ok io( [ qw( t mydir dir1 ) ] )->parent->is_dir, 'Parent';
+   is io( [ qw( t mydir dir1 ) ] )->parent( 2 ), 't', 'Parent with count';
+   ok io( [ qw( t mydir dir1 ) ] )->sibling( 'dir2' )->is_dir, 'Sibling';
    is io( [ qw( t output print.t ) ] )->basename, 'print.t', 'Basename';
    is io()->basename, undef, 'Basename - no name';
 };
@@ -281,16 +282,18 @@ subtest 'Create and remove a directory subtree' => sub {
 };
 
 subtest 'Setting assert creates path to file' => sub {
-   $dir = catdir( qw(t output newpath ) );
-   ok ! -e catfile( $dir, q(hello.txt) ), 'Non existant file';
+   $dir = catdir( qw( t output newpath ) );
+   ok ! -e catfile( $dir, 'hello.txt' ), 'Non existant file';
    ok ! -e $dir, 'Non existant directory';
-   $io = io( [ $dir, q(hello.txt) ] )->assert;
+   $io = io( [ $dir, 'hello.txt' ] )->assert;
    ok ! -e $dir, 'Assert does not create directory';
    $io->println( 'Hello' );
    ok -d $dir, 'Writing file creates directory';
    is io()->assert_dirpath( $dir ), $dir, 'Assert directory returns path';
    eval { io()->assert_dirpath( catfile( qw( t default.json ) ) ) };
    like $EVAL_ERROR, qr{ mkdir }imx, 'Assert directory fails if a file exists';
+   eval { $io->assert( sub { not $_->exists } ) };
+   like $EVAL_ERROR, qr{ \Qassertion failure\E }mx, 'Assert with subroutine';
 };
 
 subtest 'Prints with and without newlines' => sub {
@@ -660,6 +663,15 @@ SKIP: {
       };
    };
 }
+
+subtest 'Visit' => sub {
+   my $io = io( [ 't', 'mydir' ] ); my $count = 0;
+
+   my $state = $io->visit( sub {
+      $count++; $count == 1 ? undef : $count == 9 ? \0 : \1 }, {
+         recurse => 1, follow_symlinks => 1 } );
+   is $count, 9, 'Visit';
+};
 
 subtest 'Proxied IO::Handle methods' => sub {
    my $buf = q(); $io = io $PROGRAM_NAME;

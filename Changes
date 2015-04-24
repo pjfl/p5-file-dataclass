@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Added IO::sibling and IO::visit
+          - Added IO::child
           - Removed HashMerge. Renamed merge to merge_for_update
           - Storage drops locks on destruction
           - Removed Schema::extensions

@@ -179,13 +179,21 @@ is $res->result->name( 'old_tosh' ), 'old_tosh',
    'Deprecated name attribute use id instead - mutator';
 
 $schema = File::DataClass::Schema->new
-   ( path                     => $path_ref,
-     result_source_attributes => {
-        levels                => { attributes => [ qw( acl count state ) ],
-                                   defaults   => { acl => [] },
-                                   types      => { count => Int,
-                                                   state => Bool, }, }, },
-     tempdir                  => 't' );
+   ( cache_attributes          => {
+        page_size              => 131_072,
+        namespace              => 'file-dataclass',
+        num_pages              => 89,
+        share_file             => $cache_file,
+        unlink_on_exit         => 1, },
+     path                      => $path_ref,
+     result_source_attributes  => {
+        levels                 => {
+           attributes          => [ qw( acl count state ) ],
+           defaults            => { acl => [] },
+           result_source_class => 'File::DataClass::ResultSource',
+           types               => { count => Int,
+                                    state => Bool, }, }, },
+     tempdir                   => 't', );
 
 $rs   = $schema->resultset( 'levels' );
 $args = { list => 'acl', id => 'admin' };

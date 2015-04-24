@@ -500,7 +500,15 @@ sub as_string {
 }
 
 sub assert {
-   $_[ 0 ]->_assert( TRUE ); return $_[ 0 ];
+   my ($self, $cb) = @_;
+
+   if ($cb) {
+      local $_ = $self;
+      $cb->() or throw 'Path [_1] assertion failure', [ $self->name ];
+   }
+   else { $self->_assert( TRUE ) }
+
+   return $self;
 }
 
 sub assert_dirpath {
@@ -602,21 +610,20 @@ sub canonpath {
 }
 
 sub catdir {
-   my ($self, @rest) = @_;
-
-   my $params = (is_hashref $rest[ -1 ]) ? pop @rest : {};
-   my $args   = [ grep { defined and length } $self->name, @rest ];
-
-   return $self->$_constructor( $args, $params )->dir;
+   my ($self, @args) = @_; return $self->child( @args )->dir;
 }
 
 sub catfile {
-   my ($self, @rest) = @_;
+   my ($self, @args) = @_; return $self->child( @args )->file;
+}
 
-   my $params = (is_hashref $rest[ -1 ]) ? pop @rest : {};
-   my $args   = [ grep { defined and length } $self->name, @rest ];
+sub child {
+   my ($self, @args) = @_;
 
-   return $self->$_constructor( $args, $params )->file;
+   my $params = (is_hashref $args[ -1 ]) ? pop @args : {};
+   my $args   = [ grep { defined and length } $self->name, @args ];
+
+   return $self->$_constructor( $args, $params );
 }
 
 sub chmod {
@@ -890,9 +897,12 @@ sub is_writing {
 }
 
 sub iterator {
-   my $self = shift; my $deep = $self->_deep; my @dirs = ( $self );
+   my ($self, $args) = @_;
 
-   my $filter = $self->_filter; my $follow = not $self->_no_follow;
+   my @dirs   = ( $self );
+   my $filter = $self->_filter;
+   my $deep   = $args->{recurse} // $self->_deep;
+   my $follow = $args->{follow_symlinks} // not $self->_no_follow;
 
    return sub {
       while (@dirs) {
@@ -1121,6 +1131,10 @@ sub set_lock {
    return $self;
 }
 
+sub sibling {
+   my $self = shift; return $self->parent->child( @_ );
+}
+
 sub slurp {
    my $self = shift; my $slurp = $self->all;
 
@@ -1221,6 +1235,20 @@ sub unlock {
 
 sub utf8 {
    $_[ 0 ]->encoding( 'UTF-8' ); return $_[ 0 ];
+}
+
+sub visit {
+   my ($self, $cb, $args) = @_;
+
+   my $iter = $self->iterator( $args ); my $state = {};
+
+   while (defined (my $entry = $iter->())) {
+      local $_ = $entry; my $r = $cb->( $entry, $state );
+
+      ref $r and not ${ $r } and last;
+   }
+
+   return $state;
 }
 
 sub write {
@@ -1443,6 +1471,12 @@ Sets the private attribute C<_assert> to true. Causes the open methods
 to create the path to the directory before the file/directory is
 opened
 
+   $io = io( 'path_to_file' )->assert( sub { $_->exists } );
+
+When called with a code reference it sets C<$_> to self and asserts that
+the code reference returns true. Throws otherwise. This feature was copied
+from L<Path::Tiny>
+
 =head2 assert_dirpath
 
    $dir_name = io( 'path_to_file' )->assert_dirpath;
@@ -1554,6 +1588,12 @@ with the one that is supplied
 
 Create a new IO file object by concatenating this objects pathname
 with the one that is supplied
+
+=head2 child
+
+   $io = io( 'path_to_directory' )->child( 'additional_file_path' );
+
+Like L</catdir> and L</catfile> but does not set the object type
 
 =head2 chmod
 
@@ -1828,12 +1868,13 @@ Returns true if this IO object is in one of the write modes
 
 =head2 iterator
 
-   $code_ref = io( 'path_to_directory' )->iterator;
+   $code_ref = io( 'path_to_directory' )->iterator( $options );
 
-When called the coderef iterates over the directory listing. If C<deep> is
-true then the iterator will visit all subdirectories. If C<no_follow> is
-true then symbolic links to directories will no be followed. A L</filter>
-may also be applied
+When called the coderef iterates over the directory listing. If C<deep> is true
+then the iterator will visit all subdirectories. If C<no_follow> is true then
+symbolic links to directories will not be followed. A L</filter> may also be
+applied. The options hash takes C<recurse> which is used in preference to
+C<deep>, and C<follow_symlinks> should be defined or C<no_follow> will be used
 
 =head2 length
 
@@ -2011,6 +2052,13 @@ Sets the currently selected binmode on the open file handle
 
 Calls L</flock> on the open file handle
 
+=head2 sibling
+
+   $io = io( 'path_to_directory' )->sibling( 'additional_relative_path' );
+
+A shortcut for calling C<< $io->parent->child >>. This feature was copied
+from L<Path::Tiny>
+
 =head2 slurp
 
    $lines = io( 'path_to_file' )->slurp;
@@ -2122,6 +2170,20 @@ release the L<Fcntl> lock if one was set. Called by the L</close> method
 
 Sets the current encoding to utf8
 
+=head2 visit
+
+   $state = io( 'path_to_directory' )->visit( \&callback, $options );
+
+Wrapper around a call to L</iterator>, calls the callback subroutine for
+each entry. The options hash takes C<recurse> to set L</deep> to true and
+C<follow_symlinks> should be true or L</no_follow> will be called.  The
+callback subroutine is passed the io object reference and a hash reference
+in which to accumulate state. In the callback subroutine C<$_> is also
+localised to the current entry. The state hash reference is returned by
+the method call. If the callback subroutine return a reference to a false
+scalar value the loop around the call to L</iterator> terminates and the
+state hash reference is returned. This feature was copied from L<Path::Tiny>
+
 =head2 write
 
    $bytes_written = io( 'pathname' )->write( $buffer, $length );
@@ -2187,7 +2249,7 @@ For L<IO::All> from which I took the API and some tests
 =item L<Path::Tiny>
 
 Lifted the following features; iterator, tilde expansion, thread id in atomic
-file name, not following symlinks and some tests
+file name, not following symlinks, visit, sibling and some tests
 
 =back
 

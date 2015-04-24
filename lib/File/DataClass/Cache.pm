@@ -73,6 +73,7 @@ sub get_by_paths {
 sub get_mtime {
    my ($self, $k) = @_; $k or return;
 
+   # uncoverable condition false
    my $mtimes = $self->cache->get( $self->_mtimes_key ) || {};
 
    return $mtimes->{ $k };
@@ -89,7 +90,7 @@ sub remove {
 sub set {
    my ($self, $key, $data, $meta) = @_;
 
-   $meta //= { mtime => undef }; # uncoverable condition false
+   $meta //= { mtime => undef };
 
    try {
       $key eq $self->_mtimes_key and throw 'key not allowed';
