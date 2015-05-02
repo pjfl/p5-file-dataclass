@@ -2,7 +2,6 @@ package File::DataClass::Schema;
 
 use namespace::autoclean;
 
-use Moo;
 use Class::Null;
 use File::DataClass::Cache;
 use File::DataClass::Constants qw( EXCEPTION_CLASS FALSE NUL PERMS TRUE );
@@ -18,6 +17,7 @@ use File::DataClass::Types     qw( Bool Cache ClassName Directory DummyClass
 use File::Spec;
 use Scalar::Util               qw( blessed );
 use Unexpected::Functions      qw( Unspecified );
+use Moo;
 
 my $_cache_objects = {};
 

@@ -11,6 +11,7 @@ requires "Subclass::Of" => "0.003";
 requires "Try::Tiny" => "0.22";
 requires "Type::Tiny" => "1.000002";
 requires "Unexpected" => "v0.38.0";
+requires "boolean" => "0.45";
 requires "namespace::autoclean" => "0.22";
 requires "namespace::clean" => "0.25";
 requires "perl" => "5.010001";

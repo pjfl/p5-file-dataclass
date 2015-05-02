@@ -1,40 +1,80 @@
 package File::DataClass::Storage::JSON;
 
+use boolean;
 use namespace::autoclean;
 
-use Moo;
 use File::DataClass::Functions qw( extension_map throw );
+use File::DataClass::Types     qw( Object );
 use JSON::MaybeXS              qw( JSON );
 use Try::Tiny;
+use Moo;
 
 extends q(File::DataClass::Storage);
 
-has '+extn' => default => '.json';
-
 extension_map 'JSON' => '.json';
 
+# Private functions
+my $_build_transcoder = sub {
+   my $options = shift; my $json = JSON->new;
+
+   for (grep { $_ ne 'reboolify' } keys %{ $options }) {
+      $json = $json->$_( $options->{ $_ } );
+   }
+
+   return $json;
+};
+
+my $_reboolify; $_reboolify = sub {
+   my $in = shift; my $ref = ref $in;
+
+   if (not $ref) { return $in }
+   elsif  ($ref eq 'HASH') {
+      return { map { $_ => $_reboolify->( $in->{ $_ } ) } keys %{ $in } };
+   }
+   elsif  ($ref eq 'ARRAY') { return [ map { $_reboolify->( $_ ) } @{ $in } ] }
+   elsif  ($ref =~ m{ ::Boolean \z }mx) { return ${ $in } ? true : false }
+
+   return $in;
+};
+
+# Public attributes
+has '+extn'           => default => '.json';
+
+has '+read_options'   => builder => sub { {
+   reboolify          => true, utf8 => false, } };
+
+has '+write_options'  => builder => sub { {
+   canonical          => true, convert_blessed => true,
+   pretty             => true, utf8            => false, } };
+
+# Private attributes
+has '_decoder'        => is => 'lazy', isa => Object,
+   builder            => sub { $_build_transcoder->( $_[ 0 ]->read_options  ) };
+
+has '_encoder'        => is => 'lazy', isa => Object,
+   builder            => sub { $_build_transcoder->( $_[ 0 ]->write_options ) };
+
 sub read_from_file {
-   my ($self, $rdr) = @_;
+   my ($self, $rdr) = @_; my $json = $self->_decoder; my $data;
 
    $self->encoding and $rdr->encoding( $self->encoding );
+   $rdr->is_empty  and return {};
 
-   # The filter causes the data to be untainted (running suid). I shit you not
-   my $json = JSON->new->canonical->filter_json_object( sub { $_[ 0 ] } );
-
-   $rdr->is_empty and return {}; my $data;
-
-   try   { $data = $json->utf8( 0 )->decode( $rdr->all ) }
+   try   {
+      $data = $json->decode( $rdr->all );
+      $self->read_options->{reboolify} and $data = $_reboolify->( $data );
+   }
    catch { s{ at \s [^ ]+ \s line \s\d+\. }{}mx; throw "${_} in file ${rdr}" };
 
    return $data;
 }
 
 sub write_to_file {
-   my ($self, $wtr, $data) = @_; my $json = JSON->new->canonical;
+   my ($self, $wtr, $data) = @_; my $json = $self->_encoder;
 
    $self->encoding and $wtr->encoding( $self->encoding );
-
-   $wtr->print( $json->pretty->utf8( 0 )->encode( $data ) ); return $data;
+   $wtr->print( $json->encode( $data ) );
+   return $data;
 }
 
 1;
@@ -68,6 +108,23 @@ Defines the following attributes;
 =item C<extn>
 
 The extension appended to filenames. Defaults to F<.json>
+
+=item C<read_options>
+
+This hash reference is used to customise the JSON decoder object used when
+reading the file. It defaults to C<reboolify> true (causes booleans to be
+inflated to objects) and C<utf8> false (the io object does the encoding).  This
+filter would cause the data to be untainted (running C<suid>). I shit you not
+
+   filter_json_object => sub { $_[ 0 ] }
+
+=item C<write_options>
+
+This hash reference is used to customise the JSON encoder object used when
+writing the file. It defaults to C<canonical> true (sorts the keys in the
+hashes), C<convert_blessed> true (looks for and uses the C<TO_JSON> method),
+C<pretty> true (uses whitespace for indentation), and C<utf8> false (the io
+object does the encoding)
 
 =back
 

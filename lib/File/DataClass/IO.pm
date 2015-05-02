@@ -2,7 +2,6 @@ package File::DataClass::IO;
 
 use 5.010001;
 
-use Moo;
 use Cwd                        qw( );
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -25,6 +24,7 @@ use Type::Utils                qw( enum );
 use Unexpected::Functions      qw( InvocantUndefined PathNotFound Unspecified );
 use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
                                    PositiveInt RegexpRef SimpleStr Str );
+use Moo;
 
 use namespace::clean -except => [ 'import', 'meta' ];
 use overload '""'       => sub { $_[ 0 ]->as_string  },

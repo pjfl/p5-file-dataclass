@@ -1,9 +1,11 @@
 use t::boilerplate;
+use boolean;
 
 use Test::More;
 use English               qw( -no_match_vars );
 use File::DataClass::IO;
 use File::Spec::Functions qw( catfile );
+use Scalar::Util          qw( blessed );
 use Text::Diff;
 
 sub test {
@@ -345,6 +347,26 @@ like $e, qr{ \Qshould never call\E }mx, 'Old read file should not call';
 $e = test( $schema->storage, '_write_file', '' );
 
 like $e, qr{ \Qshould never call\E }mx, 'Old write file should not call';
+
+$schema = File::DataClass::Schema->new
+   ( cache_class              => 'none',
+     lock_class               => 'none',
+     path                     => [ 't', 'boolean.json' ],
+     result_source_attributes => {
+        keys                  => {
+           attributes         => [ qw( state ) ], }, },
+     tempdir                  => 't', );
+
+$data = { keys => { '1' => { state => true }, '2' => { state => false } } };
+
+$schema->dump( { data => $data } ); $data = $schema->load;
+
+is blessed $data->{keys}->{1}->{state}, 'boolean', 'Boolifies 1';
+is blessed $data->{keys}->{2}->{state}, 'boolean', 'Boolifies 2';
+ok  $data->{keys}->{1}->{state}, 'Bool is true';
+ok !$data->{keys}->{2}->{state}, 'Bool is false';
+
+$schema->path->unlink;
 
 done_testing;
 

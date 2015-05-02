@@ -2,7 +2,6 @@ package File::DataClass::Storage::Any;
 
 use namespace::autoclean;
 
-use Moo;
 use File::Basename             qw( basename );
 use File::DataClass::Constants qw( FALSE TRUE );
 use File::DataClass::Functions qw( ensure_class_loaded first_char
@@ -10,6 +9,7 @@ use File::DataClass::Functions qw( ensure_class_loaded first_char
                                    is_stale merge_file_data throw );
 use File::DataClass::Storage;
 use File::DataClass::Types     qw( Object HashRef );
+use Moo;
 
 has 'schema'  => is => 'ro', isa => Object,
    handles    => [ 'cache', 'storage_attributes', ],

@@ -2,7 +2,6 @@ package File::DataClass::Storage;
 
 use namespace::autoclean;
 
-use Moo;
 use Class::Null;
 use English                    qw( -no_match_vars );
 use File::Copy;
@@ -14,21 +13,26 @@ use Scalar::Util               qw( blessed );
 use Try::Tiny;
 use Unexpected::Functions      qw( RecordAlreadyExists PathNotFound
                                    NothingUpdated Unspecified );
+use Moo;
 
-has 'atomic_write' => is => 'ro', isa => Bool, default => TRUE;
+has 'atomic_write'  => is => 'ro', isa => Bool, default => TRUE;
 
-has 'backup'       => is => 'ro', isa => Str,  default => NUL;
+has 'backup'        => is => 'ro', isa => Str,  default => NUL;
 
-has 'encoding'     => is => 'ro', isa => Str,  default => NUL;
+has 'encoding'      => is => 'ro', isa => Str,  default => NUL;
 
-has 'extn'         => is => 'ro', isa => Str,  default => NUL;
+has 'extn'          => is => 'ro', isa => Str,  default => NUL;
 
-has 'schema'       => is => 'ro', isa => Object,
-   handles         => { _cache => 'cache', _lock  => 'lock',
-                        _log   => 'log',   _perms => 'perms', },
-   required        => TRUE,  weak_ref => TRUE;
+has 'read_options'  => is => 'ro', isa => HashRef, builder => sub { {} };
 
-has '_locks'       => is => 'ro', isa => HashRef, builder => sub { {} };
+has 'schema'        => is => 'ro', isa => Object,
+   handles          => { _cache => 'cache', _lock  => 'lock',
+                         _log   => 'log',   _perms => 'perms', },
+   required         => TRUE,  weak_ref => TRUE;
+
+has 'write_options' => is => 'ro', isa => HashRef, builder => sub { {} };
+
+has '_locks'        => is => 'ro', isa => HashRef, builder => sub { {} };
 
 # Private functions
 my $_get_src_attributes = sub {
@@ -317,9 +321,19 @@ to the null string
 The filename extension for this type of file. Usually overridden in the
 subclass. Default to the null string
 
+=item C<read_options>
+
+This hash reference is used to customise the decoder object used when
+reading the file. It defaults to an empty reference
+
 =item C<schema>
 
 A weakened schema object reference
+
+=item C<write_options>
+
+This hash reference is used to customise the encoder object used when
+writing the file. It defaults to an empty reference
 
 =back
 

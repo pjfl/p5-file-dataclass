@@ -2,11 +2,11 @@ package File::DataClass::ResultSource;
 
 use namespace::autoclean;
 
-use Moo;
 use File::DataClass::Constants qw( FALSE NUL TRUE );
 use File::DataClass::ResultSet;
 use File::DataClass::Types     qw( ArrayRef ClassName HashRef
                                    Object SimpleStr Str );
+use Moo;
 
 # Private functions
 my $_build_attributes = sub {

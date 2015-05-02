@@ -3,12 +3,12 @@ package File::DataClass::Cache;
 use 5.01;
 use namespace::autoclean;
 
-use Moo;
 use File::DataClass::Constants qw( FALSE NUL SPC TRUE );
 use File::DataClass::Functions qw( merge_attributes throw );
 use File::DataClass::Types     qw( Bool Cache ClassName HashRef
                                    LoadableClass Object Str );
 use Try::Tiny;
+use Moo;
 
 has 'cache'            => is => 'lazy', isa => Object, builder => sub {
    $_[ 0 ]->cache_class->new( %{ $_[ 0 ]->cache_attributes } ) };

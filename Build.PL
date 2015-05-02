@@ -37,6 +37,7 @@ my $prereqs  = {
     'Try::Tiny' => '0.22',
     'Type::Tiny' => '1.000002',
     'Unexpected' => 'v0.38.0',
+    'boolean' => '0.45',
     'namespace::autoclean' => '0.22',
     'namespace::clean' => '0.25',
     'perl' => '5.010001'

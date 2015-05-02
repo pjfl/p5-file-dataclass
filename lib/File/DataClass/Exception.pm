@@ -2,9 +2,9 @@ package File::DataClass::Exception;
 
 use namespace::autoclean;
 
-use Moo;
 use Unexpected::Functions qw( has_exception );
 use Unexpected::Types     qw( Str );
+use Moo;
 
 extends q(Unexpected);
 with    q(Unexpected::TraitFor::ErrorLeader);
