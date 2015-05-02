@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Default reboolify false. Issue using boolean with Type::Tiny
           - Use boolean to reboolify JSON data when reading. mst++
           - Added IO::sibling and IO::visit
           - Added IO::child

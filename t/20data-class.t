@@ -355,6 +355,8 @@ $schema = File::DataClass::Schema->new
      result_source_attributes => {
         keys                  => {
            attributes         => [ qw( state ) ], }, },
+     storage_attributes       => {
+        read_options          => { reboolify => 1, utf8 => 0, }, },
      tempdir                  => 't', );
 
 $data = { keys => { '1' => { state => true }, '2' => { state => false } } };

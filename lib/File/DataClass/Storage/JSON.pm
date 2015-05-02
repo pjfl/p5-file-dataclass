@@ -40,8 +40,7 @@ my $_reboolify; $_reboolify = sub {
 # Public attributes
 has '+extn'           => default => '.json';
 
-has '+read_options'   => builder => sub { {
-   reboolify          => true, utf8 => false, } };
+has '+read_options'   => builder => sub { { utf8 => false, } };
 
 has '+write_options'  => builder => sub { {
    canonical          => true, convert_blessed => true,
@@ -112,7 +111,7 @@ The extension appended to filenames. Defaults to F<.json>
 =item C<read_options>
 
 This hash reference is used to customise the JSON decoder object used when
-reading the file. It defaults to C<reboolify> true (causes booleans to be
+reading the file. It defaults to C<reboolify> false (causes booleans to be
 inflated to objects) and C<utf8> false (the io object does the encoding).  This
 filter would cause the data to be untainted (running C<suid>). I shit you not
 
