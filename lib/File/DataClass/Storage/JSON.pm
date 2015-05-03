@@ -38,21 +38,22 @@ my $_reboolify; $_reboolify = sub {
 };
 
 # Public attributes
-has '+extn'           => default => '.json';
+has '+extn'          => default => '.json';
 
-has '+read_options'   => builder => sub { { utf8 => false, } };
+has '+read_options'  => builder => sub { { utf8 => false, } };
 
-has '+write_options'  => builder => sub { {
-   canonical          => true, convert_blessed => true,
-   pretty             => true, utf8            => false, } };
+has '+write_options' => builder => sub { {
+   canonical         => true, convert_blessed => true,
+   pretty            => true, utf8            => false, } };
 
 # Private attributes
-has '_decoder'        => is => 'lazy', isa => Object,
-   builder            => sub { $_build_transcoder->( $_[ 0 ]->read_options  ) };
+has '_decoder'       => is => 'lazy', isa => Object,
+   builder           => sub { $_build_transcoder->( $_[ 0 ]->read_options  ) };
 
-has '_encoder'        => is => 'lazy', isa => Object,
-   builder            => sub { $_build_transcoder->( $_[ 0 ]->write_options ) };
+has '_encoder'       => is => 'lazy', isa => Object,
+   builder           => sub { $_build_transcoder->( $_[ 0 ]->write_options ) };
 
+# Public methods
 sub read_from_file {
    my ($self, $rdr) = @_; my $json = $self->_decoder; my $data;
 
