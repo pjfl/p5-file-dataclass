@@ -52,13 +52,13 @@ my $_expand_tilde = sub {
 my $_coerce_name = sub {
    my $name = shift;
 
-   not defined $name          and return;
-   is_coderef  $name          and $name =  $name->();
-   blessed     $name          and $name =  "${name}";
-   is_arrayref $name          and $name =  File::Spec->catfile( @{ $name } );
-   curdir eq   $name          and $name =  Cwd::getcwd();
-   first_char  $name eq TILDE and $name =  $_expand_tilde->( $name );
-   length      $name > 1      and $name =~ s{ [/\\] \z }{}mx;
+   not defined  $name          and return;
+   is_coderef   $name          and $name =  $name->();
+   blessed      $name          and $name =  "${name}";
+   is_arrayref  $name          and $name =  File::Spec->catfile( @{ $name } );
+   curdir eq    $name          and $name =  Cwd::getcwd();
+   first_char   $name eq TILDE and $name =  $_expand_tilde->( $name );
+   CORE::length $name > 1      and $name =~ s{ [/\\] \z }{}mx;
    return $name;
 };
 
@@ -321,7 +321,7 @@ my $_assert_open_backwards = sub {
 my $_init_type_from_fs = sub {
    my $self = shift;
 
-   $self->name or $self->$_throw( Unspecified, [ 'path name' ] );
+   CORE::length $self->name or $self->$_throw( Unspecified, [ 'path name' ] );
 
    return -f $self->name ? $self->file : -d _ ? $self->dir : undef;
 };
@@ -329,7 +329,7 @@ my $_init_type_from_fs = sub {
 my $_open_args = sub {
    my ($self, $mode, $perms) = @_;
 
-   $self->name or $self->$_throw( Unspecified, [ 'path name' ] );
+   CORE::length $self->name or $self->$_throw( Unspecified, [ 'path name' ] );
 
    my $pathname = $self->_atomic && !$self->is_reading( $mode )
                 ? $self->$_get_atomic_path : $self->name;
@@ -451,7 +451,8 @@ sub abs2rel {
 sub absolute {
    my ($self, $base) = @_; $base and $base = $_coerce_name->( $base );
 
-   $self->_set_name( $self->name ? $self->rel2abs( $base ) : $base );
+   $self->_set_name
+      ( (CORE::length $self->name) ? $self->rel2abs( $base ) : $base );
    return $self;
 }
 
@@ -490,13 +491,15 @@ sub appendln {
 }
 
 sub as_boolean {
-   return ($_[ 0 ]->name || $_[ 0 ]->io_handle) ? TRUE : FALSE;
+   return ((CORE::length $_[ 0 ]->name) || $_[ 0 ]->io_handle) ? TRUE : FALSE;
 }
 
 sub as_string {
-   my $self = shift;
+   my $self = shift; CORE::length $self->name and return $self->name;
 
-   return $self->name || (defined $self->io_handle && NUL.$self->io_handle);
+   defined $self->io_handle and return NUL.$self->io_handle;
+
+   return;
 }
 
 sub assert {
@@ -534,7 +537,7 @@ sub assert_dirpath {
 sub assert_filepath {
    my $self = shift; my $dir;
 
-   $self->name or $self->$_throw( Unspecified, [ 'path name' ] );
+   CORE::length $self->name or $self->$_throw( Unspecified, [ 'path name' ] );
 
    (undef, $dir) = File::Spec->splitpath( $self->name );
 
@@ -563,7 +566,7 @@ sub backwards {
 }
 
 sub basename {
-   my ($self, @suffixes) = @_; $self->name or return;
+   my ($self, @suffixes) = @_; CORE::length $self->name or return;
 
    return File::Basename::basename( $self->name, @suffixes );
 }
@@ -621,7 +624,7 @@ sub child {
    my ($self, @args) = @_;
 
    my $params = (is_hashref $args[ -1 ]) ? pop @args : {};
-   my $args   = [ grep { defined and length } $self->name, @args ];
+   my $args   = [ grep { defined and CORE::length } $self->name, @args ];
 
    return $self->$_constructor( $args, $params );
 }
@@ -739,7 +742,8 @@ sub dir {
 }
 
 sub dirname {
-   return $_[ 0 ]->name ? File::Basename::dirname( $_[ 0 ]->name ) : undef;
+   return CORE::length $_[ 0 ]->name ? File::Basename::dirname( $_[ 0 ]->name )
+                                     : NUL;
 }
 
 sub encoding {
@@ -762,7 +766,7 @@ sub error_check {
 }
 
 sub exists {
-   return ($_[ 0 ]->name && -e $_[ 0 ]->name) ? TRUE : FALSE;
+   return (CORE::length $_[ 0 ]->name && -e $_[ 0 ]->name) ? TRUE : FALSE;
 }
 
 sub file {
@@ -844,7 +848,7 @@ sub is_absolute {
 }
 
 sub is_dir {
-   my $self = shift; $self->name or return FALSE;
+   my $self = shift; CORE::length $self->name or return FALSE;
 
    $self->type or $self->$_init_type_from_fs or return FALSE;
 
@@ -863,11 +867,11 @@ sub is_empty {
 *empty = \&is_empty; # Deprecated
 
 sub is_executable {
-   return $_[ 0 ]->name && -x $_[ 0 ]->name ? TRUE : FALSE;
+   return (CORE::length $_[ 0 ]->name) && -x $_[ 0 ]->name ? TRUE : FALSE;
 }
 
 sub is_file {
-   my $self = shift; $self->name or return FALSE;
+   my $self = shift; CORE::length $self->name or return FALSE;
 
    $self->type or $self->$_init_type_from_fs;
 
@@ -875,11 +879,11 @@ sub is_file {
 }
 
 sub is_link {
-   return $_[ 0 ]->name && -l $_[ 0 ]->name ? TRUE : FALSE;
+   return (CORE::length $_[ 0 ]->name) && -l $_[ 0 ]->name ? TRUE : FALSE;
 }
 
 sub is_readable {
-   return $_[ 0 ]->name && -r $_[ 0 ]->name ? TRUE : FALSE;
+   return (CORE::length $_[ 0 ]->name) && -r $_[ 0 ]->name ? TRUE : FALSE;
 }
 
 sub is_reading {
@@ -887,7 +891,7 @@ sub is_reading {
 }
 
 sub is_writable {
-   return $_[ 0 ]->name && -w $_[ 0 ]->name ? TRUE : FALSE;
+   return (CORE::length $_[ 0 ]->name) && -w $_[ 0 ]->name ? TRUE : FALSE;
 }
 
 sub is_writing {
@@ -920,7 +924,7 @@ sub iterator {
 }
 
 sub length {
-   return length ${ $_[ 0 ]->buffer };
+   return CORE::length ${ $_[ 0 ]->buffer };
 }
 
 sub lock {
@@ -1213,7 +1217,7 @@ sub tempfile {
 }
 
 sub touch {
-   my ($self, $time) = @_; $self->name or return; $time //= time;
+   my ($self, $time) = @_; CORE::length $self->name or return; $time //= time;
 
    -e $self->name or $self->$_open_file( $self->$_open_args( 'w' ) )->close;
 
