@@ -154,6 +154,13 @@ sub BUILD {
    return;
 }
 
+sub DEMOLISH {
+   my ($self, $gd) = @_; $gd and return;
+
+   $self->_atomic ? $self->delete : $self->close;
+   return;
+}
+
 my $_proxy = sub { # Methods handled by the IO::Handle object
    my ($proxy, $chain, $mode) = @_; no strict 'refs';
 
@@ -709,10 +716,6 @@ sub delete_tmp_files {
    }
 
    return $self->close;
-}
-
-sub DEMOLISH {
-   $_[ 0 ]->_atomic ? $_[ 0 ]->delete : $_[ 0 ]->close; return;
 }
 
 sub digest { # Robbed from Path::Tiny

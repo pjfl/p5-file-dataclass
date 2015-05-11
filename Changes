@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Added global destruction flag to DEMOLISH subs
+
 0.61.1    2015-05-11 13:12:04
           - Improved test coverage
           - Allow a file name of 0 in IO

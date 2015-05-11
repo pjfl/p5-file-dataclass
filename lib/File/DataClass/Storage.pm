@@ -108,7 +108,7 @@ sub delete {
 }
 
 sub DEMOLISH {
-   my $self = shift; $self->$_lock_reset_all(); return;
+   my ($self, $gd) = @_; $gd and return; $self->$_lock_reset_all(); return;
 }
 
 sub dump {
