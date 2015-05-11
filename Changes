@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Improved test coverage
           - Allow a file name of 0 in IO
           - Default reboolify false. Issue using boolean with Type::Tiny
           - Use boolean to reboolify JSON data when reading. mst++

@@ -10,6 +10,7 @@ use File::DataClass::Types     qw( Bool Cache ClassName HashRef
 use Try::Tiny;
 use Moo;
 
+# Public attributes
 has 'cache'            => is => 'lazy', isa => Object, builder => sub {
    $_[ 0 ]->cache_class->new( %{ $_[ 0 ]->cache_attributes } ) };
 
@@ -20,22 +21,8 @@ has 'cache_class'      => is => 'lazy', isa => LoadableClass,
 
 has 'log'              => is => 'ro',   isa => Object, required => TRUE;
 
-
+# Private attributes
 has '_mtimes_key'      => is => 'ro',   isa => Str, default => '_mtimes';
-
-# Private methods
-my $_get_key_and_newest = sub {
-   my ($self, $paths) = @_; my $newest = 0; my $valid = TRUE;  my $key;
-
-   for my $path (grep { length } map { "${_}" } @{ $paths }) {
-      $key .= $key ? "~${path}" : $path; my $mtime = $self->get_mtime( $path );
-
-      if ($mtime) { $mtime > $newest and $newest = $mtime }
-      else { $valid = FALSE }
-   }
-
-   return ($key, $valid ? $newest : undef);
-};
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -53,6 +40,21 @@ around 'BUILDARGS' => sub {
    return $attr;
 };
 
+# Private methods
+my $_get_key_and_newest = sub {
+   my ($self, $paths) = @_; my $newest = 0; my $is_valid = TRUE; my $key;
+
+   for my $path (grep { length } map { "${_}" } @{ $paths }) {
+      my $mtime = $self->get_mtime( $path ) or $is_valid = FALSE;
+
+      $mtime and $mtime > $newest and $newest = $mtime;
+      $key .= $key ? "~${path}" : $path;
+   }
+
+   return ($key, $is_valid ? $newest : undef);
+};
+
+# Public methods
 sub get {
    my ($self, $key) = @_; $key .= NUL;
 
@@ -73,8 +75,7 @@ sub get_by_paths {
 sub get_mtime {
    my ($self, $k) = @_; $k or return;
 
-   # uncoverable condition false
-   my $mtimes = $self->cache->get( $self->_mtimes_key ) || {};
+   my $mtimes = $self->cache->get( $self->_mtimes_key ) or return;
 
    return $mtimes->{ $k };
 }
@@ -108,8 +109,8 @@ sub set_by_paths {
 
    my ($key, $newest) = $self->$_get_key_and_newest( $paths );
 
-   $meta //= {}; # uncoverable condition false
    $meta->{mtime} = $newest;
+
    return $self->set( $key, $data, $meta );
 }
 

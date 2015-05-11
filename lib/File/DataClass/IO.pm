@@ -499,7 +499,7 @@ sub as_string {
 
    defined $self->io_handle and return NUL.$self->io_handle;
 
-   return;
+   return NUL;
 }
 
 sub assert {

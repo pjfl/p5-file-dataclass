@@ -54,13 +54,25 @@ is ref $e, 'File::DataClass::Exception', 'Default exception class';
 
 ok -f $cache_file, 'Cache file found'; ! -f $cache_file and warn "${e}";
 
+is $schema->cache->get_mtime(), undef, 'No mod times for undef';
+
+is $schema->cache->get_mtime( 'dummy' ), undef, 'No mod times unknown file';
+
+my ($data, $meta) = $schema->cache->get( q() );
+
+is $data, undef, 'Cache get null returns undef';
+
+($data, $meta) = $schema->cache->set( 'dummy' );
+
+is $data, undef, 'Dummy cache returns undef data';
+
 ok !($schema->cache->set( '_mtimes' ))[ 0 ], 'Cannot use reserved key';
 
 ok $schema->cache->set( 'test', 'data' ), 'Sets cache';
 
 ok !$schema->cache->remove(), 'Cannot remove undefined key';
 
-my $data = test( $schema, 'load', $path, catfile( 't', 'other.json' ) );
+$data = test( $schema, 'load', $path, catfile( 't', 'other.json' ) );
 
 like $data->{ '_cvs_default' } || q(), qr{ @\(\#\)\$Id: }mx,
    'Has reference element 1';

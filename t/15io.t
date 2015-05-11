@@ -8,7 +8,7 @@ use File::pushd                qw( tempd );
 use File::Spec::Functions      qw( catdir catfile curdir );
 use IO::Handle;
 use Path::Tiny                 qw( );
-use Scalar::Util               qw( blessed );
+use Scalar::Util               qw( blessed refaddr );
 use Test::Deep                 qw( cmp_deeply );
 use File::DataClass::Constants qw( LOCK_NONBLOCKING );
 use File::DataClass::IO;
@@ -113,7 +113,7 @@ subtest 'Overload' => sub {
    is "${io}", $PROGRAM_NAME, 'Stringifies';
    is !!$io, 1, 'Boolean true name';
    $io = io;
-   is "${io}", q(), 'Stringifies - null';
+   is "${io}", q(), 'Stringifies - undef';
    $io = io { io_handle => IO::Handle->new };
    like "${io}", qr{ \QIO::Handle\E }mx, 'Stringifies from file handle';
    is !!$io, 1, 'Boolean true file handle';
@@ -678,6 +678,7 @@ subtest 'Proxied IO::Handle methods' => sub {
 
    is $io->sysread( $buf, 18 ), 18, 'Sysread byte count';
    like $buf, qr{ boilerplate }mx, 'Sysread buffer';
+   is refaddr $io->autoflush, refaddr $io, 'Autoflush returns self';
    $io = io [ 't', 'output', 'proxy_test' ]; $io->touch; eval { $io->truncate };
    is $EVAL_ERROR->class, 'InvocantUndefined', 'Throw without handle';
    is $io->syswrite( 'byte me', 2, 5 ), 2, 'Syswrite byte count';
