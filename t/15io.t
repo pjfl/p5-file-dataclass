@@ -156,6 +156,7 @@ subtest 'File::Spec::Functions' => sub {
    ok io( [ qw( t mydir dir1 ) ] )->sibling( 'dir2' )->is_dir, 'Sibling';
    is io( [ qw( t output print.t ) ] )->basename, 'print.t', 'Basename';
    is io()->basename, undef, 'Basename - no name';
+   is io( [ qw( t ) ] )->child( undef, {} ), 't', 'Child with undef args';
 };
 
 subtest 'Absolute/relative pathname conversions' => sub {
@@ -294,6 +295,7 @@ subtest 'Setting assert creates path to file' => sub {
    like $EVAL_ERROR, qr{ mkdir }imx, 'Assert directory fails if a file exists';
    eval { $io->assert( sub { not $_->exists } ) };
    like $EVAL_ERROR, qr{ \Qassertion failure\E }mx, 'Assert with subroutine';
+   is $io->assert( sub { $_->exists } ), $io, 'Assert with sub true';
 };
 
 subtest 'Prints with and without newlines' => sub {
@@ -516,6 +518,8 @@ SKIP: {
       like $EVAL_ERROR, qr{ \Qnot specified\E }mx,
          'Gid must be defined in chown';
       is blessed( $io->chown( $uid, $gid ) ), 'File::DataClass::IO', 'Chown';
+      eval { $io->chown( 65.534, $gid ) };
+      like $EVAL_ERROR, qr{ \Qchown failed\E }mx, 'Chown failure';
    };
 
    subtest 'Permissions' => sub {

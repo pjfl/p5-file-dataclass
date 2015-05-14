@@ -2,6 +2,11 @@ use t::boilerplate;
 
 use Test::More;
 use English qw( -no_match_vars );
+use File::DataClass::IO qw( dummy );
+
+eval { my $dummy = io( [ 't', 'dummy' ] ) };
+
+like $EVAL_ERROR, qr{ \QUndefined subroutine\E }mx, 'Does not import io';
 
 {  package TC1;
 

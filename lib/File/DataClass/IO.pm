@@ -145,8 +145,9 @@ sub BUILD {
 }
 
 sub DEMOLISH {
-   my ($self, $gd) = @_; $gd and return;
+   my ($self, $gd) = @_;
 
+   $gd and return; # uncoverable branch true
    $self->_atomic ? $self->delete : $self->close;
    return;
 }
@@ -640,6 +641,7 @@ sub clear {
 sub close {
    my $self = shift; $self->is_open or return $self;
 
+   # uncoverable branch true
    if ($NTFS) { $self->$_close_and_rename } else { $self->$_rename_and_close }
 
    $self->_set_io_handle( undef );
