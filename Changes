@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Stopped IO substitute useless perms call
           - IO no longer user Exporter to export io constructor function
           - IO::_proxy function now use Sub::Install
           - Added global destruction flag to DEMOLISH subs

@@ -280,11 +280,10 @@ my $_umask_push = sub {
 };
 
 my $_untainted_perms = sub {
-   my $self = shift; $self->exists or return; my $perms = 0;
-
-   my $stat = $self->stat // {}; my $mode = $stat->{mode} // NUL;
-
-   $mode =~ m{ \A (\d+) \z }mx and $perms = $1;
+   my $self  = shift; $self->exists or return;
+   my $stat  = $self->stat   // {};
+   my $mode  = $stat->{mode} // NUL;
+   my $perms = $mode =~ m{ \A (\d+) \z }mx ? $1 : 0;
 
    return $perms & oct '07777';
 };
@@ -1148,10 +1147,12 @@ sub stat {
 sub substitute {
    my ($self, $search, $replace) = @_;
 
-   $search or return $self; $replace ||= NUL;
+   (defined $search and CORE::length $search) or return $self; $replace //= NUL;
 
    my $perms = $self->$_untainted_perms;
-   my $wtr   = $self->$_constructor( $self->name )->perms( $perms )->atomic;
+   my $wtr   = $self->$_constructor( $self->name )->atomic;
+
+   $perms and $wtr->perms( $perms );
 
    for ($self->getlines) { s{ $search }{$replace}gmx; $wtr->print( $_ ) }
 
