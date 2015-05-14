@@ -33,6 +33,7 @@ my $prereqs  = {
     'Module::Pluggable' => '5.1',
     'Module::Runtime' => '0.014',
     'Moo' => '2.000001',
+    'Sub::Install' => '0.928',
     'Subclass::Of' => '0.003',
     'Try::Tiny' => '0.22',
     'Type::Tiny' => '1.000002',

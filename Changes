@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - IO no longer user Exporter to export io constructor function
+          - IO::_proxy function now use Sub::Install
           - Added global destruction flag to DEMOLISH subs
 
 0.61.1    2015-05-11 13:12:04

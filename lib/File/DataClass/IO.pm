@@ -4,7 +4,6 @@ use 5.010001;
 
 use Cwd                        qw( );
 use English                    qw( -no_match_vars );
-use Exporter 5.57              qw( import );
 use Fcntl                      qw( :flock :seek );
 use File::Basename               ( );
 use File::Copy                   ( );
@@ -20,27 +19,33 @@ use IO::Dir;
 use IO::File;
 use List::Util                 qw( first );
 use Scalar::Util               qw( blessed );
+use Sub::Install               qw( install_sub );
 use Type::Utils                qw( enum );
 use Unexpected::Functions      qw( InvocantUndefined PathNotFound Unspecified );
 use Unexpected::Types          qw( ArrayRef Bool CodeRef Int Maybe Object
                                    PositiveInt RegexpRef SimpleStr Str );
 use Moo;
 
-use namespace::clean -except => [ 'import', 'meta' ];
+use namespace::clean -except => [ 'meta' ];
 use overload '""'       => sub { $_[ 0 ]->as_string  },
              'bool'     => sub { $_[ 0 ]->as_boolean },
              'fallback' => TRUE;
 
-our @EXPORT    = qw( io );
-
-my  @ARG_NAMES = qw( name mode perms );
 my  $IO_LOCK   = enum 'IO_Lock' => [ FALSE, LOCK_BLOCKING, LOCK_NONBLOCKING ];
 my  $IO_MODE   = enum 'IO_Mode' => [ qw( a a+ r r+ w w+ ) ];
 my  $IO_TYPE   = enum 'IO_Type' => [ qw( dir file ) ];
 my  $LC_OSNAME = lc $OSNAME;
 my  $NTFS      = $LC_OSNAME eq MSOFT || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
 
-# Private functions
+# Attribute constructors
+my $_build_dir_pattern = sub {
+   my $self = shift; my $curdir = curdir; my $updir = updir;
+
+   my $pat  = "\Q${curdir}\E|\Q${updir}\E";
+
+   return qr{ \A (?:$pat) \z }mx;
+};
+
 my $_expand_tilde = sub {
   (my $path = $_[ 0 ]) =~ m{ \A ([~] [^/\\]*) .* }mx;
 
@@ -60,19 +65,6 @@ my $_coerce_name = sub {
    first_char   $name eq TILDE and $name =  $_expand_tilde->( $name );
    CORE::length $name > 1      and $name =~ s{ [/\\] \z }{}mx;
    return $name;
-};
-
-my $_should_include_path = sub {
-   return (not defined $_[ 0 ] or (map { $_[ 0 ]->() } ($_[ 1 ]))[ 0 ]);
-};
-
-# Attribute constructors
-my $_build_dir_pattern = sub {
-   my $self = shift; my $curdir = curdir; my $updir = updir;
-
-   my $pat  = "\Q${curdir}\E|\Q${updir}\E";
-
-   return qr{ \A (?:$pat) \z }mx;
 };
 
 # Public attributes
@@ -110,6 +102,8 @@ has '_umask'        => is => 'rw',   isa => ArrayRef[Int],
    builder          => sub { [] }                                            ;
 
 # Construction
+my @ARG_NAMES = qw( name mode perms );
+
 my $_clone_one_of_us = sub {
    my ($self, $params) = @_;
 
@@ -161,32 +155,25 @@ sub DEMOLISH {
    return;
 }
 
-my $_proxy = sub { # Methods handled by the IO::Handle object
-   my ($proxy, $chain, $mode) = @_; no strict 'refs';
+sub import {
+   my ($class, @wanted) = @_; my $package = caller;
 
-   my $package = caller; defined &{ "${package}::${proxy}" } and return;
+   scalar @wanted or @wanted = ( 'io' ); $wanted[ 0 ] eq 'io'
+      and install_sub { into => $package, as => 'io', code => sub {
+         return __PACKAGE__->new( @_ );
+      } };
 
-   return  *{ "${package}::${proxy}" } = sub {
-      my $self = shift; defined $mode and $self->assert_open( $mode );
+   return;
+}
 
-      defined $self->io_handle or throw InvocantUndefined, [ $proxy ];
-
-      my @results = $self->io_handle->$proxy( @_ ); # Mustn't copy stack args
-
-      $self->error_check; $chain and return $self;
-
-      return wantarray ? @results : $results[ 0 ];
-   };
+# Private functions
+my $_io = sub {
+   return __PACKAGE__->new( @_ );
 };
 
-$_proxy->( 'autoflush', TRUE );
-$_proxy->( 'eof'             );
-$_proxy->( 'fileno'          );
-$_proxy->( 'flush',     TRUE );
-$_proxy->( 'getc',      FALSE, 'r' );
-$_proxy->( 'sysread',   FALSE, O_RDONLY );
-$_proxy->( 'syswrite',  FALSE, O_CREAT | O_WRONLY );
-$_proxy->( 'truncate',  TRUE );
+my $_should_include_path = sub {
+   return (not defined $_[ 0 ] or (map { $_[ 0 ]->() } ($_[ 1 ]))[ 0 ]);
+};
 
 # Private methods
 my $_all_file_contents = sub {
@@ -444,11 +431,6 @@ my $_getlines_backwards = sub {
 
    return @lines;
 };
-
-# Exported functions
-sub io (;@) {
-   return __PACKAGE__->new( @_ );
-}
 
 # Public methods
 sub abs2rel {
@@ -1176,7 +1158,7 @@ sub substitute {
 
    $search or return $self; $replace ||= NUL;
 
-   my $wtr = io( $self->name )->perms( $self->$_untainted_perms )->atomic;
+   my $wtr = $_io->( $self->name )->perms( $self->$_untainted_perms )->atomic;
 
    for ($self->getlines) { s{ $search }{$replace}gmx; $wtr->print( $_ ) }
 
@@ -1269,6 +1251,34 @@ sub write {
    return $length;
 }
 
+# Method installer
+my $_proxy = sub { # Methods handled by the IO::Handle object
+   my ($proxy, $chain, $mode) = @_;
+
+   my $package = caller; $package->can( $proxy ) and return;
+
+   install_sub { into => $package, as => $proxy, code => sub {
+      my $self = shift; defined $mode and $self->assert_open( $mode );
+
+      defined $self->io_handle or throw InvocantUndefined, [ $proxy ];
+
+      my @results = $self->io_handle->$proxy( @_ ); # Mustn't copy stack args
+
+      $self->error_check; $chain and return $self;
+
+      return wantarray ? @results : $results[ 0 ];
+   } };
+};
+
+$_proxy->( 'autoflush', TRUE );
+$_proxy->( 'eof'             );
+$_proxy->( 'fileno'          );
+$_proxy->( 'flush',     TRUE );
+$_proxy->( 'getc',      FALSE, 'r' );
+$_proxy->( 'sysread',   FALSE, O_RDONLY );
+$_proxy->( 'syswrite',  FALSE, O_CREAT | O_WRONLY );
+$_proxy->( 'truncate',  TRUE );
+
 1;
 
 __END__
@@ -1308,6 +1318,9 @@ from L<IO::AtomicFile>. Provides the same minimalist API but without the
 heavy OO overloading. Only has methods for files and directories
 
 =head1 Configuration and Environment
+
+By default exports the C<io> function which calls the constructor and returns
+the new L<File::DataClass::IO> object
 
 L<File::DataClass::Constants> has a class attribute C<Exception_Class> which
 defaults to L<File::DataClass::Exception>. Set this attribute to the
@@ -1807,12 +1820,6 @@ Returns a hexadecimal string which is calculated from the L</digest> object
 Sets default values for some attributes, takes two optional arguments;
 C<type> and C<name>
 
-=head2 io
-
-   $io = io( 'path_to_file' );
-
-Subroutine exported by default. Returns a new IO object
-
 =head2 is_absolute
 
    $bool = io( 'path_to_file' )->is_absolute;
@@ -2211,8 +2218,6 @@ None
 =item L<namespace::clean>
 
 =item L<overload>
-
-=item L<Exporter>
 
 =item L<File::DataClass::Constants>
 
