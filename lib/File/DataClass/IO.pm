@@ -39,11 +39,7 @@ my  $NTFS      = $LC_OSNAME eq MSOFT || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
 
 # Attribute constructors
 my $_build_dir_pattern = sub {
-   my $self = shift; my $curdir = curdir; my $updir = updir;
-
-   my $pat  = "\Q${curdir}\E|\Q${updir}\E";
-
-   return qr{ \A (?:$pat) \z }mx;
+   my $cd = curdir; my $ud = updir; qr{ \A (?: \Q${cd}\E | \Q${ud}\E ) \z }mx;
 };
 
 my $_expand_tilde = sub {
@@ -61,8 +57,8 @@ my $_coerce_name = sub {
    is_coderef   $name          and $name =  $name->();
    blessed      $name          and $name =  "${name}";
    is_arrayref  $name          and $name =  File::Spec->catfile( @{ $name } );
-   curdir eq    $name          and $name =  Cwd::getcwd();
    first_char   $name eq TILDE and $name =  $_expand_tilde->( $name );
+   curdir eq    $name          and $name =  Cwd::getcwd();
    CORE::length $name > 1      and $name =~ s{ [/\\] \z }{}mx;
    return $name;
 };
@@ -98,7 +94,7 @@ has '_layers'       => is => 'ro',   isa => ArrayRef[SimpleStr],
 has '_lock'         => is => 'rw',   isa => $IO_LOCK,       default => FALSE ;
 has '_no_follow'    => is => 'rw',   isa => Bool,           default => FALSE ;
 has '_separator'    => is => 'rw',   isa => Str,            default => $RS   ;
-has '_umask'        => is => 'rw',   isa => ArrayRef[Int],
+has '_umask'        => is => 'ro',   isa => ArrayRef[Int],
    builder          => sub { [] }                                            ;
 
 # Construction
@@ -160,17 +156,13 @@ sub import {
 
    (not defined $wanted[ 0 ] or $wanted[ 0 ] eq 'io')
       and install_sub { into => $package, as => 'io', code => sub (;@) {
-         return __PACKAGE__->new( @_ );
+         return $class->new( @_ );
       } };
 
    return;
 }
 
 # Private functions
-my $_io = sub {
-   return __PACKAGE__->new( @_ );
-};
-
 my $_should_include_path = sub {
    return (not defined $_[ 0 ] or (map { $_[ 0 ]->() } ($_[ 1 ]))[ 0 ]);
 };
@@ -1158,7 +1150,8 @@ sub substitute {
 
    $search or return $self; $replace ||= NUL;
 
-   my $wtr = $_io->( $self->name )->perms( $self->$_untainted_perms )->atomic;
+   my $perms = $self->$_untainted_perms;
+   my $wtr   = $self->$_constructor( $self->name )->perms( $perms )->atomic;
 
    for ($self->getlines) { s{ $search }{$replace}gmx; $wtr->print( $_ ) }
 
