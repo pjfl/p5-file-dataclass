@@ -158,8 +158,8 @@ sub DEMOLISH {
 sub import {
    my ($class, @wanted) = @_; my $package = caller;
 
-   scalar @wanted or @wanted = ( 'io' ); $wanted[ 0 ] eq 'io'
-      and install_sub { into => $package, as => 'io', code => sub {
+   (not defined $wanted[ 0 ] or $wanted[ 0 ] eq 'io')
+      and install_sub { into => $package, as => 'io', code => sub (;@) {
          return __PACKAGE__->new( @_ );
       } };
 
