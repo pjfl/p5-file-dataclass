@@ -142,7 +142,7 @@ sub load {
 
    $paths[ 0 ] or $paths[ 0 ] = $self->path;
 
-   @paths = map { blessed $_ ? $_ : io( $_ ) } @paths;
+   @paths = map { blessed $_ ? $_ : io $_ } @paths;
 
    return $self->storage->load( @paths );
 }

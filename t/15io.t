@@ -519,7 +519,8 @@ SKIP: {
          'Gid must be defined in chown';
       is blessed( $io->chown( $uid, $gid ) ), 'File::DataClass::IO', 'Chown';
       eval { $io->chown( 65.534, $gid ) };
-      like $EVAL_ERROR, qr{ \Qchown failed\E }mx, 'Chown failure';
+      $EFFECTIVE_USER_ID != 0 and
+         like $EVAL_ERROR, qr{ \Qchown failed\E }mx, 'Chown failure';
    };
 
    subtest 'Permissions' => sub {
