@@ -42,6 +42,10 @@ my $_build_dir_pattern = sub {
    my $cd = curdir; my $ud = updir; qr{ \A (?: \Q${cd}\E | \Q${ud}\E ) \z }mx;
 };
 
+my $_catfile = sub {
+   return File::Spec->catfile( map { defined( $_ ) ? $_ : NUL } @_ );
+};
+
 my $_expand_tilde = sub {
   (my $path = $_[ 0 ]) =~ m{ \A ([~] [^/\\]*) .* }mx;
 
@@ -56,7 +60,7 @@ my $_coerce_name = sub {
    not defined  $name          and return;
    is_coderef   $name          and $name =  $name->();
    blessed      $name          and $name =  "${name}";
-   is_arrayref  $name          and $name =  File::Spec->catfile( @{ $name } );
+   is_arrayref  $name          and $name =  $_catfile->( @{ $name } );
    first_char   $name eq TILDE and $name =  $_expand_tilde->( $name );
    curdir eq    $name          and $name =  Cwd::getcwd();
    CORE::length $name > 1      and $name =~ s{ [/\\] \z }{}mx;
@@ -219,7 +223,7 @@ my $_get_atomic_path = sub {
    }
    else { $file = $self->filename.$infix }
 
-   return $path ? File::Spec->catfile( $path, $file ) : $file;
+   return $path ? $_catfile->( $path, $file ) : $file;
 };
 
 my $_init = sub {

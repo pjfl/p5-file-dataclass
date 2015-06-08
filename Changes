@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Protect against undefined values in IO constructor array refs
+
 0.62.1    2015-05-24 12:50:58
           - Stopped IO substitute useless perms call
           - IO no longer uses Exporter to export io constructor function
