@@ -115,6 +115,10 @@ my $_clone_one_of_us = sub {
    return $clone;
 };
 
+my $_constructor = sub {
+   my $self = shift; return (blessed $self)->new( @_ );
+};
+
 my $_inline_args = sub {
    my $n = shift; return (map { $ARG_NAMES[ $_ ] => $_[ $_ ] } 0 .. $n - 1);
 };
@@ -123,8 +127,8 @@ my $_is_one_of_us = sub {
    return (blessed $_[ 0 ]) && $_[ 0 ]->isa( __PACKAGE__ );
 };
 
-my $_build_attr_from = sub { # Differentiate constructor method signatures
-   my $n = 0; $n++ while (defined $_[ $n ]);
+sub BUILDARGS { # Differentiate constructor method signatures
+   my $class = shift; my $n = 0; $n++ while (defined $_[ $n ]);
 
    return                 ( $n == 0 ) ? {}
         : $_is_one_of_us->( $_[ 0 ] ) ? $_clone_one_of_us->( @_ )
@@ -134,11 +138,7 @@ my $_build_attr_from = sub { # Differentiate constructor method signatures
         :                 ( $n == 2 ) ? { $_inline_args->( 2, @_ ) }
         :                 ( $n == 3 ) ? { $_inline_args->( 3, @_ ) }
                                       : { @_ };
-};
-
-around 'BUILDARGS' => sub {
-   my ($orig, $class, @args) = @_; return $_build_attr_from->( @args );
-};
+}
 
 sub BUILD {
    my $self = shift; my $handle = $self->io_handle;
@@ -146,6 +146,12 @@ sub BUILD {
    not $self->name and $handle and $self->_set_is_open( $handle->opened );
 
    return;
+}
+
+sub clone {
+   my ($self, @args) = @_; blessed $self or throw 'Clone is not a class method';
+
+   return $self->$_constructor( $self, @args );
 }
 
 sub DEMOLISH {
@@ -181,10 +187,6 @@ my $_all_file_contents = sub {
    $self->error_check; $self->autoclose and $self->close;
 
    return $content;
-};
-
-my $_constructor = sub {
-   my $self = shift; return (blessed $self)->new( @_ );
 };
 
 my $_find; $_find = sub {
@@ -1414,6 +1416,19 @@ An object which is a L<File::DataClass::IO>
 
 Open the file handle if it is closed and was supplied without a file name
 
+=head2 clone
+
+This object method returns a clone of the invocant
+
+=head2 DEMOLISH
+
+If this is an atomic file update calls the L</delete> method. If the
+object is still open it calls the L</close> method
+
+=head2 import
+
+Exports the constructor function C<io> into the callers namespace
+
 =head2 abs2rel
 
    $path = io( 'path_to_file' )->abs2rel( 'optional_base_path' );
@@ -1682,11 +1697,6 @@ L</close>
 Delete temporary files for this process (temporary file names include
 the process id). Temporary files are stored in the C<$tempdir>. Can override
 the template filename pattern if required
-
-=head2 DEMOLISH
-
-If this is an atomic file update calls the L</delete> method. If the
-object is still open it calls the L</close> method
 
 =head2 digest
 

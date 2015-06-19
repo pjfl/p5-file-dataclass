@@ -106,6 +106,9 @@ subtest 'Polymorphic Constructor' => sub {
     'Constructs from name and mode';
    ok io( name => [ qw( t mydir file1 ) ], mode => 'r' )->exists,
     'Constructs from list of keys and values';
+
+   $io = io( 'test' ); my $clone = $io->clone;
+   is $clone->name, 'test', 'Clones';
 };
 
 subtest 'Overload' => sub {

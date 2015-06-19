@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Added F:DC:IO:clone
           - Protect against undefined values in IO constructor array refs
 
 0.62.1    2015-05-24 12:50:58
