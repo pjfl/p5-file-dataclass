@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Skip tests if Test::Deep 0.116 installed
           - Added F:DC:IO:clone
           - Protect against undefined values in IO constructor array refs
 

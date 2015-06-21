@@ -8,16 +8,24 @@ use FindBin               qw( $Bin );
 use lib               catdir( $Bin, updir, 'lib' ), catdir( $Bin, 'lib' );
 
 use Test::More;
+use Test::Deep;
 use Test::Requires { version => 0.88 };
 use Module::Build;
+use Sys::Hostname;
 
-my $builder; my $notes = {}; my $perl_ver;
+my ($builder, $host, $notes, $perl_ver);
 
 BEGIN {
-   $builder   = eval { Module::Build->current };
-   $builder and $notes = $builder->notes;
-   $perl_ver  = $notes->{min_perl_version} || 5.008;
-   $Bin =~ m{ : .+ : }mx and plan skip_all => 'Two colons in $Bin path';
+   $host     = lc hostname;
+   $builder  = eval { Module::Build->current };
+   $notes    = $builder ? $builder->notes : {};
+   $perl_ver = $notes->{min_perl_version} || 5.008;
+
+   if ($notes->{testing}) {
+      $Bin =~ m{ : .+ : }mx and plan skip_all => 'Two colons in $Bin path';
+      $Test::Deep::VERSION == 0.116
+         and plan skip_all => 'Broken Test::Deep distribution 0.116';
+   }
 }
 
 use Test::Requires "${perl_ver}";
