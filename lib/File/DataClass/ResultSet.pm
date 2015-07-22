@@ -68,7 +68,7 @@ my $_new_result_class = sub {
                      @{ $source->attributes }) {
       my $sdef = $source->defaults->{ $attr };
       my $type = $source->types->{ $attr }
-              || $types{ ref $sdef || ref $values->{ $attr } || 'SCALAR' };
+              // $types{ ref $sdef || ref $values->{ $attr } || 'SCALAR' };
 
       push @attrs, $attr, [ is => 'rw', isa => $type ];
    }

@@ -132,7 +132,7 @@ around 'BUILDARGS' => sub {
 sub dump {
    my ($self, $args) = @_; blessed $self or $self = $self->$_constructor;
 
-   my $path = $args->{path} || $self->path; blessed $path or $path = io $path;
+   my $path = $args->{path} // $self->path; blessed $path or $path = io $path;
 
    return $self->storage->dump( $path, $args->{data} );
 }
@@ -140,11 +140,9 @@ sub dump {
 sub load {
    my ($self, @paths) = @_; blessed $self or $self = $self->$_constructor;
 
-   $paths[ 0 ] or $paths[ 0 ] = $self->path;
+   $paths[ 0 ] //= $self->path;
 
-   @paths = map { blessed $_ ? $_ : io $_ } @paths;
-
-   return $self->storage->load( @paths );
+   return $self->storage->load( map { (blessed $_) ? $_ : io $_ } @paths );
 }
 
 sub resultset {
@@ -170,8 +168,8 @@ sub translate {
    my ($self, $args) = @_;
 
    my $class      = blessed $self       || $self; # uncoverable condition false
-   my $from_class = $args->{from_class} || 'Any';
-   my $to_class   = $args->{to_class  } || 'Any';
+   my $from_class = $args->{from_class} // 'Any';
+   my $to_class   = $args->{to_class  } // 'Any';
    my $attr       = { path => $args->{from}, storage_class => $from_class };
    my $data       = $class->new( $attr )->load;
 

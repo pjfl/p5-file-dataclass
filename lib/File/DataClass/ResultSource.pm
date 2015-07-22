@@ -47,7 +47,7 @@ sub columns {
 }
 
 sub has_column {
-   my $key = $_[ 1 ] || '_invalid_key_';
+   my $key = $_[ 1 ] // '_invalid_key_';
 
    return exists $_[ 0 ]->_attributes->{ $key } ? TRUE : FALSE;
 }

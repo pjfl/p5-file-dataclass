@@ -42,7 +42,7 @@ __END__
 
 =pod
 
-=encoding utf8
+=encoding utf-8
 
 =head1 Name
 
@@ -121,6 +121,12 @@ What an instance of this class stringifies to
 
 Catches and returns a thrown exception or generates a new exception if
 C<EVAL_ERROR> has been set or if an error string was passed in
+
+=head2 clone
+
+   $clone = $e->clone;
+
+Returns a clone of the exception object
 
 =head2 stacktrace
 

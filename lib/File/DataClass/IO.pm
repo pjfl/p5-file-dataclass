@@ -7,12 +7,12 @@ use English                    qw( -no_match_vars );
 use Fcntl                      qw( :flock :seek );
 use File::Basename               ( );
 use File::Copy                   ( );
-use File::DataClass::Constants qw( CYGWIN EXCEPTION_CLASS FALSE LOCK_BLOCKING
-                                   LOCK_NONBLOCKING MSOFT NO_UMASK_STACK NUL
+use File::DataClass::Constants qw( EXCEPTION_CLASS FALSE LOCK_BLOCKING
+                                   LOCK_NONBLOCKING NO_UMASK_STACK NUL
                                    PERMS STAT_FIELDS TILDE TRUE );
 use File::DataClass::Functions qw( ensure_class_loaded first_char is_arrayref
-                                   is_coderef is_hashref is_member thread_id
-                                   throw );
+                                   is_coderef is_hashref is_member is_mswin
+                                   is_ntfs thread_id throw );
 use File::Spec                   ( );
 use File::Spec::Functions      qw( curdir updir );
 use IO::Dir;
@@ -31,11 +31,9 @@ use overload '""'       => sub { $_[ 0 ]->as_string  },
              'bool'     => sub { $_[ 0 ]->as_boolean },
              'fallback' => TRUE;
 
-my  $IO_LOCK   = enum 'IO_Lock' => [ FALSE, LOCK_BLOCKING, LOCK_NONBLOCKING ];
-my  $IO_MODE   = enum 'IO_Mode' => [ qw( a a+ r r+ w w+ ) ];
-my  $IO_TYPE   = enum 'IO_Type' => [ qw( dir file ) ];
-my  $LC_OSNAME = lc $OSNAME;
-my  $NTFS      = $LC_OSNAME eq MSOFT || $LC_OSNAME eq CYGWIN ? TRUE : FALSE;
+my $IO_LOCK = enum 'IO_Lock' => [ FALSE, LOCK_BLOCKING, LOCK_NONBLOCKING ];
+my $IO_MODE = enum 'IO_Mode' => [ qw( a a+ r r+ w w+ ) ];
+my $IO_TYPE = enum 'IO_Type' => [ qw( dir file ) ];
 
 # Attribute constructors
 my $_build_dir_pattern = sub {
@@ -376,8 +374,8 @@ my $_rename_atomic = sub {
 
    File::Copy::move( $path, $self->name ) and return;
 
-   $NTFS or $self->$_throw( 'Path [_1] move to [_2] failed: [_3]',
-                           [ $path, $self->name, $OS_ERROR ] );
+   is_ntfs or $self->$_throw( 'Path [_1] move to [_2] failed: [_3]',
+                              [ $path, $self->name, $OS_ERROR ] );
 
    # Try this instead on ntfs
    warn 'NTFS: Path '.$self->name." move failure: ${OS_ERROR}\n";
@@ -648,7 +646,7 @@ sub close {
    my $self = shift; $self->is_open or return $self;
 
    # uncoverable branch true
-   if ($NTFS) { $self->$_close_and_rename } else { $self->$_rename_and_close }
+   if (is_ntfs) { $self->$_close_and_rename } else { $self->$_rename_and_close }
 
    $self->_set_io_handle( undef );
    $self->_set_is_open  ( FALSE );
@@ -1087,7 +1085,7 @@ sub rmtree {
 sub seek {
    my ($self, $posn, $whence) = @_;
 
-   $self->is_open or $self->assert_open( $LC_OSNAME eq MSOFT ? 'r' : 'r+' );
+   $self->is_open or $self->assert_open( is_mswin ? 'r' : 'r+' );
    CORE::seek $self->io_handle, $posn, $whence; $self->error_check;
    return $self;
 }
@@ -1099,7 +1097,7 @@ sub separator {
 sub set_binmode {
    my $self = shift;
 
-   if ($NTFS) { # uncoverable branch true
+   if (is_ntfs) { # uncoverable branch true
       is_member NUL, $self->_layers or unshift @{ $self->_layers }, NUL;
    }
 
@@ -1182,7 +1180,7 @@ sub tail {
 sub tell {
    my $self = shift;
 
-   $self->is_open or $self->assert_open( $LC_OSNAME eq MSOFT ? 'r' : 'r+' );
+   $self->is_open or $self->assert_open( is_mswin ? 'r' : 'r+' );
 
    return CORE::tell $self->io_handle;
 }

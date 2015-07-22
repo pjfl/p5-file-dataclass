@@ -18,15 +18,15 @@ use Try::Tiny;
 use Unexpected::Functions      qw( is_class_loaded Unspecified );
 
 our @EXPORT_OK    = qw( ensure_class_loaded extension_map first_char
-                        is_arrayref is_coderef is_hashref is_member
-                        is_stale qualify_storage_class map_extension2class
-                        merge_attributes merge_file_data merge_for_update
-                        supported_extensions thread_id throw );
+                        is_arrayref is_coderef is_hashref is_member is_mswin
+                        is_ntfs is_stale qualify_storage_class
+                        map_extension2class merge_attributes merge_file_data
+                        merge_for_update supported_extensions thread_id throw );
 our %EXPORT_TAGS  =   ( all => [ @EXPORT_OK ], );
 
-my $LC_OSNAME     = lc $OSNAME;
-my $NTFS          = $LC_OSNAME eq MSOFT || $LC_OSNAME eq CYGWIN ? 1 : 0;
+my $LC_OSNAME = lc $OSNAME;
 
+# Private functions
 my $_merge_attr;
 
 my $_merge_attr_arrays = sub {
@@ -97,15 +97,14 @@ $_merge_attr = sub {
 
 # Public functions
 sub ensure_class_loaded ($;$) {
-   my ($class, $opts) = @_; $opts ||= {};
+   my ($class, $opts) = @_; $opts //= {};
 
    not $opts->{ignore_loaded} and is_class_loaded( $class ) and return 1;
 
    try { require_module( $class ) } catch { throw( $_ ) };
 
    is_class_loaded( $class )
-      or throw( error => 'Class [_1] loaded but package undefined',
-                args  => [ $class ] );
+      or throw( 'Class [_1] loaded but package undefined', [ $class ] );
 
    return 1;
 }
@@ -162,11 +161,19 @@ sub is_member (;@) {
    return (first { $_ eq $candidate } @args) ? 1 : 0;
 }
 
+sub is_mswin () {
+   return $LC_OSNAME eq MSOFT ? 1 : 0;
+}
+
+sub is_ntfs () {
+   return  is_mswin || $LC_OSNAME eq CYGWIN ? 1 : 0;
+}
+
 sub is_stale (;$$$) {
    my ($data, $cache_mtime, $path_mtime) = @_;
 
    # Assume NTFS does not support mtime
-   $NTFS and return 1; # uncoverable branch true
+   is_ntfs() and return 1; # uncoverable branch true
 
    my $is_def = defined $data && defined $path_mtime && defined $cache_mtime;
 
@@ -209,7 +216,7 @@ sub merge_for_update (;$$$) {
 
    $dest_ref or throw( Unspecified, [ 'destination reference' ] );
 
-   ${ $dest_ref } ||= {}; $src ||= {}; $filter ||= sub { keys %{ $_[ 0 ] } };
+   ${ $dest_ref } //= {}; $src //= {}; $filter //= sub { keys %{ $_[ 0 ] } };
 
    for my $k ($filter->( $src )) {
       if (defined $src->{ $k }) {
@@ -310,6 +317,18 @@ Tests to see if the scalar variable is a hash reference
 
 Tests to see if the first parameter is present in the list of
 remaining parameters
+
+=head2 is_mswin
+
+   $bool = is_mswin;
+
+Returns true if running on C<mswin32> false otherwise
+
+=head2 is_ntfs
+
+   $bool = is_ntfs;
+
+Returns true if running on C<ntfs> false otherwise
 
 =head2 is_stale
 
