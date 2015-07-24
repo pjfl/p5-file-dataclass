@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Stop using feature state
           - Replaced 01always_pass.t with 00report_metadata.t
 
 0.63.1    2015-06-21 22:41:24

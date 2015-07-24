@@ -147,7 +147,7 @@ sub BUILD {
 }
 
 sub clone {
-   my ($self, @args) = @_; blessed $self or throw 'Clone is not a class method';
+   my ($self, @args) = @_; blessed $self or throw 'Clone is an object method';
 
    return $self->$_constructor( $self, @args );
 }
@@ -1285,11 +1285,11 @@ __END__
 
 =pod
 
-=encoding utf8
+=encoding utf-8
 
 =head1 Name
 
-File::DataClass::IO - A powerful and concise API to do as much IO as possible
+File::DataClass::IO - A powerful and concise API to do as much file IO as possible
 
 =head1 Synopsis
 

@@ -89,9 +89,7 @@ sub remove {
 }
 
 sub set {
-   my ($self, $key, $data, $meta) = @_;
-
-   $meta //= { mtime => undef };
+   my ($self, $key, $data, $meta) = @_; $meta //= { mtime => undef };
 
    try {
       $key eq $self->_mtimes_key and throw 'key not allowed';

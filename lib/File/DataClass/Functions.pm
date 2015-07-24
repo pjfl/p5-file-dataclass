@@ -3,7 +3,6 @@ package File::DataClass::Functions;
 use 5.010001;
 use strict;
 use warnings;
-use feature 'state';
 
 use English                    qw( -no_match_vars );
 use Exporter 5.57              qw( import );
@@ -109,32 +108,36 @@ sub ensure_class_loaded ($;$) {
    return 1;
 }
 
-sub extension_map (;$$) {
-   my ($class, $extensions) = @_; state $map //= { '_map_loaded' => 0 };
+{  my $_extension_map = { '_map_loaded' => 0 };
 
-   if (defined $class) {
-      if (defined $extensions) { # uncoverable branch false
-         is_arrayref( $extensions ) or $extensions = [ $extensions ];
+   sub extension_map (;$$) {
+      my ($class, $extensions) = @_;
 
-         for my $extn (@{ $extensions }) {
-            $map->{ $extn } //= []; is_member( $class, $map->{ $extn } )
-               or push @{ $map->{ $extn } }, $class;
+      if (defined $class) {
+         if (defined $extensions) { # uncoverable branch false
+            is_arrayref( $extensions ) or $extensions = [ $extensions ];
+
+            for my $extn (@{ $extensions }) {
+               $_extension_map->{ $extn } //= [];
+               is_member( $class, $_extension_map->{ $extn } )
+                  or push @{ $_extension_map->{ $extn } }, $class;
+            }
          }
+
+         return;
       }
 
-      return;
+      $_extension_map->{ '_map_loaded' } and return $_extension_map;
+
+      my $base       = STORAGE_BASE;
+      my $exceptions = STORAGE_EXCEPTIONS;
+      my $finder     = Module::Pluggable::Object->new
+         ( except => [ $exceptions ], search_path => [ $base ], require => 1, );
+
+      $finder->plugins; $_extension_map->{ '_map_loaded' } = 1;
+
+      return $_extension_map;
    }
-
-   $map->{ '_map_loaded' } and return $map;
-
-   my $base       = STORAGE_BASE;
-   my $exceptions = STORAGE_EXCEPTIONS;
-   my $finder     = Module::Pluggable::Object->new
-      ( except => [ $exceptions ], search_path => [ $base ], require => 1, );
-
-   $finder->plugins; $map->{ '_map_loaded' } = 1;
-
-   return $map;
 }
 
 sub first_char ($) {
@@ -220,7 +223,7 @@ sub merge_for_update (;$$$) {
 
    for my $k ($filter->( $src )) {
       if (defined $src->{ $k }) {
-         my $res = $_merge_attr->( \${ $dest_ref }->{ $k }, $src->{ $k });
+         my $res = $_merge_attr->( \${ $dest_ref }->{ $k }, $src->{ $k } );
 
          $updated ||= $res;
       }
