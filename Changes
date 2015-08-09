@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Fix tests on cygwin
           - Stop using feature state
           - Replaced 01always_pass.t with 00report_metadata.t
 

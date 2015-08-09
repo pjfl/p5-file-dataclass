@@ -1,11 +1,6 @@
 Build.PL
 Changes
-LICENSE
 MANIFEST
-META.json
-META.yml
-README
-SIGNATURE
 lib/File/DataClass.pm
 lib/File/DataClass/Cache.pm
 lib/File/DataClass/Constants.pm
@@ -21,8 +16,6 @@ lib/File/DataClass/Storage.pm
 lib/File/DataClass/Storage/Any.pm
 lib/File/DataClass/Storage/JSON.pm
 lib/File/DataClass/Types.pm
-t/00report-metadata.dd
-t/00report-metadata.t
 t/02pod.t
 t/03podcoverage.t
 t/05kwalitee.t

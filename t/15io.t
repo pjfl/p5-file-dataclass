@@ -90,7 +90,7 @@ subtest 'Polymorphic Constructor' => sub {
    is( (sprintf "%o", $io->_perms & 07777), '400',
       'Duplicates permissions from original object' );
 
-   my ($homedir) = glob( '~' );
+   my ($homedir) = glob( '~' ); $homedir =~ s{ / \z }{}mx;
 
    is io( '~' ), $homedir, 'Expands tilde';
    is io( '~/' ), $homedir, 'Expands tilde with trailing "/"';
