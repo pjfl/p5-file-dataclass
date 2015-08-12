@@ -8,10 +8,11 @@ use FindBin               qw( $Bin );
 use lib               catdir( $Bin, updir, 'lib' ), catdir( $Bin, 'lib' );
 
 use Test::More;
-use Test::Deep;
 use Test::Requires { version => 0.88 };
+use Test::Requires { 'Test::Deep' => 0.108 };
 use Module::Build;
 use Sys::Hostname;
+use Test::Deep;
 
 my ($builder, $host, $notes, $perl_ver);
 

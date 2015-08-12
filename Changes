@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Broken smoker 72b36e62-3f5b-11e5-9808-9febf015f39b
+
 0.64.1    2015-08-09 20:28:41
           - Fix tests on cygwin
           - Stop using feature state
