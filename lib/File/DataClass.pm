@@ -3,7 +3,7 @@ package File::DataClass;
 use 5.010001;
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.65.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.66.%d', q$Rev: 1 $ =~ /\d+/gmx );
 
 1;
 
@@ -25,7 +25,7 @@ File::DataClass - Structured data file IO with caching and searching
 
 =head1 Version
 
-This document describes version v0.65.$Rev: 2 $ of L<File::DataClass>
+This document describes version v0.66.$Rev: 1 $ of L<File::DataClass>
 
 =head1 Synopsis
 
