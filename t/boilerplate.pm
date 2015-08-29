@@ -23,9 +23,12 @@ BEGIN {
    $perl_ver = $notes->{min_perl_version} || 5.008;
 
    if ($notes->{testing}) {
-      $Bin =~ m{ : .+ : }mx and plan skip_all => 'Two colons in $Bin path';
-      $Test::Deep::VERSION == 0.116
-         and plan skip_all => 'Broken Test::Deep distribution 0.116';
+      $Bin =~ m{ : .+ : }mx and plan
+         skip_all => 'Two colons in $Bin path';
+      $Test::Deep::VERSION == 0.116 and plan
+         skip_all => 'Broken Test::Deep distribution 0.116';
+      $host eq 'davidlou-d20' and plan
+         skip_all => 'Broken smoker 7d05f746-6cb1-1014-afba-1d3088877a71';
    }
 }
 

@@ -7,12 +7,7 @@ my $perl_ver = 5.010001;
 my $name     = 'File-DataClass'; $name =~ s{ - }{::}gmx;
 my $prereqs  = {
   'build_requires' => {
-    'File::pushd' => '1.00',
     'Module::Build' => '0.4004',
-    'Path::Tiny' => '0.013',
-    'Test::Deep' => '0.108',
-    'Test::Requires' => '0.06',
-    'Text::Diff' => '1.37',
     'version' => '0.88'
   },
   'configure_requires' => {
@@ -33,7 +28,7 @@ my $prereqs  = {
     'Subclass::Of' => '0.003',
     'Try::Tiny' => '0.22',
     'Type::Tiny' => '1.000002',
-    'Unexpected' => 'v0.38.0',
+    'Unexpected' => 'v0.39.0',
     'boolean' => '0.45',
     'namespace::autoclean' => '0.22',
     'namespace::clean' => '0.25',
@@ -41,8 +36,15 @@ my $prereqs  = {
   },
   'test_requires' => {
     'File::Spec' => '0',
+    'File::pushd' => '1.00',
+    'Module::Build' => '0.4004',
     'Module::Metadata' => '0',
-    'Sys::Hostname' => '0'
+    'Path::Tiny' => '0.013',
+    'Sys::Hostname' => '0',
+    'Test::Deep' => '0.108',
+    'Test::Requires' => '0.06',
+    'Text::Diff' => '1.37',
+    'version' => '0.88'
   },
 };
 my $testing  = sub { $ENV{AUTOMATED_TESTING}

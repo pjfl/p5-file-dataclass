@@ -855,9 +855,9 @@ sub is_executable {
 sub is_file {
    my $self = shift; CORE::length $self->name or return FALSE;
 
-   $self->type or $self->$_init_type_from_fs;
+   $self->type or $self->$_init_type_from_fs or return FALSE;
 
-   return $self->type && $self->type eq 'file' ? TRUE : FALSE;
+   return $self->type eq 'file' ? TRUE : FALSE;
 }
 
 sub is_link {
@@ -869,7 +869,7 @@ sub is_readable {
 }
 
 sub is_reading {
-   my $mode = $_[ 1 ] || $_[ 0 ]->mode; return first { $_ eq $mode } qw( r r+ );
+   my $mode = $_[ 1 ] // $_[ 0 ]->mode; return first { $_ eq $mode } qw( r r+ );
 }
 
 sub is_writable {
@@ -877,7 +877,7 @@ sub is_writable {
 }
 
 sub is_writing {
-   my $mode = $_[ 1 ] || $_[ 0 ]->mode;
+   my $mode = $_[ 1 ] // $_[ 0 ]->mode;
 
    return first { $_ eq $mode } qw( a a+ w w+ );
 }

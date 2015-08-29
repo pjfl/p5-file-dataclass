@@ -11,26 +11,28 @@ requires "Sub::Install" => "0.928";
 requires "Subclass::Of" => "0.003";
 requires "Try::Tiny" => "0.22";
 requires "Type::Tiny" => "1.000002";
-requires "Unexpected" => "v0.38.0";
+requires "Unexpected" => "v0.39.0";
 requires "boolean" => "0.45";
 requires "namespace::autoclean" => "0.22";
 requires "namespace::clean" => "0.25";
 requires "perl" => "5.010001";
 
 on 'build' => sub {
-  requires "File::pushd" => "1.00";
   requires "Module::Build" => "0.4004";
-  requires "Path::Tiny" => "0.013";
-  requires "Test::Deep" => "0.108";
-  requires "Test::Requires" => "0.06";
-  requires "Text::Diff" => "1.37";
   requires "version" => "0.88";
 };
 
 on 'test' => sub {
   requires "File::Spec" => "0";
+  requires "File::pushd" => "1.00";
+  requires "Module::Build" => "0.4004";
   requires "Module::Metadata" => "0";
+  requires "Path::Tiny" => "0.013";
   requires "Sys::Hostname" => "0";
+  requires "Test::Deep" => "0.108";
+  requires "Test::Requires" => "0.06";
+  requires "Text::Diff" => "1.37";
+  requires "version" => "0.88";
 };
 
 on 'test' => sub {
