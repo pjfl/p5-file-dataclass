@@ -752,6 +752,17 @@ sub exists {
    return (CORE::length $_[ 0 ]->name && -e $_[ 0 ]->name) ? TRUE : FALSE;
 }
 
+sub fdopen {
+   my ($self, $fd, $mode) = @_;
+
+   $self->io_handle->fdopen( $fd, $mode );
+   $self->_set_is_open( $self->io_handle->opened );
+   $self->_set_mode( $mode );
+   $self->_set_name( NUL   );
+   $self->_set_type( undef );
+   return $self;
+}
+
 sub file {
    return shift->$_init( 'file', @_ );
 }
@@ -1749,6 +1760,12 @@ it L</throw>s an C<eIOError>
    $bool = io( 'path_to_file' )->exists;
 
 Returns true if the pathname exists
+
+=head2 fdopen
+
+   $io = io()->fdopen( $fd, $mode );
+
+Opens the internal file handle on the supplied file descriptor
 
 =head2 file
 

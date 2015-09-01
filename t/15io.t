@@ -1,6 +1,7 @@
 use t::boilerplate;
 
 use Test::More;
+use Capture::Tiny              qw( capture );
 use Config;
 use Cwd;
 use English                    qw( -no_match_vars );
@@ -701,6 +702,10 @@ subtest 'Proxied IO::Handle methods' => sub {
    ok !$io->eof, 'Not EOF'; $io->getc;
    ok  $io->eof, 'EOF';
    $io->close->unlink;
+   $io = io; $io->fdopen( 2 , 'w' );
+   ok $io->is_open, 'Fdopen is open';
+   (undef, $buf) = capture { $io->print( 'test' )->close };
+   is $buf, 'test', 'Proxy fdopen';
 };
 
 # Cleanup

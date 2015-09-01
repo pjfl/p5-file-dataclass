@@ -35,6 +35,7 @@ my $prereqs  = {
     'perl' => '5.010001'
   },
   'test_requires' => {
+    'Capture::Tiny' => '0.30',
     'File::Spec' => '0',
     'File::pushd' => '1.00',
     'Module::Build' => '0.4004',

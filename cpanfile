@@ -23,6 +23,7 @@ on 'build' => sub {
 };
 
 on 'test' => sub {
+  requires "Capture::Tiny" => "0.30";
   requires "File::Spec" => "0";
   requires "File::pushd" => "1.00";
   requires "Module::Build" => "0.4004";
