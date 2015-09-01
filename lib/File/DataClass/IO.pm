@@ -1152,9 +1152,9 @@ sub stat {
 }
 
 sub substitute {
-   my ($self, $search, $replace) = @_;
+   my ($self, $search, $replace) = @_; $replace //= NUL;
 
-   (defined $search and CORE::length $search) or return $self; $replace //= NUL;
+   (defined $search and CORE::length $search) or return $self;
 
    my $perms = $self->$_untainted_perms;
    my $wtr   = $self->$_constructor( $self->name )->atomic;

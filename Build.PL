@@ -20,7 +20,7 @@ my $prereqs  = {
     'File::Path' => '2.09',
     'File::ReadBackwards' => '1.05',
     'Hash::Merge' => '0.200',
-    'JSON::MaybeXS' => '1.002002',
+    'JSON::MaybeXS' => '1.003',
     'Module::Pluggable' => '5.1',
     'Module::Runtime' => '0.014',
     'Moo' => '2.000001',
@@ -30,7 +30,7 @@ my $prereqs  = {
     'Type::Tiny' => '1.000002',
     'Unexpected' => 'v0.39.0',
     'boolean' => '0.45',
-    'namespace::autoclean' => '0.22',
+    'namespace::autoclean' => '0.26',
     'namespace::clean' => '0.25',
     'perl' => '5.010001'
   },

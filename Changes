@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Added more tests
           - IO constructor without args create a new IO::Handle
           - Toolchain update
 

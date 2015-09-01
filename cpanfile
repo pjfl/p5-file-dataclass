@@ -3,7 +3,7 @@ requires "Class::Null" => "2.110730";
 requires "File::Path" => "2.09";
 requires "File::ReadBackwards" => "1.05";
 requires "Hash::Merge" => "0.200";
-requires "JSON::MaybeXS" => "1.002002";
+requires "JSON::MaybeXS" => "1.003";
 requires "Module::Pluggable" => "5.1";
 requires "Module::Runtime" => "0.014";
 requires "Moo" => "2.000001";
@@ -13,7 +13,7 @@ requires "Try::Tiny" => "0.22";
 requires "Type::Tiny" => "1.000002";
 requires "Unexpected" => "v0.39.0";
 requires "boolean" => "0.45";
-requires "namespace::autoclean" => "0.22";
+requires "namespace::autoclean" => "0.26";
 requires "namespace::clean" => "0.25";
 requires "perl" => "5.010001";
 

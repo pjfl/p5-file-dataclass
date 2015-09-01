@@ -366,11 +366,13 @@ subtest 'Tempfile/seek' => sub {
 
    ok length $text == $size,
       'Creates a tempfile seeks to the start and slurps content';
-
    is blessed( $io->delete_tmp_files ), 'File::DataClass::IO',
       'Delete tmp files';
    is blessed( $io->delete_tmp_files( '%6.6d....' ) ), 'File::DataClass::IO',
       'Delete tmp files - non default template';
+
+   $temp = io->tempfile;
+   ok $temp->pathname, 'Default temporary file';
 };
 
 subtest 'Tell' => sub {
@@ -478,12 +480,18 @@ subtest 'Creates a file using atomic write' => sub {
    io( $outfile )->close;
 };
 
-# Substitution
-$io = io [ qw( t output substitute ) ];
-$io->println( qw( line1 line2 line3 ) );
-$io->substitute( 'line2', 'changed' );
-is( ($io->chomp->getlines( $RS ))[ 1 ], 'changed',
-    'Substitutes one value for another' );
+subtest 'Substitution' => sub {
+   $io = io [ qw( t output substitute ) ];
+   $io->println( qw( line1 line2 line3 ) );
+   $io->substitute( 'line2', 'changed' );
+   is( ($io->chomp->getlines( $RS ))[ 1 ], 'changed',
+       'Substitutes one value for another' );
+   $io->close;
+   $io->substitute( 'line2' );
+   is( ($io->chomp->getlines( $RS ))[ 1 ], undef, 'Substitutes null string' );
+   $io->substitute( undef, 'nonono' );
+   $io->substitute( q(), 'nonono' );
+};
 
 subtest 'Copy / Move' => sub {
    my $all = $io->close->all; my $to = io [ qw( t output copy ) ];
