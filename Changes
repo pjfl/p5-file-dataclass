@@ -1,5 +1,8 @@
 Revision history for File::DataClass
 
+          - IO constructor without args create a new IO::Handle
+          - Toolchain update
+
 0.66.1    2015-08-29 09:58:19
           - Broken smoker 7d05f746-6cb1-1014-afba-1d3088877a71
 

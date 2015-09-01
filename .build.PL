@@ -15,7 +15,8 @@ my $whimper  = sub { print {*STDOUT} $_[ 0 ]."\n"; exit 0 };
 my $stop     = sub {
    $testing->() or $whimper->( $_[ 0 ] );
    $prereqs->{build_requires} = { %{ $prereqs->{configure_requires} } };
-   $prereqs->{build_requires}->{ 'Test::Requires' } = 0.06;
+   $prereqs->{test_requires } = { %{ $prereqs->{configure_requires} } };
+   $prereqs->{test_requires }->{ 'Test::Requires' } = 0.06;
    delete $prereqs->{requires};
 };
 

@@ -17,6 +17,7 @@ use File::Spec                   ( );
 use File::Spec::Functions      qw( curdir updir );
 use IO::Dir;
 use IO::File;
+use IO::Handle;
 use List::Util                 qw( first );
 use Scalar::Util               qw( blessed );
 use Sub::Install               qw( install_sub );
@@ -128,7 +129,7 @@ my $_is_one_of_us = sub {
 sub BUILDARGS { # Differentiate constructor method signatures
    my $class = shift; my $n = 0; $n++ while (defined $_[ $n ]);
 
-   return                 ( $n == 0 ) ? {}
+   return                 ( $n == 0 ) ? { io_handle => IO::Handle->new }
         : $_is_one_of_us->( $_[ 0 ] ) ? $_clone_one_of_us->( @_ )
         :       is_hashref( $_[ 0 ] ) ? { %{ $_[ 0 ] } }
         :                 ( $n == 1 ) ? { $_inline_args->( 1, @_ ) }
@@ -482,7 +483,7 @@ sub as_boolean {
 sub as_string {
    my $self = shift; CORE::length $self->name and return $self->name;
 
-   defined $self->io_handle and return NUL.$self->io_handle;
+   defined $self->io_handle and return $self->io_handle.NUL;
 
    return NUL;
 }

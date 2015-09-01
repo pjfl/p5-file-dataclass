@@ -113,15 +113,13 @@ subtest 'Polymorphic Constructor' => sub {
 
 subtest 'Overload' => sub {
    $io = io( $PROGRAM_NAME );
-   is "${io}", $PROGRAM_NAME, 'Stringifies';
-   is !!$io, 1, 'Boolean true name';
+   is "${io}", $PROGRAM_NAME, 'Stringifies - name';
+   is !!$io, 1, 'Boolean true - name';
+   $io = io q();
+   is !!$io, q(), 'Boolean false - name';
    $io = io;
-   is "${io}", q(), 'Stringifies - undef';
-   $io = io { io_handle => IO::Handle->new };
-   like "${io}", qr{ \QIO::Handle\E }mx, 'Stringifies from file handle';
-   is !!$io, 1, 'Boolean true file handle';
-   $io = io;
-   is !!$io, q(), 'Boolean false';
+   like "${io}", qr{ \QIO::Handle\E }mx, 'Stringifies - file handle';
+   is !!$io, 1, 'Boolean true - file handle';
 };
 
 subtest 'File::Spec::Functions' => sub {
