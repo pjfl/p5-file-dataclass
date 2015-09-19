@@ -43,7 +43,7 @@ my $_build_source_registrations = sub {
    for my $moniker (keys %{ $self->result_source_attributes }) {
       my $attr = { %{ $self->result_source_attributes->{ $moniker } } };
       my $class = delete $attr->{result_source_class}
-               || $self->result_source_class;
+               // $self->result_source_class;
 
       $attr->{name} = $moniker; $attr->{schema} = $self;
 

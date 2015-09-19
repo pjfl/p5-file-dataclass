@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Made result creation more efficient
           - Proxy fdopen on io_handle
           - Added more tests
           - IO constructor without args creates a new IO::Handle

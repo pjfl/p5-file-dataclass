@@ -52,10 +52,20 @@ has '_results'      => is => 'rw',   isa => ArrayRef,
    builder          => sub { [] }, init_arg => undef;
 
 # Private methods
-my $_new_result_class = sub {
-   my ($self, $class, $source, $values) = @_;
+my $_get_attr_meta = sub {
+   my ($types, $source, $values, $attr) = @_;
 
-   my $name = "${class}::".(ucfirst $source->name); my @attrs;
+   my $sdef = $source->defaults->{ $attr };
+   my $type = $source->types->{ $attr }
+           // $types->{ ref $sdef || ref $values->{ $attr } || 'SCALAR' };
+
+   return [ is => 'rw', isa => $type ];
+};
+
+my $_new_result_class = sub {
+   my ($class, $source, $values) = @_;
+
+   my $name = "${class}::".(ucfirst $source->name);
 
    exists $class_stash->{ $name } and return $class_stash->{ $name };
 
@@ -63,15 +73,9 @@ my $_new_result_class = sub {
    my %types  = ( 'ARRAY',  Maybe[ArrayRef],
                   'HASH',   Maybe[HashRef],
                   'SCALAR', Maybe[Str], );
-
-   for my $attr (grep { not m{ \A (?: $except ) \z }mx }
-                     @{ $source->attributes }) {
-      my $sdef = $source->defaults->{ $attr };
-      my $type = $source->types->{ $attr }
-              // $types{ ref $sdef || ref $values->{ $attr } || 'SCALAR' };
-
-      push @attrs, $attr, [ is => 'rw', isa => $type ];
-   }
+   my @attrs  = map  { $_ => $_get_attr_meta->( \%types, $source, $values, $_ )}
+                grep { not m{ \A (?: $except ) \z }mx }
+                    @{ $source->attributes };
 
    return $class_stash->{ $name } = subclass_of
       ( $class, -package => $name, -has => [ @attrs ] );
@@ -87,7 +91,7 @@ my $_create_result = sub {
       $attr->{ $_ } = $args->{ $_ };
    }
 
-   my $class = $self->$_new_result_class
+   my $class = $_new_result_class->
       ( $self->result_class, $self->result_source, $attr );
 
    return $class->new( $attr );
@@ -107,8 +111,8 @@ my $_eval_op = sub {
 my $_push = sub {
    my ($self, $id, $attr, $items) = @_;
 
-   my $attrs = { %{ $self->select->{ $id } || {} }, id => $id };
-   my $list  = [ @{ $attrs->{ $attr } || [] } ];
+   my $attrs = { %{ $self->select->{ $id } // {} }, id => $id };
+   my $list  = [ @{ $attrs->{ $attr } // [] } ];
    my $in    = [];
 
    for my $item (grep { not is_member $_, $list } @{ $items }) {
@@ -122,8 +126,8 @@ my $_push = sub {
 my $_splice = sub {
    my ($self, $id, $attr, $items) = @_;
 
-   my $attrs = { %{ $self->select->{ $id } || {} }, id => $id };
-   my $list  = [ @{ $attrs->{ $attr } || [] } ];
+   my $attrs = { %{ $self->select->{ $id } // {} }, id => $id };
+   my $list  = [ @{ $attrs->{ $attr } // [] } ];
    my $out   = [];
 
    for my $item (@{ $items }) {
@@ -131,7 +135,7 @@ my $_splice = sub {
 
       for (0 .. $#{ $list }) {
          if ($list->[ $_ ] eq $item) {
-            CORE::splice @{ $list }, $_, 1; CORE::push @{ $out  }, $item;
+            CORE::splice @{ $list }, $_, 1; CORE::push @{ $out }, $item;
             last;
          }
       }
@@ -340,7 +344,7 @@ sub push {
    my ($self, $args) = @_; my $id = $self->$_validate_params( $args );
 
    my $list  = $args->{list} or throw Unspecified, [ 'list' ];
-   my $items = $args->{items} || []; my ($added, $attrs);
+   my $items = $args->{items} // []; my ($added, $attrs);
 
    $items->[ 0 ] or throw 'List contains no items';
 
@@ -373,7 +377,7 @@ sub splice {
    my ($self, $args) = @_; my $id = $self->$_validate_params( $args );
 
    my $list  = $args->{list} or throw Unspecified, [ 'list' ];
-   my $items = $args->{items} || []; my ($attrs, $removed);
+   my $items = $args->{items} // []; my ($attrs, $removed);
 
    $items->[ 0 ] or throw 'List contains no items';
 
