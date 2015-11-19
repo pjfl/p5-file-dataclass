@@ -121,9 +121,10 @@ around 'BUILDARGS' => sub {
 
    my $builder = delete $attr->{builder} or return $attr;
    my $config  = $builder->can( 'config' ) ? $builder->config : {};
+   my @cnames  = qw( cache_attributes cache_class tempdir );
 
    merge_attributes $attr, $builder, [ qw( lock log tempdir ) ];
-   merge_attributes $attr, $config,  [ qw( tempdir ) ];
+   merge_attributes $attr, $config,  [ @cnames ];
 
    return $attr;
 };

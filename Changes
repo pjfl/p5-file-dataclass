@@ -1,5 +1,7 @@
 Revision history for File::DataClass
 
+          - Refactored smoker exceptions to dump file
+          - Cache class and attributes settable from configuration
           - Made result creation more efficient
           - Proxy fdopen on io_handle
           - Added more tests

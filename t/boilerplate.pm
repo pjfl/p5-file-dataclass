@@ -1,18 +1,17 @@
 package t::boilerplate;
 
-use Cwd; # Load early as a workaround to ActiceState bug #104767
 use strict;
 use warnings;
-use File::Spec::Functions qw( catdir updir );
+use File::Spec::Functions qw( catdir catfile updir );
 use FindBin               qw( $Bin );
 use lib               catdir( $Bin, updir, 'lib' ), catdir( $Bin, 'lib' );
 
-use Test::More;
-use Test::Requires { version => 0.88 };
-use Test::Requires { 'Test::Deep' => 0.108 };
 use Module::Build;
 use Sys::Hostname;
-use Test::Deep;
+
+sub plan (;@) {
+   $_[ 0 ] eq 'skip_all' and print '1..0 # SKIP '.$_[ 1 ]."\n" and exit 0;
+}
 
 my ($builder, $host, $notes, $perl_ver);
 
@@ -22,18 +21,24 @@ BEGIN {
    $notes    = $builder ? $builder->notes : {};
    $perl_ver = $notes->{min_perl_version} || 5.008;
 
+   eval { require Test::Requires }; $@ and plan skip_all => 'No Test::Requires';
+
+   $Bin =~ m{ : .+ : }mx and plan skip_all => 'Two colons in $Bin path';
+
    if ($notes->{testing}) {
-      $Bin =~ m{ : .+ : }mx and plan
-         skip_all => 'Two colons in $Bin path';
-      $Test::Deep::VERSION == 0.116 and plan
-         skip_all => 'Broken Test::Deep distribution 0.116';
-      $host eq 'davidlou-d20' and plan
-         skip_all => 'Broken smoker 7d05f746-6cb1-1014-afba-1d3088877a71';
+      my $dumped = catfile( 't', 'exceptions.dd' );
+      my $except = {}; -f $dumped and $except = do $dumped;
+
+      for my $k (keys %{ $except }) {
+         $host eq $k and plan skip_all => 'Broken smoker '.$except->{ $k };
+      }
    }
 }
 
 use Test::Requires "${perl_ver}";
-use Test::Requires { Moo => 1.002 };
+use Test::Requires { version => 0.88 };
+
+use version; our $VERSION = qv( '0.1' );
 
 sub import {
    strict->import;

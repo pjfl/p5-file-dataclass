@@ -3,7 +3,7 @@
 use 5.01;
 use strict;
 use warnings;
-use version; our $VERSION = qv( '0.5' );
+use version; our $VERSION = qv( '0.6' );
 
 use English qw( -no_match_vars );
 
@@ -22,12 +22,10 @@ if (-f $change_file) {
       my $changes; { local $RS = undef; $changes = <$in> }; close $in;
       my ($entry) = $changes =~ m{ [\n][\n] (.*?) [\n][\n] }msx;
 
-      $entry   =  join q( ), map    { s{ \A [ \t]+ }{}mx; $_ }
-                             grep   { m{ \A [ \t]    }mx     }
-                             split    m{    [\n]     }mx,
-                             ($entry || ' - Updated');
-      $entry   =~ s{ \A [\-] \s* }{}mx;
-      $message = (split m{ [\-][ ] }mx, $entry)[ 0 ];
+      $message = (map    { s{ \A [ \t]+ [\-] \s* }{}mx; $_ }
+                  grep   { m{ \A [ \t]             }mx     }
+                  split    m{    [\n]              }mx,
+                            ($entry || ' - Updated'))[ 0 ];
    }
 
    $message = substr $message, 0, 53;
