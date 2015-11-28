@@ -29,16 +29,15 @@ BEGIN {
       my $dumped = catfile( 't', 'exceptions.dd' );
       my $except = {}; -f $dumped and $except = do $dumped;
 
-      for my $k (keys %{ $except }) {
-         $host eq $k and plan skip_all => 'Broken smoker '.$except->{ $k };
-      }
+      exists $except->{ $host } and plan skip_all =>
+         'Broken smoker '.$except->{ $host };
    }
 }
 
 use Test::Requires "${perl_ver}";
 use Test::Requires { version => 0.88 };
 
-use version; our $VERSION = qv( '0.1' );
+use version; our $VERSION = qv( '0.2' );
 
 sub import {
    strict->import;
