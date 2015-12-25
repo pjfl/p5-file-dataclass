@@ -897,6 +897,9 @@ sub is_writing {
 sub iterator {
    my ($self, $args) = @_;
 
+   $self->is_dir
+      or $self->$_throw( "Path [_1] is not a directory", [ $self->name ] );
+
    my @dirs   = ( $self );
    my $filter = $self->_filter;
    my $deep   = $args->{recurse} // $self->_deep;

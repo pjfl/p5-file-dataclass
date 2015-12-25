@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Added parameter checking to IO iterator
           - Refactored smoker exceptions to dump file
           - Cache class and attributes settable from configuration
           - Made result creation more efficient
