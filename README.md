@@ -1,5 +1,6 @@
 <div>
     <a href="https://travis-ci.org/pjfl/p5-file-dataclass"><img src="https://travis-ci.org/pjfl/p5-file-dataclass.svg?branch=master" alt="Travis CI Badge"></a>
+    <a href="https://roxsoft.co.uk/coverage/report/file-dataclass/latest"><img src="https://roxsoft.co.uk/coverage/badge/file-dataclass/latest" alt="Coverage Badge"></a>
     <a href="http://badge.fury.io/pl/File-DataClass"><img src="https://badge.fury.io/pl/File-DataClass.svg" alt="CPAN Badge"></a>
     <a href="http://cpants.cpanauthors.org/dist/File-DataClass"><img src="http://cpants.cpanauthors.org/dist/File-DataClass.png" alt="Kwalitee Badge"></a>
 </div>
@@ -10,7 +11,7 @@ File::DataClass - Structured data file IO with caching and searching
 
 # Version
 
-This document describes version v0.66.$Rev: 7 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
+This document describes version v0.66.$Rev: 8 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
 
 # Synopsis
 

@@ -3,7 +3,7 @@ package File::DataClass;
 use 5.010001;
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.66.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.66.%d', q$Rev: 9 $ =~ /\d+/gmx );
 
 1;
 
@@ -14,6 +14,7 @@ __END__
 =begin html
 
 <a href="https://travis-ci.org/pjfl/p5-file-dataclass"><img src="https://travis-ci.org/pjfl/p5-file-dataclass.svg?branch=master" alt="Travis CI Badge"></a>
+<a href="https://roxsoft.co.uk/coverage/report/file-dataclass/latest"><img src="https://roxsoft.co.uk/coverage/badge/file-dataclass/latest" alt="Coverage Badge"></a>
 <a href="http://badge.fury.io/pl/File-DataClass"><img src="https://badge.fury.io/pl/File-DataClass.svg" alt="CPAN Badge"></a>
 <a href="http://cpants.cpanauthors.org/dist/File-DataClass"><img src="http://cpants.cpanauthors.org/dist/File-DataClass.png" alt="Kwalitee Badge"></a>
 
@@ -25,7 +26,7 @@ File::DataClass - Structured data file IO with caching and searching
 
 =head1 Version
 
-This document describes version v0.66.$Rev: 8 $ of L<File::DataClass>
+This document describes version v0.66.$Rev: 9 $ of L<File::DataClass>
 
 =head1 Synopsis
 

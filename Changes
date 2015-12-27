@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Added coverage badge and coverage report posting
           - Added parameter checking to IO iterator
           - Refactored smoker exceptions to dump file
           - Cache class and attributes settable from configuration
