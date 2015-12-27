@@ -11,7 +11,7 @@ env:
   global:
     - AUTHOR_TESTING=0
     - COVERAGE_URI="https://roxsoft.co.uk/coverage/report/%s"
-    - secure: VEc9TWkZfuqPKGogYpfMjP2Vmr+hRSL2cfM7jIpdx+QiFXOzLmnuW93CLMb3G1CrNrEOHWpji9CqqsOMgDMDZi6hFJiLerfJU5NuB4zLft8akTWofg8Iycwj3rcDGEkksJ9KZfwEtdAcAiteFlqQ/KxUXF8wefuXJzeT4VQyqEk=
+    - secure: MDbXs58X/qbpOzboTdbOtIh9Bc9pT0xmNV5fRFd8KDSoEw8j6QbybyltKf33R2Vobs3jNhohfyYrXBkAXIJk4Mf6viJtmGePpmBY/aFDJLAu3HrkbSFFohTwKpboK6DnsHzzJvQ44xxYVQXROvnu+A0L1oV7pkUTtSXWCD40QAA=
 before_install:
   - cpanm -n Devel::Cover
   - cpanm -n Devel::Cover::Report::OwnServer
