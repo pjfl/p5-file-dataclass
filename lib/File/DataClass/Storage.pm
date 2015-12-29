@@ -168,7 +168,9 @@ sub read_file {
       my $cache_mtime = $self->meta_unpack( $meta );
 
       if (is_stale $data, $cache_mtime, $path_mtime) {
-         if ($for_update and not $path->exists) { $data = {} }
+         if ($for_update and not $path->exists) {
+            $data = {}; # uncoverable statement
+         }
          else {
             $data = $self->read_from_file( $path->lock ); $path->close;
             $meta = $self->meta_pack( $path_mtime );

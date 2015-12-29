@@ -110,6 +110,9 @@ subtest 'Polymorphic Constructor' => sub {
 
    $io = io( 'test' ); my $clone = $io->clone;
    is $clone->name, 'test', 'Clones';
+
+   eval { File::DataClass::IO->clone };
+   like $EVAL_ERROR, qr{ \Qobject method\E }mx, 'Clone is an object method';
 };
 
 subtest 'Overload' => sub {
@@ -263,6 +266,7 @@ subtest 'Chomp newlines and record separators' => sub {
    for ($io->chomp->separator( 'io' )->getlines) { $seen = 1 if (m{ io }mx) }
 
    ok !$seen, 'Getlines chomps record separators';
+   $io->getlines;
 };
 
 subtest 'Alternative state parameters' => sub {
@@ -333,6 +337,8 @@ subtest 'Gets a single line' => sub {
    $io->reset->binmode( ':raw' )->print( 'öne' );
    is $io->getline( $RS ), 'öne', 'Getline utf8 - raw';
    # TODO: Make tests of these
+   $io->getline;
+   $io->getline;
    $io->assert_open( 'r' )->binmode( ':crlf' );
    $io = io( [ qw( t output print.t ) ] )->binmode( ':crlf' );
    $io->assert_open( 'r' )->binary->binary;

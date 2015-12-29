@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Improved test coverage
           - Fixed coverage token it's specific to the repository
           - Added coverage badge and coverage report posting
           - Added parameter checking to IO iterator

@@ -483,9 +483,7 @@ sub as_boolean {
 sub as_string {
    my $self = shift; CORE::length $self->name and return $self->name;
 
-   defined $self->io_handle and return $self->io_handle.NUL;
-
-   return NUL;
+   return defined $self->io_handle ? $self->io_handle.NUL : NUL;
 }
 
 sub assert {
@@ -646,8 +644,9 @@ sub clear {
 sub close {
    my $self = shift; $self->is_open or return $self;
 
-   # uncoverable branch true
-   if (is_ntfs) { $self->$_close_and_rename } else { $self->$_rename_and_close }
+   if (is_ntfs) { # uncoverable branch true
+      $self->$_close_and_rename; # uncoverable statement
+   } else { $self->$_rename_and_close }
 
    $self->_set_io_handle( undef );
    $self->_set_is_open  ( FALSE );
@@ -687,7 +686,7 @@ sub delete {
 }
 
 sub delete_tmp_files {
-   my ($self, $tmplt) = @_; $tmplt ||= '%6.6d....';
+   my ($self, $tmplt) = @_; $tmplt //= '%6.6d....';
 
    my $pat = sprintf $tmplt, $PID;
 
@@ -1112,9 +1111,7 @@ sub separator {
 sub set_binmode {
    my $self = shift;
 
-   if (is_ntfs) { # uncoverable branch true
-      is_member NUL, $self->_layers or unshift @{ $self->_layers }, NUL;
-   }
+   is_ntfs and $self->$_push_layer->(); # uncoverable branch true
 
    $self->$_sane_binmode( $_ ) for (@{ $self->_layers });
 
