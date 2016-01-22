@@ -3,7 +3,7 @@ package File::DataClass;
 use 5.010001;
 use strict;
 use warnings;
-use version; our $VERSION = qv( sprintf '0.66.%d', q$Rev: 11 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.66.%d', q$Rev: 12 $ =~ /\d+/gmx );
 
 1;
 
@@ -26,7 +26,7 @@ File::DataClass - Structured data file IO with caching and searching
 
 =head1 Version
 
-This document describes version v0.66.$Rev: 11 $ of L<File::DataClass>
+This document describes version v0.66.$Rev: 12 $ of L<File::DataClass>
 
 =head1 Synopsis
 
@@ -105,7 +105,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2015 Peter Flanigan. All rights reserved
+Copyright (c) 2016 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>

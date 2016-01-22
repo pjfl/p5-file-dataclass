@@ -3,7 +3,7 @@
 use 5.01;
 use strict;
 use warnings;
-use version; our $VERSION = qv( '0.5' );
+use version; our $VERSION = qv( '0.6' );
 use lib                     qw( lib );
 
 use Date::Format            qw( time2str );
@@ -15,7 +15,7 @@ use Perl::Version;
 sub __read_all_from ($) {
    my $path = shift;
 
-   open my $fh, '<', $path or die 'Path ${path} cannot open: ${OS_ERROR}';
+   open my $fh, '<', $path or die "Path ${path} cannot open: ${OS_ERROR}";
 
    local $RS = undef; my $content = <$fh>; close $fh; return $content;
 }

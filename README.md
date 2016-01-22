@@ -11,7 +11,7 @@ File::DataClass - Structured data file IO with caching and searching
 
 # Version
 
-This document describes version v0.66.$Rev: 10 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
+This document describes version v0.66.$Rev: 11 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
 
 # Synopsis
 
@@ -86,7 +86,7 @@ Peter Flanigan, `<pjfl@cpan.org>`
 
 # License and Copyright
 
-Copyright (c) 2015 Peter Flanigan. All rights reserved
+Copyright (c) 2016 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See [perlartistic](https://metacpan.org/pod/perlartistic)

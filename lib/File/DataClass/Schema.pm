@@ -117,14 +117,14 @@ has 'tempdir'                  => is => 'ro',   isa => Directory,
 
 # Construction
 around 'BUILDARGS' => sub {
-   my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
+   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
 
-   my $builder = delete $attr->{builder} or return $attr;
+   my $builder = $attr->{builder} or return $attr;
    my $config  = $builder->can( 'config' ) ? $builder->config : {};
-   my @cnames  = qw( cache_attributes cache_class tempdir );
+   my $keys    = [ qw( cache_attributes cache_class lock log tempdir ) ];
 
-   merge_attributes $attr, $builder, [ qw( lock log tempdir ) ];
-   merge_attributes $attr, $config,  [ @cnames ];
+   merge_attributes $attr, $builder, $keys;
+   merge_attributes $attr, $config,  $keys;
 
    return $attr;
 };
@@ -168,7 +168,7 @@ sub sources {
 sub translate {
    my ($self, $args) = @_;
 
-   my $class      = blessed $self       || $self; # uncoverable condition false
+   my $class      = blessed $self || $self; # uncoverable condition false
    my $from_class = $args->{from_class} // 'Any';
    my $to_class   = $args->{to_class  } // 'Any';
    my $attr       = { path => $args->{from}, storage_class => $from_class };
@@ -393,7 +393,7 @@ Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 
-Copyright (c) 2015 Peter Flanigan. All rights reserved
+Copyright (c) 2016 Peter Flanigan. All rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See L<perlartistic>
