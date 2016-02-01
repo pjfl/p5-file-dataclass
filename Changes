@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.68.1    2016-02-01 14:31:42
           - Fixed bug calling push_layer on mswin32
 
 0.67.1    2016-02-01 00:18:31
