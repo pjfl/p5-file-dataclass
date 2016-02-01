@@ -256,6 +256,8 @@ my $_push_layer = sub {
 my $_sane_binmode = sub {
    my ($self, $layer) = @_;
 
+   blessed $self->io_handle eq 'File::ReadBackwards' and return;
+
    return $layer ? CORE::binmode( $self->io_handle, $layer )
                  : CORE::binmode( $self->io_handle );
 };
@@ -1111,7 +1113,7 @@ sub separator {
 sub set_binmode {
    my $self = shift;
 
-   is_ntfs and $self->$_push_layer->(); # uncoverable branch true
+   is_ntfs and $self->$_push_layer(); # uncoverable branch true
 
    $self->$_sane_binmode( $_ ) for (@{ $self->_layers });
 
