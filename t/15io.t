@@ -12,12 +12,13 @@ use Path::Tiny                 qw( );
 use Scalar::Util               qw( blessed refaddr );
 use Test::Deep                 qw( cmp_deeply );
 use File::DataClass::Constants qw( LOCK_NONBLOCKING );
+use File::DataClass::Functions qw( is_mswin is_ntfs );
 use File::DataClass::IO;
 
-my $io; my $osname = lc $OSNAME;
+my $io;
 
 sub p { join ';', grep { not m{ \.svn }mx } @_ }
-sub f { my $s = shift; $osname eq 'mswin32' and $s =~ s/\//\\/g; return $s }
+sub f { my $s = shift; is_mswin and $s =~ s/\//\\/g; return $s }
 
 isa_ok( io( $PROGRAM_NAME ), 'File::DataClass::IO' );
 
@@ -353,8 +354,7 @@ subtest 'Create and detect empty subdirectories and files' => sub {
    my $path = catfile( qw(t output file) ); $io = io( $path ); $io->touch( 0 );
 
    ok -e $path, 'Touch a file into existance';
-   $osname eq q(mswin32)
-      or is $io->stat->{mtime}, 0, 'Sets modidification date/time';
+   is_mswin or is $io->stat->{mtime}, 0, 'Sets modidification date/time';
    ok $io->empty, 'The file is empty';
 };
 
@@ -406,7 +406,7 @@ subtest 'Buffered reading/writing' => sub {
 
    ok ref $output,     'Open output';
 
-   if ($osname eq 'mswin32') { $input->binary; $output->binary; }
+   if (is_mswin) { $input->binary; $output->binary; }
 
    my $buffer; $input->buffer( $buffer ); $output->buffer( \$buffer );
 
@@ -434,7 +434,7 @@ subtest 'Digest' => sub {
 };
 
 SKIP: {
-   ($osname eq 'mswin32' or $osname eq 'cygwin')
+   is_ntfs
       and skip 'Heads/Tails too flakey 29a2bb0c-6bf4-1014-974a-4394dad81770', 1;
 
    subtest 'Heads / Tails' => sub {
@@ -519,8 +519,7 @@ subtest 'Copy / Move' => sub {
 };
 
 SKIP: {
-   ($osname eq 'mswin32' or $osname eq 'cygwin')
-      and skip 'Unix ownership and permissions not applicable', 1;
+   is_ntfs and skip 'Unix ownership and permissions not applicable', 1;
 
    subtest 'Ownership' => sub {
       $io = io( [ qw( t output print.t ) ] );
