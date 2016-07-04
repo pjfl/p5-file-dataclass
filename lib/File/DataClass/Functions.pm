@@ -180,7 +180,7 @@ sub is_stale (;$$$) {
 
    my $is_def = defined $data && defined $path_mtime && defined $cache_mtime;
 
-   return !$is_def || $path_mtime > $cache_mtime ? 1 : 0;
+   return (!$is_def || ($path_mtime > $cache_mtime)) ? 1 : 0;
 }
 
 sub map_extension2class ($) {

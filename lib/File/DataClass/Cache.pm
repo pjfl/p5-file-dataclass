@@ -44,11 +44,11 @@ around 'BUILDARGS' => sub {
 my $_get_key_and_newest = sub {
    my ($self, $paths) = @_; my $newest = 0; my $is_valid = TRUE; my $key;
 
-   for my $path (grep { length } map { "${_}" } @{ $paths }) {
-      my $mtime = $self->get_mtime( $path ) or $is_valid = FALSE;
+   for my $path (grep { defined && length "${_}" } @{ $paths }) {
+      my $mtime = $self->get_mtime( "${path}" ) or $is_valid = FALSE;
 
       $mtime and $mtime > $newest and $newest = $mtime;
-      $key .= $key ? "~${path}" : $path;
+      $key .= $key ? "~${path}" : "${path}";
    }
 
    return ($key, $is_valid ? $newest : undef);

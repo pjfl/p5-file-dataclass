@@ -1,5 +1,6 @@
 do { my $x = {
-       'davidlou-d20' => '7d05f746-6cb1-1014-afba-1d3088877a71'
+       'davidlou-d20' => '7d05f746-6cb1-1014-afba-1d3088877a71',
+       'ragadaz.spo.virtua.com.br' => '95b807aa-2fde-11e6-bda7-b7692eab5396'
      };
   $x;
  }

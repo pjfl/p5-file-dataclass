@@ -11,7 +11,7 @@ File::DataClass - Structured data file IO with caching and searching
 
 # Version
 
-This document describes version v0.68.$Rev: 1 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
+This document describes version v0.68.$Rev: 2 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
 
 # Synopsis
 
