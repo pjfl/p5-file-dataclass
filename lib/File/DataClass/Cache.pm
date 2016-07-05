@@ -47,6 +47,8 @@ my $_get_key_and_newest = sub {
    for my $path (grep { defined && length "${_}" } @{ $paths }) {
       my $mtime = $self->get_mtime( "${path}" ) or $is_valid = FALSE;
 
+      ($mtime and $path->exists and $mtime == $path->stat->{mtime})
+         or $is_valid = FALSE;
       $mtime and $mtime > $newest and $newest = $mtime;
       $key .= $key ? "~${path}" : "${path}";
    }
