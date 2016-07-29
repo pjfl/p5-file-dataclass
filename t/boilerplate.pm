@@ -33,7 +33,7 @@ BEGIN {
          'Broken smoker '.$except->{ $host };
 
       for my $key (keys %{ $except }) {
-         my $pattern = qr{ $key \z }mx; $host =~ $pattern and plan skip_all =>
+         $host =~ m{ $key \z }mx and plan skip_all =>
             'Broken smoker '.$except->{ $key };
       }
    }
