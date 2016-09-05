@@ -1,8 +1,6 @@
 do { my $x = {
        'davidlou-d20' => '7d05f746-6cb1-1014-afba-1d3088877a71',
-       'dolly.spo.virtua.com.br' => '881e770e-5460-11e6-a0e4-bc503b51e139',
        'microcenter' => '9ee01d3a-55a5-11e6-9fc5-14bfbd15da07',
-       'ragadaz.spo.virtua.com.br' => '95b807aa-2fde-11e6-bda7-b7692eab5396',
        'virtua.com.br' => '95b807aa-2fde-11e6-bda7-b7692eab5396'
      };
   $x;

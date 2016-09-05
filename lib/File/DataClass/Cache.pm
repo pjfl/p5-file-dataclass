@@ -7,6 +7,7 @@ use File::DataClass::Constants qw( FALSE NUL SPC TRUE );
 use File::DataClass::Functions qw( merge_attributes throw );
 use File::DataClass::Types     qw( Bool Cache ClassName HashRef
                                    LoadableClass Object Str );
+use Storable                   qw( freeze );
 use Try::Tiny;
 use Moo;
 
@@ -93,13 +94,18 @@ sub remove {
 sub set {
    my ($self, $key, $data, $meta) = @_; $meta //= { mtime => undef };
 
+   my $val = { data => $data, meta => $meta };
+
    try {
       $key eq $self->_mtimes_key and throw 'key not allowed';
-      $self->cache->set( $key, { data => $data, meta => $meta } )
-         or throw 'set operation returned false';
+      $self->cache->set( $key, $val ) or throw 'set operation returned false';
       $self->set_mtime( $key, $meta->{mtime} );
    }
-   catch { $self->log->error( "Cache key ${key} set failed - ${_}" ) };
+   catch {
+      my $len = length( $key ) + length( freeze $val );
+
+      $self->log->error( "Cache key ${key}(${len}) set failed: ${_}" );
+   };
 
    return ($data, $meta);
 }
