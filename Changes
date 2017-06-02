@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+0.73.1    2017-06-02 01:02:52
           - More efficient IO::stat
           - Added more broken smokers
 
