@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Removed Perl 5.10 from Travis config
           - Refactored coding style
           - Updated copyright year
 
