@@ -27,9 +27,6 @@ is extension_map->{ '.json' }->[ 0 ], 'JSON',
    'Extension map loads on first use';
 is extension_map->{ '.test' }->[ 1 ], undef, 'Extension map deduplicates';
 
-ok !is_arrayref(), 'Is array ref without an argument';
-ok !is_coderef(),  'Is code  ref without an argument';
-ok !is_hashref(),  'Is hash  ref without an argument';
 is  is_member( undef ), undef, 'Is member without argument';
 is  is_member( 'x', [] ), 0, 'Is member with array ref';
 is  is_member( 'x', qw( x y ) ), 1, 'Is member with list';

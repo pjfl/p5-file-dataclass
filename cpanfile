@@ -7,6 +7,7 @@ requires "JSON::MaybeXS" => "1.003";
 requires "Module::Pluggable" => "5.1";
 requires "Module::Runtime" => "0.014";
 requires "Moo" => "2.000001";
+requires "Ref::Util" => "0.203";
 requires "Sub::Install" => "0.928";
 requires "Subclass::Of" => "0.003";
 requires "Try::Tiny" => "0.22";

@@ -4,179 +4,107 @@ use 5.010001;
 use strict;
 use warnings;
 
-use English                    qw( -no_match_vars );
-use Exporter 5.57              qw( import );
 use File::DataClass::Constants qw( CYGWIN EXCEPTION_CLASS MSOFT STORAGE_BASE
                                    STORAGE_EXCEPTIONS );
+use English                    qw( -no_match_vars );
+use Exporter 5.57              qw( import );
 use Hash::Merge                qw( merge );
 use List::Util                 qw( first );
 use Module::Pluggable::Object;
 use Module::Runtime            qw( require_module );
+use Ref::Util                  qw( is_arrayref is_coderef is_hashref );
 use Scalar::Util               qw( blessed );
 use Try::Tiny;
 use Unexpected::Functions      qw( is_class_loaded Unspecified );
 
-our @EXPORT_OK    = qw( ensure_class_loaded extension_map first_char
-                        is_arrayref is_coderef is_hashref is_member is_mswin
-                        is_ntfs is_stale qualify_storage_class
-                        map_extension2class merge_attributes merge_file_data
-                        merge_for_update supported_extensions thread_id throw );
-our %EXPORT_TAGS  =   ( all => [ @EXPORT_OK ], );
+our @EXPORT_OK = qw( ensure_class_loaded extension_map first_char
+                     is_member is_mswin is_ntfs is_stale
+                     qualify_storage_class map_extension2class
+                     merge_attributes merge_file_data merge_for_update
+                     supported_extensions thread_id throw );
 
-my $LC_OSNAME = lc $OSNAME;
+our %EXPORT_TAGS = ( all => [@EXPORT_OK] );
 
-# Private functions
-my $_merge_attr;
-
-my $_merge_attr_arrays = sub {
-   my ($to, $from) = @_; my $updated = 0;
-
-   for (0 .. $#{ $to }) {
-      if (defined $from->[ $_ ]) {
-         my $res = $_merge_attr->( \$to->[ $_ ], $from->[ $_ ] );
-
-         $updated ||= $res;
-      }
-      elsif ($to->[ $_ ]) { splice @{ $to }, $_; $updated = 1; last }
-   }
-
-   if (@{ $from } > @{ $to }) {
-      push @{ $to }, (splice @{ $from }, $#{ $to } + 1); $updated = 1;
-   }
-
-   return $updated;
-};
-
-my $_merge_attr_hashes = sub {
-   my ($to, $from) = @_; my $updated = 0;
-
-   for (grep { exists $from->{ $_ } } keys %{ $to }) {
-      if (defined $from->{ $_ }) {
-         my $res = $_merge_attr->( \$to->{ $_ }, $from->{ $_ } );
-
-         $updated ||= $res;
-      }
-      else { delete $to->{ $_ }; delete $from->{ $_ }; $updated = 1 }
-   }
-
-   for (grep { not exists $to->{ $_ } } keys %{ $from }) {
-      if (defined $from->{ $_ }) {
-         $to->{ $_ } = $from->{ $_ }; $updated = 1;
-      }
-   }
-
-   return $updated;
-};
-
-$_merge_attr = sub {
-   my ($to_ref, $from) = @_; my $to = ${ $to_ref }; my $updated = 0;
-
-   if ($to and ref $to eq 'HASH') {
-      $updated = $_merge_attr_hashes->( $to, $from );
-   }
-   elsif ($to and ref $to eq 'ARRAY') {
-      $updated = $_merge_attr_arrays->( $to, $from );
-   }
-   elsif (defined $to and $to ne $from) {
-      $updated = 1; ${ $to_ref } = $from;
-   }
-   elsif (not defined $to) {
-      if (ref $from eq 'HASH') {
-         scalar keys %{ $from } > 0 and $updated = 1
-            and ${ $to_ref } = $from;
-      }
-      elsif (ref $from eq 'ARRAY') {
-         scalar @{ $from } > 0 and $updated = 1 and ${ $to_ref } = $from;
-      }
-      else { $updated = 1; ${ $to_ref } = $from }
-   }
-
-   return $updated;
-};
+my $lc_osname = lc $OSNAME;
 
 # Public functions
 sub ensure_class_loaded ($;$) {
-   my ($class, $opts) = @_; $opts //= {};
+   my ($class, $opts) = @_;
 
-   not $opts->{ignore_loaded} and is_class_loaded( $class ) and return 1;
+   $opts //= {};
 
-   try { require_module( $class ) } catch { throw( $_ ) };
+   return 1 if !$opts->{ignore_loaded} && is_class_loaded $class;
 
-   is_class_loaded( $class )
-      or throw( 'Class [_1] loaded but package undefined', [ $class ] );
+   try { require_module($class) } catch { throw $_ };
+
+   throw( 'Class [_1] loaded but package undefined', [$class] )
+      unless is_class_loaded $class;
 
    return 1;
 }
 
-{  my $_extension_map = { '_map_loaded' => 0 };
+{  my $extension_map = { '_map_loaded' => 0 };
 
    sub extension_map (;$$) {
       my ($class, $extensions) = @_;
 
       if (defined $class) {
          if (defined $extensions) { # uncoverable branch false
-            is_arrayref( $extensions ) or $extensions = [ $extensions ];
+            $extensions = [$extensions] unless is_arrayref $extensions;
 
-            for my $extn (@{ $extensions }) {
-               $_extension_map->{ $extn } //= [];
-               is_member( $class, $_extension_map->{ $extn } )
-                  or push @{ $_extension_map->{ $extn } }, $class;
+            for my $extn (@{$extensions}) {
+               $extension_map->{$extn}  //= [];
+
+               push @{$extension_map->{$extn}}, $class
+                  unless is_member($class, $extension_map->{$extn});
             }
          }
 
          return;
       }
 
-      $_extension_map->{ '_map_loaded' } and return $_extension_map;
+      return $extension_map if $extension_map->{'_map_loaded'};
 
       my $base       = STORAGE_BASE;
       my $exceptions = STORAGE_EXCEPTIONS;
       my $finder     = Module::Pluggable::Object->new
-         ( except => [ $exceptions ], search_path => [ $base ], require => 1, );
+         ( except => [$exceptions], search_path => [$base], require => 1,
+      );
 
-      $finder->plugins; $_extension_map->{ '_map_loaded' } = 1;
+      $finder->plugins;
+      $extension_map->{'_map_loaded'} = 1;
 
-      return $_extension_map;
+      return $extension_map;
    }
 }
 
 sub first_char ($) {
-   return substr $_[ 0 ], 0, 1;
-}
-
-sub is_arrayref (;$) {
-   return $_[ 0 ] && ref $_[ 0 ] eq 'ARRAY' ? 1 : 0;
-}
-
-sub is_coderef (;$) {
-   return $_[ 0 ] && ref $_[ 0 ] eq 'CODE' ? 1 : 0;
-}
-
-sub is_hashref (;$) {
-   return $_[ 0 ] && ref $_[ 0 ] eq 'HASH' ? 1 : 0;
+   return substr $_[0], 0, 1;
 }
 
 sub is_member (;@) {
-   my ($candidate, @args) = @_; $candidate or return;
+   my ($candidate, @args) = @_;
 
-   is_arrayref $args[ 0 ] and @args = @{ $args[ 0 ] };
+   return unless $candidate;
+
+   @args = @{$args[0]} if is_arrayref $args[0];
 
    return (first { $_ eq $candidate } @args) ? 1 : 0;
 }
 
 sub is_mswin () {
-   return $LC_OSNAME eq MSOFT ? 1 : 0;
+   return $lc_osname eq MSOFT ? 1 : 0;
 }
 
 sub is_ntfs () {
-   return  is_mswin || $LC_OSNAME eq CYGWIN ? 1 : 0;
+   return  is_mswin || $lc_osname eq CYGWIN ? 1 : 0;
 }
 
 sub is_stale (;$$$) {
    my ($data, $cache_mtime, $path_mtime) = @_;
 
    # Assume NTFS does not support mtime
-   is_ntfs() and return 1; # uncoverable branch true
+   return 1 if is_ntfs(); # uncoverable branch true
 
    my $is_def = defined $data && defined $path_mtime && defined $cache_mtime;
 
@@ -186,17 +114,19 @@ sub is_stale (;$$$) {
 sub map_extension2class ($) {
    my $map = extension_map();
 
-   return exists $map->{ $_[ 0 ] } ? $map->{ $_[ 0 ] } : undef;
+   return exists $map->{$_[0]} ? $map->{$_[0]} : undef;
 }
 
 sub merge_attributes ($$;$) {
-   my ($dest, $src, $attrs) = @_; my $class = blessed $src;
+   my ($dest, $src, $attrs) = @_;
 
-   for (grep { not exists $dest->{ $_ } or not defined $dest->{ $_ } }
-        @{ $attrs || [] }) {
-      my $v = $class ? ($src->can( $_ ) ? $src->$_() : undef) : $src->{ $_ };
+   my $class = blessed $src;
 
-      defined $v and $dest->{ $_ } = $v;
+   for (grep { not exists $dest->{$_} or not defined $dest->{$_} }
+        @{$attrs || []}) {
+      my $v = $class ? ($src->can($_) ? $src->$_() : undef) : $src->{$_};
+
+      $dest->{$_} = $v if defined $v;
    }
 
    return $dest;
@@ -205,30 +135,35 @@ sub merge_attributes ($$;$) {
 sub merge_file_data ($$) {
    my ($existing, $new) = @_;
 
-   for (keys %{ $new }) {
-      $existing->{ $_ } = exists $existing->{ $_ }
-                        ? merge( $existing->{ $_ }, $new->{ $_ } )
-                        : $new->{ $_ };
+   for (keys %{$new}) {
+      $existing->{$_} = exists $existing->{$_}
+                      ? merge($existing->{$_}, $new->{$_})
+                      : $new->{$_};
    }
 
    return;
 }
 
 sub merge_for_update (;$$$) {
-   my ($dest_ref, $src, $filter) = @_; my $updated = 0;
+   my ($dest_ref, $src, $filter) = @_;
 
-   $dest_ref or throw( Unspecified, [ 'destination reference' ] );
+   throw(Unspecified, ['destination reference']) unless $dest_ref;
 
-   ${ $dest_ref } //= {}; $src //= {}; $filter //= sub { keys %{ $_[ 0 ] } };
+   ${$dest_ref} //= {};
+   $src //= {};
+   $filter //= sub { keys %{$_[0]} };
 
-   for my $k ($filter->( $src )) {
-      if (defined $src->{ $k }) {
-         my $res = $_merge_attr->( \${ $dest_ref }->{ $k }, $src->{ $k } );
+   my $updated = 0;
+
+   for my $k ($filter->($src)) {
+      if (defined $src->{$k}) {
+         my $res = _merge_attr(\${$dest_ref}->{$k}, $src->{$k});
 
          $updated ||= $res;
       }
-      elsif (exists ${ $dest_ref }->{ $k }) {
-         delete ${ $dest_ref }->{ $k }; $updated = 1;
+      elsif (exists ${$dest_ref}->{$k}) {
+         delete ${$dest_ref}->{$k};
+         $updated = 1;
       }
    }
 
@@ -236,7 +171,7 @@ sub merge_for_update (;$$$) {
 }
 
 sub qualify_storage_class ($) {
-   return STORAGE_BASE.'::'.$_[ 0 ];
+   return STORAGE_BASE.'::'.$_[0];
 }
 
 sub supported_extensions () {
@@ -249,7 +184,100 @@ sub thread_id () {
 }
 
 sub throw (;@) {
-   EXCEPTION_CLASS->throw( @_ );
+   EXCEPTION_CLASS->throw(@_);
+}
+
+# Private functions
+sub _merge_attr {
+   my ($to_ref, $from) = @_;
+
+   my $to = ${$to_ref};
+   my $updated = 0;
+
+   if ($to and is_hashref $to) {
+      $updated = _merge_attr_hashes($to, $from);
+   }
+   elsif ($to and is_arrayref $to) {
+      $updated = _merge_attr_arrays($to, $from);
+   }
+   elsif (defined $to and $to ne $from) {
+      $updated = 1;
+      ${$to_ref} = $from;
+   }
+   elsif (not defined $to) {
+      if (is_hashref $from) {
+         if (scalar keys %{$from} > 0) {
+            $updated = 1;
+            ${$to_ref} = $from;
+         }
+      }
+      elsif (is_arrayref $from) {
+         if (scalar @{$from} > 0) {
+            $updated = 1;
+            ${$to_ref} = $from;
+         }
+      }
+      else {
+         $updated = 1;
+         ${$to_ref} = $from;
+      }
+   }
+
+   return $updated;
+}
+
+sub _merge_attr_arrays {
+   my ($to, $from) = @_;
+
+   my $updated = 0;
+
+   for (0 .. $#{$to}) {
+      if (defined $from->[$_]) {
+         my $res = _merge_attr(\$to->[$_], $from->[$_]);
+
+         $updated ||= $res;
+      }
+      elsif ($to->[$_]) {
+         splice @{$to}, $_;
+         $updated = 1;
+         last;
+      }
+   }
+
+   if (@{$from} > @{$to}) {
+      push @{$to}, (splice @{$from}, $#{$to} + 1);
+      $updated = 1;
+   }
+
+   return $updated;
+}
+
+sub _merge_attr_hashes {
+   my ($to, $from) = @_;
+
+   my $updated = 0;
+
+   for (grep { exists $from->{$_} } keys %{$to}) {
+      if (defined $from->{$_}) {
+         my $res = _merge_attr(\$to->{$_}, $from->{$_});
+
+         $updated ||= $res;
+      }
+      else {
+         delete $to->{$_};
+         delete $from->{$_};
+         $updated = 1;
+      }
+   }
+
+   for (grep { not exists $to->{$_} } keys %{$from}) {
+      if (defined $from->{$_}) {
+         $to->{$_} = $from->{$_};
+         $updated = 1;
+      }
+   }
+
+   return $updated;
 }
 
 1;

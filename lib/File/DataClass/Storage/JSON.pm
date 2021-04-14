@@ -6,6 +6,8 @@ use namespace::autoclean;
 use File::DataClass::Functions qw( extension_map throw );
 use File::DataClass::Types     qw( Object );
 use JSON::MaybeXS              qw( JSON );
+use Ref::Util                  qw( is_arrayref is_hashref );
+use Scalar::Util               qw( blessed );
 use Try::Tiny;
 use Moo;
 
@@ -13,68 +15,89 @@ extends q(File::DataClass::Storage);
 
 extension_map 'JSON' => '.json';
 
-# Private functions
-my $_build_transcoder = sub {
-   my $options = shift; my $json = JSON->new;
-
-   for (grep { $_ ne 'reboolify' } keys %{ $options }) {
-      $json = $json->$_( $options->{ $_ } );
-   }
-
-   return $json;
-};
-
-my $_reboolify; $_reboolify = sub {
-   my $in = shift; my $ref = ref $in;
-
-   if (not $ref) { return $in }
-   elsif  ($ref eq 'HASH') {
-      return { map { $_ => $_reboolify->( $in->{ $_ } ) } keys %{ $in } };
-   }
-   elsif  ($ref eq 'ARRAY') { return [ map { $_reboolify->( $_ ) } @{ $in } ] }
-   elsif  ($ref =~ m{ ::Boolean \z }mx) { return ${ $in } ? true : false }
-
-   return $in;
-};
-
 # Public attributes
-has '+extn'          => default => '.json';
+has '+extn' => default => '.json';
 
-has '+read_options'  => builder => sub { { utf8 => false, } };
+has '+read_options' => builder => sub { { utf8 => false, } };
 
-has '+write_options' => builder => sub { {
-   canonical         => true, convert_blessed => true,
-   pretty            => true, utf8            => false, } };
+has '+write_options' => builder => sub {
+   return {
+      canonical       => true,
+      convert_blessed => true,
+      pretty          => true,
+      utf8            => false,
+   };
+};
 
 # Private attributes
-has '_decoder'       => is => 'lazy', isa => Object,
-   builder           => sub { $_build_transcoder->( $_[ 0 ]->read_options  ) };
+has '_decoder' =>
+   is      => 'lazy',
+   isa     => Object,
+   builder => sub { _build_transcoder($_[0]->read_options) };
 
-has '_encoder'       => is => 'lazy', isa => Object,
-   builder           => sub { $_build_transcoder->( $_[ 0 ]->write_options ) };
+has '_encoder' =>
+   is      => 'lazy',
+   isa     => Object,
+   builder => sub { _build_transcoder($_[0]->write_options) };
 
 # Public methods
 sub read_from_file {
-   my ($self, $rdr) = @_; my $json = $self->_decoder; my $data;
+   my ($self, $rdr) = @_;
 
-   $self->encoding and $rdr->encoding( $self->encoding );
-   $rdr->is_empty  and return {};
+   my $json = $self->_decoder;
+
+   $rdr->encoding($self->encoding) if $self->encoding;
+
+   return {} if $rdr->is_empty;
+
+   my $data;
 
    try   {
-      $data = $json->decode( $rdr->all );
-      $self->read_options->{reboolify} and $data = $_reboolify->( $data );
+      $data = $json->decode($rdr->all);
+      $data = _reboolify($data) if $self->read_options->{reboolify};
    }
-   catch { s{ at \s [^ ]+ \s line \s\d+\. }{}mx; throw "${_} in file ${rdr}" };
+   catch {
+      s{ at \s [^ ]+ \s line \s\d+\. }{}mx;
+      throw "${_} in file ${rdr}";
+   };
 
    return $data;
 }
 
 sub write_to_file {
-   my ($self, $wtr, $data) = @_; my $json = $self->_encoder;
+   my ($self, $wtr, $data) = @_;
 
-   $self->encoding and $wtr->encoding( $self->encoding );
-   $wtr->print( $json->encode( $data ) );
+   my $json = $self->_encoder;
+
+   $wtr->encoding($self->encoding) if $self->encoding;
+   $wtr->print($json->encode($data));
    return $data;
+}
+
+# Private functions
+sub _build_transcoder {
+   my $options = shift;
+   my $json    = JSON->new;
+
+   for (grep { $_ ne 'reboolify' } keys %{$options}) {
+      $json = $json->$_($options->{$_});
+   }
+
+   return $json;
+}
+
+sub _reboolify {
+   my $in    = shift;
+   my $class = blessed $in;
+
+   if (!ref $in) { return $in }
+   elsif (is_hashref $in) {
+      return { map { $_ => _reboolify($in->{$_}) } keys %{$in} };
+   }
+   elsif (is_arrayref $in) { return [ map { _reboolify($_) } @{$in} ] }
+   elsif ($class =~ m{ ::Boolean \z }mx) { return ${$in} ? true : false }
+
+   return $in;
 }
 
 1;

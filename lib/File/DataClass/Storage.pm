@@ -2,13 +2,13 @@ package File::DataClass::Storage;
 
 use namespace::autoclean;
 
-use Class::Null;
-use English                    qw( -no_match_vars );
-use File::Copy;
 use File::DataClass::Constants qw( EXCEPTION_CLASS FALSE NUL TRUE );
 use File::DataClass::Functions qw( is_stale merge_file_data
                                    merge_for_update throw );
 use File::DataClass::Types     qw( Bool HashRef Object Str );
+use Class::Null;
+use English                    qw( -no_match_vars );
+use File::Copy;
 use Scalar::Util               qw( blessed );
 use Try::Tiny;
 use Unexpected::Functions      qw( RecordAlreadyExists PathNotFound
@@ -25,39 +25,21 @@ has 'extn'          => is => 'ro', isa => Str,  default => NUL;
 
 has 'read_options'  => is => 'ro', isa => HashRef, builder => sub { {} };
 
-has 'schema'        => is => 'ro', isa => Object,
-   handles          => { _cache => 'cache', _lock  => 'lock',
-                         _log   => 'log',   _perms => 'perms', },
-   required         => TRUE,  weak_ref => TRUE;
+has 'schema' =>
+   is        => 'ro',
+   isa       => Object,
+   handles   => {
+      _cache => 'cache',
+      _lock  => 'lock',
+      _log   => 'log',
+      _perms => 'perms',
+   },
+   required  => TRUE,
+   weak_ref  => TRUE;
 
 has 'write_options' => is => 'ro', isa => HashRef, builder => sub { {} };
 
 has '_locks'        => is => 'ro', isa => HashRef, builder => sub { {} };
-
-# Private functions
-my $_get_src_attributes = sub {
-   my ($cond, $src) = @_;
-
-   return grep { not m{ \A _ }mx
-                 and $_ ne 'id' and $_ ne 'name'
-                 and $cond->( $_ ) } keys %{ $src };
-};
-
-my $_lock_set = sub {
-   $_[ 0 ]->_lock->set( k => $_[ 1 ] ); $_[ 0 ]->_locks->{ $_[ 1 ] } = TRUE;
-};
-
-my $_lock_reset = sub {
-   $_[ 0 ]->_lock->reset( k => $_[ 1 ] ); delete $_[ 0 ]->_locks->{ $_[ 1 ] };
-};
-
-my $_lock_reset_all = sub {
-   my $self = shift;
-
-   eval { $self->$_lock_reset( $_ ) } for (keys %{ $self->_locks });
-
-   return;
-};
 
 # Public methods
 sub create_or_update {
@@ -65,24 +47,31 @@ sub create_or_update {
 
    my $rsrc_name = $result->result_source->name;
 
-   $self->validate_params( $path, $rsrc_name ); my $updated;
+   $self->validate_params($path, $rsrc_name);
 
-   my $data = ($self->read_file( $path, TRUE ))[ 0 ];
+   my $data = ($self->read_file($path, TRUE))[0];
+   my $updated;
 
    try {
-      my $filter = sub { $_get_src_attributes->( $cond, $_[ 0 ] ) };
-      my $id     = $result->id; $data->{ $rsrc_name } //= {};
+      my $filter = sub { _get_src_attributes($cond, $_[0]) };
+      my $id     = $result->id;
 
-      not $updating and exists $data->{ $rsrc_name }->{ $id }
-         and throw RecordAlreadyExists, [ $path, $id ], level => 2;
+      $data->{$rsrc_name} //= {};
 
-      $updated = merge_for_update
-         ( \$data->{ $rsrc_name }->{ $id }, $result, $filter );
+      throw RecordAlreadyExists, [$path, $id], level => 2
+         if not $updating and exists $data->{$rsrc_name}->{$id};
+
+      $updated = merge_for_update(
+         \$data->{$rsrc_name}->{$id}, $result, $filter
+      );
    }
-   catch { $self->$_lock_reset( $path ); throw $_ };
+   catch {
+      $self->_lock_reset($path);
+      throw $_;
+   };
 
-   if ($updated) { $self->write_file( $path, $data, not $updating ) }
-   else { $self->$_lock_reset( $path ) }
+   if ($updated) { $self->write_file($path, $data, !$updating) }
+   else { $self->_lock_reset($path) }
 
    return $updated ? $result : FALSE;
 }
@@ -92,140 +81,179 @@ sub delete {
 
    my $rsrc_name = $result->result_source->name;
 
-   $self->validate_params( $path, $rsrc_name );
+   $self->validate_params($path, $rsrc_name);
 
-   my $data = ($self->read_file( $path, TRUE ))[ 0 ]; my $id = $result->id;
+   my $data = ($self->read_file($path, TRUE))[0];
+   my $id = $result->id;
 
-   if (exists $data->{ $rsrc_name } and exists $data->{ $rsrc_name }->{ $id }) {
-      delete $data->{ $rsrc_name }->{ $id };
-      scalar keys %{ $data->{ $rsrc_name } } or delete $data->{ $rsrc_name };
-      $self->write_file( $path, $data );
+   if (exists $data->{$rsrc_name} and exists $data->{$rsrc_name}->{$id}) {
+      delete $data->{$rsrc_name}->{$id};
+
+      delete $data->{$rsrc_name} unless scalar keys %{$data->{$rsrc_name}};
+
+      $self->write_file($path, $data);
       return TRUE;
    }
 
-   $self->$_lock_reset( $path );
+   $self->_lock_reset($path);
    return FALSE;
 }
 
 sub DEMOLISH {
-   my ($self, $gd) = @_; $gd and return; $self->$_lock_reset_all(); return;
+   my ($self, $gd) = @_;
+
+   return if $gd;
+
+   $self->_lock_reset_all();
+   return;
 }
 
 sub dump {
    my ($self, $path, $data) = @_;
 
-   return $self->txn_do( $path, sub {
-      $self->$_lock_set( $path ); $self->write_file( $path, $data, TRUE ) } );
+   my $dumper = sub {
+      $self->_lock_set($path);
+      $self->write_file($path, $data, TRUE);
+   };
+
+   return $self->txn_do($path, $dumper);
 }
 
 sub insert {
    my ($self, $path, $result) = @_;
 
-   return $self->create_or_update( $path, $result, FALSE, sub { TRUE } );
+   return $self->create_or_update($path, $result, FALSE, sub { TRUE });
 }
 
 sub load {
-   my ($self, @paths) = @_; $paths[ 0 ] or return {};
+   my ($self, @paths) = @_;
 
-   scalar @paths == 1 and return ($self->read_file( $paths[ 0 ], FALSE ))[ 0 ];
+   return {} unless $paths[0];
 
-   my ($loaded, $meta, $newest) = $self->_cache->get_by_paths( \@paths );
-   my $cache_mtime = $self->meta_unpack( $meta );
+   return ($self->read_file($paths[0], FALSE))[0] if scalar @paths == 1;
 
-   not is_stale $loaded, $cache_mtime, $newest and return $loaded;
+   my ($loaded, $meta, $newest) = $self->_cache->get_by_paths(\@paths);
+   my $cache_mtime = $self->meta_unpack($meta);
+
+   return $loaded unless is_stale $loaded, $cache_mtime, $newest;
 
    $loaded = {}; $newest = 0;
 
    for my $path (@paths) {
-      my ($red, $path_mtime) = $self->read_file( $path, FALSE );
+      my ($red, $path_mtime) = $self->read_file($path, FALSE);
 
-      $path_mtime > $newest and $newest = $path_mtime;
+      $newest = $path_mtime if $path_mtime > $newest;
+
       merge_file_data $loaded, $red;
    }
 
-   $self->_cache->set_by_paths( \@paths, $loaded, $self->meta_pack( $newest ) );
+   $self->_cache->set_by_paths(\@paths, $loaded, $self->meta_pack($newest));
    return $loaded;
 }
 
 sub meta_pack { # Modified in a subclass
-   my ($self, $mtime) = @_; return { mtime => $mtime };
+   my ($self, $mtime) = @_;
+
+   return { mtime => $mtime };
 }
 
 sub meta_unpack { # Modified in a subclass
-   my ($self, $attr) = @_; return $attr ? $attr->{mtime} : undef;
+   my ($self, $attr) = @_;
+
+   return $attr ? $attr->{mtime} : undef;
 }
 
 sub read_file {
    my ($self, $path, $for_update) = @_;
 
-   $self->$_lock_set( $path ); my ($data, $path_mtime);
+   $self->_lock_set($path);
+
+   my ($data, $path_mtime);
 
    try {
-      my $stat = $path->stat; defined $stat and $path_mtime = $stat->{mtime};
+      my $stat = $path->stat;
 
-      my $meta; ($data, $meta) = $self->_cache->get( $path );
+      $path_mtime = $stat->{mtime} if defined $stat;
 
-      my $cache_mtime = $self->meta_unpack( $meta );
+      my $meta;
+
+      ($data, $meta) = $self->_cache->get($path);
+
+      my $cache_mtime = $self->meta_unpack($meta);
 
       if (is_stale $data, $cache_mtime, $path_mtime) {
-         if ($for_update and not $path->exists) {
+         if ($for_update && !$path->exists) {
             $data = {}; # uncoverable statement
          }
          else {
-            $data = $self->read_from_file( $path->lock ); $path->close;
-            $meta = $self->meta_pack( $path_mtime );
-            $self->_cache->set( $path, $data, $meta );
-            $self->_log->debug( "Read file  ${path}" );
+            $data = $self->read_from_file($path->lock);
+            $path->close;
+            $meta = $self->meta_pack($path_mtime);
+            $self->_cache->set($path, $data, $meta);
+            $self->_log->debug("Read file  ${path}");
          }
       }
-      else { $self->_log->debug( "Read cache ${path}" ) }
+      else { $self->_log->debug("Read cache ${path}") }
    }
-   catch { $self->$_lock_reset( $path ); throw $_ };
+   catch {
+      $self->_lock_reset($path);
+      throw $_;
+   };
 
-   $for_update or $self->$_lock_reset( $path );
+   $self->_lock_reset($path) unless $for_update;
 
    return ($data, $path_mtime);
 }
 
 sub read_from_file {
    throw 'Method [_1] not overridden in subclass [_2]',
-         [ 'read_from_file', blessed $_[ 0 ] ];
+         [ 'read_from_file', blessed $_[0] ];
 }
 
 sub select {
    my ($self, $path, $rsrc_name) = @_;
 
-   $self->validate_params( $path, $rsrc_name );
+   $self->validate_params($path, $rsrc_name);
 
-   my $data = ($self->read_file( $path, FALSE ))[ 0 ];
+   my $data = ($self->read_file($path, FALSE))[0];
 
-   return exists $data->{ $rsrc_name } ? $data->{ $rsrc_name } : {};
+   return exists $data->{$rsrc_name} ? $data->{$rsrc_name} : {};
 }
 
 sub txn_do {
    my ($self, $path, $code_ref) = @_;
 
-   my $wantarray = wantarray; $self->validate_params( $path, TRUE );
+   my $wantarray = wantarray;
 
-   my $key = "txn:${path}"; $self->$_lock_set( $key ); my $res;
+   $self->validate_params($path, TRUE);
+
+   my $key = "txn:${path}";
+
+   $self->_lock_set($key);
+
+   my $res;
 
    try {
       if ($wantarray) { $res = [ $code_ref->() ] }
       else { $res = $code_ref->() }
    }
-   catch { $self->$_lock_reset( $key ); throw $_, { level => 4 } };
+   catch {
+      $self->_lock_reset($key);
+      throw $_, { level => 4 };
+   };
 
-   $self->$_lock_reset( $key );
+   $self->_lock_reset($key);
 
-   return $wantarray ? @{ $res } : $res;
+   return $wantarray ? @{$res} : $res;
 }
 
 sub update {
    my ($self, $path, $result, $updating, $cond) = @_;
 
-   $updating //= TRUE; $cond //= sub { TRUE };
+   $updating //= TRUE;
+   $cond //= sub { TRUE };
 
-   my $updated = $self->create_or_update( $path, $result, $updating, $cond )
+   my $updated = $self->create_or_update($path, $result, $updating, $cond)
       or throw NothingUpdated, level => 2;
 
    return $updated;
@@ -234,51 +262,99 @@ sub update {
 sub validate_params {
    my ($self, $path, $rsrc_name) = @_;
 
-   $path         or throw Unspecified, [ 'path name' ], level => 2;
-   blessed $path or throw 'Path [_1] is not blessed', [ $path ], level => 2;
-   $rsrc_name    or throw 'Path [_1] result source not specified', [ $path ],
-                          level => 2;
+   throw Unspecified, ['path name'], level => 2 unless $path;
+
+   throw 'Path [_1] is not blessed', [$path], level => 2 unless blessed $path;
+
+   throw 'Path [_1] result source not specified', [$path], level => 2
+      unless $rsrc_name;
 
    return;
 }
 
 sub write_file {
-   my ($self, $path, $data, $create) = @_; my $exists = $path->exists;
+   my ($self, $path, $data, $create) = @_;
+
+   my $exists = $path->exists;
 
    try {
-      $create or $exists or throw PathNotFound, [ $path ];
-      $exists or $path->perms( $self->_perms );
-      $self->atomic_write and $path->atomic;
+      throw PathNotFound, [$path] unless $create || $exists;
 
-      if ($exists and $self->backup and not $path->empty) {
-         copy( "${path}", $path.$self->backup )
-            or throw 'Backup copy failed: [_1]', [ $OS_ERROR ];
+      $path->perms($self->_perms) unless $exists;
+
+      $path->atomic if $self->atomic_write;
+
+      if ($exists && $self->backup && !$path->empty) {
+         throw 'Backup copy failed: [_1]', [$OS_ERROR]
+            unless copy("${path}", $path.$self->backup);
       }
 
-      try   { $data = $self->write_to_file( $path->lock, $data ); $path->close }
-      catch { $path->delete; throw $_ };
+      try   {
+         $data = $self->write_to_file($path->lock, $data);
+         $path->close;
+      }
+      catch {
+         $path->delete;
+         throw $_;
+      };
 
-      $self->_cache->remove( $path );
-      $self->_log->debug( "Write file ${path}" )
+      $self->_cache->remove($path);
+      $self->_log->debug("Write file ${path}")
    }
-   catch { $self->$_lock_reset( $path ); throw $_ };
+   catch {
+      $self->_lock_reset($path);
+      throw $_;
+   };
 
-   $self->$_lock_reset( $path );
+   $self->_lock_reset($path);
    return $data;
 }
 
 sub write_to_file {
    throw 'Method [_1] not overridden in subclass [_2]',
-         [ 'write_to_file', blessed $_[ 0 ] ];
+         [ 'write_to_file', blessed $_[0] ];
 }
 
 # Backcompat
 sub _read_file {
-   throw 'Class [_1] should never call _read_file', [ blessed $_[ 0 ] ];
+   throw 'Class [_1] should never call _read_file', [ blessed $_[0] ];
 }
 
 sub _write_file {
-   throw 'Class [_1] should never call _write_file', [ blessed $_[ 0 ] ];
+   throw 'Class [_1] should never call _write_file', [ blessed $_[0] ];
+}
+
+# Private functions
+sub _get_src_attributes {
+   my ($cond, $src) = @_;
+
+   return grep { not m{ \A _ }mx
+                 and $_ ne 'id' and $_ ne 'name'
+                 and $cond->($_) } keys %{$src};
+}
+
+sub _lock_set {
+   my ($self, $k) = @_;
+
+   $self->_lock->set(k => $k);
+
+   return $self->_locks->{$k} = TRUE;
+}
+
+sub _lock_reset {
+   my ($self, $k) = @_;
+
+   $self->_lock->reset(k => $k);
+
+   return delete $self->_locks->{$k};
+}
+
+sub _lock_reset_all {
+   my $self = shift;
+
+   eval { $self->_lock_reset($_) } for (keys %{$self->_locks});
+
+   return;
 }
 
 1;

@@ -8,56 +8,65 @@ use File::DataClass::Types     qw( ArrayRef ClassName HashRef
                                    Object SimpleStr Str );
 use Moo;
 
-# Private functions
-my $_build_attributes = sub {
-   my $self = shift; my $attr = {};
-
-   $attr->{ $_ } = TRUE for (@{ $self->attributes });
-
-   return $attr;
-};
-
 # Public attributes
-has 'attributes'           => is => 'ro', isa => ArrayRef[Str],
-   required                => TRUE;
+has 'attributes' => is => 'ro', isa => ArrayRef[Str], required => TRUE;
 
-has 'defaults'             => is => 'ro', isa => HashRef, builder => sub { {} };
+has 'defaults' => is => 'ro', isa => HashRef, builder => sub { {} };
 
-has 'name'                 => is => 'ro', isa => SimpleStr, required => TRUE;
+has 'name' => is => 'ro', isa => SimpleStr, required => TRUE;
 
-has 'label_attr'           => is => 'ro', isa => SimpleStr, default => NUL;
+has 'label_attr' => is => 'ro', isa => SimpleStr, default => NUL;
 
 has 'resultset_attributes' => is => 'ro', isa => HashRef, builder => sub { {} };
 
-has 'resultset_class'      => is => 'ro', isa => ClassName,
-   default                 => 'File::DataClass::ResultSet';
+has 'resultset_class' =>
+   is      => 'ro',
+   isa     => ClassName,
+   default => 'File::DataClass::ResultSet';
 
-has 'schema'               => is => 'ro', isa => Object,
-   handles                 => [ 'path', 'storage' ],
-   required                => TRUE, weak_ref => TRUE;
+has 'schema' =>
+   is       => 'ro',
+   isa      => Object,
+   handles  => ['path', 'storage'],
+   required => TRUE,
+   weak_ref => TRUE;
 
-has 'types'                => is => 'ro', isa => HashRef, builder => sub { {} };
+has 'types' => is => 'ro', isa => HashRef, builder => sub { {} };
 
-has '_attributes' => is => 'lazy', isa => HashRef,
-   builder        => $_build_attributes, init_arg => undef;
+has '_attributes' =>
+   is       => 'lazy',
+   isa      => HashRef,
+   builder  => '_build_attributes',
+   init_arg => undef;
 
 # Public methods
 sub columns {
-   return @{ $_[ 0 ]->attributes };
+   return @{$_[0]->attributes};
 }
 
 sub has_column {
-   my $key = $_[ 1 ] // '_invalid_key_';
+   my ($self, $key) = @_;
 
-   return exists $_[ 0 ]->_attributes->{ $key } ? TRUE : FALSE;
+   $key //= '_invalid_key_';
+
+   return exists $self->_attributes->{ $key } ? TRUE : FALSE;
 }
 
 sub resultset {
+   my $self  = shift;
+   my $attrs = { %{$self->resultset_attributes}, result_source => $self };
+
+   return $self->resultset_class->new($attrs);
+}
+
+# Private methods
+sub _build_attributes {
    my $self = shift;
+   my $attr = {};
 
-   my $attrs = { %{ $self->resultset_attributes }, result_source => $self };
+   $attr->{$_} = TRUE for (@{$self->attributes});
 
-   return $self->resultset_class->new( $attrs );
+   return $attr;
 }
 
 1;

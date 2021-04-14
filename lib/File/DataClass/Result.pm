@@ -2,38 +2,45 @@ package File::DataClass::Result;
 
 use namespace::autoclean;
 
+use File::DataClass::Constants qw( TRUE );
+use File::DataClass::Types     qw( Object Str );
 use Moo;
-use File::DataClass::Types qw( Object Str );
 
-has 'id' => is => 'rw', isa => Str, required => 1;
+has 'id' => is => 'rw', isa => Str, required => TRUE;
 
-has '_result_source' => is => 'ro', isa => Object,
+has '_result_source' =>
+   is       => 'ro',
+   isa      => Object,
    handles  => { _path => 'path', _storage => 'storage' },
-   init_arg => 'result_source', reader => 'result_source',
-   required => 1, weak_ref => 1;
+   init_arg => 'result_source',
+   reader   => 'result_source',
+   required => TRUE,
+   weak_ref => TRUE;
 
 around 'BUILDARGS' => sub {
-   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
+   my ($orig, $self, @args) = @_;
 
-   my $name = delete $attr->{name}; $attr->{id} //= $name;
+   my $attr = $orig->($self, @args);
+   my $name = delete $attr->{name};
 
+   $attr->{id} //= $name;
    return $attr;
 };
 
 sub delete {
-   return $_[ 0 ]->_storage->delete( $_[ 0 ]->_path, $_[ 0 ] );
+   return $_[0]->_storage->delete($_[0]->_path, $_[0]);
 }
 
 sub insert {
-   return $_[ 0 ]->_storage->insert( $_[ 0 ]->_path, $_[ 0 ] );
+   return $_[0]->_storage->insert($_[0]->_path, $_[0]);
 }
 
 sub name { # Deprecated
-   return defined $_[ 1 ] ? $_[ 0 ]->id( $_[ 1 ] ) : $_[ 0 ]->id;
+   return defined $_[1] ? $_[0]->id($_[1]) : $_[0]->id;
 }
 
 sub update {
-   return $_[ 0 ]->_storage->update( $_[ 0 ]->_path, $_[ 0 ] );
+   return $_[0]->_storage->update($_[0]->_path, $_[0]);
 }
 
 1;

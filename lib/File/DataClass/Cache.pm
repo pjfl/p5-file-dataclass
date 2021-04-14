@@ -12,99 +12,102 @@ use Try::Tiny;
 use Moo;
 
 # Public attributes
-has 'cache'            => is => 'lazy', isa => Object, builder => sub {
-   $_[ 0 ]->cache_class->new( %{ $_[ 0 ]->cache_attributes } ) };
+has 'cache' =>
+   is       => 'lazy',
+   isa      => Object,
+   builder  => sub {
+      my $self = shift;
 
-has 'cache_attributes' => is => 'ro',   isa => HashRef, required => TRUE;
+      return $self->cache_class->new(%{$self->cache_attributes});
+   };
 
-has 'cache_class'      => is => 'lazy', isa => LoadableClass,
-   default             => 'Cache::FastMmap';
+has 'cache_attributes' => is => 'ro', isa => HashRef, required => TRUE;
 
-has 'log'              => is => 'ro',   isa => Object, required => TRUE;
+has 'cache_class' =>
+   is      => 'lazy',
+   isa     => LoadableClass,
+   default => 'Cache::FastMmap';
+
+has 'log' => is => 'ro', isa => Object, required => TRUE;
 
 # Private attributes
-has '_mtimes_key'      => is => 'ro',   isa => Str, default => '_mtimes';
+has '_mtimes_key' => is => 'ro', isa => Str, default => '_mtimes';
 
 # Construction
 around 'BUILDARGS' => sub {
-   my ($orig, $class, @args) = @_; my $attr = $orig->( $class, @args );
+   my ($orig, $class, @args) = @_;
 
-   $attr->{cache_attributes} //= {}; my $cache_class;
+   my $attr = $orig->($class, @args);
 
-   $cache_class = delete $attr->{cache_attributes}->{cache_class}
-      and $attr->{cache_class} = $cache_class;
+   $attr->{cache_attributes} //= {};
+
+   my $cache_class = delete $attr->{cache_attributes}->{cache_class};
+
+   $attr->{cache_class} = $cache_class if $cache_class;
 
    my $builder = delete $attr->{builder} or return $attr;
 
-   merge_attributes $attr, $builder, [ 'log' ];
+   merge_attributes $attr, $builder, ['log'];
 
    return $attr;
 };
 
-# Private methods
-my $_get_key_and_newest = sub {
-   my ($self, $paths) = @_; my $newest = 0; my $is_valid = TRUE; my $key;
-
-   for my $path (grep { defined && length "${_}" } @{ $paths }) {
-      my $mtime = $self->get_mtime( "${path}" ) or $is_valid = FALSE;
-
-      ($mtime and $path->exists and $mtime == $path->stat->{mtime})
-         or $is_valid = FALSE;
-      $mtime and $mtime > $newest and $newest = $mtime;
-      $key .= $key ? "~${path}" : "${path}";
-   }
-
-   return ($key, $is_valid ? $newest : undef);
-};
-
 # Public methods
 sub get {
-   my ($self, $key) = @_; $key .= NUL;
+   my ($self, $key) = @_;
 
-   my $cached = $key ? $self->cache->get( $key ) : FALSE;
+   $key .= NUL;
 
-   $cached and return ($cached->{data}, $cached->{meta});
+   my $cached = $key ? $self->cache->get($key) : FALSE;
+
+   return ($cached->{data}, $cached->{meta}) if $cached;
 
    return (undef, { mtime => undef });
 }
 
 sub get_by_paths {
    my ($self, $paths) = @_;
-   my ($key, $newest) = $self->$_get_key_and_newest( $paths );
+   my ($key, $newest) = $self->_get_key_and_newest($paths);
 
-   return ($self->get( $key ), $newest);
+   return ($self->get($key), $newest);
 }
 
 sub get_mtime {
-   my ($self, $k) = @_; $k or return;
+   my ($self, $k) = @_;
 
-   my $mtimes = $self->cache->get( $self->_mtimes_key ) or return;
+   return unless $k;
 
-   return $mtimes->{ $k };
+   my $mtimes = $self->cache->get($self->_mtimes_key) or return;
+
+   return $mtimes->{$k};
 }
 
 sub remove {
-   my ($self, $key) = @_; defined $key or return;
+   my ($self, $key) = @_;
 
-   $self->cache->remove( $key ); $self->set_mtime( $key, undef );
+   return unless defined $key;
 
+   $self->cache->remove($key);
+   $self->set_mtime($key, undef);
    return;
 }
 
 sub set {
-   my ($self, $key, $data, $meta) = @_; $meta //= { mtime => undef };
+   my ($self, $key, $data, $meta) = @_;
+
+   $meta //= { mtime => undef };
 
    my $val = { data => $data, meta => $meta };
 
    try {
-      $key eq $self->_mtimes_key and throw 'key not allowed';
-      $self->cache->set( $key, $val ) or throw 'set operation returned false';
-      $self->set_mtime( $key, $meta->{mtime} );
+      throw 'key not allowed' if $key eq $self->_mtimes_key;
+      throw 'set operation returned false' unless $self->cache->set($key, $val);
+      $self->set_mtime($key, $meta->{mtime});
    }
    catch {
-      my $len = length( $key ) + length( freeze $val );
+      my $len = length($key) + length(freeze $val);
 
-      $self->log->error( "Cache key ${key}(${len}) set failed: ${_}" );
+      $self->log->error("Cache key ${key}(${len}) set failed: ${_}");
    };
 
    return ($data, $meta);
@@ -113,23 +116,45 @@ sub set {
 sub set_by_paths {
    my ($self, $paths, $data, $meta) = @_;
 
-   my ($key, $newest) = $self->$_get_key_and_newest( $paths );
+   my ($key, $newest) = $self->_get_key_and_newest($paths);
 
    $meta->{mtime} = $newest;
 
-   return $self->set( $key, $data, $meta );
+   return $self->set($key, $data, $meta);
 }
 
 sub set_mtime {
    my ($self, $k, $v) = @_;
 
-   return $self->cache->get_and_set( $self->_mtimes_key, sub {
+   return $self->cache->get_and_set($self->_mtimes_key, sub {
       my (undef, $mtimes) = @_;
 
-      if (defined $v) { $mtimes->{ $k } = $v } else { delete $mtimes->{ $k } }
+      if (defined $v) { $mtimes->{$k} = $v } else { delete $mtimes->{$k} }
 
       return $mtimes;
-   } );
+   });
+}
+
+# Private methods
+sub _get_key_and_newest {
+   my ($self, $paths) = @_;
+
+   my $newest = 0;
+   my $is_valid = TRUE;
+   my $key;
+
+   for my $path (grep { defined && length "${_}" } @{$paths}) {
+      my $mtime = $self->get_mtime("${path}") or $is_valid = FALSE;
+
+      $is_valid = FALSE
+         unless ($mtime and $path->exists and $mtime == $path->stat->{mtime});
+
+      $newest = $mtime if $mtime and $mtime > $newest;
+
+      $key .= $key ? "~${path}" : "${path}";
+   }
+
+   return ($key, $is_valid ? $newest : undef);
 }
 
 1;

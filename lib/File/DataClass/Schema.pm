@@ -2,7 +2,6 @@ package File::DataClass::Schema;
 
 use namespace::autoclean;
 
-use Class::Null;
 use File::DataClass::Cache;
 use File::DataClass::Constants qw( EXCEPTION_CLASS FALSE NUL PERMS TRUE );
 use File::DataClass::Functions qw( ensure_class_loaded first_char
@@ -14,113 +13,77 @@ use File::DataClass::ResultSource;
 use File::DataClass::Storage;
 use File::DataClass::Types     qw( Bool Cache ClassName Directory DummyClass
                                    HashRef Lock Num Object Path Str );
+use Class::Null;
 use File::Spec;
 use Scalar::Util               qw( blessed );
 use Unexpected::Functions      qw( Unspecified );
 use Moo;
 
-my $_cache_objects = {};
+# Public attributes
+has 'cache' => is => 'lazy', isa => Cache, builder => '_build_cache';
 
-# Private methods
-my $_build_cache = sub {
-   my $self  = shift;
-   my $attr  = { builder => $self,
-                 cache_attributes => { %{ $self->cache_attributes } }, };
-   my $cattr = $attr->{cache_attributes};
-  (my $ns    = lc __PACKAGE__) =~ s{ :: }{-}gmx;
+has 'cache_attributes' =>
+   is      => 'ro',
+   isa     => HashRef,
+   builder => sub {
+      return {
+         page_size      => 131_072,
+         num_pages      => 89,
+         unlink_on_exit => TRUE,
+      };
+   };
 
-   $ns = $cattr->{namespace} //= $ns;
-   exists $_cache_objects->{ $ns } and return $_cache_objects->{ $ns };
-   $self->cache_class eq 'none'    and return Class::Null->new;
-   $cattr->{share_file} //= $self->tempdir->catfile( "${ns}.dat" )->pathname;
+has 'cache_class' =>
+   is      => 'ro',
+   isa     => ClassName|DummyClass,
+   default => 'File::DataClass::Cache';
 
-   return $_cache_objects->{ $ns } = $self->cache_class->new( $attr );
-};
+has 'lock' => is => 'lazy', isa => Lock, builder => sub { Class::Null->new };
 
-my $_build_source_registrations = sub {
-   my $self = shift; my $sources = {};
+has 'log' => is => 'lazy', isa => Object, builder => sub { Class::Null->new };
 
-   for my $moniker (keys %{ $self->result_source_attributes }) {
-      my $attr = { %{ $self->result_source_attributes->{ $moniker } } };
-      my $class = delete $attr->{result_source_class}
-               // $self->result_source_class;
+has 'path' => is => 'rw', isa => Path, coerce => TRUE;
 
-      $attr->{name} = $moniker; $attr->{schema} = $self;
+has 'perms' => is => 'rw', isa => Num, default => PERMS;
 
-      $sources->{ $moniker } = $class->new( $attr );
-   }
+has 'result_source_attributes' =>
+   is      => 'ro',
+   isa     => HashRef,
+   builder => sub { {} };
 
-   return $sources;
-};
+has 'result_source_class' =>
+   is      => 'ro',
+   isa     => ClassName,
+   default => 'File::DataClass::ResultSource';
 
-my $_build_storage = sub {
-   my $self = shift; my $class = $self->storage_class;
+has 'source_registrations' =>
+   is      => 'lazy',
+   isa     => HashRef[Object],
+   builder => '_build_source_registrations';
 
-   if (first_char $class eq '+') { $class = substr $class, 1 }
-   else { $class = qualify_storage_class $class }
+has 'storage' =>
+   is      => 'rw',
+   isa     => Object,
+   builder => '_build_storage',
+   lazy    => TRUE;
 
-   ensure_class_loaded $class;
+has 'storage_attributes' => is => 'ro', isa => HashRef, builder => sub { {} };
 
-   return $class->new( { %{ $self->storage_attributes }, schema => $self } );
-};
+has 'storage_class' => is => 'rw', isa => Str, default => 'JSON', lazy => TRUE;
 
-my $_constructor = sub {
-   my $class = shift;
-   my $attr  = { cache_class => 'none', storage_class => 'Any' };
-
-   return $class->new( $attr );
-};
-
-# Private attributes
-has 'cache'                    => is => 'lazy', isa => Cache,
-   builder                     => $_build_cache;
-
-has 'cache_attributes'         => is => 'ro',   isa => HashRef,
-   builder                     => sub { {
-      page_size                => 131_072,
-      num_pages                => 89,
-      unlink_on_exit           => TRUE, } };
-
-has 'cache_class'              => is => 'ro',   isa => ClassName | DummyClass,
-   default                     => 'File::DataClass::Cache';
-
-has 'lock'                     => is => 'lazy', isa => Lock,
-   builder                     => sub { Class::Null->new };
-
-has 'log'                      => is => 'lazy', isa => Object,
-   builder                     => sub { Class::Null->new };
-
-has 'path'                     => is => 'rw',   isa => Path, coerce => TRUE;
-
-has 'perms'                    => is => 'rw',   isa => Num, default => PERMS;
-
-has 'result_source_attributes' => is => 'ro',   isa => HashRef,
-   builder                     => sub { {} };
-
-has 'result_source_class'      => is => 'ro',   isa => ClassName,
-   default                     => 'File::DataClass::ResultSource';
-
-has 'source_registrations'     => is => 'lazy', isa => HashRef[Object],
-   builder                     => $_build_source_registrations;
-
-has 'storage'                  => is => 'rw',   isa => Object,
-   builder                     => $_build_storage, lazy => TRUE;
-
-has 'storage_attributes'       => is => 'ro',   isa => HashRef,
-   builder                     => sub { {} };
-
-has 'storage_class'            => is => 'rw',   isa => Str,
-   default                     => 'JSON', lazy => TRUE;
-
-has 'tempdir'                  => is => 'ro',   isa => Directory,
-   coerce                      => TRUE, builder => sub { File::Spec->tmpdir };
+has 'tempdir' =>
+   is      => 'ro',
+   isa     => Directory,
+   builder => sub { File::Spec->tmpdir },
+   coerce  => TRUE;
 
 # Construction
 around 'BUILDARGS' => sub {
-   my ($orig, $self, @args) = @_; my $attr = $orig->( $self, @args );
+   my ($orig, $self, @args) = @_;
 
+   my $attr    = $orig->($self, @args);
    my $builder = $attr->{builder} or return $attr;
-   my $config  = $builder->can( 'config' ) ? $builder->config : {};
+   my $config  = $builder->can('config') ? $builder->config : {};
    my $keys    = [ qw( cache_attributes cache_class lock log tempdir ) ];
 
    merge_attributes $attr, $builder, $keys;
@@ -131,32 +94,40 @@ around 'BUILDARGS' => sub {
 
 # Public methods
 sub dump {
-   my ($self, $args) = @_; blessed $self or $self = $self->$_constructor;
+   my ($self, $args) = @_;
 
-   my $path = $args->{path} // $self->path; blessed $path or $path = io $path;
+   $self = $self->_constructor unless blessed $self;
 
-   return $self->storage->dump( $path, $args->{data} );
+   my $path = $args->{path} // $self->path;
+
+   $path = io $path unless blessed $path;
+
+   return $self->storage->dump($path, $args->{data});
 }
 
 sub load {
-   my ($self, @paths) = @_; blessed $self or $self = $self->$_constructor;
+   my ($self, @paths) = @_;
 
-   $paths[ 0 ] //= $self->path;
+   $self = $self->_constructor unless blessed $self;
+
+   $paths[0] //= $self->path;
 
    return $self->storage->load( map { (blessed $_) ? $_ : io $_ } @paths );
 }
 
 sub resultset {
-   my ($self, $moniker) = @_; return $self->source( $moniker )->resultset;
+   my ($self, $moniker) = @_;
+
+   return $self->source($moniker)->resultset;
 }
 
 sub source {
    my ($self, $moniker) = @_;
 
-   $moniker or throw Unspecified, [ 'result source' ];
+   throw Unspecified, ['result source'] unless $moniker;
 
-   my $source = $self->source_registrations->{ $moniker }
-      or throw 'Result source [_1] unknown', [ $moniker ];
+   my $source = $self->source_registrations->{$moniker}
+      or throw 'Result source [_1] unknown', [$moniker];
 
    return $source;
 }
@@ -170,13 +141,72 @@ sub translate {
 
    my $class      = blessed $self || $self; # uncoverable condition false
    my $from_class = $args->{from_class} // 'Any';
-   my $to_class   = $args->{to_class  } // 'Any';
+   my $to_class   = $args->{to_class} // 'Any';
    my $attr       = { path => $args->{from}, storage_class => $from_class };
-   my $data       = $class->new( $attr )->load;
+   my $data       = $class->new($attr)->load;
 
    $attr = { path => $args->{to}, storage_class => $to_class };
-   $class->new( $attr )->dump( { data => $data } );
+   $class->new($attr)->dump({ data => $data });
    return;
+}
+
+# Private methods
+my $cache_objects = {};
+
+sub _build_cache {
+   my $self  = shift;
+   my $attr  = {
+      builder => $self,
+      cache_attributes => { %{$self->cache_attributes} },
+   };
+   my $cattr = $attr->{cache_attributes};
+  (my $ns    = lc __PACKAGE__) =~ s{ :: }{-}gmx;
+
+   $ns = $cattr->{namespace} //= $ns;
+
+   $cattr->{share_file} //= $self->tempdir->catfile("${ns}.dat")->pathname;
+
+   return $cache_objects->{$ns} if exists $cache_objects->{$ns};
+
+   return Class::Null->new if $self->cache_class eq 'none';
+
+   return $cache_objects->{$ns} = $self->cache_class->new($attr);
+}
+
+sub _build_source_registrations {
+   my $self    = shift;
+   my $sources = {};
+
+   for my $moniker (keys %{$self->result_source_attributes}) {
+      my $attr  = { %{$self->result_source_attributes->{$moniker}} };
+      my $class = delete $attr->{result_source_class}
+         // $self->result_source_class;
+
+      $attr->{name} = $moniker;
+      $attr->{schema} = $self;
+      $sources->{$moniker} = $class->new($attr);
+   }
+
+   return $sources;
+}
+
+sub _build_storage {
+   my $self  = shift;
+   my $class = $self->storage_class;
+
+   if (first_char $class eq '+') { $class = substr $class, 1 }
+   else { $class = qualify_storage_class $class }
+
+   ensure_class_loaded $class;
+
+   return $class->new({ %{$self->storage_attributes}, schema => $self });
+}
+
+sub _constructor {
+   my $class = shift;
+   my $attr  = { cache_class => 'none', storage_class => 'Any' };
+
+   return $class->new($attr);
 }
 
 1;

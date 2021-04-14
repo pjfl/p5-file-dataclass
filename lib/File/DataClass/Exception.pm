@@ -10,7 +10,9 @@ extends q(Unexpected);
 with    q(Unexpected::TraitFor::ErrorLeader);
 with    q(Unexpected::TraitFor::ExceptionClasses);
 
-my $class = __PACKAGE__; $class->ignore_class( 'File::DataClass::IO' );
+my $class = __PACKAGE__;
+
+$class->ignore_class('File::DataClass::IO');
 
 has_exception $class;
 
