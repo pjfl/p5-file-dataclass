@@ -11,7 +11,7 @@ File::DataClass - Structured data file IO with caching and searching
 
 # Version
 
-This document describes version v0.73.$Rev: 3 $ of [File::DataClass](https://metacpan.org/pod/File::DataClass)
+This document describes version v0.73.$Rev: 4 $ of [File::DataClass](https://metacpan.org/pod/File%3A%3ADataClass)
 
 # Synopsis
 
@@ -35,9 +35,9 @@ Provides methods for manipulating structured data stored in files of
 different formats
 
 The documentation for this distribution starts in the class
-[File::DataClass::Schema](https://metacpan.org/pod/File::DataClass::Schema)
+[File::DataClass::Schema](https://metacpan.org/pod/File%3A%3ADataClass%3A%3ASchema)
 
-[File::DataClass::IO](https://metacpan.org/pod/File::DataClass::IO) is a [Moo](https://metacpan.org/pod/Moo) based implementation of [IO::All](https://metacpan.org/pod/IO::All)s API.
+[File::DataClass::IO](https://metacpan.org/pod/File%3A%3ADataClass%3A%3AIO) is a [Moo](https://metacpan.org/pod/Moo) based implementation of [IO::All](https://metacpan.org/pod/IO%3A%3AAll)s API.
 It implements the file and directory methods only
 
 # Configuration and Environment
@@ -76,9 +76,9 @@ welcome
 
 Larry Wall - For the Perl programming language
 
-The class structure and API where taken from [DBIx::Class](https://metacpan.org/pod/DBIx::Class)
+The class structure and API where taken from [DBIx::Class](https://metacpan.org/pod/DBIx%3A%3AClass)
 
-The API for the file IO was taken from [IO::All](https://metacpan.org/pod/IO::All)
+The API for the file IO was taken from [IO::All](https://metacpan.org/pod/IO%3A%3AAll)
 
 # Author
 

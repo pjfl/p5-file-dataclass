@@ -119,7 +119,9 @@ sub import {
 
 # Public methods
 sub abs2rel {
-   return File::Spec->abs2rel($_[0]->name, $_[1]);
+   my ($self, $base) = @_;
+
+   return File::Spec->abs2rel($self->name, $base);
 }
 
 sub absolute {
@@ -855,8 +857,9 @@ sub read {
 
    my $length = @args || $self->is_dir
               ? $self->io_handle->read(@args)
-              : $self->io_handle->read(${$self->buffer},
-                                       $self->_block_size, $self->length );
+              : $self->io_handle->read(
+                   ${$self->buffer}, $self->_block_size, $self->length
+                );
 
    $self->error_check;
 
@@ -899,9 +902,9 @@ sub rel2abs {
 }
 
 sub relative {
-   my $self = shift;
+   my ($self, $base) = @_;
 
-   $self->_set_name($self->abs2rel);
+   $self->_set_name($self->abs2rel($base));
 
    return $self;
 }
@@ -2350,9 +2353,9 @@ Makes the pathname absolute. Returns a path
 
 =head2 relative
 
-   $relative_path = io( 'path_to_file' )->relative;
+   $relative_path = io( 'path_to_file' )->relative( 'path_to_base' );
 
-Calls L</abs2rel> without an optional base path
+Calls L</abs2rel> with an optional base path
 
 =head2 reset
 
