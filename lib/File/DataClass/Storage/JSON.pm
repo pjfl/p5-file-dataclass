@@ -18,7 +18,9 @@ extension_map 'JSON' => '.json';
 # Public attributes
 has '+extn' => default => '.json';
 
-has '+read_options' => builder => sub { { utf8 => false, } };
+has '+read_options' => builder => sub {
+   return { unblessed_bool => true, utf8 => false, };
+};
 
 has '+write_options' => builder => sub {
    return {
