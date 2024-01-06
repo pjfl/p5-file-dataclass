@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Fix error in throwing from ensure class loaded
           - JSON decode now returns Perl bools
           - Allow base to be passed into IO relative
           - Removed Perl 5.10 from Travis config

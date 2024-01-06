@@ -35,7 +35,7 @@ sub ensure_class_loaded ($;$) {
 
    return 1 if !$opts->{ignore_loaded} && is_class_loaded $class;
 
-   try { require_module($class) } catch { throw $_ };
+   try { require_module($class) } catch { throw($_) };
 
    throw( 'Class [_1] loaded but package undefined', [$class] )
       unless is_class_loaded $class;
