@@ -1046,7 +1046,7 @@ sub substitute {
 sub suffix {
    my $self = shift;
 
-   (my $suffix) = $self->name =~ m{ \. ([^\.])+ \z }mx;
+   (my $suffix) = $self->name =~ m{ \. ([^\.]+) \z }mx;
 
    return $suffix;
 }
