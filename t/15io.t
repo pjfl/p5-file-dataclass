@@ -163,6 +163,7 @@ subtest 'File::Spec::Functions' => sub {
    is io( [ qw( t output print.t ) ] )->basename, 'print.t', 'Basename';
    is io()->basename, undef, 'Basename - no name';
    is io( [ qw( t ) ] )->child( undef, {} ), 't', 'Child with undef args';
+   is io( [ qw( t output print.t ) ] )->suffix, 't', 'Suffix';
 };
 
 subtest 'Absolute/relative pathname conversions' => sub {

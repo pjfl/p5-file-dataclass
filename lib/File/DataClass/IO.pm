@@ -1043,6 +1043,14 @@ sub substitute {
    return $self;
 }
 
+sub suffix {
+   my $self = shift;
+
+   (my $suffix) = $self->name =~ m{ \. ([^\.])+ \z }mx;
+
+   return $suffix;
+}
+
 sub tail {
    my ($self, $lines, @args) = @_;
 
