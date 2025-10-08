@@ -162,6 +162,7 @@ subtest 'File::Spec::Functions' => sub {
    ok io( [ qw( t mydir dir1 ) ] )->sibling( 'dir2' )->is_dir, 'Sibling';
    is io( [ qw( t output print.t ) ] )->basename, 'print.t', 'Basename';
    is io()->basename, undef, 'Basename - no name';
+   is io( [ qw( t output print.t ) ] )->extension, 't', 'Extension';
    is io( [ qw( t ) ] )->child( undef, {} ), 't', 'Child with undef args';
    is io( [ qw( t output print.t ) ] )->suffix, 't', 'Suffix';
 };

@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Adds extension method to IO
           - Bug fix in suffix regex
           - Adds suffix method to IO
           - Fix error in throwing from ensure class loaded

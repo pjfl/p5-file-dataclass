@@ -511,6 +511,14 @@ sub exists {
    return (CORE::length $_[0]->name && -e $_[0]->name) ? TRUE : FALSE;
 }
 
+sub extension {
+   my $self = shift;
+
+   my ($extension) = $self->filename =~ m{ \. ([^\.]+) \z }mx;
+
+   return $extension;
+}
+
 sub fdopen {
    my ($self, $fd, $mode) = @_;
 
@@ -2069,6 +2077,10 @@ L<IO::Handle>
 
 Tests to see if the open file handle is showing an error and if it is
 it L</throw>s an C<eIOError>
+
+=head2 extension
+
+Returns the part of the filename after the last dot
 
 =head2 exists
 
