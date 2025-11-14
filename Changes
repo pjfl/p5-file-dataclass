@@ -1,5 +1,6 @@
 Revision history for File::DataClass
 
+          - Discovered extension is the same as suffix
           - Adds extension method to IO
           - Bug fix in suffix regex
           - Adds suffix method to IO

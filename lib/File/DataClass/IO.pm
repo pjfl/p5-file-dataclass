@@ -1052,11 +1052,7 @@ sub substitute {
 }
 
 sub suffix {
-   my $self = shift;
-
-   (my $suffix) = $self->name =~ m{ \. ([^\.]+) \z }mx;
-
-   return $suffix;
+   return shift->extension;
 }
 
 sub tail {
@@ -2460,6 +2456,10 @@ Returns undefined if the file does not exist or the file handle is not open
 
 Substitutes C<$search> regular expression for C<$replace> string on each
 line of the given file
+
+=head2 suffix
+
+Returns the part of the filename after the last dot
 
 =head2 sysread
 
