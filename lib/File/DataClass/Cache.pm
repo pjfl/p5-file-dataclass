@@ -1,24 +1,43 @@
 package File::DataClass::Cache;
 
-use 5.01;
-use namespace::autoclean;
-
 use File::DataClass::Constants qw( FALSE NUL SPC TRUE );
-use File::DataClass::Functions qw( merge_attributes throw );
 use File::DataClass::Types     qw( Bool Cache ClassName HashRef
-                                   LoadableClass Object Str );
-use Storable                   qw( freeze );
+                                   LoadableClass Object Str Undef );
+use File::DataClass::Functions qw( merge_attributes throw );
+use JSON::MaybeXS              qw( );
 use Try::Tiny;
 use Moo;
 
 # Public attributes
 has 'cache' =>
    is       => 'lazy',
-   isa      => Object,
-   builder  => sub {
-      my $self = shift;
+   isa      => Object|Undef,
+   default  => sub {
+      my $self   = shift;
+      my $params = { %{$self->cache_attributes} };
+      my $ns     = delete $params->{namespace};
 
-      return $self->cache_class->new(%{$self->cache_attributes});
+      $params->{on_connect} = sub {
+         my $redis      = shift;
+         my $start_time = time;
+
+         while (!$redis->ping) {
+            sleep 1; return FALSE if time - $start_time > 3600;
+         }
+
+         return TRUE;
+      };
+
+      my $cache;
+
+      try { $cache = $self->cache_class->new(%{$params}) }
+      catch { $self->log->error($_) };
+
+      return unless $cache;
+
+      $cache->client_setname($ns);
+
+      return $cache;
    };
 
 has 'cache_attributes' => is => 'ro', isa => HashRef, required => TRUE;
@@ -26,12 +45,16 @@ has 'cache_attributes' => is => 'ro', isa => HashRef, required => TRUE;
 has 'cache_class' =>
    is      => 'lazy',
    isa     => LoadableClass,
-   default => 'Cache::FastMmap';
+   default => 'Redis';
 
 has 'log' => is => 'ro', isa => Object, required => TRUE;
 
 # Private attributes
 has '_mtimes_key' => is => 'ro', isa => Str, default => '_mtimes';
+
+has '_json_parser' =>
+   is      => 'ro',
+   default => sub { JSON::MaybeXS->new(convert_blessed => TRUE) };
 
 # Construction
 around 'BUILDARGS' => sub {
@@ -56,9 +79,13 @@ around 'BUILDARGS' => sub {
 sub get {
    my ($self, $key) = @_;
 
-   $key .= NUL;
+   my $cached = FALSE;
 
-   my $cached = $key ? $self->cache->get($key) : FALSE;
+   if ($key) {
+      my $value = $self->cache ? $self->cache->get("${key}") : NUL;
+
+      $cached = $self->_json_parser->decode($value) if $value;
+   }
 
    return ($cached->{data}, $cached->{meta}) if $cached;
 
@@ -75,21 +102,20 @@ sub get_by_paths {
 sub get_mtime {
    my ($self, $k) = @_;
 
-   return unless $k;
+   return unless $self->cache && defined $k;
 
-   my $mtimes = $self->cache->get($self->_mtimes_key) or return;
-
-   return $mtimes->{$k};
+   return $self->cache->hget($self->_mtimes_key, $k);
 }
 
 sub remove {
    my ($self, $key) = @_;
 
-   return unless defined $key;
+   return FALSE unless defined $key
+      && $self->cache && $self->cache->exists($key);
 
-   $self->cache->remove($key);
+   $self->cache->del($key);
    $self->set_mtime($key, undef);
-   return;
+   return TRUE;
 }
 
 sub set {
@@ -97,7 +123,7 @@ sub set {
 
    $meta //= { mtime => undef };
 
-   my $val = { data => $data, meta => $meta };
+   my $val = $self->_json_parser->encode({ data => $data, meta => $meta });
 
    try {
       throw 'key not allowed' if $key eq $self->_mtimes_key;
@@ -105,7 +131,7 @@ sub set {
       $self->set_mtime($key, $meta->{mtime});
    }
    catch {
-      my $len = length($key) + length(freeze $val);
+      my $len = length($key) + length($val);
 
       $self->log->error("Cache key ${key}(${len}) set failed: ${_}");
    };
@@ -126,13 +152,11 @@ sub set_by_paths {
 sub set_mtime {
    my ($self, $k, $v) = @_;
 
-   return $self->cache->get_and_set($self->_mtimes_key, sub {
-      my (undef, $mtimes) = @_;
+   return unless $self->cache;
 
-      if (defined $v) { $mtimes->{$k} = $v } else { delete $mtimes->{$k} }
+   return $self->cache->hdel($self->_mtimes_key, $k) unless defined $v;
 
-      return $mtimes;
-   });
+   return $self->cache->hset($self->_mtimes_key, $k, $v);
 }
 
 # Private methods
@@ -156,6 +180,8 @@ sub _get_key_and_newest {
 
    return ($key, $is_valid ? $newest : undef);
 }
+
+use namespace::autoclean;
 
 1;
 
@@ -191,8 +217,6 @@ File::DataClass::Cache - Accessors and mutators for the cache object
       $ns    = $attrs->{cache_attributes}->{namespace} ||= $ns;
       exists $_cache_objects->{ $ns } and return $_cache_objects->{ $ns };
       $self->cache_class eq 'none' and return Class::Null->new;
-      $attrs->{cache_attributes}->{share_file}
-           ||= NUL.$self->tempdir->catfile( "${ns}.dat" );
 
       return $_cache_objects->{ $ns } = $self->cache_class->new( $attrs );
    }

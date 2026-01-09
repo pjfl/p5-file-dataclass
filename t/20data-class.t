@@ -26,7 +26,6 @@ my $ntfs       = $osname eq 'mswin32' || $osname eq 'cygwin' ? 1 : 0;
 my $path_ref   = [ 't', 'default.json' ];
 my $path       = catfile( @{ $path_ref } );
 my $dumped     = catfile( 't', 'dumped.json' );
-my $cache_file = catfile( 't', 'file-dataclass-schema.dat' );
 
 io( $path_ref )->is_writable
    or plan skip_all => 'File t/default.json not writable';
@@ -39,11 +38,7 @@ my $schema     = File::DataClass::Schema->new
 
 isa_ok $schema, 'File::DataClass::Schema';
 
-ok !-f $cache_file, 'Cache file not created';
-
 $schema = File::DataClass::Schema->new( path => $path_ref, tempdir => 't' );
-
-ok !-f $cache_file, 'Cache file not created too early';
 
 my $e = test( $schema, 'load', 'nonexistant_path' );
 
@@ -51,8 +46,6 @@ like $e, qr{ \QPath 'nonexistant_path' not found\E }msx,
     'Nonexistant path not found';
 
 is ref $e, 'File::DataClass::Exception', 'Default exception class';
-
-ok -f $cache_file, 'Cache file found'; ! -f $cache_file and warn "${e}";
 
 is $schema->cache->get_mtime(), undef, 'No mod times for undef';
 
@@ -68,20 +61,29 @@ is $data, undef, 'Dummy cache returns undef data';
 
 ok !($schema->cache->set( '_mtimes' ))[ 0 ], 'Cannot use reserved key';
 
+$schema->cache->remove('test');
+
 ok $schema->cache->set( 'test', 'data' ), 'Sets cache';
 
 ok !$schema->cache->remove(), 'Cannot remove undefined key';
 
-$data = test( $schema, 'load', $path, catfile( 't', 'other.json' ) );
+is(($schema->cache->get('test'))[0], 'data', 'Gets cache')
+   if $schema->cache->cache;
+
+$schema->cache->remove("${path}");
+
+$data = test( $schema, 'load', $path );
 
 like $data->{ '_cvs_default' } || q(), qr{ @\(\#\)\$Id: }mx,
    'Has reference element 1';
 
-like $data->{ '_cvs_other' } || q(), qr{ @\(\#\)\$Id: }mx,
-   'Has reference element 2';
-
 ok exists $data->{levels}
    && ref $data->{levels}->{admin}->{acl} eq 'ARRAY', 'Detects arrays';
+
+$data = test( $schema, 'load', catfile( 't', 'other.json' ) );
+
+like $data->{ '_cvs_other' } || q(), qr{ @\(\#\)\$Id: }mx,
+   'Has reference element 2';
 
 $data = $schema->load( $path ); my $args = { data => $data, path => $dumped };
 
@@ -193,13 +195,7 @@ is $res->result->name( 'old_tosh' ), 'old_tosh',
    'Deprecated name attribute use id instead - mutator';
 
 $schema = File::DataClass::Schema->new
-   ( cache_attributes          => {
-        page_size              => 131_072,
-        namespace              => 'file-dataclass',
-        num_pages              => 89,
-        share_file             => $cache_file,
-        unlink_on_exit         => 1, },
-     path                      => $path_ref,
+   ( path                      => $path_ref,
      result_source_attributes  => {
         levels                 => {
            attributes          => [ qw( acl count state ) ],
@@ -386,7 +382,6 @@ done_testing;
 
 # Cleanup
 io( $dumped )->unlink;
-io( $cache_file )->unlink;
 io( [ 't', 'update.json' ] )->unlink;
 io( catfile( 't', 'ipc_srlock.lck' ) )->unlink;
 io( catfile( 't', 'ipc_srlock.shm' ) )->unlink;

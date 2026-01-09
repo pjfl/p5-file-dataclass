@@ -20,6 +20,9 @@ pm_to_blib
 README
 README.pod
 t/ipc_srlock*
+t/boolean.json
+t/dumped.json
+t/update.json
 *.tar.gz
 File-DataClass-*
 lib/File/DataClass/Storage/XML*

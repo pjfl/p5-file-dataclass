@@ -15,7 +15,6 @@ my $prereqs  = {
     'version' => '0.88'
   },
   'requires' => {
-    'Cache::FastMmap' => '1.40',
     'Class::Null' => '2.110730',
     'File::Path' => '2.09',
     'File::ReadBackwards' => '1.05',
@@ -24,6 +23,7 @@ my $prereqs  = {
     'Module::Pluggable' => '5.1',
     'Module::Runtime' => '0.014',
     'Moo' => '2.001001',
+    'Redis' => '2.000',
     'Ref::Util' => '0.203',
     'Sub::Install' => '0.928',
     'Subclass::Of' => '0.003',

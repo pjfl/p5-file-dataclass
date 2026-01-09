@@ -27,9 +27,9 @@ has 'cache_attributes' =>
    isa     => HashRef,
    builder => sub {
       return {
-         page_size      => 131_072,
-         num_pages      => 89,
-         unlink_on_exit => TRUE,
+         every     => 1000,
+         reconnect => 20,
+         server    => 'localhost:6379',
       };
    };
 
@@ -163,8 +163,6 @@ sub _build_cache {
   (my $ns    = lc __PACKAGE__) =~ s{ :: }{-}gmx;
 
    $ns = $cattr->{namespace} //= $ns;
-
-   $cattr->{share_file} //= $self->tempdir->catfile("${ns}.dat")->pathname;
 
    return $cache_objects->{$ns} if exists $cache_objects->{$ns};
 
